@@ -1,0 +1,582 @@
+const { runQuery, getRow, getAll } = require('../config/database');
+const websocketService = require('../services/websocketService');
+
+// Get therapist schedule
+const getSchedule = async (req, res) => {
+  try {
+    // Get therapist ID from authenticated user
+    const therapistId = req.user.userId;
+    const { date, startDate, endDate, status } = req.query;
+
+    // Build WHERE clause
+    let whereConditions = ['a.therapistId = ?'];
+    let params = [therapistId];
+
+    if (date) {
+      whereConditions.push('a.appointmentDate = ?');
+      params.push(date);
+    } else if (startDate && endDate) {
+      whereConditions.push('a.appointmentDate BETWEEN ? AND ?');
+      params.push(startDate, endDate);
+    }
+
+    if (status) {
+      whereConditions.push('a.status = ?');
+      params.push(status);
+    }
+
+    const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
+
+    // Get appointments with patient info
+    const sql = `
+      SELECT 
+        a.id,
+        a.patientId,
+        a.therapistId,
+        a.appointmentDate,
+        a.startTime,
+        a.endTime,
+        a.duration,
+        a.type,
+        a.status,
+        a.notes,
+        a.createdAt,
+        a.updatedAt,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        p.diagnosis,
+        u.phone as patientPhone
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      ${whereClause}
+      ORDER BY a.appointmentDate ASC, a.startTime ASC
+    `;
+
+    const appointments = await getAll(sql, params);
+
+    // Get sessions for the same therapist
+    const sessionsSql = `
+      SELECT 
+        s.id,
+        s.patientId,
+        s.therapistId,
+        s.sessionDate,
+        s.startTime,
+        s.endTime,
+        s.duration,
+        s.sessionType as type,
+        s.status,
+        s.notes,
+        s.objectives,
+        s.createdAt,
+        s.updatedAt,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        p.diagnosis,
+        u.phone as patientPhone
+      FROM sessions s
+      JOIN patients p ON s.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE s.therapistId = ?
+      ORDER BY s.sessionDate ASC, s.startTime ASC
+    `;
+
+    let sessions = [];
+    try {
+      sessions = await getAll(sessionsSql, [therapistId]);
+      console.log('Sessions query successful, found:', sessions.length);
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+      // Continue without sessions if there's an error
+    }
+
+    // Group appointments by date
+    const scheduleByDate = {};
+    appointments.forEach(appointment => {
+      const date = appointment.appointmentDate;
+      if (!scheduleByDate[date]) {
+        scheduleByDate[date] = [];
+      }
+      scheduleByDate[date].push(appointment);
+    });
+
+    // Group sessions by date
+    sessions.forEach(session => {
+      try {
+        const date = new Date(session.sessionDate).toISOString().split('T')[0]; // Convert to date string
+        if (!scheduleByDate[date]) {
+          scheduleByDate[date] = [];
+        }
+        scheduleByDate[date].push(session);
+      } catch (error) {
+        console.error('Error processing session date:', error, 'Session:', session);
+      }
+    });
+
+    // Get available time slots for scheduling
+    const availableSlots = []; // Temporarily disabled
+    // const availableSlots = await getAvailableTimeSlots(therapistId, startDate || date || new Date().toISOString().split('T')[0], endDate || date || new Date().toISOString().split('T')[0]);
+
+    res.json({
+      success: true,
+      data: {
+        appointments,
+        sessions,
+        scheduleByDate,
+        availableSlots,
+        total: appointments.length + sessions.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Get schedule error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch schedule' });
+  }
+};
+
+// Create new appointment
+const createAppointment = async (req, res) => {
+  try {
+    const {
+      patientId,
+      appointmentDate,
+      startTime,
+      endTime,
+      duration,
+      type,
+      notes
+    } = req.body;
+
+    // Validate required fields
+    if (!patientId || !appointmentDate || !startTime || !endTime || !duration || !type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: patientId, appointmentDate, startTime, endTime, duration, type'
+      });
+    }
+
+    // Get therapist ID from request (in real app, get from auth token)
+    const therapistId = req.user.userId;
+
+    // Validate patient exists and belongs to therapist
+    const patientSql = `
+      SELECT p.id, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM patients p
+      JOIN users u ON p.userId = u.id
+      WHERE p.id = ? AND p.therapistId = ?
+    `;
+    
+    const patient = await getRow(patientSql, [parseInt(patientId), therapistId]);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient not found or not assigned to you'
+      });
+    }
+
+    // Check for scheduling conflicts
+    const conflictSql = `
+      SELECT id FROM appointments 
+      WHERE therapistId = ? AND appointmentDate = ? AND status != 'cancelled'
+      AND (
+        (startTime <= ? AND endTime > ?) OR
+        (startTime < ? AND endTime >= ?) OR
+        (startTime >= ? AND endTime <= ?)
+      )
+    `;
+
+    const conflicts = await getAll(conflictSql, [
+      therapistId, 
+      appointmentDate, 
+      startTime, endTime, 
+      startTime, endTime, 
+      startTime, endTime
+    ]);
+
+    if (conflicts.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Time slot conflicts with existing appointment'
+      });
+    }
+
+    // Insert appointment
+    const insertSql = `
+      INSERT INTO appointments (
+        patientId, therapistId, appointmentDate, startTime, endTime, 
+        duration, type, status, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const insertParams = [
+      parseInt(patientId),
+      therapistId,
+      appointmentDate,
+      startTime,
+      endTime,
+      parseInt(duration),
+      type,
+      'scheduled',
+      notes || null
+    ];
+
+    const result = await runQuery(insertSql, insertParams);
+    const appointmentId = result.insertId;
+
+    // Get the created appointment
+    const getAppointmentSql = `
+      SELECT 
+        a.*,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        p.diagnosis,
+        u.phone as patientPhone
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE a.id = ?
+    `;
+
+    const newAppointment = await getRow(getAppointmentSql, [appointmentId]);
+
+    // Broadcast appointment change to all relevant portals
+    websocketService.broadcastAppointmentChange(newAppointment, 'created');
+
+    res.status(201).json({
+      success: true,
+      message: 'Appointment created successfully',
+      data: newAppointment
+    });
+
+  } catch (error) {
+    console.error('Create appointment error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create appointment' });
+  }
+};
+
+// Update appointment
+const updateAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Check if appointment exists and belongs to therapist
+    const existingAppointment = await getRow(`
+      SELECT * FROM appointments 
+      WHERE id = ? AND therapistId = ?
+    `, [parseInt(id), req.user.userId]);
+
+    if (!existingAppointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Appointment not found or not authorized'
+      });
+    }
+
+    // Check for scheduling conflicts if time is being changed
+    if (updateData.appointmentDate || updateData.startTime || updateData.endTime) {
+      const newDate = updateData.appointmentDate || existingAppointment.appointmentDate;
+      const newStartTime = updateData.startTime || existingAppointment.startTime;
+      const newEndTime = updateData.endTime || existingAppointment.endTime;
+
+      const conflictSql = `
+        SELECT id FROM appointments 
+        WHERE therapistId = ? AND appointmentDate = ? AND status != 'cancelled' AND id != ?
+        AND (
+          (startTime <= ? AND endTime > ?) OR
+          (startTime < ? AND endTime >= ?) OR
+          (startTime >= ? AND endTime <= ?)
+        )
+      `;
+
+      const conflicts = await getAll(conflictSql, [
+        req.user.userId,
+        newDate, 
+        parseInt(id),
+        newStartTime, newEndTime, 
+        newStartTime, newEndTime, 
+        newStartTime, newEndTime
+      ]);
+
+      if (conflicts.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Time slot conflicts with existing appointment'
+        });
+      }
+    }
+
+    // Prepare update data
+    const updateFields = [];
+    const updateParams = [];
+
+    if (updateData.appointmentDate !== undefined) {
+      updateFields.push('appointmentDate = ?');
+      updateParams.push(updateData.appointmentDate);
+    }
+
+    if (updateData.startTime !== undefined) {
+      updateFields.push('startTime = ?');
+      updateParams.push(updateData.startTime);
+    }
+
+    if (updateData.endTime !== undefined) {
+      updateFields.push('endTime = ?');
+      updateParams.push(updateData.endTime);
+    }
+
+    if (updateData.duration !== undefined) {
+      updateFields.push('duration = ?');
+      updateParams.push(parseInt(updateData.duration));
+    }
+
+    if (updateData.type !== undefined) {
+      updateFields.push('type = ?');
+      updateParams.push(updateData.type);
+    }
+
+    if (updateData.status !== undefined) {
+      updateFields.push('status = ?');
+      updateParams.push(updateData.status);
+    }
+
+    if (updateData.notes !== undefined) {
+      updateFields.push('notes = ?');
+      updateParams.push(updateData.notes);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No valid fields to update'
+      });
+    }
+
+    // Add appointment ID to params
+    updateParams.push(parseInt(id));
+
+    // Update appointment
+    const updateSql = `
+      UPDATE appointments 
+      SET ${updateFields.join(', ')}, updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `;
+
+    await runQuery(updateSql, updateParams);
+
+    // Get updated appointment
+    const getAppointmentSql = `
+      SELECT 
+        a.*,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        p.diagnosis,
+        u.phone as patientPhone
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE a.id = ?
+    `;
+
+    const updatedAppointment = await getRow(getAppointmentSql, [parseInt(id)]);
+
+    res.json({
+      success: true,
+      message: 'Appointment updated successfully',
+      data: updatedAppointment
+    });
+
+  } catch (error) {
+    console.error('Update appointment error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update appointment' });
+  }
+};
+
+// Delete appointment
+const deleteAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if appointment exists and belongs to therapist
+    const existingAppointment = await getRow(`
+      SELECT * FROM appointments 
+      WHERE id = ? AND therapistId = ?
+    `, [parseInt(id), req.user.userId]);
+
+    if (!existingAppointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Appointment not found or not authorized'
+      });
+    }
+
+    // Delete appointment
+    await runQuery('DELETE FROM appointments WHERE id = ?', [parseInt(id)]);
+
+    res.json({
+      success: true,
+      message: 'Appointment deleted successfully',
+      data: existingAppointment
+    });
+
+  } catch (error) {
+    console.error('Delete appointment error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete appointment' });
+  }
+};
+
+// Get available time slots
+const getAvailableTimeSlots = async (therapistId, startDate, endDate) => {
+  try {
+    // Default business hours: 9 AM to 5 PM
+    const businessHours = {
+      start: '09:00:00',
+      end: '17:00:00',
+      slotDuration: 60 // minutes
+    };
+
+    // Get existing appointments for the date range
+    const appointmentsSql = `
+      SELECT appointmentDate, startTime, endTime, status
+      FROM appointments 
+      WHERE therapistId = ? AND appointmentDate BETWEEN ? AND ? AND status != 'cancelled'
+      ORDER BY appointmentDate, startTime
+    `;
+
+    const appointments = await getAll(appointmentsSql, [therapistId, startDate, endDate]);
+
+    // Generate available slots
+    const availableSlots = [];
+    const currentDate = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    while (currentDate <= endDateObj) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const dayOfWeek = currentDate.getDay();
+
+      // Skip weekends (0 = Sunday, 6 = Saturday)
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        const dayAppointments = appointments.filter(apt => apt.appointmentDate === dateStr);
+        
+        // Generate time slots for the day
+        let currentTime = new Date(`2000-01-01T${businessHours.start}`);
+        const endTime = new Date(`2000-01-01T${businessHours.end}`);
+
+        while (currentTime < endTime) {
+          const slotStart = currentTime.toTimeString().slice(0, 8);
+          const slotEnd = new Date(currentTime.getTime() + businessHours.slotDuration * 60000).toTimeString().slice(0, 8);
+
+          // Check if slot conflicts with existing appointments
+          const hasConflict = dayAppointments.some(apt => {
+            return (slotStart < apt.endTime && slotEnd > apt.startTime);
+          });
+
+          if (!hasConflict) {
+            availableSlots.push({
+              date: dateStr,
+              startTime: slotStart,
+              endTime: slotEnd,
+              duration: businessHours.slotDuration
+            });
+          }
+
+          currentTime = new Date(currentTime.getTime() + businessHours.slotDuration * 60000);
+        }
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return availableSlots;
+
+  } catch (error) {
+    console.error('Get available time slots error:', error);
+    return [];
+  }
+};
+
+// Get appointment statistics
+const getAppointmentStats = async (req, res) => {
+  try {
+    // Get therapist ID from request (in real app, get from auth token)
+    const therapistId = req.user.userId;
+    const { startDate, endDate } = req.query;
+
+    // Build WHERE clause
+    let whereConditions = ['a.therapistId = ?'];
+    let params = [therapistId];
+
+    if (startDate && endDate) {
+      whereConditions.push('a.appointmentDate BETWEEN ? AND ?');
+      params.push(startDate, endDate);
+    }
+
+    const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
+
+    // Get appointment counts by status
+    const statusStatsSql = `
+      SELECT 
+        a.status,
+        COUNT(*) as count
+      FROM appointments a
+      ${whereClause}
+      GROUP BY a.status
+    `;
+
+    const statusStats = await getAll(statusStatsSql, params);
+
+    // Get appointment counts by type
+    const typeStatsSql = `
+      SELECT 
+        a.type,
+        COUNT(*) as count
+      FROM appointments a
+      ${whereClause}
+      GROUP BY a.type
+    `;
+
+    const typeStats = await getAll(typeStatsSql, params);
+
+    // Get total appointments
+    const totalSql = `
+      SELECT COUNT(*) as total
+      FROM appointments a
+      ${whereClause}
+    `;
+
+    const [totalResult] = await getAll(totalSql, params);
+    const total = totalResult.total;
+
+    // Get upcoming appointments (next 7 days)
+    const upcomingSql = `
+      SELECT COUNT(*) as upcoming
+      FROM appointments a
+      WHERE a.therapistId = ? AND a.appointmentDate >= CURDATE() 
+      AND a.appointmentDate <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+      AND a.status IN ('scheduled', 'confirmed')
+    `;
+
+    const [upcomingResult] = await getAll(upcomingSql, [therapistId]);
+    const upcoming = upcomingResult.upcoming;
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        upcoming,
+        byStatus: statusStats,
+        byType: typeStats
+      }
+    });
+
+  } catch (error) {
+    console.error('Get appointment stats error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch appointment statistics' });
+  }
+};
+
+module.exports = {
+  getSchedule,
+  createAppointment,
+  updateAppointment,
+  deleteAppointment,
+  getAppointmentStats
+};
+

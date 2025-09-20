@@ -1,0 +1,9 @@
+export { default as AdminDashboard } from './AdminDashboard';
+export { default as AdminPatients } from './AdminPatients';
+export { default as AdminTherapists } from './AdminTherapists';
+export { default as AdminAppointments } from './AdminAppointments';
+export { default as AdminNotifications } from './AdminNotifications';
+export { default as AdminReports } from './AdminReports';
+export { default as AdminSettings } from './AdminSettings';
+export { default as AdminHelpCenter } from './AdminHelpCenter';
+export { default as AdminProfile } from './AdminProfile';

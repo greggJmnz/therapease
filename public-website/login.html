@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TherapEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .animate-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <!-- Navigation -->
+    <nav class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/public-website/index.html" class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-heart-pulse text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">TherapEase</span>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/public-website/index.html" class="text-gray-600 hover:text-gray-900">Home</a>
+                    <a href="/public-website/index.html#about" class="text-gray-600 hover:text-gray-900">About</a>
+                    <a href="/public-website/index.html#contact" class="text-gray-600 hover:text-gray-900">Contact</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute top-16 left-16 w-40 h-40 bg-blue-300/30 rounded-full blur-2xl animate-pulse"></div>
+            <div class="absolute top-32 right-24 w-32 h-32 bg-indigo-300/25 rounded-full blur-xl animate-pulse delay-1000"></div>
+            <div class="absolute bottom-24 left-24 w-48 h-48 bg-purple-300/20 rounded-full blur-3xl animate-pulse delay-2000"></div>
+            <div class="absolute bottom-16 right-16 w-36 h-36 bg-slate-300/25 rounded-full blur-2xl animate-pulse delay-500"></div>
+        </div>
+
+        <div class="relative max-w-md w-full animate-in">
+            <!-- Login Card -->
+            <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8 space-y-8">
+                <!-- Header -->
+                <div class="text-center space-y-4">
+                    <div class="flex justify-center">
+                        <div class="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
+                            <i class="fas fa-heart-pulse text-white text-2xl"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                            Welcome to TherapEase
+                        </h1>
+                        <p class="text-gray-600 text-sm">
+                            Sign in to continue your therapeutic journey
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-6">
+                    <!-- Error Display -->
+                    <div id="errorMessage" class="hidden bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-circle text-red-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800">
+                                    Login Failed
+                                </h3>
+                                <div class="mt-2 text-sm text-red-700">
+                                    <p id="errorText"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Email Field -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-envelope text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                required
+                                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                placeholder="Enter your email"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">Password</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                required
+                                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                placeholder="Enter your password"
+                            />
+                            <button 
+                                type="button" 
+                                id="togglePassword"
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                            >
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button 
+                        type="submit" 
+                        id="submitBtn"
+                        class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span id="submitText">Sign in</span>
+                        <span id="loadingSpinner" class="hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Signing in...
+                        </span>
+                    </button>
+                </form>
+
+                <!-- Demo Accounts -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <i class="fas fa-shield-alt text-blue-600"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-blue-900">Demo Accounts</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <!-- Admin Account -->
+                        <div class="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-blue-100 hover:bg-white/80 hover:border-blue-200 transition-all duration-200 cursor-pointer group" onclick="fillDemoAccount('admin@therapease.com', 'Admin123!@#')">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-red-500 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
+                                <span class="text-sm font-medium text-gray-700">Admin</span>
+                            </div>
+                            <div class="text-xs text-gray-600 font-mono">
+                                admin@therapease.com
+                            </div>
+                        </div>
+
+                        <!-- Therapist Account -->
+                        <div class="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-blue-100 hover:bg-white/80 hover:border-blue-200 transition-all duration-200 cursor-pointer group" onclick="fillDemoAccount('therapist@therapease.com', 'Therapist123!@#')">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
+                                <span class="text-sm font-medium text-gray-700">Therapist</span>
+                            </div>
+                            <div class="text-xs text-gray-600 font-mono">
+                                therapist@therapease.com
+                            </div>
+                        </div>
+
+                        <!-- Patient Account -->
+                        <div class="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-blue-100 hover:bg-white/80 hover:border-blue-200 transition-all duration-200 cursor-pointer group" onclick="fillDemoAccount('emma@example.com', 'Patient123!@#')">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-blue-500 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
+                                <span class="text-sm font-medium text-gray-700">Patient</span>
+                            </div>
+                            <div class="text-xs text-gray-600 font-mono">
+                                emma@example.com
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Register Link -->
+                <div class="text-center pt-4 border-t border-gray-100">
+                    <p class="text-sm text-gray-600">
+                        Don't have an account? 
+                        <a href="/public-website/register.html" class="font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                            Sign up here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fill demo account credentials
+        function fillDemoAccount(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+        }
+
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordField = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        // Show/hide error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        // Show/hide loading state
+        function setLoading(loading) {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            
+            if (loading) {
+                submitBtn.disabled = true;
+                submitText.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+            } else {
+                submitBtn.disabled = false;
+                submitText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Clear any previous errors
+            hideError();
+            
+            // Show loading state
+            setLoading(true);
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Store authentication data
+                    localStorage.setItem('token', result.data.token);
+                    localStorage.setItem('user', JSON.stringify(result.data.user));
+                    localStorage.setItem('userRole', result.data.user.role);
+                    localStorage.setItem('userId', result.data.user.id);
+                    
+                    // Redirect based on user role
+                    switch (result.data.user.role) {
+                        case 'admin':
+                            window.location.href = '/admin/dashboard';
+                            break;
+                        case 'therapist':
+                            window.location.href = '/therapist/dashboard';
+                            break;
+                        case 'patient':
+                            window.location.href = '/patient/dashboard';
+                            break;
+                        default:
+                            window.location.href = '/';
+                    }
+                } else {
+                    const errorMessage = result.error || result.message || 'Login failed. Please check your credentials.';
+                    showError(errorMessage);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Network error. Please check your connection and try again.');
+            } finally {
+                setLoading(false);
+            }
+        });
+    </script>
+</body>
+</html>
