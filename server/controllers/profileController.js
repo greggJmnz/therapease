@@ -72,14 +72,19 @@ const getUpdatedProfileData = async (userId, userRole) => {
     } else if (userRole === 'patient') {
       const patientQuery = `
         SELECT 
-          diagnosis,
-          medicalHistory,
-          goals,
-          emergencyContact,
-          insuranceInfo,
-          therapistId
-        FROM patients
-        WHERE userId = ?
+          p.diagnosis,
+          p.medicalHistory,
+          p.goals,
+          p.emergencyContact,
+          p.insuranceInfo,
+          p.therapistId,
+          u.firstName as therapistFirstName,
+          u.lastName as therapistLastName,
+          t.specialization as therapistSpecialization
+        FROM patients p
+        LEFT JOIN users u ON p.therapistId = u.id
+        LEFT JOIN therapists t ON u.id = t.userId
+        WHERE p.userId = ?
       `;
       const patient = await getRow(patientQuery, [userId]);
       if (patient) {
@@ -89,6 +94,10 @@ const getUpdatedProfileData = async (userId, userRole) => {
         profileData.emergencyContact = patient.emergencyContact;
         profileData.insuranceInfo = patient.insuranceInfo;
         profileData.therapistId = patient.therapistId;
+        if (patient.therapistFirstName && patient.therapistLastName) {
+          profileData.therapistName = `${patient.therapistFirstName} ${patient.therapistLastName}`;
+          profileData.therapistSpecialization = patient.therapistSpecialization;
+        }
       }
     }
 
@@ -169,13 +178,22 @@ const getProfile = async (req, res) => {
           p.insuranceInfo,
           p.status,
           p.createdAt,
-          p.updatedAt
+          p.updatedAt,
+          u.firstName as therapistFirstName,
+          u.lastName as therapistLastName,
+          t.specialization as therapistSpecialization
         FROM patients p
+        LEFT JOIN users u ON p.therapistId = u.id
+        LEFT JOIN therapists t ON u.id = t.userId
         WHERE p.userId = ?
       `;
       const patient = await getRow(patientSql, [userId]);
       if (patient) {
         profileData = { ...profileData, ...patient };
+        if (patient.therapistFirstName && patient.therapistLastName) {
+          profileData.therapistName = `${patient.therapistFirstName} ${patient.therapistLastName}`;
+          profileData.therapistSpecialization = patient.therapistSpecialization;
+        }
       }
     }
 

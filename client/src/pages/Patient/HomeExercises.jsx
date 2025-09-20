@@ -1,136 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Target, Calendar, Clock, CheckCircle, Play, Pause, RotateCcw, TrendingUp, Award, Timer } from 'lucide-react';
+import { useQuery } from 'react-query';
+import { patientAPI } from '../../services/api';
 
 const HomeExercises = () => {
-  const [exercises, setExercises] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeExercise, setActiveExercise] = useState(null);
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  useEffect(() => {
-    // Fetch home exercises data
-    const fetchExercises = async () => {
-      try {
-        // This will be implemented with actual API calls
-        // For now, using mock data
-        setExercises([
-          {
-            id: 1,
-            name: 'Bead Threading',
-            category: 'Fine Motor',
-            description: 'Thread beads onto a string to improve hand-eye coordination and finger dexterity.',
-            instructions: [
-              'Hold the string with your non-dominant hand',
-              'Pick up beads one at a time with your dominant hand',
-              'Thread each bead onto the string',
-              'Continue until all beads are threaded',
-              'Practice for 10-15 minutes daily'
-            ],
-            duration: 15,
-            frequency: 'Daily',
-            difficulty: 'Beginner',
-            equipment: ['String', 'Beads'],
-            progress: 85,
-            lastCompleted: '2024-01-19',
-            streak: 5,
-            isCompleted: false
-          },
-          {
-            id: 2,
-            name: 'Pencil Grip Practice',
-            category: 'Fine Motor',
-            description: 'Practice proper pencil grip and writing exercises to improve handwriting skills.',
-            instructions: [
-              'Hold pencil with thumb, index, and middle finger',
-              'Practice writing letters and numbers',
-              'Focus on proper grip pressure',
-              'Use lined paper for guidance',
-              'Practice for 20 minutes daily'
-            ],
-            duration: 20,
-            frequency: 'Daily',
-            difficulty: 'Beginner',
-            equipment: ['Pencil', 'Paper', 'Eraser'],
-            progress: 70,
-            lastCompleted: '2024-01-18',
-            streak: 3,
-            isCompleted: false
-          },
-          {
-            id: 3,
-            name: 'Balance Beam Walking',
-            category: 'Gross Motor',
-            description: 'Walk along a balance beam to improve balance, coordination, and core strength.',
-            instructions: [
-              'Place a straight line on the floor (tape or chalk)',
-              'Walk heel-to-toe along the line',
-              'Keep arms out for balance',
-              'Look straight ahead, not down',
-              'Practice for 10 minutes daily'
-            ],
-            duration: 10,
-            frequency: 'Daily',
-            difficulty: 'Intermediate',
-            equipment: ['Tape or chalk line'],
-            progress: 60,
-            lastCompleted: '2024-01-17',
-            streak: 2,
-            isCompleted: false
-          },
-          {
-            id: 4,
-            name: 'Obstacle Course',
-            category: 'Gross Motor',
-            description: 'Navigate through an obstacle course to improve coordination and motor planning.',
-            instructions: [
-              'Set up simple obstacles (pillows, boxes, chairs)',
-              'Crawl under, step over, and go around obstacles',
-              'Practice different movement patterns',
-              'Increase difficulty gradually',
-              'Complete course 3-5 times daily'
-            ],
-            duration: 25,
-            frequency: 'Daily',
-            difficulty: 'Intermediate',
-            equipment: ['Pillows', 'Boxes', 'Chairs'],
-            progress: 45,
-            lastCompleted: '2024-01-16',
-            streak: 1,
-            isCompleted: false
-          },
-          {
-            id: 5,
-            name: 'Sensory Play',
-            category: 'Sensory Integration',
-            description: 'Explore different textures and materials to improve sensory processing.',
-            instructions: [
-              'Set up different textured materials (sand, rice, playdough)',
-              'Explore each texture with hands',
-              'Describe what you feel',
-              'Practice tolerance to different sensations',
-              'Spend 15 minutes daily exploring'
-            ],
-            duration: 15,
-            frequency: 'Daily',
-            difficulty: 'Beginner',
-            equipment: ['Sand', 'Rice', 'Playdough', 'Various textures'],
-            progress: 90,
-            lastCompleted: '2024-01-19',
-            streak: 7,
-            isCompleted: false
-          }
-        ]);
-
-        setIsLoading(false);
-      } catch (error) {
+  // Fetch home exercises data from API
+  const { data: exercisesData, isLoading, error } = useQuery(
+    'patientExercises',
+    patientAPI.getExercises,
+    {
+      onError: (error) => {
         console.error('Error fetching exercises:', error);
-        setIsLoading(false);
       }
-    };
+    }
+  );
 
-    fetchExercises();
-  }, []);
+  const exercises = Array.isArray(exercisesData?.data) ? exercisesData.data : [];
 
   useEffect(() => {
     let interval;
@@ -170,13 +59,8 @@ const HomeExercises = () => {
   };
 
   const completeExercise = (exerciseId) => {
-    setExercises(prev => 
-      prev.map(ex => 
-        ex.id === exerciseId 
-          ? { ...ex, isCompleted: true, progress: Math.min(100, ex.progress + 5) }
-          : ex
-      )
-    );
+    // TODO: Implement API call to update exercise completion
+    console.log('Exercise completed:', exerciseId);
     setActiveExercise(null);
     setTimer(0);
     setIsTimerRunning(false);

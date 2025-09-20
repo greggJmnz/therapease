@@ -276,6 +276,33 @@ const createTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // Home Exercises table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS home_exercises (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patientId INT NOT NULL,
+        therapistId INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        category VARCHAR(100) NOT NULL,
+        instructions JSON NOT NULL,
+        duration INT NOT NULL,
+        frequency VARCHAR(50) NOT NULL,
+        difficulty ENUM('Beginner', 'Intermediate', 'Advanced') NOT NULL,
+        equipment JSON,
+        progressScore INT DEFAULT 0,
+        lastCompleted DATE,
+        streak INT DEFAULT 0,
+        isCompleted BOOLEAN DEFAULT FALSE,
+        assignedDate DATE NOT NULL,
+        dueDate DATE,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
     // Notifications table
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS notifications (
@@ -285,8 +312,29 @@ const createTables = async () => {
         message TEXT NOT NULL,
         type VARCHAR(50) NOT NULL,
         isRead BOOLEAN DEFAULT FALSE,
+        relatedId INT,
+        smsMessageId VARCHAR(255),
+        smsStatus ENUM('pending', 'sent', 'delivered', 'failed', 'error') DEFAULT NULL,
+        smsSentAt TIMESTAMP NULL,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Push Subscriptions table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        endpoint TEXT NOT NULL,
+        p256dh VARCHAR(255),
+        auth VARCHAR(255),
+        userAgent TEXT,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_user_endpoint (userId, endpoint(255))
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 

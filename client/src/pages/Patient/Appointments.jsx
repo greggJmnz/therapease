@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { Calendar, Clock, User, MapPin, Plus, Edit, X } from 'lucide-react';
 import { patientAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const Appointments = () => {
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
-  const [therapists, setTherapists] = useState([]);
+  const [assignedTherapist, setAssignedTherapist] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const [selectedTherapist, setSelectedTherapist] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [reason, setReason] = useState('');
@@ -31,19 +32,44 @@ const Appointments = () => {
     }
   );
 
+  // Fetch patient profile to get assigned therapist
+  const { data: profileData, isLoading: profileLoading } = useQuery(
+    'patientProfile',
+    patientAPI.getProfile,
+    {
+      onSuccess: (data) => {
+        if (data?.data?.therapistId) {
+          setAssignedTherapist({
+            id: data.data.therapistId,
+            name: data.data.therapistName || 'Your Therapist',
+            specialization: data.data.therapistSpecialization || 'Occupational Therapy'
+          });
+        }
+      },
+      onError: (error) => {
+        console.error('Error fetching patient profile:', error);
+      }
+    }
+  );
+
   // Update state with API data
   React.useEffect(() => {
     if (appointmentsData?.data?.appointments) {
       setAppointments(appointmentsData.data.appointments);
     }
-    setIsLoading(appointmentsLoading);
-  }, [appointmentsData, appointmentsLoading]);
+    setIsLoading(appointmentsLoading || profileLoading);
+  }, [appointmentsData, appointmentsLoading, profileLoading]);
 
   const handleBooking = async (e) => {
     e.preventDefault();
     
-    if (!selectedTherapist || !selectedDate || !selectedTime || !reason) {
+    if (!selectedDate || !selectedTime || !reason) {
       toast.error('Please fill in all fields');
+      return;
+    }
+
+    if (!assignedTherapist) {
+      toast.error('No therapist assigned. Please contact support.');
       return;
     }
 
@@ -53,7 +79,7 @@ const Appointments = () => {
         id: Date.now(),
         date: selectedDate,
         time: selectedTime,
-        therapist: therapists.find(t => t.id === parseInt(selectedTherapist))?.name,
+        therapist: assignedTherapist.name,
         type: 'Regular Session',
         status: 'pending',
         location: 'Main Clinic - Room 3',
@@ -70,7 +96,6 @@ const Appointments = () => {
   };
 
   const resetForm = () => {
-    setSelectedTherapist('');
     setSelectedDate('');
     setSelectedTime('');
     setReason('');
@@ -151,24 +176,22 @@ const Appointments = () => {
                   </h3>
                   
                   <form onSubmit={handleBooking} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Select Therapist
-                      </label>
-                      <select
-                        value={selectedTherapist}
-                        onChange={(e) => setSelectedTherapist(e.target.value)}
-                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                        required
-                      >
-                        <option value="">Choose a therapist</option>
-                        {therapists.map((therapist) => (
-                          <option key={therapist.id} value={therapist.id}>
-                            {therapist.name} - {therapist.specialization}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* Display assigned therapist info */}
+                    {assignedTherapist && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                        <div className="flex items-center">
+                          <User className="h-5 w-5 text-blue-600 mr-2" />
+                          <div>
+                            <p className="text-sm font-medium text-blue-900">
+                              Your Assigned Therapist
+                            </p>
+                            <p className="text-sm text-blue-700">
+                              {assignedTherapist.name} - {assignedTherapist.specialization}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700">

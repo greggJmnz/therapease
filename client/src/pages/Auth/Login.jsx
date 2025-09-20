@@ -351,7 +351,7 @@ const Login = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="text-xs text-gray-600 font-mono whitespace-nowrap">
-                  admin@therapease.com / Admin123!@#
+                  admin@therapease.com / admin123
                 </div>
                 <div className="p-1 rounded-md bg-blue-100 group-hover:bg-blue-200 transition-colors">
                   {copiedAccount === 'Admin' ? (
@@ -366,7 +366,7 @@ const Login = () => {
             {/* Therapist Account */}
             <div 
               className="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-blue-100 hover:bg-white/80 hover:border-blue-200 transition-all duration-200 cursor-pointer group"
-              onClick={() => copyToClipboard('therapist@therapease.com', 'Therapist')}
+              onClick={() => copyToClipboard('dr.aleli.ong@therapease.com', 'Therapist')}
             >
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
@@ -374,7 +374,7 @@ const Login = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="text-xs text-gray-600 font-mono whitespace-nowrap">
-                  therapist@therapease.com / Therapist123!@#
+                  dr.aleli.ong@therapease.com / therapist123
                 </div>
                 <div className="p-1 rounded-md bg-blue-100 group-hover:bg-blue-200 transition-colors">
                   {copiedAccount === 'Therapist' ? (
@@ -389,7 +389,7 @@ const Login = () => {
             {/* Patient Account */}
             <div 
               className="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-blue-100 hover:bg-white/80 hover:border-blue-200 transition-all duration-200 cursor-pointer group"
-              onClick={() => copyToClipboard('emma@example.com', 'Patient')}
+              onClick={() => copyToClipboard('alexandra.santos@email.com', 'Patient')}
             >
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
@@ -397,7 +397,7 @@ const Login = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="text-xs text-gray-600 font-mono whitespace-nowrap">
-                  emma@example.com / Patient123!@#
+                  alexandra.santos@email.com / patient123
                 </div>
                 <div className="p-1 rounded-md bg-blue-100 group-hover:bg-blue-200 transition-colors">
                   {copiedAccount === 'Patient' ? (
@@ -405,6 +405,58 @@ const Login = () => {
                   ) : (
                     <Copy className="h-3 w-3 text-blue-600" />
                   )}
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Demo Accounts */}
+            <div className="pt-2 border-t border-blue-100">
+              <p className="text-xs text-blue-700 font-medium mb-2">More Demo Accounts:</p>
+              <p className="text-xs text-blue-600 mb-2">All therapists use: therapist123 | All patients use: patient123</p>
+              
+              {/* Additional Therapist */}
+              <div 
+                className="flex items-center justify-between p-2 bg-white/40 rounded-lg border border-blue-50 hover:bg-white/60 hover:border-blue-100 transition-all duration-200 cursor-pointer group mb-2"
+                onClick={() => copyToClipboard('dr.juan.cruz@therapease.com', 'Therapist 2')}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-green-400 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
+                  <span className="text-xs font-medium text-gray-600">Dr. Juan Cruz</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="text-xs text-gray-500 font-mono">
+                    dr.juan.cruz@therapease.com
+                  </div>
+                  <div className="p-0.5 rounded bg-blue-50 group-hover:bg-blue-100 transition-colors">
+                    {copiedAccount === 'Therapist 2' ? (
+                      <Check className="h-2.5 w-2.5 text-green-500" />
+                    ) : (
+                      <Copy className="h-2.5 w-2.5 text-blue-500" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Patient */}
+              <div 
+                className="flex items-center justify-between p-2 bg-white/40 rounded-lg border border-blue-50 hover:bg-white/60 hover:border-blue-100 transition-all duration-200 cursor-pointer group"
+                onClick={() => copyToClipboard('marcus.delacruz@email.com', 'Patient 2')}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
+                  <span className="text-xs font-medium text-gray-600">Marcus Dela Cruz</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="text-xs text-gray-500 font-mono">
+                    marcus.delacruz@email.com
+                  </div>
+                  <div className="p-0.5 rounded bg-blue-50 group-hover:bg-blue-100 transition-colors">
+                    {copiedAccount === 'Patient 2' ? (
+                      <Check className="h-2.5 w-2.5 text-green-500" />
+                    ) : (
+                      <Copy className="h-2.5 w-2.5 text-blue-500" />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -1141,30 +1141,27 @@ const getAssessments = async (req, res) => {
   }
 };
 
-// Get home exercises (mock data for now)
+// Get home exercises
 const getHomeExercises = async (req, res) => {
   try {
-    // Mock home exercises data
-    const exercises = [
-      {
-        id: 1,
-        title: "Fine Motor Skills Practice",
-        description: "Practice picking up small objects with thumb and index finger",
-        duration: "10 minutes",
-        frequency: "Daily",
-        instructions: "Use tweezers to pick up small beads and place them in a container",
-        difficulty: "Easy"
-      },
-      {
-        id: 2,
-        title: "Handwriting Practice",
-        description: "Practice writing letters and numbers",
-        duration: "15 minutes",
-        frequency: "Daily",
-        instructions: "Write each letter of the alphabet 5 times, focusing on proper formation",
-        difficulty: "Medium"
-      }
-    ];
+    const userId = req.user.userId;
+    
+    // Get patient ID
+    const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
+    if (!patient) {
+      return res.status(404).json({ success: false, error: 'Patient not found' });
+    }
+
+    // Get home exercises
+    const exercises = await getAll(`
+      SELECT 
+        id, title, description, category, instructions, duration, frequency, 
+        difficulty, equipment, progressScore, lastCompleted, streak, isCompleted, 
+        assignedDate, dueDate
+      FROM home_exercises
+      WHERE patientId = ?
+      ORDER BY assignedDate DESC
+    `, [patient.id]);
 
     res.json({
       success: true,

@@ -1,10 +1,25 @@
 const { runQuery, getRow, getAll } = require('../config/database');
+const smsService = require('../services/smsService');
+const webpush = require('web-push');
+const websocketService = require('../services/websocketService');
+
+// Configure web-push only if VAPID keys are available
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || 'mailto:admin@therapease.com',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+  console.log('✅ VAPID keys configured for push notifications');
+} else {
+  console.log('⚠️ VAPID keys not configured - push notifications disabled');
+}
 
 // Get notifications for a user
 const getNotifications = async (req, res) => {
   try {
     // Get user ID from request (in real app, get from auth token)
-    const userId = 2; // Hardcoded for now, should come from JWT token
+    const userId = req.user.userId;
     const { page = 1, limit = 20, type, isRead } = req.query;
     const offset = (page - 1) * limit;
 
@@ -117,7 +132,7 @@ const markAsRead = async (req, res) => {
 const markAllAsRead = async (req, res) => {
   try {
     // Get user ID from request (in real app, get from auth token)
-    const userId = 2; // Hardcoded for now, should come from JWT token
+    const userId = req.user.userId;
 
     // Mark all as read
     const result = await runQuery('UPDATE notifications SET isRead = 1 WHERE userId = ?', [userId]);
@@ -168,15 +183,44 @@ const deleteNotification = async (req, res) => {
 };
 
 // Create notification (for system use)
-const createNotification = async (userId, title, message, type = 'system') => {
+const createNotification = async (userId, title, message, type = 'system', options = {}) => {
   try {
     const insertSql = `
-      INSERT INTO notifications (userId, title, message, type)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO notifications (userId, title, message, type, relatedId)
+      VALUES (?, ?, ?, ?, ?)
     `;
 
-    const result = await runQuery(insertSql, [userId, title, message, type]);
-    return result.insertId;
+    const result = await runQuery(insertSql, [userId, title, message, type, options.relatedId || null]);
+    const notificationId = result.insertId;
+
+    // Send SMS if requested and user has phone number
+    if (options.sendSMS && options.phoneNumber) {
+      try {
+        const smsResult = await smsService.sendSMS(options.phoneNumber, message);
+        console.log('SMS sent:', smsResult);
+        
+        // Update notification with SMS status
+        if (smsResult.success) {
+          await runQuery(
+            'UPDATE notifications SET smsMessageId = ?, smsStatus = ? WHERE id = ?',
+            [smsResult.messageId, 'sent', notificationId]
+          );
+        } else {
+          await runQuery(
+            'UPDATE notifications SET smsStatus = ? WHERE id = ?',
+            ['failed', notificationId]
+          );
+        }
+      } catch (smsError) {
+        console.error('SMS send error:', smsError);
+        await runQuery(
+          'UPDATE notifications SET smsStatus = ? WHERE id = ?',
+          ['error', notificationId]
+        );
+      }
+    }
+
+    return notificationId;
 
   } catch (error) {
     console.error('Create notification error:', error);
@@ -185,19 +229,22 @@ const createNotification = async (userId, title, message, type = 'system') => {
 };
 
 // Create appointment reminder notification
-const createAppointmentReminder = async (appointmentId) => {
+const createAppointmentReminder = async (appointmentId, sendSMS = false) => {
   try {
-    // Get appointment details
+    // Get appointment details with user phone number
     const appointmentSql = `
       SELECT 
         a.appointmentDate,
         a.startTime,
         a.type,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
-        a.therapistId
+        a.therapistId,
+        u.phone as therapistPhone,
+        CONCAT(u.firstName, ' ', u.lastName) as therapistName
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
       JOIN users u ON p.userId = u.id
+      JOIN users t ON a.therapistId = t.id
       WHERE a.id = ?
     `;
 
@@ -208,7 +255,14 @@ const createAppointmentReminder = async (appointmentId) => {
     const message = `Reminder: You have a ${appointment.type} appointment with ${appointment.patientName} on ${appointment.appointmentDate} at ${appointment.startTime}`;
     const type = 'appointment';
 
-    return await createNotification(appointment.therapistId, title, message, type);
+    // Create notification with SMS if requested
+    const options = {
+      relatedId: appointmentId,
+      sendSMS: sendSMS,
+      phoneNumber: appointment.therapistPhone
+    };
+
+    return await createNotification(appointment.therapistId, title, message, type, options);
 
   } catch (error) {
     console.error('Create appointment reminder error:', error);
@@ -279,7 +333,7 @@ const createProgressReviewNotification = async (patientId, area) => {
 const getNotificationStats = async (req, res) => {
   try {
     // Get user ID from request (in real app, get from auth token)
-    const userId = 2; // Hardcoded for now, should come from JWT token
+    const userId = req.user.userId;
 
     // Get total notifications
     const totalSql = `
@@ -339,6 +393,296 @@ const getNotificationStats = async (req, res) => {
   }
 };
 
+// Send SMS notification directly
+const sendSMSNotification = async (req, res) => {
+  try {
+    const { phoneNumber, message, type = 'general' } = req.body;
+
+    if (!phoneNumber || !message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Phone number and message are required'
+      });
+    }
+
+    const result = await smsService.sendSMS(phoneNumber, message);
+    
+    res.json({
+      success: result.success,
+      message: result.success ? 'SMS sent successfully' : 'Failed to send SMS',
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Send SMS notification error:', error);
+    res.status(500).json({ success: false, error: 'Failed to send SMS notification' });
+  }
+};
+
+// Get SMS delivery status
+const getSMSDeliveryStatus = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    if (!messageId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message ID is required'
+      });
+    }
+
+    const result = await smsService.getDeliveryStatus(messageId);
+    
+    res.json({
+      success: result.success,
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Get SMS delivery status error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get SMS delivery status' });
+  }
+};
+
+// Get SMS account balance
+const getSMSBalance = async (req, res) => {
+  try {
+    const result = await smsService.getAccountBalance();
+    
+    res.json({
+      success: result.success,
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Get SMS balance error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get SMS balance' });
+  }
+};
+
+// Test SMS service
+const testSMSService = async (req, res) => {
+  try {
+    const result = await smsService.testConnection();
+    
+    res.json({
+      success: result.success,
+      message: result.message,
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Test SMS service error:', error);
+    res.status(500).json({ success: false, error: 'Failed to test SMS service' });
+  }
+};
+
+// Handle SMS delivery status webhook
+const handleSMSDeliveryStatus = async (req, res) => {
+  try {
+    const { results } = req.body;
+
+    if (!results || !Array.isArray(results)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid delivery status data'
+      });
+    }
+
+    // Process each delivery status update
+    for (const result of results) {
+      const { messageId, status } = result;
+      
+      if (messageId && status) {
+        // Update notification with delivery status
+        await runQuery(
+          'UPDATE notifications SET smsStatus = ? WHERE smsMessageId = ?',
+          [status.statusName, messageId]
+        );
+        
+        console.log(`SMS delivery status updated: ${messageId} - ${status.statusName}`);
+      }
+    }
+
+    res.json({ success: true, message: 'Delivery status updated' });
+
+  } catch (error) {
+    console.error('Handle SMS delivery status error:', error);
+    res.status(500).json({ success: false, error: 'Failed to handle delivery status' });
+  }
+};
+
+// Subscribe to push notifications
+const subscribeToPush = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { subscription, userAgent, endpoint } = req.body;
+
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid subscription data'
+      });
+    }
+
+    // Store subscription in database
+    const insertSql = `
+      INSERT INTO push_subscriptions (userId, endpoint, p256dh, auth, userAgent, createdAt)
+      VALUES (?, ?, ?, ?, ?, NOW())
+      ON DUPLICATE KEY UPDATE
+        p256dh = VALUES(p256dh),
+        auth = VALUES(auth),
+        userAgent = VALUES(userAgent),
+        updatedAt = NOW()
+    `;
+
+    await runQuery(insertSql, [
+      userId,
+      subscription.endpoint,
+      subscription.keys?.p256dh,
+      subscription.keys?.auth,
+      userAgent
+    ]);
+
+    console.log(`✅ Push subscription stored for user ${userId}`);
+
+    res.json({
+      success: true,
+      message: 'Push subscription successful'
+    });
+
+  } catch (error) {
+    console.error('Push subscription error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to subscribe to push notifications'
+    });
+  }
+};
+
+// Unsubscribe from push notifications
+const unsubscribeFromPush = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Remove subscription from database
+    await runQuery(
+      'DELETE FROM push_subscriptions WHERE userId = ?',
+      [userId]
+    );
+
+    console.log(`✅ Push subscription removed for user ${userId}`);
+
+    res.json({
+      success: true,
+      message: 'Push unsubscription successful'
+    });
+
+  } catch (error) {
+    console.error('Push unsubscription error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to unsubscribe from push notifications'
+    });
+  }
+};
+
+// Send push notification
+const sendPushNotification = async (userId, title, message, options = {}) => {
+  try {
+    // Check if VAPID keys are configured
+    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+      console.log('Push notifications disabled - VAPID keys not configured');
+      return { success: false, message: 'Push notifications not configured' };
+    }
+
+    // Get user's push subscription
+    const subscription = await getRow(
+      'SELECT * FROM push_subscriptions WHERE userId = ?',
+      [userId]
+    );
+
+    if (!subscription) {
+      console.log(`No push subscription found for user ${userId}`);
+      return { success: false, message: 'No push subscription found' };
+    }
+
+    const payload = JSON.stringify({
+      title,
+      body: message,
+      icon: options.icon || '/favicon.ico',
+      badge: options.badge || '/favicon.ico',
+      tag: options.tag || 'therapease-notification',
+      requireInteraction: options.requireInteraction || false,
+      silent: options.silent || false,
+      data: {
+        url: options.url || '/notifications',
+        timestamp: Date.now(),
+        ...options.data
+      },
+      actions: options.actions || [
+        {
+          action: 'view',
+          title: 'View',
+          icon: '/icons/view.png'
+        },
+        {
+          action: 'dismiss',
+          title: 'Dismiss',
+          icon: '/icons/dismiss.png'
+        }
+      ]
+    });
+
+    const pushSubscription = {
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: subscription.p256dh,
+        auth: subscription.auth
+      }
+    };
+
+    await webpush.sendNotification(pushSubscription, payload);
+    
+    console.log(`✅ Push notification sent to user ${userId}`);
+    return { success: true, message: 'Push notification sent' };
+
+  } catch (error) {
+    console.error('Push notification error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+// Broadcast push notification to multiple users
+const broadcastPushNotification = async (userIds, title, message, options = {}) => {
+  const results = [];
+  
+  for (const userId of userIds) {
+    const result = await sendPushNotification(userId, title, message, options);
+    results.push({ userId, ...result });
+  }
+  
+  return results;
+};
+
+// Send push notification to role
+const sendPushToRole = async (role, title, message, options = {}) => {
+  try {
+    // Get all users with the specified role
+    const users = await getAll(
+      'SELECT id FROM users WHERE role = ?',
+      [role]
+    );
+
+    const userIds = users.map(user => user.id);
+    return await broadcastPushNotification(userIds, title, message, options);
+
+  } catch (error) {
+    console.error('Push notification to role error:', error);
+    return { success: false, message: error.message };
+  }
+};
+
 module.exports = {
   getNotifications,
   markAsRead,
@@ -348,6 +692,16 @@ module.exports = {
   createAppointmentReminder,
   createAssessmentDueNotification,
   createProgressReviewNotification,
-  getNotificationStats
+  getNotificationStats,
+  sendSMSNotification,
+  getSMSDeliveryStatus,
+  getSMSBalance,
+  testSMSService,
+  handleSMSDeliveryStatus,
+  subscribeToPush,
+  unsubscribeFromPush,
+  sendPushNotification,
+  broadcastPushNotification,
+  sendPushToRole
 };
 

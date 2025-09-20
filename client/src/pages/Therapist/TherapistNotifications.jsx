@@ -16,8 +16,10 @@ import {
   Target,
   Star,
   Trash2,
-  Archive
+  Archive,
+  Loader2
 } from 'lucide-react';
+import { useNotifications } from '../../hooks/useNotifications';
 
 const TherapistNotifications = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,146 +29,43 @@ const TherapistNotifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Mock notifications data
-  const notifications = [
-    {
-      id: 1,
-      type: 'appointment',
-      title: 'Appointment Reminder',
-      message: 'You have a session with Alex Santos in 30 minutes (Room 101)',
-      priority: 'high',
-      read: false,
-      date: '2025-01-25',
-      time: '08:30 AM',
-      patient: 'Alex Santos',
-      action: 'View Details',
-      icon: Calendar
-    },
-    {
-      id: 2,
-      type: 'patient',
-      title: 'Patient Progress Update',
-      message: 'Maria Cruz has completed her weekly exercises. Review progress report.',
-      priority: 'medium',
-      read: false,
-      date: '2025-01-25',
-      time: '09:15 AM',
-      patient: 'Maria Cruz',
-      action: 'Review Report',
-      icon: Target
-    },
-    {
-      id: 3,
-      type: 'system',
-      title: 'System Maintenance',
-      message: 'Scheduled maintenance tonight from 10 PM to 2 AM. Some features may be unavailable.',
-      priority: 'low',
-      read: true,
-      date: '2025-01-25',
-      time: '10:00 AM',
-      patient: null,
-      action: 'Learn More',
-      icon: Info
-    },
-    {
-      id: 4,
-      type: 'message',
-      title: 'New Message from Parent',
-      message: 'Kyle Gonzales\' parent sent a message regarding next week\'s session.',
-      priority: 'medium',
-      read: true,
-      date: '2025-01-24',
-      time: '03:45 PM',
-      patient: 'Kyle Gonzales',
-      action: 'Read Message',
-      icon: MessageSquare
-    },
-    {
-      id: 5,
-      type: 'assessment',
-      title: 'Assessment Due',
-      message: 'Quarterly assessment for Sophia Ramos is due next week. Schedule assessment session.',
-      priority: 'high',
-      read: false,
-      date: '2025-01-24',
-      time: '02:30 PM',
-      patient: 'Sophia Ramos',
-      action: 'Schedule Assessment',
-      icon: FileText
-    },
-    {
-      id: 6,
-      type: 'reminder',
-      title: 'Document Review',
-      message: 'Daily notes for yesterday\'s sessions need to be completed and submitted.',
-      priority: 'medium',
-      read: true,
-      date: '2025-01-24',
-      time: '11:20 AM',
-      patient: null,
-      action: 'Complete Notes',
-      icon: FileText
-    },
-    {
-      id: 7,
-      type: 'achievement',
-      title: 'Patient Milestone',
-      message: 'Congratulations! Alex Santos has achieved his fine motor skills goal.',
-      priority: 'low',
-      read: false,
-      date: '2025-01-23',
-      time: '04:15 PM',
-      patient: 'Alex Santos',
-      action: 'View Achievement',
-      icon: Star
-    },
-    {
-      id: 8,
-      type: 'schedule',
-      title: 'Schedule Change',
-      message: 'Your 2 PM session has been rescheduled to 3 PM due to room availability.',
-      priority: 'medium',
-      read: true,
-      date: '2025-01-23',
-      time: '01:30 PM',
-      patient: 'Kyle Gonzales',
-      action: 'Update Schedule',
-      icon: Calendar
-    }
-  ];
+  const {
+    notifications,
+    isLoading,
+    error,
+    stats,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    refreshNotifications,
+    isMarkingAsRead,
+    isDeleting
+  } = useNotifications({
+    filter: filterStatus === 'all' ? 'all' : filterStatus === 'unread' ? 'unread' : 'read'
+  });
 
+  // Filter notifications based on search and filters
   const filteredNotifications = notifications.filter(notification => {
     const matchesSearch = notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         notification.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (notification.patient && notification.patient.toLowerCase().includes(searchTerm.toLowerCase()));
+                         notification.message.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = filterPriority === 'all' || notification.priority === filterPriority;
     const matchesType = filterType === 'all' || notification.type === filterType;
     const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'read' && notification.read) ||
-                         (filterStatus === 'unread' && !notification.read);
+                         (filterStatus === 'read' && notification.isRead) ||
+                         (filterStatus === 'unread' && !notification.isRead);
     return matchesSearch && matchesPriority && matchesType && matchesStatus;
   });
 
-  const stats = {
-    total: notifications.length,
-    unread: notifications.filter(n => !n.read).length,
-    highPriority: notifications.filter(n => n.priority === 'high').length,
-    today: notifications.filter(n => n.date === '2025-01-25').length
+  const handleMarkAsRead = (id) => {
+    markAsRead(id);
   };
 
-  const markAsRead = (id) => {
-    // In a real app, this would update the backend
-    console.log('Marked as read:', id);
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
   };
 
-  const markAllAsRead = () => {
-    // In a real app, this would update the backend
-    console.log('Marked all as read');
-  };
-
-  const deleteNotification = (id) => {
-    // In a real app, this would update the backend
-    console.log('Deleted notification:', id);
+  const handleDelete = (id) => {
+    deleteNotification(id);
   };
 
   const getPriorityColor = (priority) => {
@@ -218,6 +117,35 @@ const TherapistNotifications = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          <p className="text-gray-600">Loading notifications...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Notifications</h3>
+          <p className="text-gray-600 mb-4">{error.message || 'Failed to load notifications'}</p>
+          <button
+            onClick={refreshNotifications}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Stats Grid */}
@@ -238,7 +166,7 @@ const TherapistNotifications = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Unread</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.unread}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.unreadCount}</p>
             </div>
             <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
               <AlertCircle className="w-6 h-6 text-red-600" />

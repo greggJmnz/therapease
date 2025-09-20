@@ -171,18 +171,16 @@ const AdminDashboard = () => {
       image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face'
     }));
 
-  // Extract notifications from API response
-  const notifications = notificationsData?.data?.notifications || [
-    {
-      id: 1,
-      type: 'system',
-      title: 'System Status',
-      message: 'All systems are running normally',
-      time: 'Just now',
-      priority: 'low',
-      read: false
-    }
-  ];
+  // Extract notifications from API response and map to expected format
+  const notifications = (notificationsData?.data?.notifications || []).map(notification => ({
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    message: notification.message,
+    time: new Date(notification.createdAt).toLocaleString(),
+    priority: notification.type === 'system' ? 'high' : notification.type === 'appointment' ? 'medium' : 'low',
+    read: notification.isRead === 1
+  }));
 
   // Generate real data for charts based on API data
   const generatePatientGrowthData = () => {

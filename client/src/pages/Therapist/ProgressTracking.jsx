@@ -62,55 +62,58 @@ const ProgressTracking = () => {
     }
   }, [patientsData]);
 
-  useEffect(() => {
-    // Fetch progress data for selected patient
-    const fetchProgressData = async () => {
-      if (!selectedPatient) return;
-      
-      try {
-        // This will be implemented with actual API calls
-        // For now, using mock data
-        setProgressData({
-          fineMotor: { current: 85, target: 90, trend: 'up' },
-          balance: { current: 72, target: 80, trend: 'up' },
-          sensory: { current: 68, target: 75, trend: 'up' },
-          cognitive: { current: 78, target: 85, trend: 'up' }
-        });
-
-        setMilestones([
-          {
-            id: 1,
-            title: 'Improved Pencil Grip',
-            description: 'Successfully holding pencil with proper grip for 10 minutes',
-            targetDate: '2024-02-01',
-            category: 'Fine Motor',
-            status: 'achieved',
-            achievedDate: '2024-01-15'
-          },
-          {
-            id: 2,
-            title: 'Balanced Walking',
-            description: 'Walking on balance beam without assistance',
-            targetDate: '2024-02-15',
-            category: 'Balance & Coordination',
-            status: 'achieved',
-            achievedDate: '2024-01-10'
-          },
-          {
-            id: 3,
-            title: 'Sensory Regulation',
-            description: 'Using sensory tools independently for self-regulation',
-            targetDate: '2024-03-01',
-            category: 'Sensory Processing',
-            status: 'in-progress'
-          }
-        ]);
-      } catch (error) {
+  // Fetch progress data for selected patient
+  const { data: progressApiData, isLoading: progressLoading } = useQuery(
+    ['patientProgress', selectedPatient?.id],
+    () => {
+      if (!selectedPatient) return null;
+      return therapistAPI.getPatientProgressSummary(selectedPatient.id);
+    },
+    {
+      enabled: !!selectedPatient,
+      onSuccess: (data) => {
+        if (data?.data) {
+          setProgressData(data.data);
+        }
+      },
+      onError: (error) => {
         console.error('Error fetching progress data:', error);
       }
-    };
+    }
+  );
 
-    fetchProgressData();
+  useEffect(() => {
+    if (!selectedPatient) return;
+    
+    // Set mock milestones for now - this should be replaced with real API data
+    setMilestones([
+      {
+        id: 1,
+        title: 'Improved Pencil Grip',
+        description: 'Successfully holding pencil with proper grip for 10 minutes',
+        targetDate: '2024-02-01',
+        category: 'Fine Motor',
+        status: 'achieved',
+        achievedDate: '2024-01-15'
+      },
+      {
+        id: 2,
+        title: 'Balanced Walking',
+        description: 'Walking on balance beam without assistance',
+        targetDate: '2024-02-15',
+        category: 'Balance & Coordination',
+        status: 'achieved',
+        achievedDate: '2024-01-10'
+      },
+      {
+        id: 3,
+        title: 'Sensory Regulation',
+        description: 'Using sensory tools independently for self-regulation',
+        targetDate: '2024-03-01',
+        category: 'Sensory Processing',
+        status: 'in-progress'
+      }
+    ]);
   }, [selectedPatient]);
 
   const handleMilestoneSubmit = async (e) => {

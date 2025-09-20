@@ -63,7 +63,7 @@ export const adminAPI = {
   getTherapists: () => api.get(`/admin/therapists?role=therapist&_t=${Date.now()}`),
   getAppointments: () => api.get(`/admin/appointments?_t=${Date.now()}`),
   getReports: () => api.get(`/admin/reports?_t=${Date.now()}`),
-  getNotifications: () => api.get(`/admin/notifications?_t=${Date.now()}`),
+  getNotifications: () => api.get(`/notifications?_t=${Date.now()}`),
   getSettings: () => api.get(`/admin/settings?_t=${Date.now()}`),
   
   // Profile management
@@ -98,7 +98,8 @@ export const therapistAPI = {
   getDailyNotes: () => api.get(`/therapist/daily-notes?_t=${Date.now()}`),
   getAIInsights: () => api.get(`/therapist/ai-insights?_t=${Date.now()}`),
   getProgressTracking: () => api.get(`/therapist/progress-tracking?_t=${Date.now()}`),
-  getNotifications: () => api.get(`/therapist/notifications?_t=${Date.now()}`),
+  getPatientProgressSummary: (patientId) => api.get(`/therapist/progress-tracking/patient/${patientId}?_t=${Date.now()}`),
+  getNotifications: () => api.get(`/notifications?_t=${Date.now()}`),
   getSettings: () => api.get(`/therapist/settings?_t=${Date.now()}`),
   
   // Profile management
@@ -133,7 +134,7 @@ export const patientAPI = {
   deleteNoteComment: (noteId, commentId) => api.delete(`/patient/daily-notes/${noteId}/comments/${commentId}`),
   getSessions: () => api.get(`/patient/sessions?_t=${Date.now()}`),
   getAssessments: () => api.get(`/patient/assessments?_t=${Date.now()}`),
-  getNotifications: () => api.get(`/patient/notifications?_t=${Date.now()}`),
+  getNotifications: () => api.get(`/notifications?_t=${Date.now()}`),
   getSettings: () => api.get(`/patient/settings?_t=${Date.now()}`),
   getHomeExercises: () => api.get(`/patient/exercises?_t=${Date.now()}`),
   

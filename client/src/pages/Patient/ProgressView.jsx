@@ -1,97 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Target, Calendar, Award, Eye } from 'lucide-react';
+import { useQuery } from 'react-query';
+import { patientAPI } from '../../services/api';
 
 const ProgressView = () => {
-  const [progressData, setProgressData] = useState({});
   const [milestones, setMilestones] = useState([]);
   const [recentAssessments, setRecentAssessments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Fetch progress data
-    const fetchProgressData = async () => {
-      try {
-        // This will be implemented with actual API calls
-        // For now, using mock data
-        setProgressData({
-          fineMotor: { current: 85, target: 90, trend: 'up' },
-          balance: { current: 72, target: 80, trend: 'up' },
-          sensory: { current: 68, target: 75, trend: 'up' },
-          communication: { current: 78, target: 85, trend: 'stable' },
-          social: { current: 82, target: 88, trend: 'up' }
-        });
-
-        setMilestones([
-          {
-            id: 1,
-            title: 'Improved Pencil Grip',
-            description: 'Successfully holding pencil with proper grip for 10 minutes',
-            date: '2024-01-15',
-            category: 'Fine Motor',
-            achieved: true
-          },
-          {
-            id: 2,
-            title: 'Balanced Walking',
-            description: 'Walking on balance beam without assistance',
-            date: '2024-01-10',
-            category: 'Balance',
-            achieved: true
-          },
-          {
-            id: 3,
-            title: 'Sensory Tolerance',
-            description: 'Increased tolerance to loud sounds and bright lights',
-            date: '2024-01-08',
-            category: 'Sensory',
-            achieved: true
-          },
-          {
-            id: 4,
-            title: 'Independent Dressing',
-            description: 'Putting on shirt and pants without help',
-            date: '2024-01-20',
-            category: 'Daily Living',
-            achieved: false
-          }
-        ]);
-
-        setRecentAssessments([
-          {
-            id: 1,
-            date: '2024-01-15',
-            type: 'Fine Motor Assessment',
-            score: '85%',
-            therapist: 'Dr. Sarah Wilson',
-            notes: 'Significant improvement in hand-eye coordination'
-          },
-          {
-            id: 2,
-            date: '2024-01-08',
-            type: 'Sensory Processing Assessment',
-            score: '68%',
-            therapist: 'Dr. Sarah Wilson',
-            notes: 'Good progress in auditory processing'
-          },
-          {
-            id: 3,
-            date: '2024-01-01',
-            type: 'Balance Assessment',
-            score: '72%',
-            therapist: 'Dr. Sarah Wilson',
-            notes: 'Improved static balance, dynamic balance needs work'
-          }
-        ]);
-
-        setIsLoading(false);
-      } catch (error) {
+  // Fetch progress data from API
+  const { data: progressData, isLoading: progressLoading, error: progressError } = useQuery(
+    'patientProgress',
+    patientAPI.getProgress,
+    {
+      onError: (error) => {
         console.error('Error fetching progress data:', error);
-        setIsLoading(false);
       }
-    };
+    }
+  );
 
-    fetchProgressData();
-  }, []);
+  // Fetch assessments data for recent assessments
+  const { data: assessmentsData, isLoading: assessmentsLoading } = useQuery(
+    'patientAssessments',
+    patientAPI.getAssessments,
+    {
+      onSuccess: (data) => {
+        // Set recent assessments from API data
+        const assessments = Array.isArray(data?.data) ? data.data : [];
+        setRecentAssessments(assessments.slice(0, 3));
+      },
+      onError: (error) => {
+        console.error('Error fetching assessments:', error);
+      }
+    }
+  );
+
+  const isLoading = progressLoading || assessmentsLoading;
+
+  // Transform progress data from array to object format for display
+  const progressDataObject = React.useMemo(() => {
+    if (!Array.isArray(progressData?.data)) return {};
+    
+    const transformed = {};
+    progressData.data.forEach(entry => {
+      transformed[entry.area] = {
+        current: entry.currentScore,
+        target: entry.targetScore,
+        trend: entry.currentScore > entry.baselineScore ? 'up' : 
+               entry.currentScore < entry.baselineScore ? 'down' : 'stable'
+      };
+    });
+    return transformed;
+  }, [progressData]);
 
   const getTrendIcon = (trend) => {
     switch (trend) {
@@ -136,7 +95,7 @@ const ProgressView = () => {
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Progress Overview</h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Object.entries(progressData).map(([skill, data]) => (
+          {Object.entries(progressDataObject).map(([skill, data]) => (
             <div key={skill} className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium text-gray-900 capitalize">

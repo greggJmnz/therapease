@@ -27,6 +27,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const therapistRoutes = require('./routes/therapistRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const smsRoutes = require('./routes/smsRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Security Middleware
 app.use(helmet({
@@ -112,6 +114,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/therapist', therapistRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/notifications/sms', smsRoutes);
 
 // Error handling middleware
 app.use(handleEncryptionError);

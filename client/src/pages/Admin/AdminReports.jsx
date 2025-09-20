@@ -110,54 +110,12 @@ const AdminReports = () => {
   
   console.log('Final Stats:', stats);
 
-  // Generate fallback data if API data is empty
-  const generateFallbackData = () => {
-    const currentDate = new Date();
-    const months = [];
-    
-    // Generate last 6 months of data
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-      months.push({
-        month: monthName,
-        patients: Math.floor(Math.random() * 10) + 5,
-        therapists: Math.floor(Math.random() * 3) + 2,
-        appointments: Math.floor(Math.random() * 20) + 15,
-        assessments: Math.floor(Math.random() * 15) + 10
-      });
-    }
-    
-    return {
-      userGrowth: months,
-      appointmentStats: [
-        { status: 'confirmed', count: Math.floor(Math.random() * 50) + 30 },
-        { status: 'scheduled', count: Math.floor(Math.random() * 20) + 10 },
-        { status: 'cancelled', count: Math.floor(Math.random() * 10) + 5 }
-      ],
-      assessmentStats: [
-        { status: 'completed', count: Math.floor(Math.random() * 30) + 20 },
-        { status: 'pending', count: Math.floor(Math.random() * 15) + 5 }
-      ],
-      systemHealth: {
-        newAppointmentsThisWeek: Math.floor(Math.random() * 10) + 5,
-        newDailyNotesThisWeek: Math.floor(Math.random() * 20) + 10
-      },
-      recentUsers: Array.from({ length: 10 }, (_, i) => ({
-        id: i + 1,
-        role: ['patient', 'therapist', 'admin'][Math.floor(Math.random() * 3)],
-        dateOfBirth: new Date(1990 + Math.floor(Math.random() * 30), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1)
-      }))
-    };
-  };
-
-  // Extract real data from APIs or use fallback
-  const fallbackData = generateFallbackData();
-  const userGrowth = dashboardData?.data?.userGrowth || fallbackData.userGrowth;
-  const appointmentStats = dashboardData?.data?.appointmentStats || fallbackData.appointmentStats;
-  const assessmentStats = dashboardData?.data?.assessmentStats || fallbackData.assessmentStats;
-  const systemHealth = dashboardData?.data?.systemHealth || fallbackData.systemHealth;
-  const recentUsers = dashboardData?.data?.recentUsers || fallbackData.recentUsers;
+  // Extract real data from APIs
+  const userGrowth = dashboardData?.data?.userGrowth || [];
+  const appointmentStats = dashboardData?.data?.appointmentStats || [];
+  const assessmentStats = dashboardData?.data?.assessmentStats || [];
+  const systemHealth = dashboardData?.data?.systemHealth || {};
+  const recentUsers = dashboardData?.data?.recentUsers || [];
   
   // Extract real users data for demographics and role distribution
   const allPatients = Array.isArray(patientsData?.data?.patients) ? patientsData.data.patients : 
@@ -176,9 +134,9 @@ const AdminReports = () => {
 
   // Extract reports data with fallback
   
-  const reportsUserGrowth = reportsData?.data?.userGrowth || fallbackData.userGrowth;
-  const assessmentTrends = reportsData?.data?.assessmentTrends || fallbackData.assessmentStats;
-  const appointmentTrends = reportsData?.data?.appointmentTrends || fallbackData.appointmentStats;
+  const reportsUserGrowth = reportsData?.data?.userGrowth || [];
+  const assessmentTrends = reportsData?.data?.assessmentTrends || [];
+  const appointmentTrends = reportsData?.data?.appointmentTrends || [];
   const dailyNotesTrends = reportsData?.data?.dailyNotesTrends || [];
   
   console.log('Reports User Growth:', reportsUserGrowth);

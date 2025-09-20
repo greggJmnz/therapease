@@ -1,95 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, Calendar, User, FileText, Target, AlertCircle, CheckCircle, Info, Clock, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, Calendar, User, FileText, Target, AlertCircle, CheckCircle, Info, Clock, X, Loader2 } from 'lucide-react';
+import { useNotifications } from '../../hooks/useNotifications';
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, unread, read
-
-  useEffect(() => {
-    // Fetch notifications data
-    const fetchNotifications = async () => {
-      try {
-        // This will be implemented with actual API calls
-        // For now, using mock data
-        setNotifications([
-          {
-            id: 1,
-            type: 'appointment',
-            title: 'Appointment Reminder',
-            message: 'Your therapy session is scheduled for tomorrow at 9:00 AM with Dr. Sarah Wilson.',
-            date: '2024-01-19T10:00:00Z',
-            isRead: false,
-            priority: 'high',
-            action: 'View Appointment',
-            actionUrl: '/appointments'
-          },
-          {
-            id: 2,
-            type: 'assessment',
-            title: 'New Assessment Available',
-            message: 'A new progress assessment has been scheduled for next week. Please review your goals.',
-            date: '2024-01-18T14:30:00Z',
-            isRead: false,
-            priority: 'medium',
-            action: 'View Assessment',
-            actionUrl: '/assessments'
-          },
-          {
-            id: 3,
-            type: 'note',
-            title: 'New Therapy Note',
-            message: 'Dr. Sarah Wilson has added a new note from your recent session. Review the progress and recommendations.',
-            date: '2024-01-17T16:45:00Z',
-            isRead: true,
-            priority: 'medium',
-            action: 'View Note',
-            actionUrl: '/daily-notes'
-          },
-          {
-            id: 4,
-            type: 'progress',
-            title: 'Progress Update',
-            message: 'Great news! You\'ve achieved 3 new milestones this month. Check your progress dashboard.',
-            date: '2024-01-16T09:15:00Z',
-            isRead: true,
-            priority: 'low',
-            action: 'View Progress',
-            actionUrl: '/progress'
-          },
-          {
-            id: 5,
-            type: 'exercise',
-            title: 'Home Exercise Reminder',
-            message: 'Don\'t forget to complete your daily home exercises. Consistency is key to progress!',
-            date: '2024-01-15T08:00:00Z',
-            isRead: true,
-            priority: 'medium',
-            action: 'View Exercises',
-            actionUrl: '/exercises'
-          },
-          {
-            id: 6,
-            type: 'system',
-            title: 'System Maintenance',
-            message: 'TherapEase will be undergoing scheduled maintenance tonight from 2:00 AM to 4:00 AM EST.',
-            date: '2024-01-14T12:00:00Z',
-            isRead: true,
-            priority: 'low',
-            action: null,
-            actionUrl: null
-          }
-        ]);
-
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchNotifications();
-  }, []);
+  const {
+    notifications,
+    isLoading,
+    error,
+    stats,
+    filter,
+    setFilter,
+    searchTerm,
+    setSearchTerm,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    refreshNotifications,
+    isMarkingAsRead,
+    isDeleting
+  } = useNotifications();
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -142,6 +71,119 @@ const Notifications = () => {
     }
   };
 
+  const getActionButton = (notification) => {
+    // Generate action button based on notification type
+    switch (notification.type) {
+      case 'appointment':
+        return (
+          <button
+            onClick={() => {
+              // Navigate to appointments page
+              window.location.href = '/patient/appointments';
+              handleMarkAsRead(notification.id);
+            }}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Calendar className="h-3 w-3 mr-1" />
+            View Appointment
+          </button>
+        );
+      case 'assessment':
+        return (
+          <button
+            onClick={() => {
+              // Navigate to assessments page
+              window.location.href = '/patient/assessments';
+              handleMarkAsRead(notification.id);
+            }}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            <FileText className="h-3 w-3 mr-1" />
+            View Assessment
+          </button>
+        );
+      case 'progress':
+        return (
+          <button
+            onClick={() => {
+              // Navigate to progress page
+              window.location.href = '/patient/progress';
+              handleMarkAsRead(notification.id);
+            }}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-orange-700 bg-orange-100 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+          >
+            <Target className="h-3 w-3 mr-1" />
+            View Progress
+          </button>
+        );
+      case 'note':
+        return (
+          <button
+            onClick={() => {
+              // Navigate to daily notes page
+              window.location.href = '/patient/daily-notes';
+              handleMarkAsRead(notification.id);
+            }}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+          >
+            <FileText className="h-3 w-3 mr-1" />
+            View Notes
+          </button>
+        );
+      case 'exercise':
+        return (
+          <button
+            onClick={() => {
+              // Navigate to exercises page
+              window.location.href = '/patient/exercises';
+              handleMarkAsRead(notification.id);
+            }}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <Target className="h-3 w-3 mr-1" />
+            View Exercises
+          </button>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) {
+      return 'Just now';
+    } else if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  const getNotificationPriority = (type) => {
+    switch (type) {
+      case 'appointment':
+        return 'high';
+      case 'assessment':
+        return 'high';
+      case 'progress':
+        return 'medium';
+      case 'note':
+        return 'medium';
+      case 'exercise':
+        return 'low';
+      case 'system':
+        return 'low';
+      default:
+        return 'low';
+    }
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high':
@@ -155,51 +197,57 @@ const Notifications = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays === 0) return 'Today';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    
-    return date.toLocaleDateString();
+
+  const handleMarkAsRead = (notificationId) => {
+    markAsRead(notificationId);
   };
 
-  const markAsRead = (notificationId) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === notificationId 
-          ? { ...notif, isRead: true }
-          : notif
-      )
-    );
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notif => ({ ...notif, isRead: true }))
-    );
+  const handleDelete = (notificationId) => {
+    deleteNotification(notificationId);
   };
 
-  const deleteNotification = (notificationId) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
-  };
-
-  const filteredNotifications = notifications.filter(notification => {
-    if (filter === 'unread') return !notification.isRead;
-    if (filter === 'read') return notification.isRead;
-    return true;
-  });
+  const filteredNotifications = notifications
+    .map(notification => ({
+      ...notification,
+      priority: getNotificationPriority(notification.type)
+    }))
+    .filter(notification => {
+      if (filter === 'unread') return !notification.isRead;
+      if (filter === 'read') return notification.isRead;
+      return true;
+    });
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          <p className="text-gray-600">Loading notifications...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Notifications</h3>
+          <p className="text-gray-600 mb-4">{error.message || 'Failed to load notifications'}</p>
+          <button
+            onClick={refreshNotifications}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -215,16 +263,24 @@ const Notifications = () => {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          {unreadCount > 0 && (
+          {stats.unreadCount > 0 && (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-              {unreadCount} unread
+              {stats.unreadCount} unread
             </span>
           )}
           <button
-            onClick={markAllAsRead}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            onClick={handleMarkAllAsRead}
+            disabled={isMarkingAsRead}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            Mark all as read
+            {isMarkingAsRead ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Marking...
+              </>
+            ) : (
+              'Mark all as read'
+            )}
           </button>
         </div>
       </div>
@@ -240,7 +296,7 @@ const Notifications = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            All ({notifications.length})
+            All ({stats.total})
           </button>
           <button
             onClick={() => setFilter('unread')}
@@ -250,7 +306,7 @@ const Notifications = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Unread ({unreadCount})
+            Unread ({stats.unreadCount})
           </button>
           <button
             onClick={() => setFilter('read')}
@@ -260,7 +316,7 @@ const Notifications = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Read ({notifications.filter(n => n.isRead).length})
+            Read ({stats.total - stats.unreadCount})
           </button>
         </nav>
       </div>
@@ -303,7 +359,7 @@ const Notifications = () => {
                     </p>
                     
                     <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <span>{formatDate(notification.date)}</span>
+                      <span>{formatDate(notification.createdAt)}</span>
                       {!notification.isRead && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           New
@@ -314,19 +370,34 @@ const Notifications = () => {
                 </div>
                 
                 <div className="flex items-center space-x-2 ml-4">
-                  {notification.action && (
+                  {/* Generate action button based on notification type */}
+                  {getActionButton(notification)}
+                  
+                  {!notification.isRead && (
                     <button
-                      onClick={() => markAsRead(notification.id)}
-                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      onClick={() => handleMarkAsRead(notification.id)}
+                      disabled={isMarkingAsRead}
+                      className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                     >
-                      {notification.action}
+                      {isMarkingAsRead ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                      )}
+                      Mark as read
                     </button>
                   )}
+                  
                   <button
-                    onClick={() => deleteNotification(notification.id)}
-                    className="text-gray-400 hover:text-gray-600"
+                    onClick={() => handleDelete(notification.id)}
+                    disabled={isDeleting}
+                    className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
                   >
-                    <X className="h-4 w-4" />
+                    {isDeleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>

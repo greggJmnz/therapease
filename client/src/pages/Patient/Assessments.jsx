@@ -1,110 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Calendar, User, TrendingUp, Target, CheckCircle, Clock, AlertTriangle, BarChart3 } from 'lucide-react';
+import { useQuery } from 'react-query';
+import { patientAPI } from '../../services/api';
 
 const Assessments = () => {
-  const [assessments, setAssessments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedAssessment, setSelectedAssessment] = useState(null);
 
-  useEffect(() => {
-    // Fetch assessments data
-    const fetchAssessments = async () => {
-      try {
-        // This will be implemented with actual API calls
-        // For now, using mock data
-        setAssessments([
-          {
-            id: 1,
-            title: 'Fine Motor Skills Assessment',
-            type: 'Comprehensive',
-            date: '2024-01-15',
-            therapist: 'Dr. Sarah Wilson',
-            status: 'completed',
-            score: 85,
-            maxScore: 100,
-            category: 'Fine Motor',
-            summary: 'Good progress in hand-eye coordination and pencil grip. Areas for improvement in complex fine motor tasks.',
-            recommendations: [
-              'Continue bead threading exercises',
-              'Practice writing with different sized pencils',
-              'Work on buttoning and zipping activities'
-            ],
-            areas: [
-              { name: 'Hand-Eye Coordination', score: 90, maxScore: 100 },
-              { name: 'Pencil Grip', score: 85, maxScore: 100 },
-              { name: 'Finger Dexterity', score: 80, maxScore: 100 },
-              { name: 'Complex Tasks', score: 75, maxScore: 100 }
-            ]
-          },
-          {
-            id: 2,
-            title: 'Balance & Coordination Evaluation',
-            type: 'Screening',
-            date: '2024-01-10',
-            therapist: 'Dr. Sarah Wilson',
-            status: 'completed',
-            score: 78,
-            maxScore: 100,
-            category: 'Gross Motor',
-            summary: 'Shows improvement in static balance. Dynamic balance and coordination need continued work.',
-            recommendations: [
-              'Continue balance beam exercises',
-              'Practice hopping on one foot',
-              'Work on obstacle course navigation'
-            ],
-            areas: [
-              { name: 'Static Balance', score: 85, maxScore: 100 },
-              { name: 'Dynamic Balance', score: 75, maxScore: 100 },
-              { name: 'Coordination', score: 70, maxScore: 100 },
-              { name: 'Postural Control', score: 80, maxScore: 100 }
-            ]
-          },
-          {
-            id: 3,
-            title: 'Sensory Processing Assessment',
-            type: 'Comprehensive',
-            date: '2024-01-05',
-            therapist: 'Dr. Sarah Wilson',
-            status: 'completed',
-            score: 82,
-            maxScore: 100,
-            category: 'Sensory',
-            summary: 'Good sensory tolerance and processing. Some sensitivity to loud sounds and textures.',
-            recommendations: [
-              'Continue sensory integration activities',
-              'Gradually expose to different textures',
-              'Practice in various environments'
-            ],
-            areas: [
-              { name: 'Tactile Processing', score: 80, maxScore: 100 },
-              { name: 'Auditory Processing', score: 75, maxScore: 100 },
-              { name: 'Visual Processing', score: 85, maxScore: 100 },
-              { name: 'Proprioception', score: 85, maxScore: 100 }
-            ]
-          },
-          {
-            id: 4,
-            title: 'Progress Review Assessment',
-            type: 'Review',
-            date: '2024-01-20',
-            therapist: 'Dr. Sarah Wilson',
-            status: 'scheduled',
-            category: 'Progress Review',
-            summary: 'Quarterly progress review to evaluate overall improvement and adjust treatment plan.',
-            recommendations: [],
-            areas: []
-          }
-        ]);
-
-        setIsLoading(false);
-      } catch (error) {
+  // Fetch assessments data from API
+  const { data: assessmentsData, isLoading, error } = useQuery(
+    'patientAssessments',
+    patientAPI.getAssessments,
+    {
+      onError: (error) => {
         console.error('Error fetching assessments:', error);
-        setIsLoading(false);
       }
-    };
+    }
+  );
 
-    fetchAssessments();
-  }, []);
+  const assessments = Array.isArray(assessmentsData?.data) ? assessmentsData.data : [];
 
   const getStatusIcon = (status) => {
     switch (status) {
