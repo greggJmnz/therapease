@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { therapistAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+import InitialsAvatar from '../../components/InitialsAvatar';
 
 const TherapistDashboard = () => {
   // Fetch dashboard data from API
@@ -35,20 +36,23 @@ const TherapistDashboard = () => {
   // Enable real-time updates
   const { isRefreshing } = useRealtimeData('therapistDashboard', refetch);
 
-  // Extract data from API response (therapist API has double nesting)
-  const apiData = dashboardData?.data?.data;
+  // Extract data from API response (handle double nesting)
+  const apiData = dashboardData?.data?.data || dashboardData?.data;
   const overview = apiData?.overview || {};
   const appointments = apiData?.appointments || {};
   const recent = apiData?.recent || {};
   const progress = apiData?.progress || {};
+  const assessments = apiData?.assessments || {};
+
 
   // Calculate stats from real data
   const stats = {
     totalPatients: overview.totalPatients || 0,
-    todayAppointments: appointments.confirmed || 0,
+    todayAppointments: appointments.scheduled || 0,
     pendingNotes: overview.todayNotes || 0,
     recentProgress: progress.byArea?.length || 0,
   };
+
 
   // Transform recent patients data with robust deduplication
   const recentPatients = (recent.dailyNotes || [])
@@ -57,7 +61,7 @@ const TherapistDashboard = () => {
       id: patient.patientId,
       name: patient.patientName.trim(), // Trim whitespace
       age: 'N/A', // Age would need to be fetched from patient data
-      lastSession: patient.lastSession
+      lastSession: patient.lastSession ? new Date(patient.lastSession).toLocaleDateString() : 'No sessions'
     }))
     .reduce((unique, patient) => {
       // Deduplicate by patient ID (most reliable)
@@ -75,16 +79,14 @@ const TherapistDashboard = () => {
     }, [])
     .sort((a, b) => new Date(b.lastSession) - new Date(a.lastSession)); // Sort by most recent
 
-  // Debug logging
-  console.log('Recent patients raw data:', recent.dailyNotes);
-  console.log('Transformed recent patients:', recentPatients);
 
   // Transform appointments data
   const upcomingAppointments = (recent.appointments || []).map(appointment => ({
     id: appointment.id,
     patientName: appointment.patientName || 'Unknown Patient',
     time: appointment.startTime || 'TBD',
-    type: appointment.type || 'Regular Session'
+    type: appointment.type || 'Regular Session',
+    date: appointment.appointmentDate ? new Date(appointment.appointmentDate).toLocaleDateString() : 'TBD'
   }));
 
 
@@ -114,6 +116,23 @@ const TherapistDashboard = () => {
     );
   }
 
+  // Check if data is loaded
+  if (!dashboardData || !apiData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-gray-500 text-lg mb-4">No dashboard data available</div>
+          <button 
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -124,8 +143,8 @@ const TherapistDashboard = () => {
             Welcome back! Here's what's happening with your patients today.
           </p>
         </div>
-
       </div>
+
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -244,6 +263,124 @@ const TherapistDashboard = () => {
         </div>
       </div>
 
+      {/* Assessment Statistics */}
+      {assessments && Object.keys(assessments).length > 0 && (
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Assessment Statistics</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-600">Total Assessments</p>
+                    <p className="text-2xl font-bold text-blue-900">{assessments.total}</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-blue-600" />
+                </div>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-600">Completed</p>
+                    <p className="text-2xl font-bold text-green-900">{assessments.completed}</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-green-600" />
+                </div>
+              </div>
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-yellow-600">In Progress</p>
+                    <p className="text-2xl font-bold text-yellow-900">{assessments.inProgress}</p>
+                  </div>
+                  <Clock className="h-8 w-8 text-yellow-600" />
+                </div>
+              </div>
+              <div className="bg-purple-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-600">Completion Rate</p>
+                    <p className="text-2xl font-bold text-purple-900">{assessments.completionRate}%</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-purple-600" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Progress Overview */}
+      {progress.byArea && progress.byArea.length > 0 && (
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Progress Overview</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {progress.byArea.map((area, index) => (
+                <div key={index} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-gray-900 capitalize">{area.area}</h4>
+                    <span className="text-xs text-gray-500">{area.entryCount} entries</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-lg font-bold text-gray-900">{Math.round(area.avgCurrentScore)}</span>
+                    <span className="text-sm text-gray-500">/ {Math.round(area.avgTargetScore)}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-green-600 h-2 rounded-full"
+                      style={{ width: `${area.progressPercentage}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {area.progressPercentage}% complete
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recent Assessments */}
+      {recent.assessments && recent.assessments.length > 0 && (
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Assessments</h3>
+            <div className="flow-root">
+              <ul className="-my-5 divide-y divide-gray-200">
+                {recent.assessments.slice(0, 5).map((assessment) => (
+                  <li key={assessment.id} className="py-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{assessment.title}</p>
+                        <p className="text-sm text-gray-500">{assessment.patientName} • {new Date(assessment.assessmentDate).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          assessment.status === 'completed' 
+                            ? 'bg-green-100 text-green-800' 
+                            : assessment.status === 'in-progress'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {assessment.status}
+                        </span>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Recent Patients and Appointments */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Patients */}
@@ -257,11 +394,10 @@ const TherapistDashboard = () => {
                     <li key={patient.id} className="py-4">
                       <div className="flex items-center space-x-4">
                         <div className="flex-shrink-0">
-                          <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                            <span className="text-sm font-medium text-green-800">
-                              {patient.name.split(' ').map(n => n[0]).join('')}
-                            </span>
-                          </div>
+                          <InitialsAvatar 
+                            name={patient.name} 
+                            size="md" 
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">{patient.name}</p>
@@ -314,7 +450,7 @@ const TherapistDashboard = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{appointment.patientName}</p>
-                        <p className="text-sm text-gray-500">{appointment.time} • {appointment.type}</p>
+                        <p className="text-sm text-gray-500">{appointment.date} • {appointment.time} • {appointment.type}</p>
                       </div>
                       <div>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

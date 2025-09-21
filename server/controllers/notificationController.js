@@ -101,10 +101,11 @@ const markAsRead = async (req, res) => {
     const { id } = req.params;
 
     // Check if notification exists and belongs to user
+    const userId = req.user.userId;
     const existingNotification = await getRow(`
       SELECT * FROM notifications 
       WHERE id = ? AND userId = ?
-    `, [parseInt(id), 2]); // Hardcoded user ID
+    `, [parseInt(id), userId]);
 
     if (!existingNotification) {
       return res.status(404).json({
@@ -155,10 +156,11 @@ const deleteNotification = async (req, res) => {
     const { id } = req.params;
 
     // Check if notification exists and belongs to user
+    const userId = req.user.userId;
     const existingNotification = await getRow(`
       SELECT * FROM notifications 
       WHERE id = ? AND userId = ?
-    `, [parseInt(id), 2]); // Hardcoded user ID
+    `, [parseInt(id), userId]);
 
     if (!existingNotification) {
       return res.status(404).json({

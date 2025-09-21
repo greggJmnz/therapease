@@ -154,9 +154,14 @@ const getUsers = async (req, res) => {
         t.licenseNumber,
         t.specialization,
         t.yearsOfExperience,
+        t.education,
+        t.certifications,
+        t.availability,
         p.diagnosis,
         p.medicalHistory,
-        p.status as patientStatus
+        p.status as patientStatus,
+        p.therapistId,
+        (SELECT COUNT(*) FROM patients pt WHERE pt.therapistId = t.userId) as patientCount
       FROM users u
       LEFT JOIN therapists t ON u.id = t.userId
       LEFT JOIN patients p ON u.id = p.userId
@@ -192,13 +197,18 @@ const getUsers = async (req, res) => {
         formattedUser.therapist = {
           licenseNumber: user.licenseNumber,
           specialization: user.specialization,
-          yearsOfExperience: user.yearsOfExperience
+          yearsOfExperience: user.yearsOfExperience,
+          education: user.education,
+          certifications: user.certifications,
+          availability: user.availability
         };
+        formattedUser.patientCount = user.patientCount || 0;
       } else if (user.role === 'patient') {
         formattedUser.patient = {
           diagnosis: user.diagnosis,
           medicalHistory: user.medicalHistory,
-          status: user.patientStatus
+          status: user.patientStatus,
+          therapistId: user.therapistId
         };
       }
 
@@ -698,6 +708,190 @@ const getAppointments = async (req, res) => {
   }
 };
 
+// Create appointment (admin)
+const createAppointment = async (req, res) => {
+  try {
+    const {
+      therapistId,
+      patientId,
+      date,
+      time,
+      duration,
+      reason,
+      type,
+      notes
+    } = req.body;
+
+    // Validate required fields
+    if (!therapistId || !patientId || !date || !time || !duration || !reason || !type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: therapistId, patientId, date, time, duration, reason, type'
+      });
+    }
+
+    // Validate therapist exists
+    const therapistSql = `
+      SELECT t.id, t.userId, CONCAT(u.firstName, ' ', u.lastName) as therapistName, u.phone as therapistPhone
+      FROM therapists t
+      JOIN users u ON t.userId = u.id
+      WHERE t.userId = ?
+    `;
+    
+    const therapist = await getRow(therapistSql, [parseInt(therapistId)]);
+    if (!therapist) {
+      return res.status(404).json({
+        success: false,
+        error: 'Therapist not found'
+      });
+    }
+
+    // Validate patient exists
+    const patientSql = `
+      SELECT p.id, p.userId, CONCAT(u.firstName, ' ', u.lastName) as patientName, u.phone as patientPhone
+      FROM patients p
+      JOIN users u ON p.userId = u.id
+      WHERE p.userId = ?
+    `;
+    
+    const patient = await getRow(patientSql, [parseInt(patientId)]);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient not found'
+      });
+    }
+
+    // Calculate end time
+    const startTime = new Date(`${date}T${time}`);
+    const endTime = new Date(startTime.getTime() + parseInt(duration) * 60000);
+    const endTimeStr = endTime.toTimeString().slice(0, 8);
+
+    // Check for scheduling conflicts
+    const conflictSql = `
+      SELECT id FROM appointments 
+      WHERE therapistId = ? AND appointmentDate = ? AND status != 'cancelled'
+      AND (
+        (startTime <= ? AND endTime > ?) OR
+        (startTime < ? AND endTime >= ?) OR
+        (startTime >= ? AND endTime <= ?)
+      )
+    `;
+
+    const conflicts = await getAll(conflictSql, [
+      therapist.userId, // Use therapist user ID
+      date, 
+      time, endTimeStr, 
+      time, endTimeStr, 
+      time, endTimeStr
+    ]);
+
+    if (conflicts.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Time slot conflicts with existing appointment'
+      });
+    }
+
+    // Insert appointment
+    const insertSql = `
+      INSERT INTO appointments (
+        patientId, therapistId, appointmentDate, startTime, endTime, 
+        duration, type, status, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const insertParams = [
+      patient.id, // Use patient profile ID
+      therapist.userId, // Use therapist user ID
+      date,
+      time,
+      endTimeStr,
+      parseInt(duration),
+      type,
+      'scheduled',
+      notes || null
+    ];
+
+    const result = await runQuery(insertSql, insertParams);
+    const appointmentId = result.insertId;
+
+    // Get the created appointment with full details
+    const getAppointmentSql = `
+      SELECT 
+        a.*,
+        CONCAT(pu.firstName, ' ', pu.lastName) as patientName,
+        CONCAT(tu.firstName, ' ', tu.lastName) as therapistName,
+        pu.phone as patientPhone,
+        tu.phone as therapistPhone
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users pu ON p.userId = pu.id
+      JOIN users tu ON a.therapistId = tu.id
+      WHERE a.id = ?
+    `;
+
+    const newAppointment = await getRow(getAppointmentSql, [appointmentId]);
+
+    // Create notifications for both therapist and patient
+    try {
+      const notificationController = require('./notificationController');
+      
+      // Create notification for therapist
+      await notificationController.createNotification(
+        therapist.userId, // Use therapist user ID
+        'New Appointment Scheduled',
+        `You have a new ${type} appointment with ${patient.patientName} on ${date} at ${time}`,
+        'appointment',
+        { relatedId: appointmentId }
+      );
+
+      // Create notification for patient
+      await notificationController.createNotification(
+        patient.userId, // Use patient user ID
+        'Appointment Scheduled',
+        `Your ${type} appointment with ${therapist.therapistName} has been scheduled for ${date} at ${time}`,
+        'appointment',
+        { relatedId: appointmentId }
+      );
+    } catch (notificationError) {
+      console.error('Notification creation error:', notificationError);
+      // Continue without notifications if there's an error
+    }
+
+    // Broadcast appointment change via WebSocket
+    // TODO: Re-enable WebSocket after fixing the issue
+    /*
+    const websocketService = require('../services/websocketService');
+    websocketService.broadcastAppointmentChange(newAppointment, 'created');
+    */
+
+    res.status(201).json({
+      success: true,
+      message: 'Appointment scheduled successfully',
+      data: {
+        id: appointmentId,
+        patientName: patient.patientName,
+        therapistName: therapist.therapistName,
+        date: date,
+        time: time,
+        duration: parseInt(duration),
+        type: type,
+        status: 'scheduled',
+        location: 'Room TBD',
+        notes: notes
+      }
+    });
+
+  } catch (error) {
+    console.error('Create appointment error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to create appointment' 
+    });
+  }
+};
+
 // Get notifications for admin
 const getNotifications = async (req, res) => {
   try {
@@ -755,5 +949,6 @@ module.exports = {
   deleteUser,
   getSystemStats,
   getAppointments,
+  createAppointment,
   getNotifications
 };

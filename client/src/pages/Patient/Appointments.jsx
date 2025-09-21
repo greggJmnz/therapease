@@ -7,9 +7,7 @@ import toast from 'react-hot-toast';
 
 const Appointments = () => {
   const { user } = useAuth();
-  const [appointments, setAppointments] = useState([]);
   const [assignedTherapist, setAssignedTherapist] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -21,16 +19,40 @@ const Appointments = () => {
   ];
 
   // Fetch appointments data from API
-  const { data: appointmentsData, isLoading: appointmentsLoading, error: appointmentsError } = useQuery(
+  const { data: appointmentsData, isLoading: appointmentsLoading, error: appointmentsError, refetch: refetchAppointments } = useQuery(
     'patientAppointments',
     patientAPI.getAppointments,
     {
       onError: (error) => {
         toast.error('Failed to load appointments');
         console.error('Error fetching appointments:', error);
-      }
+      },
     }
   );
+
+  // Transform API data to component format
+  const appointments = React.useMemo(() => {
+    if (!appointmentsData?.data) return [];
+    
+    
+    // Ensure data is an array
+    const appointmentsArray = Array.isArray(appointmentsData.data) 
+      ? appointmentsData.data 
+      : [];
+    
+    return appointmentsArray.map(appointment => ({
+      id: appointment.id,
+      date: new Date(appointment.appointmentDate).toLocaleDateString(),
+      time: appointment.startTime,
+      endTime: appointment.endTime,
+      duration: appointment.duration,
+      type: appointment.type,
+      status: appointment.status,
+      therapist: assignedTherapist?.name || 'Your Therapist',
+      location: 'Therapy Center',
+      notes: appointment.notes
+    }));
+  }, [appointmentsData, assignedTherapist]);
 
   // Fetch patient profile to get assigned therapist
   const { data: profileData, isLoading: profileLoading } = useQuery(
@@ -52,13 +74,6 @@ const Appointments = () => {
     }
   );
 
-  // Update state with API data
-  React.useEffect(() => {
-    if (appointmentsData?.data?.appointments) {
-      setAppointments(appointmentsData.data.appointments);
-    }
-    setIsLoading(appointmentsLoading || profileLoading);
-  }, [appointmentsData, appointmentsLoading, profileLoading]);
 
   const handleBooking = async (e) => {
     e.preventDefault();
@@ -74,24 +89,32 @@ const Appointments = () => {
     }
 
     try {
-      // This will be implemented with actual API call
-      const newAppointment = {
-        id: Date.now(),
+      // Convert time to 24-hour format for API
+      const time24 = selectedTime.replace(/\s(AM|PM)/i, (match, period) => {
+        const [hours, minutes] = match.replace(/\s(AM|PM)/i, '').split(':');
+        let hour24 = parseInt(hours);
+        if (period.toUpperCase() === 'PM' && hour24 !== 12) hour24 += 12;
+        if (period.toUpperCase() === 'AM' && hour24 === 12) hour24 = 0;
+        return `${hour24.toString().padStart(2, '0')}:${minutes}:00`;
+      });
+
+      const appointmentData = {
         date: selectedDate,
-        time: selectedTime,
-        therapist: assignedTherapist.name,
-        type: 'Regular Session',
-        status: 'pending',
-        location: 'Main Clinic - Room 3',
-        reason
+        time: time24,
+        duration: 60, // Default duration
+        type: 'session',
+        reason: reason,
+        notes: reason
       };
 
-      setAppointments([newAppointment, ...appointments]);
+      await patientAPI.bookAppointment(appointmentData);
+      refetchAppointments(); // Refresh appointments from API
       setShowBookingForm(false);
       resetForm();
       toast.success('Appointment booked successfully!');
     } catch (error) {
       toast.error('Failed to book appointment');
+      console.error('Booking error:', error);
     }
   };
 
@@ -104,7 +127,7 @@ const Appointments = () => {
   const cancelAppointment = async (appointmentId) => {
     try {
       await patientAPI.cancelAppointment(appointmentId);
-      setAppointments(appointments.filter(apt => apt.id !== appointmentId));
+      refetchAppointments(); // Refresh appointments from API
       toast.success('Appointment cancelled successfully');
     } catch (error) {
       toast.error('Failed to cancel appointment');
@@ -127,7 +150,7 @@ const Appointments = () => {
     }
   };
 
-  if (isLoading) {
+  if (appointmentsLoading || profileLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>

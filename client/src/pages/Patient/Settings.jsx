@@ -110,7 +110,7 @@ const Settings = () => {
 
     // Use the ProfileForm's password change functionality
     // This would be handled by the ProfileForm component
-    toast.info('Password change is handled in the Profile tab');
+    toast('Password change is handled in the Profile tab');
   };
 
   if (isLoading) {

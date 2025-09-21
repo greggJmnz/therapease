@@ -1,54 +1,47 @@
 import React, { useState } from 'react';
-import { useQuery } from 'react-query';
 import { 
   Bell,
   Eye,
-  CheckCircle
+  CheckCircle,
+  X,
+  Trash2,
+  AlertCircle,
+  Info,
+  Calendar,
+  FileText,
+  Target,
+  User,
+  Loader2
 } from 'lucide-react';
-import { adminAPI } from '../../services/api';
+import { useNotifications } from '../../hooks/useNotifications';
 
 const AdminNotifications = () => {
-  // Fetch notifications data from API
-  const { data: notificationsData, isLoading, error } = useQuery(
-    'adminNotifications',
-    adminAPI.getNotifications,
-    {
-      onError: (error) => {
-        console.error('Error fetching notifications:', error);
-      }
-    }
-  );
+  const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Extract notifications from API response or use default
-  const [notifications, setNotifications] = useState(
-    notificationsData?.data?.notifications || [
-      {
-        id: 1,
-        type: 'system',
-        title: 'System Status',
-        message: 'All systems are running normally',
-        time: 'Just now',
-        priority: 'low',
-        read: false
-      }
-    ]
-  );
+  const {
+    notifications,
+    isLoading,
+    error,
+    stats,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    refreshNotifications,
+    isMarkingAsRead,
+    isDeleting
+  } = useNotifications({ filter });
 
-  const markAsRead = (id) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === id 
-          ? { ...notification, read: true }
-          : notification
-      )
+  // Filter notifications by search term
+  const filteredNotifications = notifications.filter(notification => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      notification.title.toLowerCase().includes(searchLower) ||
+      notification.message.toLowerCase().includes(searchLower) ||
+      notification.type.toLowerCase().includes(searchLower)
     );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, read: true }))
-    );
-  };
+  });
 
   const getUnreadCount = () => {
     return notifications.filter(notification => !notification.read).length;
@@ -84,28 +77,70 @@ const AdminNotifications = () => {
         <h2>System Notifications</h2>
         <div className="header-actions">
           <span className="unread-count">
-            {getUnreadCount()} unread
+            {stats?.unreadCount || 0} unread
           </span>
-          <button className="btn-secondary" onClick={markAllAsRead}>
-            <CheckCircle size={16} />
+          <button 
+            className="btn-secondary" 
+            onClick={markAllAsRead}
+            disabled={isMarkingAsRead}
+          >
+            {isMarkingAsRead ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle size={16} />}
             Mark All Read
           </button>
         </div>
       </div>
 
+      {/* Search and Filter Controls */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search notifications..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+              <Bell className="h-5 w-5 text-gray-400" />
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">All Notifications</option>
+            <option value="unread">Unread Only</option>
+            <option value="read">Read Only</option>
+          </select>
+        </div>
+      </div>
+
       <div className="notifications-list">
-        {notifications.map(notification => (
-          <div key={notification.id} className={`notification-card ${notification.priority} ${!notification.read ? 'unread' : ''}`}>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-2">Loading notifications...</span>
+          </div>
+        ) : filteredNotifications.map(notification => (
+          <div key={notification.id} className={`notification-card ${notification.priority || 'medium'} ${!notification.isRead ? 'unread' : ''}`}>
             <div className="notification-icon">
-              <Bell size={20} />
+              {notification.type === 'appointment' && <Calendar size={20} />}
+              {notification.type === 'assessment' && <FileText size={20} />}
+              {notification.type === 'progress' && <Target size={20} />}
+              {notification.type === 'system' && <Info size={20} />}
+              {!['appointment', 'assessment', 'progress', 'system'].includes(notification.type) && <Bell size={20} />}
             </div>
             <div className="notification-content">
               <h4>{notification.title}</h4>
               <p>{notification.message}</p>
               <div className="notification-meta">
-                <span className="time">{notification.time}</span>
-                <span className={`priority-badge ${notification.priority}`}>
-                  {notification.priority}
+                <span className="time">{notification.timeAgo}</span>
+                <span className={`priority-badge ${notification.priority || 'medium'}`}>
+                  {notification.priority || 'medium'}
                 </span>
                 <span className="type-badge">
                   {notification.type}
@@ -113,27 +148,50 @@ const AdminNotifications = () => {
               </div>
             </div>
             <div className="notification-actions">
-              {!notification.read && (
+              {!notification.isRead && (
                 <button 
                   className="mark-read-btn" 
                   onClick={() => markAsRead(notification.id)}
+                  disabled={isMarkingAsRead}
                 >
+                  {isMarkingAsRead ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle size={16} />}
                   Mark Read
                 </button>
               )}
-              <button className="action-btn">
-                <Eye size={16} />
+              <button 
+                className="action-btn delete-btn" 
+                onClick={() => deleteNotification(notification.id)}
+                disabled={isDeleting}
+                title="Delete notification"
+              >
+                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 size={16} />}
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      {notifications.length === 0 && (
+      {!isLoading && filteredNotifications.length === 0 && (
         <div className="empty-state">
           <Bell size={48} className="empty-icon" />
           <h3>No notifications</h3>
-          <p>You're all caught up! No new notifications at the moment.</p>
+          <p>
+            {searchTerm 
+              ? `No notifications found matching "${searchTerm}"`
+              : "You're all caught up! No new notifications at the moment."
+            }
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="error-state">
+          <AlertCircle size={48} className="error-icon" />
+          <h3>Error loading notifications</h3>
+          <p>Please try refreshing the page.</p>
+          <button onClick={refreshNotifications} className="btn-primary">
+            Refresh
+          </button>
         </div>
       )}
     </div>

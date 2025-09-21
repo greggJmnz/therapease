@@ -663,7 +663,7 @@ const AIInsights = () => {
                             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
-                              toast.info(`Exporting assessment ${assessment.type} (ID: ${assessment.id})`);
+                              toast(`Exporting assessment ${assessment.type} (ID: ${assessment.id})`);
                             }}
                           >
                             <Download className="w-4 h-4" />

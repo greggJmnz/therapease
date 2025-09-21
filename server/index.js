@@ -35,11 +35,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+      scriptSrc: ["'self'", "https://cdn.tailwindcss.com"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"],
@@ -97,6 +97,15 @@ app.get('/health/ssl', sslHealthCheck);
 
 // Serve public website static files
 app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
+
+// Serve root-level assets
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'favicon.ico'));
+});
+
+app.get('/sw.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'sw.js'));
+});
 
 // Redirect root to public website
 app.get('/', (req, res) => {

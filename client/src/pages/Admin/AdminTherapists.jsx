@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+import InitialsAvatar from '../../components/InitialsAvatar';
 
 const AdminTherapists = () => {
   const [selectedTherapist, setSelectedTherapist] = useState(null);
@@ -53,15 +54,22 @@ const AdminTherapists = () => {
       name: `${therapist.firstName} ${therapist.lastName}`,
       email: therapist.email,
       phone: therapist.phone || 'N/A',
-      specialization: therapist.therapist?.specialization || 'Pediatric OT',
-      licenseNumber: therapist.therapist?.licenseNumber || 'N/A',
-      experience: therapist.therapist?.yearsOfExperience ? `${therapist.therapist.yearsOfExperience} years` : 'N/A',
+      dateOfBirth: therapist.dateOfBirth,
+      gender: therapist.gender,
+      specialization: therapist.therapist?.specialization || 'Specialization not set',
+      licenseNumber: therapist.therapist?.licenseNumber || 'Not provided',
+      experience: therapist.therapist?.yearsOfExperience ? `${therapist.therapist.yearsOfExperience} years` : 'Not specified',
+      education: therapist.therapist?.education || 'Not provided',
+      certifications: therapist.therapist?.certifications || 'Not provided',
+      availability: therapist.therapist?.availability || 'Not specified',
       status: 'active',
-      patientsCount: 0, // This would need to be calculated from patient assignments
-      address: therapist.address || 'N/A',
-      city: therapist.city || 'N/A',
-      state: therapist.state || 'N/A',
-      image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face'
+      patientsCount: therapist.patientCount || 0, // Count of assigned patients
+      address: therapist.address || 'Not provided',
+      city: therapist.city || 'Not provided',
+      state: therapist.state || 'Not provided',
+      zipCode: therapist.zipCode || 'Not provided',
+      createdAt: therapist.createdAt,
+      updatedAt: therapist.updatedAt
     }));
 
 
@@ -98,12 +106,38 @@ const AdminTherapists = () => {
     setSelectedTherapist(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editingTherapist) {
-      // TODO: Implement API call to update therapist
-      toast.success('Therapist updated successfully');
-      setEditingTherapist(null);
-      refetch(); // Refresh data from API
+      try {
+        // Prepare the data for the API call
+        const updateData = {
+          firstName: editingTherapist.name.split(' ')[0] || '',
+          lastName: editingTherapist.name.split(' ').slice(1).join(' ') || '',
+          email: editingTherapist.email,
+          phone: editingTherapist.phone,
+          address: editingTherapist.address,
+          city: editingTherapist.city,
+          state: editingTherapist.state,
+          zipCode: editingTherapist.zipCode,
+          // Therapist-specific data
+          therapist: {
+            specialization: editingTherapist.specialization,
+            licenseNumber: editingTherapist.licenseNumber,
+            yearsOfExperience: parseInt(editingTherapist.experience?.replace(' years', '') || '0'),
+            education: editingTherapist.education,
+            certifications: editingTherapist.certifications,
+            availability: editingTherapist.availability
+          }
+        };
+
+        await adminAPI.updateUser(editingTherapist.id, updateData);
+        toast.success('Therapist updated successfully');
+        setEditingTherapist(null);
+        refetch(); // Refresh data from API
+      } catch (error) {
+        console.error('Error updating therapist:', error);
+        toast.error('Failed to update therapist');
+      }
     }
   };
 
@@ -111,52 +145,69 @@ const AdminTherapists = () => {
     setEditingTherapist(null);
   };
 
-  const handleApprove = (therapistId) => {
-    // TODO: Implement API call to approve therapist
-    toast.success('Therapist approved successfully');
-    refetch(); // Refresh data from API
-  };
-
-  const handleDelete = (therapistId) => {
-    if (window.confirm('Are you sure you want to delete this therapist?')) {
-      // TODO: Implement API call to delete therapist
-      toast.success('Therapist deleted successfully');
+  const handleApprove = async (therapistId) => {
+    try {
+      await adminAPI.updateUserStatus(therapistId, 'active');
+      toast.success('Therapist approved successfully');
       refetch(); // Refresh data from API
+    } catch (error) {
+      console.error('Error approving therapist:', error);
+      toast.error('Failed to approve therapist');
     }
   };
 
-  const generateCredentials = () => {
+  const handleDelete = async (therapistId) => {
+    if (window.confirm('Are you sure you want to delete this therapist?')) {
+      try {
+        await adminAPI.deleteUser(therapistId);
+        toast.success('Therapist deleted successfully');
+        refetch(); // Refresh data from API
+      } catch (error) {
+        console.error('Error deleting therapist:', error);
+        toast.error('Failed to delete therapist');
+      }
+    }
+  };
+
+  const generateCredentials = async () => {
     if (newTherapist.name && newTherapist.email) {
-      // Generate a random password
-      const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
-      
-      const credentials = {
-        email: newTherapist.email,
-        password: password,
-        name: newTherapist.name
-      };
-      
-      setGeneratedCredentials(credentials);
-      
-      // Add therapist to the list with minimal information
-      const therapist = {
-        id: Date.now(),
-        name: newTherapist.name,
-        email: newTherapist.email,
-        phone: '',
-        specialization: '',
-        licenseNumber: '',
-        experience: '',
-        status: 'pending',
-        patientsCount: 0,
-        address: '',
-        city: '',
-        state: '',
-        image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face'
-      };
-      // TODO: Implement API call to create therapist
-      toast.success('Therapist created successfully');
-      refetch(); // Refresh data from API
+      try {
+        // Generate a random password
+        const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        
+        // Prepare the data for the API call
+        const userData = {
+          firstName: newTherapist.name.split(' ')[0] || '',
+          lastName: newTherapist.name.split(' ').slice(1).join(' ') || '',
+          email: newTherapist.email,
+          password: password,
+          role: 'therapist',
+          // Therapist-specific data
+          therapist: {
+            specialization: 'General Therapy',
+            licenseNumber: '',
+            yearsOfExperience: 0,
+            education: '',
+            certifications: '',
+            availability: 'Monday-Friday 9AM-5PM'
+          }
+        };
+
+        await adminAPI.createUser(userData);
+        
+        const credentials = {
+          email: newTherapist.email,
+          password: password,
+          name: newTherapist.name
+        };
+        
+        setGeneratedCredentials(credentials);
+        toast.success('Therapist created successfully');
+        refetch(); // Refresh data from API
+      } catch (error) {
+        console.error('Error creating therapist:', error);
+        toast.error('Failed to create therapist');
+      }
     }
   };
 
@@ -196,7 +247,11 @@ const AdminTherapists = () => {
         {therapists.map(therapist => (
           <div key={therapist.id} className="therapist-card">
             <div className="therapist-header">
-              <img src={therapist.image} alt={therapist.name} className="therapist-avatar" />
+              <InitialsAvatar 
+                name={therapist.name} 
+                size="lg" 
+                className="therapist-avatar"
+              />
               <div className="therapist-info">
                 <h3>{therapist.name}</h3>
                 <p className="specialization">
@@ -263,7 +318,11 @@ const AdminTherapists = () => {
                 {/* Header Section */}
                 <div className="therapist-header">
                   <div className="avatar-container">
-                    <img src={selectedTherapist.image} alt={selectedTherapist.name} className="therapist-avatar" />
+                    <InitialsAvatar 
+                      name={selectedTherapist.name} 
+                      size="3xl" 
+                      className="therapist-avatar"
+                    />
                     <div className={`status-indicator ${selectedTherapist.status}`}></div>
                   </div>
                   <div className="therapist-basic-info">
@@ -333,14 +392,14 @@ const AdminTherapists = () => {
                       <Key size={16} className="info-icon" />
                       <div className="info-content">
                         <span className="info-label">License Number</span>
-                        <span className="info-value">{selectedTherapist.licenseNumber || 'Not provided'}</span>
+                        <span className="info-value">{selectedTherapist.licenseNumber}</span>
                       </div>
                     </div>
                     <div className="info-item">
                       <Calendar size={16} className="info-icon" />
                       <div className="info-content">
                         <span className="info-label">Years of Experience</span>
-                        <span className="info-value">{selectedTherapist.experience || 'Not specified'}</span>
+                        <span className="info-value">{selectedTherapist.experience}</span>
                       </div>
                     </div>
                     <div className="info-item">
@@ -348,6 +407,44 @@ const AdminTherapists = () => {
                       <div className="info-content">
                         <span className="info-label">Current Patients</span>
                         <span className="info-value">{selectedTherapist.patientsCount}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Education & Certifications */}
+                <div className="info-section">
+                  <h4 className="section-title">
+                    <Shield size={18} className="section-icon" />
+                    Education & Certifications
+                  </h4>
+                  <div className="info-grid">
+                    <div className="info-item full-width">
+                      <div className="info-content">
+                        <span className="info-label">Education</span>
+                        <span className="info-value education-text">{selectedTherapist.education}</span>
+                      </div>
+                    </div>
+                    <div className="info-item full-width">
+                      <div className="info-content">
+                        <span className="info-label">Certifications</span>
+                        <span className="info-value certifications-text">{selectedTherapist.certifications}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Availability */}
+                <div className="info-section">
+                  <h4 className="section-title">
+                    <Calendar size={18} className="section-icon" />
+                    Availability
+                  </h4>
+                  <div className="info-grid">
+                    <div className="info-item full-width">
+                      <div className="info-content">
+                        <span className="info-label">Schedule</span>
+                        <span className="info-value availability-text">{selectedTherapist.availability}</span>
                       </div>
                     </div>
                   </div>
@@ -450,12 +547,44 @@ const AdminTherapists = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Experience</label>
+                <label>Experience (Years)</label>
                 <input
-                  type="text"
-                  value={editingTherapist.experience}
-                  onChange={(e) => handleInputChange('experience', e.target.value)}
+                  type="number"
+                  value={editingTherapist.experience?.replace(' years', '') || ''}
+                  onChange={(e) => handleInputChange('experience', e.target.value + ' years')}
                   className="form-input"
+                  min="0"
+                  max="50"
+                />
+              </div>
+              <div className="form-group">
+                <label>Education</label>
+                <textarea
+                  value={editingTherapist.education || ''}
+                  onChange={(e) => handleInputChange('education', e.target.value)}
+                  className="form-textarea"
+                  rows="3"
+                  placeholder="Enter educational background"
+                />
+              </div>
+              <div className="form-group">
+                <label>Certifications</label>
+                <textarea
+                  value={editingTherapist.certifications || ''}
+                  onChange={(e) => handleInputChange('certifications', e.target.value)}
+                  className="form-textarea"
+                  rows="3"
+                  placeholder="Enter certifications and credentials"
+                />
+              </div>
+              <div className="form-group">
+                <label>Availability</label>
+                <textarea
+                  value={editingTherapist.availability || ''}
+                  onChange={(e) => handleInputChange('availability', e.target.value)}
+                  className="form-textarea"
+                  rows="2"
+                  placeholder="Enter availability schedule"
                 />
               </div>
               <div className="form-group">

@@ -185,7 +185,7 @@ const DailyNotes = () => {
 
   const handleAttachmentUpload = (noteId) => {
     // This will be implemented with actual file upload functionality
-    toast.info('File upload functionality will be implemented');
+    toast('File upload functionality will be implemented');
   };
 
   if (!isAuthenticated) {

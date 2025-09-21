@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Layouts.css';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import InitialsAvatar from '../components/InitialsAvatar';
 import {
   Users,
   Calendar,
@@ -120,9 +121,9 @@ const TherapistLayout = () => {
                 </Link>
               </div>
               <div className="user-profile">
-                <img 
-                  src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face" 
-                  alt="User Profile" 
+                <InitialsAvatar 
+                  name={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'} 
+                  size="md" 
                   className="profile-picture" 
                 />
                 <div className="profile-info">
@@ -178,9 +179,9 @@ const TherapistLayout = () => {
         
         <div className="user-profile" ref={profileDropdownRef}>
           <div className="profile-main" onClick={toggleProfileDropdown}>
-            <img 
-              src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face" 
-              alt="User Profile" 
+            <InitialsAvatar 
+              name={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'} 
+              size="md" 
               className="profile-picture" 
             />
             <div className="profile-info">

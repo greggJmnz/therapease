@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeData } from '../../hooks/useWebSocket';
+import InitialsAvatar from '../../components/InitialsAvatar';
 import { 
   Users, 
   UserCheck, 
@@ -155,7 +156,6 @@ const AdminDashboard = () => {
       status: patient.patient?.status || 'active',
       lastSession: patient.updatedAt ? new Date(patient.updatedAt).toLocaleDateString() : 'N/A',
       progress: 0, // This would need to be calculated from progress entries
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
     }));
 
   const therapists = (therapistsData?.data?.data?.users || [])
@@ -168,7 +168,6 @@ const AdminDashboard = () => {
       experience: therapist.therapist?.yearsOfExperience ? `${therapist.therapist.yearsOfExperience} years` : 'N/A',
       status: 'active',
       patientsCount: 0, // This would need to be calculated from patient assignments
-      image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face'
     }));
 
   // Extract notifications from API response and map to expected format
@@ -697,7 +696,11 @@ const AdminDashboard = () => {
             {filteredPatients.map(patient => (
                     <tr key={patient.id}>
                 <td className="patient-info">
-                  <img src={patient.image} alt={patient.name} className="patient-avatar" />
+                  <InitialsAvatar 
+                    name={patient.name} 
+                    size="md" 
+                    className="patient-avatar" 
+                  />
                   <div>
                     <p className="patient-name">{patient.name}</p>
                     <p className="patient-gender">{patient.gender}</p>
@@ -753,7 +756,11 @@ const AdminDashboard = () => {
         {therapists.map(therapist => (
           <div key={therapist.id} className="therapist-card">
             <div className="therapist-header">
-              <img src={therapist.image} alt={therapist.name} className="therapist-avatar" />
+              <InitialsAvatar 
+                name={therapist.name} 
+                size="lg" 
+                className="therapist-avatar" 
+              />
               <div className="therapist-info">
                 <h3>{therapist.name}</h3>
                 <p className="specialization">{therapist.specialization}</p>
@@ -918,7 +925,11 @@ const AdminDashboard = () => {
                 {/* Header Section */}
                 <div className="patient-header">
                   <div className="avatar-container">
-                    <img src={selectedPatient.image} alt={selectedPatient.name} className="patient-avatar-large" />
+                    <InitialsAvatar 
+                      name={selectedPatient.name} 
+                      size="xl" 
+                      className="patient-avatar-large" 
+                    />
                     <div className={`status-indicator ${selectedPatient.status}`}></div>
                   </div>
                   <div className="patient-basic-info">

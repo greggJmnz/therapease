@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import InitialsAvatar from '../../components/InitialsAvatar';
 import { 
   Calendar, 
   Clock, 
@@ -51,7 +52,6 @@ const TherapistSchedule = () => {
   const appointments = (scheduleData?.data?.appointments || []).map(appointment => ({
     id: appointment.id,
     patientName: appointment.patientName || 'Unknown Patient',
-    patientImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     type: appointment.type || 'OT Session',
     date: appointment.appointmentDate,
     time: appointment.startTime,
@@ -68,7 +68,6 @@ const TherapistSchedule = () => {
   const sessions = (scheduleData?.data?.sessions || []).map(session => ({
     id: session.id,
     patientName: session.patientName || 'Unknown Patient',
-    patientImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     type: session.type || 'Therapy Session',
     date: session.sessionDate,
     time: session.startTime,
@@ -365,10 +364,10 @@ const TherapistSchedule = () => {
                   <li key={event.id} className="py-5">
                     <div className="flex items-center space-x-4">
                       <div className="flex-shrink-0">
-                        <img
+                        <InitialsAvatar
+                          name={event.patientName}
+                          size="md"
                           className="h-10 w-10 rounded-full"
-                          src={event.patientImage}
-                          alt={event.patientName}
                         />
                       </div>
                       <div className="flex-1 min-w-0">

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X, Shield, GraduationCap, Award, AlertCircle, RefreshCw } from 'lucide-react';
 import { useRealtimeData } from '../../hooks/useWebSocket';
 import toast from 'react-hot-toast';
+import InitialsAvatar from '../InitialsAvatar';
 
 const ProfileForm = ({ userRole, apiService }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -219,9 +220,10 @@ const ProfileForm = ({ userRole, apiService }) => {
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <User className="h-6 w-6 text-blue-600" />
-              </div>
+              <InitialsAvatar 
+                name={`${formData.firstName || ''} ${formData.lastName || ''}`.trim() || 'User'} 
+                size="lg" 
+              />
               <div className="ml-4">
                 <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
                 <p className="text-sm text-gray-500">Manage your personal information and preferences</p>

@@ -43,7 +43,7 @@ const AdminAppointments = () => {
   );
 
   // Fetch therapists data
-  const { data: therapistsData } = useQuery(
+  const { data: therapistsData, isLoading: therapistsLoading, error: therapistsError } = useQuery(
     'adminTherapists',
     adminAPI.getTherapists,
     {
@@ -54,7 +54,7 @@ const AdminAppointments = () => {
   );
 
   // Fetch patients data
-  const { data: patientsData } = useQuery(
+  const { data: patientsData, isLoading: patientsLoading, error: patientsError } = useQuery(
     'adminPatients',
     adminAPI.getPatients,
     {
@@ -69,33 +69,56 @@ const AdminAppointments = () => {
     id: appointment.id,
     patientName: appointment.patientName || 'Unknown Patient',
     therapistName: appointment.therapistName || 'Unassigned',
-    date: appointment.date || new Date().toISOString().split('T')[0],
-    time: appointment.time || '09:00 AM',
+    date: appointment.appointmentDate || new Date().toISOString().split('T')[0],
+    time: appointment.appointmentTime || '09:00 AM',
     duration: appointment.duration || '1 hour',
     type: appointment.type || 'Session',
     status: appointment.status || 'scheduled',
-    location: appointment.location || 'Room TBD'
+    location: appointment.room || 'Room TBD'
   }));
 
   // Extract therapists from API response
-  const therapists = (therapistsData?.data?.data?.users || [])
-    .filter(user => user.role === 'therapist')
-    .map(therapist => ({
-      id: therapist.id,
-      name: `${therapist.firstName} ${therapist.lastName}`,
-      specialization: therapist.specialization || 'General Therapy',
-      email: therapist.email
-    }));
+  const therapists = React.useMemo(() => {
+    if (!therapistsData?.data?.data?.users) {
+      return [];
+    }
+    
+    const filteredTherapists = therapistsData.data.data.users
+      .filter(user => user.role === 'therapist')
+      .map(therapist => ({
+        id: therapist.id,
+        name: `${therapist.firstName} ${therapist.lastName}`,
+        specialization: therapist.therapist?.specialization || 'General Therapy',
+        email: therapist.email
+      }));
+    
+    return filteredTherapists;
+  }, [therapistsData]);
+
 
   // Extract patients from API response
-  const patients = (patientsData?.data?.data?.users || [])
-    .filter(user => user.role === 'patient')
-    .map(patient => ({
-      id: patient.id,
-      name: `${patient.firstName} ${patient.lastName}`,
-      email: patient.email,
-      diagnosis: patient.diagnosis || 'N/A'
-    }));
+  const allPatients = React.useMemo(() => {
+    if (!patientsData?.data?.data?.users) {
+      return [];
+    }
+    
+    const filteredPatients = patientsData.data.data.users
+      .filter(user => user.role === 'patient')
+      .map(patient => ({
+        id: patient.id,
+        name: `${patient.firstName} ${patient.lastName}`,
+        email: patient.email,
+        diagnosis: patient.patient?.diagnosis || 'N/A',
+        therapistId: patient.patient?.therapistId || null
+      }));
+    
+    return filteredPatients;
+  }, [patientsData]);
+
+  // Filter patients based on selected therapist
+  const patients = newAppointment.therapistId 
+    ? allPatients.filter(patient => patient.therapistId === parseInt(newAppointment.therapistId))
+    : allPatients;
 
   // Convert appointments to calendar events
   const calendarEvents = appointments.map(appointment => {
@@ -118,10 +141,19 @@ const AdminAppointments = () => {
 
   // Form handling functions
   const handleInputChange = (field, value) => {
-    setNewAppointment(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setNewAppointment(prev => {
+      const updated = {
+        ...prev,
+        [field]: value
+      };
+      
+      // Clear patient selection when therapist changes
+      if (field === 'therapistId') {
+        updated.patientId = '';
+      }
+      
+      return updated;
+    });
     
     // Clear error when user starts typing
     if (formErrors[field]) {
@@ -175,10 +207,12 @@ const AdminAppointments = () => {
         status: 'scheduled'
       };
 
-      // TODO: Replace with actual API call when available
+      // Call the actual API
+      const response = await adminAPI.createAppointment(appointmentData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to create appointment');
+      }
       
       toast.success('Appointment scheduled successfully!');
       setShowScheduleModal(false);
@@ -332,11 +366,17 @@ const AdminAppointments = () => {
                   <select
                     value={newAppointment.therapistId}
                     onChange={(e) => handleInputChange('therapistId', e.target.value)}
+                    disabled={therapistsLoading}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       formErrors.therapistId ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    } ${therapistsLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   >
-                    <option value="">Choose a therapist...</option>
+                    <option value="">
+                      {therapistsLoading ? 'Loading therapists...' : 'Choose a therapist...'}
+                    </option>
+                    {therapistsLoading && <option>Loading...</option>}
+                    {therapistsError && <option>Error loading therapists</option>}
+                    {therapists.length === 0 && !therapistsLoading && <option>No therapists found</option>}
                     {therapists.map(therapist => (
                       <option key={therapist.id} value={therapist.id}>
                         {therapist.name} - {therapist.specialization}
@@ -360,17 +400,27 @@ const AdminAppointments = () => {
                   <select
                     value={newAppointment.patientId}
                     onChange={(e) => handleInputChange('patientId', e.target.value)}
+                    disabled={!newAppointment.therapistId}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       formErrors.patientId ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    } ${!newAppointment.therapistId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   >
-                    <option value="">Choose a patient...</option>
+                    <option value="">
+                      {!newAppointment.therapistId 
+                        ? 'Please select a therapist first...' 
+                        : 'Choose a patient...'}
+                    </option>
                     {patients.map(patient => (
                       <option key={patient.id} value={patient.id}>
                         {patient.name} - {patient.diagnosis}
                       </option>
                     ))}
                   </select>
+                  {!newAppointment.therapistId && (
+                    <p className="text-gray-500 text-sm mt-1">
+                      Select a therapist to see their assigned patients
+                    </p>
+                  )}
                   {formErrors.patientId && (
                     <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
                       <AlertCircle className="h-4 w-4" />

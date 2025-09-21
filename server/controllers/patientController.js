@@ -1221,6 +1221,99 @@ const getSettings = async (req, res) => {
   }
 };
 
+// Book new appointment
+const bookAppointment = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { date, time, duration, type, reason, notes } = req.body;
+
+    // Validate required fields
+    if (!date || !time || !type || !reason) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: date, time, type, reason'
+      });
+    }
+
+    // Get patient profile ID and therapist ID
+    const patient = await getRow(`
+      SELECT p.id, p.therapistId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM patients p
+      JOIN users u ON p.userId = u.id
+      WHERE p.userId = ?
+    `, [userId]);
+
+    if (!patient) {
+      return res.status(404).json({ success: false, error: 'Patient profile not found' });
+    }
+
+    if (!patient.therapistId) {
+      return res.status(400).json({ success: false, error: 'No therapist assigned' });
+    }
+
+    // Calculate end time
+    const startTime = new Date(`2000-01-01T${time}`);
+    const endTime = new Date(startTime.getTime() + (duration || 60) * 60000);
+    const endTimeStr = endTime.toTimeString().slice(0, 8);
+
+    // Insert appointment
+    const insertResult = await runQuery(`
+      INSERT INTO appointments (patientId, therapistId, appointmentDate, startTime, endTime, duration, type, status, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled', ?)
+    `, [
+      patient.id,
+      patient.therapistId,
+      date,
+      time,
+      endTimeStr,
+      duration || 60,
+      type,
+      notes || reason
+    ]);
+
+    const appointmentId = insertResult.insertId;
+
+    // Get therapist details for notification
+    const therapist = await getRow(`
+      SELECT CONCAT(u.firstName, ' ', u.lastName) as therapistName, u.email as therapistEmail
+      FROM users u
+      WHERE u.id = ?
+    `, [patient.therapistId]);
+
+    // Create notifications
+    const notificationController = require('./notificationController');
+    
+    // Notify therapist
+    await notificationController.createNotification(
+      patient.therapistId,
+      'New Appointment Request',
+      `${patient.patientName} has requested a ${type} appointment on ${new Date(date).toLocaleDateString()} at ${time}`,
+      'appointment',
+      appointmentId
+    );
+
+    // Notify patient
+    await notificationController.createNotification(
+      userId,
+      'Appointment Scheduled',
+      `Your ${type} appointment has been scheduled for ${new Date(date).toLocaleDateString()} at ${time}`,
+      'appointment',
+      appointmentId
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Appointment booked successfully',
+      data: { appointmentId }
+    });
+
+  } catch (error) {
+    console.error('Book appointment error:', error);
+    res.status(500).json({ success: false, error: 'Failed to book appointment' });
+  }
+};
+
+
 module.exports = {
   getPatients,
   getPatientById,
@@ -1231,6 +1324,7 @@ module.exports = {
   getDashboard,
   getProgress,
   getAppointments,
+  bookAppointment,
   cancelAppointment,
   rescheduleAppointment,
   getDailyNotes,

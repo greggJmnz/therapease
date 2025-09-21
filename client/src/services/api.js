@@ -79,6 +79,7 @@ export const adminAPI = {
   updateUser: (id, userData) => api.put(`/admin/users/${id}`, userData),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   updateUserStatus: (id, status) => api.put(`/admin/users/${id}/status`, { status }),
+  createAppointment: (appointmentData) => api.post('/admin/appointments', appointmentData),
 };
 
 // Therapist API endpoints
@@ -125,7 +126,8 @@ export const therapistAPI = {
 export const patientAPI = {
   getDashboard: () => api.get(`/patient/dashboard?_t=${Date.now()}`),
   getProgress: () => api.get(`/patient/progress?_t=${Date.now()}`),
-  getAppointments: () => api.get(`/patient/appointments?_t=${Date.now()}`),
+  getAppointments: () => api.get(`/patient/appointments?_t=${Date.now()}`).then(response => response.data),
+  bookAppointment: (appointmentData) => api.post('/patient/appointments', appointmentData),
   cancelAppointment: (id) => api.put(`/patient/appointments/${id}/cancel`),
   rescheduleAppointment: (id, data) => api.put(`/patient/appointments/${id}/reschedule`, data),
   getDailyNotes: () => api.get(`/patient/daily-notes?_t=${Date.now()}`),

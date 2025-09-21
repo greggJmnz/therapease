@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+import InitialsAvatar from '../../components/InitialsAvatar';
 
 const AdminPatients = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -102,16 +103,75 @@ const AdminPatients = () => {
   });
 
   const handleEditPatient = (patient) => {
-    setEditingPatient(patient);
-    // TODO: Implement edit functionality
-    toast.info('Edit functionality coming soon');
+    setEditingPatient({ ...patient });
+    setSelectedPatient(null);
   };
 
+  const handleSavePatient = async () => {
+    if (editingPatient) {
+      try {
+        // Prepare the data for the API call
+        const updateData = {
+          firstName: editingPatient.firstName,
+          lastName: editingPatient.lastName,
+          email: editingPatient.email,
+          phone: editingPatient.phone,
+          gender: editingPatient.gender,
+          dateOfBirth: editingPatient.dateOfBirth,
+          address: editingPatient.address,
+          city: editingPatient.city,
+          state: editingPatient.state,
+          zipCode: editingPatient.zipCode,
+          // Patient-specific data
+          patient: {
+            diagnosis: editingPatient.patient?.diagnosis || '',
+            medicalHistory: editingPatient.patient?.medicalHistory || '',
+            status: editingPatient.patient?.status || 'active'
+          }
+        };
 
-  const handleDeletePatient = (patientId) => {
+        await adminAPI.updateUser(editingPatient.id, updateData);
+        toast.success('Patient updated successfully');
+        setEditingPatient(null);
+        refetch(); // Refresh data from API
+      } catch (error) {
+        console.error('Error updating patient:', error);
+        toast.error('Failed to update patient');
+      }
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPatient(null);
+  };
+
+  const handleInputChange = (field, value) => {
+    if (editingPatient) {
+      if (field.startsWith('patient.')) {
+        const patientField = field.replace('patient.', '');
+        setEditingPatient(prev => ({
+          ...prev,
+          patient: {
+            ...prev.patient,
+            [patientField]: value
+          }
+        }));
+      } else {
+        setEditingPatient(prev => ({ ...prev, [field]: value }));
+      }
+    }
+  };
+
+  const handleDeletePatient = async (patientId) => {
     if (window.confirm('Are you sure you want to delete this patient?')) {
-      // TODO: Implement delete functionality with API call
-      toast.success('Patient deleted successfully');
+      try {
+        await adminAPI.deleteUser(patientId);
+        toast.success('Patient deleted successfully');
+        refetch(); // Refresh data from API
+      } catch (error) {
+        console.error('Error deleting patient:', error);
+        toast.error('Failed to delete patient');
+      }
     }
   };
 
@@ -270,9 +330,10 @@ const AdminPatients = () => {
                   <tr key={patient.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                          <User className="h-5 w-5 text-blue-600" />
-                        </div>
+                        <InitialsAvatar 
+                          name={`${patient.firstName} ${patient.lastName}`} 
+                          size="md" 
+                        />
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
                             {patient.firstName} {patient.lastName}
@@ -366,10 +427,10 @@ const AdminPatients = () => {
               <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-8 rounded-t-2xl">
                 <div className="flex items-center gap-6">
                   <div className="relative">
-                    <img 
-                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face" 
-                      alt={selectedPatient.firstName} 
-                      className="w-20 h-20 rounded-full border-4 border-white/30 shadow-lg"
+                    <InitialsAvatar 
+                      name={`${selectedPatient.firstName} ${selectedPatient.lastName}`} 
+                      size="3xl" 
+                      className="border-4 border-white/30 shadow-lg"
                     />
                     <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
                       (selectedPatient.patient?.status || 'active') === 'active' 
@@ -536,6 +597,218 @@ const AdminPatients = () => {
                   <button className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     Schedule Session
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Patient Modal */}
+        {editingPatient && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Edit Patient</h2>
+                    <p className="text-blue-100 mt-1">Update patient information and medical details</p>
+                  </div>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-8 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Personal Information */}
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <User className="h-5 w-5 text-blue-600" />
+                      </div>
+                      Personal Information
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                        <input
+                          type="text"
+                          value={editingPatient.firstName || ''}
+                          onChange={(e) => handleInputChange('firstName', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                        <input
+                          type="text"
+                          value={editingPatient.lastName || ''}
+                          onChange={(e) => handleInputChange('lastName', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                      <input
+                        type="email"
+                        value={editingPatient.email || ''}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                        <input
+                          type="tel"
+                          value={editingPatient.phone || ''}
+                          onChange={(e) => handleInputChange('phone', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                        <select
+                          value={editingPatient.gender || ''}
+                          onChange={(e) => handleInputChange('gender', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                      <input
+                        type="date"
+                        value={editingPatient.dateOfBirth ? editingPatient.dateOfBirth.split('T')[0] : ''}
+                        onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                      <input
+                        type="text"
+                        value={editingPatient.address || ''}
+                        onChange={(e) => handleInputChange('address', e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                        <input
+                          type="text"
+                          value={editingPatient.city || ''}
+                          onChange={(e) => handleInputChange('city', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                        <input
+                          type="text"
+                          value={editingPatient.state || ''}
+                          onChange={(e) => handleInputChange('state', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
+                        <input
+                          type="text"
+                          value={editingPatient.zipCode || ''}
+                          onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Medical Information */}
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-green-600" />
+                      </div>
+                      Medical Information
+                    </h3>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
+                      <textarea
+                        value={editingPatient.patient?.diagnosis || ''}
+                        onChange={(e) => handleInputChange('patient.diagnosis', e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter primary diagnosis..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Medical History</label>
+                      <textarea
+                        value={editingPatient.patient?.medicalHistory || ''}
+                        onChange={(e) => handleInputChange('patient.medicalHistory', e.target.value)}
+                        rows={4}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter medical history and relevant information..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Treatment Status</label>
+                      <select
+                        value={editingPatient.patient?.status || 'active'}
+                        onChange={(e) => handleInputChange('patient.status', e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="active">Active</option>
+                        <option value="pending">Pending</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="discharged">Discharged</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 bg-gray-50 border-t border-gray-200">
+                <div className="flex flex-wrap gap-3 justify-end">
+                  <button
+                    onClick={handleCancelEdit}
+                    className="px-6 py-3 text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSavePatient}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Save Changes
                   </button>
                 </div>
               </div>

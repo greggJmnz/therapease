@@ -20,6 +20,7 @@ router.get('/therapists', adminController.getUsers);
 
 // Appointment management
 router.get('/appointments', adminController.getAppointments);
+router.post('/appointments', adminController.createAppointment);
 
 // User management
 router.put('/users/:userId', adminController.updateUser);

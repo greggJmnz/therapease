@@ -3,8 +3,8 @@ const { runQuery, getRow, getAll } = require('../config/database');
 // Get therapist dashboard data
 const getDashboard = async (req, res) => {
   try {
-    // Get therapist ID from request (in real app, get from auth token)
-    const therapistId = 2; // Hardcoded for now, should come from JWT token
+    // Get therapist ID from authenticated user (therapistId in patients table refers to userId)
+    const therapistId = req.user.userId;
 
     // Get patient count
     const patientCountSql = `
@@ -13,8 +13,8 @@ const getDashboard = async (req, res) => {
       WHERE p.therapistId = ?
     `;
 
-    const [patientCountResult] = await getAll(patientCountSql, [therapistId]);
-    const totalPatients = patientCountResult.total;
+    const patientCountResult = await getAll(patientCountSql, [therapistId]);
+    const totalPatients = patientCountResult[0]?.total || 0;
 
     // Get assessment count
     const assessmentCountSql = `
@@ -27,8 +27,8 @@ const getDashboard = async (req, res) => {
       WHERE a.therapistId = ?
     `;
 
-    const [assessmentCountResult] = await getAll(assessmentCountSql, [therapistId]);
-    const assessmentStats = assessmentCountResult;
+    const assessmentCountResult = await getAll(assessmentCountSql, [therapistId]);
+    const assessmentStats = assessmentCountResult[0] || { total: 0, completed: 0, inProgress: 0, scheduled: 0 };
 
     // Get appointment count
     const appointmentCountSql = `
@@ -42,8 +42,8 @@ const getDashboard = async (req, res) => {
       WHERE a.therapistId = ?
     `;
 
-    const [appointmentCountResult] = await getAll(appointmentCountSql, [therapistId]);
-    const appointmentStats = appointmentCountResult;
+    const appointmentCountResult = await getAll(appointmentCountSql, [therapistId]);
+    const appointmentStats = appointmentCountResult[0] || { total: 0, scheduled: 0, confirmed: 0, completed: 0, cancelled: 0 };
 
     // Get daily notes count
     const dailyNotesCountSql = `
@@ -52,8 +52,8 @@ const getDashboard = async (req, res) => {
       WHERE dn.therapistId = ? AND dn.sessionDate = CURDATE()
     `;
 
-    const [dailyNotesCountResult] = await getAll(dailyNotesCountSql, [therapistId]);
-    const todayNotes = dailyNotesCountResult.total;
+    const dailyNotesCountResult = await getAll(dailyNotesCountSql, [therapistId]);
+    const todayNotes = dailyNotesCountResult[0]?.total || 0;
 
     // Get progress tracking count
     const progressCountSql = `
@@ -63,8 +63,8 @@ const getDashboard = async (req, res) => {
       WHERE p.therapistId = ?
     `;
 
-    const [progressCountResult] = await getAll(progressCountSql, [therapistId]);
-    const totalProgressEntries = progressCountResult.total;
+    const progressCountResult = await getAll(progressCountSql, [therapistId]);
+    const totalProgressEntries = progressCountResult[0]?.total || 0;
 
     // Get recent assessments
     const recentAssessmentsSql = `
@@ -194,8 +194,8 @@ const getDashboard = async (req, res) => {
       WHERE a.therapistId = ?
     `;
 
-    const [completionRateResult] = await getAll(completionRateSql, [therapistId]);
-    const completionRate = completionRateResult.completionRate || 0;
+    const completionRateResult = await getAll(completionRateSql, [therapistId]);
+    const completionRate = completionRateResult[0]?.completionRate || 0;
 
     // Get average session duration
     const avgSessionDurationSql = `
@@ -205,8 +205,8 @@ const getDashboard = async (req, res) => {
       WHERE dn.therapistId = ? AND dn.sessionDuration IS NOT NULL
     `;
 
-    const [avgSessionDurationResult] = await getAll(avgSessionDurationSql, [therapistId]);
-    const avgSessionDuration = avgSessionDurationResult.avgDuration || 0;
+    const avgSessionDurationResult = await getAll(avgSessionDurationSql, [therapistId]);
+    const avgSessionDuration = avgSessionDurationResult[0]?.avgDuration || 0;
 
     res.json({
       success: true,
@@ -257,8 +257,8 @@ const getDashboard = async (req, res) => {
 // Get dashboard quick actions
 const getQuickActions = async (req, res) => {
   try {
-    // Get therapist ID from request (in real app, get from auth token)
-    const therapistId = 2; // Hardcoded for now, should come from JWT token
+    // Get therapist ID from authenticated user (therapistId in patients table refers to userId)
+    const therapistId = req.user.userId;
 
     // Get patients needing follow-up
     const followUpPatientsSql = `
@@ -335,8 +335,8 @@ const getQuickActions = async (req, res) => {
 // Get dashboard charts data
 const getDashboardCharts = async (req, res) => {
   try {
-    // Get therapist ID from request (in real app, get from auth token)
-    const therapistId = 2; // Hardcoded for now, should come from JWT token
+    // Get therapist ID from authenticated user (therapistId in patients table refers to userId)
+    const therapistId = req.user.userId;
     const { period = 'month' } = req.query;
 
     let dateFormat, dateRange;

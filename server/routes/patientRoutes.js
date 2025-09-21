@@ -19,6 +19,7 @@ router.get('/progress', patientController.getProgress);
 
 // Appointments
 router.get('/appointments', patientController.getAppointments);
+router.post('/appointments', patientController.bookAppointment);
 router.put('/appointments/:id/cancel', patientController.cancelAppointment);
 router.put('/appointments/:id/reschedule', patientController.rescheduleAppointment);
 

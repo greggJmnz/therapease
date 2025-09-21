@@ -20,6 +20,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { therapistAPI } from '../../services/api';
+import InitialsAvatar from '../../components/InitialsAvatar';
 
 const TherapistPatients = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,7 +44,6 @@ const TherapistPatients = () => {
     name: `${patient.firstName} ${patient.lastName}`,
     age: patient.dateOfBirth ? new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear() : 'N/A',
     gender: patient.gender || 'Not specified',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     status: patient.status || 'active',
     progress: 75, // This would come from progress tracking data - using consistent value
     lastSession: 'No recent session', // This would come from session data
@@ -131,7 +131,10 @@ const TherapistPatients = () => {
         <div className="space-y-4">
           {patients.slice(0, 3).map(patient => (
             <div key={patient.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <img src={patient.image} alt={patient.name} className="w-12 h-12 rounded-full" />
+              <InitialsAvatar 
+                name={patient.name} 
+                size="md" 
+              />
               <div className="flex-1">
                 <h4 className="font-medium text-gray-900">{patient.name}</h4>
                 <p className="text-sm text-gray-600">Last session: {patient.lastSession}</p>
@@ -184,7 +187,10 @@ const TherapistPatients = () => {
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <img src={patient.image} alt={patient.name} className="w-16 h-16 rounded-full" />
+                  <InitialsAvatar 
+                    name={patient.name} 
+                    size="lg" 
+                  />
                   <div>
                     <h3 className="font-semibold text-gray-900 text-lg">{patient.name}</h3>
                     <p className="text-sm text-gray-600">{patient.age} years old • {patient.gender}</p>
@@ -324,7 +330,11 @@ const TherapistPatients = () => {
                 {/* Patient Info */}
                 <div className="lg:col-span-1">
                   <div className="text-center mb-6">
-                    <img src={selectedPatient.image} alt={selectedPatient.name} className="w-32 h-32 rounded-full mx-auto mb-4" />
+                    <InitialsAvatar 
+                      name={selectedPatient.name} 
+                      size="3xl" 
+                      className="mx-auto mb-4"
+                    />
                     <h4 className="text-xl font-semibold text-gray-900 mb-2">{selectedPatient.name}</h4>
                     <p className="text-gray-600">{selectedPatient.age} years old • {selectedPatient.gender}</p>
                   </div>
