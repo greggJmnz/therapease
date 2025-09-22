@@ -2,6 +2,16 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { 
+  isWindows, 
+  execCommand, 
+  createDirectory, 
+  fileExists, 
+  joinPaths,
+  generateSSLCertificates,
+  getOpenSSLCommand,
+  isOpenSSLAvailable
+} = require('../utils/windowsCompatibility');
 
 // SSL/TLS Configuration
 const SSL_CONFIG = {
@@ -31,50 +41,57 @@ const SSL_CONFIG = {
 
 // Generate self-signed certificate for development
 const generateSelfSignedCert = () => {
-  const { execSync } = require('child_process');
-  const certDir = path.join(__dirname, '../certs');
+  const certDir = joinPaths(__dirname, '../certs');
   
   // Create certs directory if it doesn't exist
-  if (!fs.existsSync(certDir)) {
-    fs.mkdirSync(certDir, { recursive: true });
-  }
+  createDirectory(certDir);
   
-  const keyPath = path.join(certDir, 'server.key');
-  const certPath = path.join(certDir, 'server.crt');
+  const keyPath = joinPaths(certDir, 'server.key');
+  const certPath = joinPaths(certDir, 'server.crt');
   
   // Check if certificates already exist
-  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+  if (fileExists(keyPath) && fileExists(certPath)) {
     console.log('✅ SSL certificates already exist');
     return { keyPath, certPath };
   }
   
-  try {
-    console.log('🔐 Generating self-signed SSL certificates...');
-    
-    // Generate private key
-    execSync(`openssl genrsa -out "${keyPath}" 4096`, { stdio: 'inherit' });
-    
-    // Generate certificate
-    const certCommand = `openssl req -new -x509 -key "${keyPath}" -out "${certPath}" -days 365 -subj "/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=localhost"`;
-    execSync(certCommand, { stdio: 'inherit' });
-    
-    console.log('✅ SSL certificates generated successfully');
-    return { keyPath, certPath };
-  } catch (error) {
-    console.error('❌ Failed to generate SSL certificates:', error.message);
-    console.log('💡 Make sure OpenSSL is installed on your system');
+  // Check if OpenSSL is available
+  if (!isOpenSSLAvailable()) {
+    console.error('❌ OpenSSL is not available on this system');
+    if (isWindows) {
+      console.log('💡 For Windows, you can:');
+      console.log('   1. Install OpenSSL from https://slproweb.com/products/Win32OpenSSL.html');
+      console.log('   2. Add OpenSSL to your PATH environment variable');
+      console.log('   3. Or use Windows Subsystem for Linux (WSL)');
+    } else {
+      console.log('💡 Make sure OpenSSL is installed on your system');
+    }
     return null;
   }
+  
+  console.log('🔐 Generating self-signed SSL certificates...');
+  
+  const success = generateSSLCertificates(keyPath, certPath, {
+    keySize: 4096,
+    days: 365,
+    subject: '/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=localhost'
+  });
+  
+  if (success) {
+    return { keyPath, certPath };
+  }
+  
+  return null;
 };
 
 // Load SSL certificates
 const loadSSLCertificates = () => {
-  const certDir = path.join(__dirname, '../certs');
-  const keyPath = path.join(certDir, 'server.key');
-  const certPath = path.join(certDir, 'server.crt');
+  const certDir = joinPaths(__dirname, '../certs');
+  const keyPath = joinPaths(certDir, 'server.key');
+  const certPath = joinPaths(certDir, 'server.crt');
   
   // Check if certificates exist
-  if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+  if (!fileExists(keyPath) || !fileExists(certPath)) {
     console.log('⚠️  SSL certificates not found. Generating self-signed certificates...');
     const generated = generateSelfSignedCert();
     if (!generated) {

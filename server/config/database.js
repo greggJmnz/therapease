@@ -1,22 +1,30 @@
 const mysql = require('mysql2/promise');
 const path = require('path');
 const { hashPassword } = require('../utils/password');
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+const { joinPaths, getEnvVar } = require('../utils/windowsCompatibility');
 
-// Database configuration
+// Load environment variables with Windows compatibility
+require('dotenv').config({ path: joinPaths(__dirname, '../../.env') });
+
+// Database configuration with Windows compatibility
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'therapease',
-  port: process.env.DB_PORT || 3306,
+  host: getEnvVar('DB_HOST', 'localhost'),
+  user: getEnvVar('DB_USER', 'root'),
+  password: getEnvVar('DB_PASSWORD', ''),
+  database: getEnvVar('DB_NAME', 'therapease'),
+  port: parseInt(getEnvVar('DB_PORT', '3306')),
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
   acquireTimeout: 60000,
   connectTimeout: 60000,
   acquireTimeoutMillis: 60000,
-  timeout: 60000
+  timeout: 60000,
+  // Windows-specific MySQL configuration
+  charset: 'utf8mb4',
+  timezone: 'Z',
+  // Handle Windows path separators in connection strings
+  ssl: false
 };
 
 // Create connection pool

@@ -9,7 +9,11 @@
     "dev:client": "cd client && npm start",
     "build": "cd client && npm run build",
     "start": "cd server && npm start",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "setup": "npm run install:all && cd server && npm run security:setup && npm run db:init",
+    "setup:windows": "npm run install:all && cd server && npm run security:setup && npm run db:init",
+    "test:ssl": "cd server && npm run security:test",
+    "test:ssl:windows": "cd server && npm run security:test"
   },
   "keywords": [
     "occupational-therapy",

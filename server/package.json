@@ -9,8 +9,8 @@
     "db:init": "node scripts/init-database.js",
     "db:seed": "node scripts/simple-seed.js",
     "security:setup": "node scripts/setup-security.js",
-    "security:test": "curl -k https://localhost:5443/health/ssl",
-    "ssl:generate": "openssl req -x509 -newkey rsa:4096 -keyout certs/server.key -out certs/server.crt -days 365 -nodes -subj '/C=US/ST=State/L=City/O=TherapEase/CN=localhost'",
+    "security:test": "node scripts/test-ssl.js",
+    "ssl:generate": "node scripts/generate-ssl.js",
     "sms:setup": "node scripts/setup-sms.js",
     "sms:test": "node scripts/test-sms.js",
     "sms:test-ph": "node scripts/test-ph-sms.js",
@@ -19,7 +19,8 @@
     "notifications:test": "node scripts/test-real-notifications.js",
     "notifications:db-test": "node scripts/test-database-notifications.js",
     "notifications:create": "node scripts/check-users-and-create-notifications.js",
-    "seed:sample": "node scripts/seed-sample-data.js"
+    "seed:sample": "node scripts/seed-sample-data.js",
+    "test:windows": "node scripts/test-windows-compatibility.js"
   },
   "dependencies": {
     "axios": "^1.6.0",

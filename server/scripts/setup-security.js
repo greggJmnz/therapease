@@ -3,6 +3,18 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { 
+  isWindows, 
+  execCommand, 
+  createDirectory, 
+  fileExists, 
+  joinPaths,
+  copyFile,
+  generateSSLCertificates,
+  getOpenSSLCommand,
+  isOpenSSLAvailable,
+  getPlatformInfo
+} = require('../utils/windowsCompatibility');
 
 console.log('🔐 TherapEase Security Setup');
 console.log('============================\n');
@@ -24,15 +36,15 @@ const generateSessionSecret = () => {
 
 // Create .env file with security configuration
 const createEnvFile = () => {
-  const envPath = path.join(__dirname, '../../.env');
-  const envExamplePath = path.join(__dirname, '../../env.security.example');
+  const envPath = joinPaths(__dirname, '../../.env');
+  const envExamplePath = joinPaths(__dirname, '../../env.security.example');
   
-  if (fs.existsSync(envPath)) {
+  if (fileExists(envPath)) {
     console.log('⚠️  .env file already exists. Backing up to .env.backup');
-    fs.copyFileSync(envPath, envPath + '.backup');
+    copyFile(envPath, envPath + '.backup');
   }
   
-  if (fs.existsSync(envExamplePath)) {
+  if (fileExists(envExamplePath)) {
     let envContent = fs.readFileSync(envExamplePath, 'utf8');
     
     // Replace placeholder values with generated ones
@@ -49,43 +61,43 @@ const createEnvFile = () => {
 
 // Generate SSL certificates
 const generateSSLCertificates = () => {
-  const certsDir = path.join(__dirname, '../certs');
+  const certsDir = joinPaths(__dirname, '../certs');
   
-  if (!fs.existsSync(certsDir)) {
-    fs.mkdirSync(certsDir, { recursive: true });
-    console.log('📁 Created certs directory');
-  }
+  createDirectory(certsDir);
+  console.log('📁 Created certs directory');
   
-  const keyPath = path.join(certsDir, 'server.key');
-  const certPath = path.join(certsDir, 'server.crt');
+  const keyPath = joinPaths(certsDir, 'server.key');
+  const certPath = joinPaths(certsDir, 'server.crt');
   
-  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+  if (fileExists(keyPath) && fileExists(certPath)) {
     console.log('✅ SSL certificates already exist');
     return;
   }
   
-  try {
-    const { execSync } = require('child_process');
-    
-    console.log('🔐 Generating SSL certificates...');
-    
-    // Generate private key
-    execSync(`openssl genrsa -out "${keyPath}" 4096`, { stdio: 'inherit' });
-    
-    // Generate certificate
-    const certCommand = `openssl req -new -x509 -key "${keyPath}" -out "${certPath}" -days 365 -subj "/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=localhost"`;
-    execSync(certCommand, { stdio: 'inherit' });
-    
-    console.log('✅ SSL certificates generated successfully');
-  } catch (error) {
-    console.log('❌ Failed to generate SSL certificates:', error.message);
-    console.log('💡 Make sure OpenSSL is installed on your system');
+  console.log('🔐 Generating SSL certificates...');
+  
+  const success = generateSSLCertificates(keyPath, certPath, {
+    keySize: 4096,
+    days: 365,
+    subject: '/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=localhost'
+  });
+  
+  if (!success) {
+    console.log('❌ Failed to generate SSL certificates');
+    if (isWindows) {
+      console.log('💡 For Windows, you can:');
+      console.log('   1. Install OpenSSL from https://slproweb.com/products/Win32OpenSSL.html');
+      console.log('   2. Add OpenSSL to your PATH environment variable');
+      console.log('   3. Or use Windows Subsystem for Linux (WSL)');
+    } else {
+      console.log('💡 Make sure OpenSSL is installed on your system');
+    }
   }
 };
 
 // Create security documentation
 const createSecurityDocs = () => {
-  const docsPath = path.join(__dirname, '../../docs/SECURITY.md');
+  const docsPath = joinPaths(__dirname, '../../docs/SECURITY.md');
   const securityDoc = `# 🔐 TherapEase Security Documentation
 
 ## Overview
@@ -158,6 +170,12 @@ For security questions or concerns, contact the development team.
 // Main setup function
 const setupSecurity = () => {
   try {
+    // Display platform information
+    const platformInfo = getPlatformInfo();
+    console.log(`🖥️  Platform: ${platformInfo.platform} ${platformInfo.arch}`);
+    console.log(`📦 Node.js: ${platformInfo.nodeVersion}`);
+    console.log(`🔧 NPM: ${platformInfo.npmVersion}\n`);
+    
     console.log('1. Creating environment configuration...');
     createEnvFile();
     
@@ -176,7 +194,12 @@ const setupSecurity = () => {
     console.log('\n🔗 Useful commands:');
     console.log('   npm run dev          # Start development server');
     console.log('   npm run build        # Build for production');
-    console.log('   curl https://localhost:5443/health/ssl  # Test SSL');
+    if (isWindows) {
+      console.log('   curl https://localhost:5443/health/ssl  # Test SSL (if curl is available)');
+      console.log('   powershell -Command "Invoke-WebRequest -Uri https://localhost:5443/health/ssl -SkipCertificateCheck"  # Test SSL with PowerShell');
+    } else {
+      console.log('   curl https://localhost:5443/health/ssl  # Test SSL');
+    }
     
   } catch (error) {
     console.error('❌ Security setup failed:', error.message);
