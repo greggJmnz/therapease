@@ -96,9 +96,18 @@ const getDailyNotes = async (req, res) => {
     const dailyNotes = await getAll(sql, queryParams);
     
 
-    // Decrypt sensitive fields for therapist and parse comments (copied from patient controller)
+    // Process notes and handle encryption gracefully
     const decryptedNotes = dailyNotes.map(note => {
-      const decryptedNote = decryptSensitiveFields(note, ['content', 'activities', 'observations', 'progress', 'challenges', 'nextSteps', 'goals']);
+      // Try to decrypt sensitive fields, but handle errors gracefully
+      let processedNote = { ...note };
+      
+      try {
+        processedNote = decryptSensitiveFields(note, ['content', 'activities', 'observations', 'progress', 'challenges', 'nextSteps', 'goals']);
+      } catch (error) {
+        console.log('Note decryption failed for note', note.id, '- using original data');
+        // If decryption fails, use original data
+        processedNote = note;
+      }
       
       // Parse comments from JSON string or initialize empty array
       let comments = [];
@@ -107,12 +116,12 @@ const getDailyNotes = async (req, res) => {
           comments = JSON.parse(note.comments);
         }
       } catch (error) {
-        console.error('Error parsing comments for note', note.id, ':', error);
+        console.log('Error parsing comments for note', note.id, ':', error.message);
         comments = [];
       }
       
       return {
-        ...decryptedNote,
+        ...processedNote,
         comments: Array.isArray(comments) ? comments : []
       };
     });

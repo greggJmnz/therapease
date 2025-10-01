@@ -1,36 +1,37 @@
 {
   "name": "therapease",
   "version": "1.0.0",
-  "description": "A Web-based Pediatric Occupational Therapy System with AI Augmented Assessment",
-  "main": "index.js",
+  "description": "TherapEase - Professional Therapy Management System",
+  "main": "server/index.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\" \"npm run dev:public\"",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm start",
+    "dev:public": "cd public-website && node server.js",
     "build": "cd client && npm run build",
     "start": "cd server && npm start",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install",
-    "setup": "npm run install:all && cd server && npm run security:setup && npm run db:init",
-    "setup:windows": "npm run install:all && cd server && npm run security:setup && npm run db:init",
-    "test:ssl": "cd server && npm run security:test",
-    "test:ssl:windows": "cd server && npm run security:test"
+    "setup": "npm run install:all && cd server && npm run setup",
+    "test": "cd server && npm test",
+    "lint": "cd client && npm run lint",
+    "lint:fix": "cd client && npm run lint:fix"
   },
   "keywords": [
-    "occupational-therapy",
-    "ai",
+    "therapy",
     "healthcare",
-    "management"
+    "management",
+    "system",
+    "patient",
+    "therapist",
+    "admin"
   ],
-  "author": "TherapEase Team",
+  "author": "TherapEase Development Team",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
-  "workspaces": [
-    "client",
-    "server"
-  ],
-  "dependencies": {
-    "axios": "^1.11.0"
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

@@ -1,21 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
+import { useNotifications } from '../../hooks/useNotifications';
 import {
   Calendar,
   FileText,
   TrendingUp,
-  Clock,
-  AlertCircle,
   Plus,
-  Eye,
-  Download,
+  User,
+  Award,
+  BarChart3,
+  Bell,
+  Target,
+  Activity,
+  CheckCircle,
+  BookOpen,
   MessageSquare,
+  Eye,
+  Heart,
+  Star,
+  ArrowRight
 } from 'lucide-react';
 import { patientAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const PatientDashboard = () => {
+
   // Fetch dashboard data from API
   const { data: dashboardData, isLoading, error } = useQuery(
     'patientDashboard',
@@ -24,48 +34,60 @@ const PatientDashboard = () => {
       onError: (error) => {
         toast.error('Failed to load dashboard data');
         console.error('Error fetching dashboard:', error);
+      },
+      onSuccess: (data) => {
+        // Dashboard data loaded successfully
       }
     }
   );
 
-  // Extract data from API response (patient API has single nesting)
-  const patient = dashboardData?.data?.patient || {};
-  const therapist = dashboardData?.data?.therapist || {};
-  const upcomingAppointments = dashboardData?.data?.upcomingAppointments || [];
-  const recentProgress = dashboardData?.data?.recentProgress || [];
+  // Get notifications for the patient
+  const { notifications, stats: notificationStats } = useNotifications();
 
-  // Calculate stats from real data
-  const stats = {
-    upcomingAppointments: upcomingAppointments.length,
-    recentNotes: 0, // This would need to be fetched from daily notes API
-    progressUpdates: recentProgress.length,
-    pendingTasks: 0, // This would need to be calculated from home exercises
-  };
+  // Process real dashboard data with useMemo
+  const dashboardStats = useMemo(() => {
+    if (!dashboardData?.data?.data) {
+      return {
+        totalAppointments: 0,
+        completedAssessments: 0,
+        progressEntries: 0,
+        dailyNotesCount: 0,
+        patientName: 'Patient',
+        therapistName: 'Your Therapist',
+        therapistSpecialization: 'Therapy Specialist',
+        therapistExperience: 0,
+        upcomingAppointments: [],
+        recentProgress: [],
+        recentAssessments: [],
+        diagnosis: 'No diagnosis available',
+        patient: {
+          goals: 'Your therapy goals will be set during your first session with your therapist.'
+        }
+      };
+    }
 
-  // Transform appointments to match component expectations
-  const transformedAppointments = upcomingAppointments.map(appointment => ({
-    id: appointment.id,
-    date: appointment.appointmentDate,
-    time: appointment.startTime,
-    therapist: `${therapist.firstName} ${therapist.lastName}`,
-    type: appointment.type || 'Regular Session'
-  }));
+    // Extract data from nested API response structure
+    const data = dashboardData.data.data;
+    
+    return {
+      totalAppointments: data.upcomingAppointments?.length || 0,
+      completedAssessments: data.recentAssessments?.filter(a => a && a.status === 'completed')?.length || 0,
+      progressEntries: data.recentProgress?.length || 0,
+      dailyNotesCount: data.dailyNotesCount || 0,
+      patientName: data.patient?.firstName || 'Patient',
+      therapistName: data.therapist ? `${data.therapist.firstName || ''} ${data.therapist.lastName || ''}`.trim() || 'Your Therapist' : 'Your Therapist',
+      therapistSpecialization: data.therapist?.specialization || 'Therapy Specialist',
+      therapistExperience: data.therapist?.yearsOfExperience || 0,
+      upcomingAppointments: Array.isArray(data.upcomingAppointments) ? data.upcomingAppointments : [],
+      recentProgress: Array.isArray(data.recentProgress) ? data.recentProgress : [],
+      recentAssessments: Array.isArray(data.recentAssessments) ? data.recentAssessments : [],
+      diagnosis: data.patient?.diagnosis || 'No diagnosis available',
+      patient: data.patient || {}
+    };
+  }, [dashboardData]);
 
-  // Transform progress to notes format for display
-  const recentNotes = recentProgress.map(progress => ({
-    id: progress.area,
-    date: progress.measurementDate,
-    therapist: `${therapist.firstName} ${therapist.lastName}`,
-    summary: progress.progressNotes || `Progress update for ${progress.area}`
-  }));
-
-  // Debug logging (can be removed in production)
-  console.log('PatientDashboard - dashboardData:', dashboardData);
-  console.log('PatientDashboard - patient:', patient);
-  console.log('PatientDashboard - therapist:', therapist);
-  console.log('PatientDashboard - stats:', stats);
-  console.log('PatientDashboard - transformedAppointments:', transformedAppointments);
-  console.log('PatientDashboard - recentProgress:', recentProgress);
+  // Get recent notifications
+  const recentNotifications = notifications?.slice(0, 3) || [];
 
   // Error state
   if (error) {
@@ -86,311 +108,346 @@ const PatientDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="patient-dashboard">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your dashboard data...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="sm:flex sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Patient Dashboard</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Welcome back, {patient.firstName}! Here's your therapy progress and upcoming activities.
-          </p>
+    <div className="patient-dashboard">
+      {/* Welcome Section */}
+      <div className="welcome-section">
+        <div className="welcome-content">
+          <div className="welcome-text">
+            <h1>Welcome back, {dashboardStats.patientName}!</h1>
+            <p>Ready to continue your progress? Let's keep building on your strengths and working towards your therapy goals together.</p>
+          </div>
+          <div className="welcome-actions">
+            <button className="btn-primary" onClick={() => window.location.href = '/patient/progress'}>
+              <Target size={18} />
+              <span>View Progress</span>
+            </button>
+            <button className="btn-secondary" onClick={() => window.location.href = '/patient/appointments'}>
+              <Calendar size={18} />
+              <span>Schedule Session</span>
+            </button>
+          </div>
         </div>
-        <div className="mt-4 sm:mt-0">
+      </div>
+
+
+      {/* Stats Overview */}
+      <div className="stats-overview">
+        <div className="stat-card">
+          <div className="stat-icon appointments">
+            <Calendar size={20} />
+          </div>
+          <div className="stat-content">
+            <h3>Total Sessions</h3>
+            <p className="stat-number">{dashboardStats.totalAppointments}</p>
+            <span className="stat-change positive">
+              <CheckCircle size={12} />
+              Completed
+            </span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon assessments">
+            <Target size={20} />
+          </div>
+          <div className="stat-content">
+            <h3>Assessments</h3>
+            <p className="stat-number">{dashboardStats.completedAssessments}</p>
+            <span className="stat-change positive">
+              <Award size={12} />
+              Completed
+            </span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon progress">
+            <TrendingUp size={20} />
+          </div>
+          <div className="stat-content">
+            <h3>Progress Entries</h3>
+            <p className="stat-number">{dashboardStats.progressEntries}</p>
+            <span className="stat-change positive">
+              <Activity size={12} />
+              Tracked
+            </span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon notes">
+            <FileText size={20} />
+          </div>
+          <div className="stat-content">
+            <h3>Daily Notes</h3>
+            <p className="stat-number">{dashboardStats.dailyNotesCount}</p>
+            <span className="stat-change positive">
+              <BookOpen size={12} />
+              Available
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions Section */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="actions-grid">
           <Link
             to="/patient/appointments"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="action-card"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Book Appointment
+            <div className="action-icon">
+              <Calendar className="h-6 w-6" />
+            </div>
+            <div className="action-content">
+              <h4>Book Session</h4>
+              <p>Schedule session</p>
+            </div>
+          </Link>
+
+          <Link
+            to="/patient/progress"
+            className="action-card"
+          >
+            <div className="action-icon">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+            <div className="action-content">
+              <h4>View Progress</h4>
+              <p>Track progress</p>
+            </div>
+          </Link>
+
+          <Link
+            to="/patient/daily-notes"
+            className="action-card"
+          >
+            <div className="action-icon">
+              <MessageSquare className="h-6 w-6" />
+            </div>
+            <div className="action-content">
+              <h4>Daily Notes</h4>
+              <p>Read notes</p>
+            </div>
           </Link>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Calendar className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Upcoming Appointments</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.upcomingAppointments}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <FileText className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Recent Notes</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.recentNotes}</dd>
-                </dl>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Upcoming Sessions & Progress Summary */}
+        <div className="lg:col-span-2 space-y-5">
+          {/* Upcoming Sessions */}
+          <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-sm border border-blue-100">
+            <div className="px-4 py-3 border-b border-blue-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Upcoming Sessions</h3>
+                  <p className="text-xs text-gray-600">Your scheduled therapy sessions and assessments</p>
+                </div>
+                <Link
+                  to="/patient/appointments"
+                  className="text-blue-600 hover:text-emerald-600 text-xs font-medium flex items-center"
+                >
+                  View All
+                  <ArrowRight size={14} className="ml-1" />
+                </Link>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <TrendingUp className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Progress Updates</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.progressUpdates}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Clock className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Pending Tasks</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.pendingTasks}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Link
-              to="/patient/appointments"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-            >
-              <div className="flex-shrink-0">
-                <Calendar className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">Book Appointment</p>
-                <p className="text-sm text-gray-500">Schedule your next session</p>
-              </div>
-            </Link>
-
-            <Link
-              to="/patient/daily-notes"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-            >
-              <div className="flex-shrink-0">
-                <MessageSquare className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">View Notes</p>
-                <p className="text-sm text-gray-500">Read therapist updates</p>
-              </div>
-            </Link>
-
-            <Link
-              to="/patient/progress"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-            >
-              <div className="flex-shrink-0">
-                <Eye className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">Track Progress</p>
-                <p className="text-sm text-gray-500">Monitor your development</p>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Upcoming Appointments and Recent Notes */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Upcoming Appointments */}
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Upcoming Appointments</h3>
-            <div className="flow-root">
-              <ul className="-my-5 divide-y divide-gray-200">
-                {transformedAppointments.map((appointment) => (
-                  <li key={appointment.id} className="py-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                          <Calendar className="h-5 w-5 text-blue-600" />
+            <div className="p-4">
+              {dashboardStats.upcomingAppointments.length > 0 ? (
+                <div className="space-y-4">
+                  {dashboardStats.upcomingAppointments.slice(0, 3).map((appointment, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-emerald-50 rounded-lg border border-blue-100">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-emerald-100 rounded-lg flex items-center justify-center">
+                          <Calendar size={20} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {appointment.type || 'Therapy Session'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {appointment.appointmentDate ? new Date(appointment.appointmentDate).toLocaleDateString() : 'No date'} at {appointment.startTime}
+                          </p>
+                          <p className="text-xs text-gray-500">With {dashboardStats.therapistName}</p>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{appointment.therapist}</p>
-                        <p className="text-sm text-gray-500">{appointment.date} • {appointment.time}</p>
-                        <p className="text-sm text-gray-500">{appointment.type}</p>
-                      </div>
-                      <div>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {appointment.time}
+                      <div className="text-right">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                          appointment.status === 'scheduled' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {appointment.status || 'Scheduled'}
                         </span>
                       </div>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="mt-6">
-              <Link
-                to="/patient/appointments"
-                className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                View all appointments
-              </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-2">
+                    <Calendar className="h-12 w-12 mx-auto" />
+                  </div>
+                  <p className="text-sm text-gray-500">No upcoming sessions</p>
+                  <p className="text-xs text-gray-400 mt-1">Book a session to get started</p>
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Recent Notes */}
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Therapy Notes</h3>
-            <div className="flow-root">
-              <ul className="-my-5 divide-y divide-gray-200">
-                {recentNotes.map((note) => (
-                  <li key={note.id} className="py-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-green-600" />
+          {/* Progress Summary */}
+          <div className="bg-gradient-to-br from-white to-emerald-50 rounded-lg shadow-sm border border-emerald-100">
+            <div className="px-4 py-3 border-b border-emerald-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Recent Progress</h3>
+                  <p className="text-xs text-gray-600">Your latest progress tracking entries</p>
+                </div>
+                <Link
+                  to="/patient/progress"
+                  className="text-emerald-600 hover:text-green-600 text-xs font-medium flex items-center"
+                >
+                  View All
+                  <ArrowRight size={14} className="ml-1" />
+                </Link>
+              </div>
+            </div>
+            <div className="p-4">
+              {dashboardStats.recentProgress.length > 0 ? (
+                <div className="space-y-4">
+                  {dashboardStats.recentProgress.slice(0, 3).map((progress, index) => {
+                    const percentage = Math.round((progress.currentScore / progress.targetScore) * 100);
+                    const colors = [
+                      { bg: 'from-blue-500 to-emerald-500', text: 'text-blue-600', bgLight: 'bg-gradient-to-r from-blue-50 to-emerald-50' },
+                      { bg: 'from-emerald-500 to-green-500', text: 'text-emerald-600', bgLight: 'bg-gradient-to-r from-emerald-50 to-green-50' },
+                      { bg: 'from-green-500 to-teal-500', text: 'text-green-600', bgLight: 'bg-gradient-to-r from-green-50 to-teal-50' }
+                    ];
+                    const colorScheme = colors[index % colors.length];
+                    
+                    return (
+                      <div key={index} className={`p-3 rounded-lg border ${colorScheme.bgLight} border-emerald-100`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium text-gray-900">{progress.area}</h4>
+                          <span className="text-xs font-medium text-emerald-600">{percentage}%</span>
                         </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{note.therapist}</p>
-                        <p className="text-sm text-gray-500">{note.date}</p>
-                        <p className="text-sm text-gray-700 mt-1">{note.summary}</p>
-                      </div>
-                      <div>
-                        <Link
-                          to={`/patient/daily-notes/${note.id}`}
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-full text-green-700 bg-green-100 hover:bg-green-200"
-                        >
-                          View
-                        </Link>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="mt-6">
-              <Link
-                to="/patient/daily-notes"
-                className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                View all notes
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress Summary */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Progress Summary</h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {recentProgress.length > 0 ? (
-              recentProgress.map((progress, index) => {
-                const progressPercentage = Math.round((progress.currentScore / progress.targetScore) * 100);
-                const colors = [
-                  { bg: 'from-blue-50 to-blue-100', text: 'text-blue-900', textBold: 'text-blue-800', icon: 'text-blue-600' },
-                  { bg: 'from-green-50 to-green-100', text: 'text-green-900', textBold: 'text-green-800', icon: 'text-green-600' },
-                  { bg: 'from-purple-50 to-purple-100', text: 'text-purple-900', textBold: 'text-purple-800', icon: 'text-purple-600' }
-                ];
-                const color = colors[index % colors.length];
-                
-                return (
-                  <div key={progress.area} className={`bg-gradient-to-r ${color.bg} p-4 rounded-lg`}>
-                    <div className="flex items-center">
-                      <TrendingUp className={`h-8 w-8 ${color.icon}`} />
-                      <div className="ml-3">
-                        <p className={`text-sm font-medium ${color.text}`}>{progress.area}</p>
-                        <p className={`text-lg font-bold ${color.textBold}`}>{progressPercentage}%</p>
-                        <p className={`text-xs ${color.text}`}>
-                          {progress.currentScore}/{progress.targetScore} points
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                          <div 
+                            className={`h-2 rounded-full bg-gradient-to-r ${colorScheme.bg}`}
+                            style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          {progress.currentScore} / {progress.targetScore} - {progress.measurementDate ? new Date(progress.measurementDate).toLocaleDateString() : 'No date'}
                         </p>
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-2">
+                    <TrendingUp className="h-12 w-12 mx-auto" />
                   </div>
-                );
-              })
-            ) : (
-              <div className="col-span-full text-center py-8">
-                <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No progress data available yet</p>
-                <p className="text-sm text-gray-400">Progress tracking will appear here after your first session</p>
-              </div>
-            )}
+                  <p className="text-sm text-gray-500">No progress entries yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Progress will appear here after your first session</p>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="mt-6">
-            <Link
-              to="/patient/progress"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
-            >
-              View detailed progress
-            </Link>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-5">
+          {/* Therapist Info */}
+          <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg shadow-sm border border-blue-100 p-4">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <User size={20} className="text-blue-600" />
+              </div>
+              <h4 className="font-semibold text-gray-900 mb-1 text-sm">{dashboardStats.therapistName}</h4>
+              <p className="text-xs text-gray-600 mb-2">{dashboardStats.therapistSpecialization}</p>
+              <div className="flex items-center justify-center space-x-1 text-yellow-400 mb-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={12} className="fill-current" />
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">{dashboardStats.therapistExperience} years experience</p>
+            </div>
+          </div>
+
+          {/* Recent Updates */}
+          <div className="bg-gradient-to-br from-white to-emerald-50 rounded-lg shadow-sm border border-emerald-100 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <Bell size={16} className="text-emerald-600" />
+                <h3 className="text-base font-semibold text-gray-900">Recent Updates</h3>
+              </div>
+              {notificationStats?.unreadCount > 0 && (
+                <span className="w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {notificationStats.unreadCount}
+                </span>
+              )}
+            </div>
+            <div className="space-y-2">
+              {recentNotifications.length > 0 ? (
+                recentNotifications.map((notification, index) => (
+                  <div key={index} className="p-2 bg-white rounded border border-emerald-100">
+                    <p className="text-xs text-gray-900 font-medium">{notification.title}</p>
+                    <p className="text-xs text-gray-600">{notification.message}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {notification.createdAt ? new Date(notification.createdAt).toLocaleDateString() : 'No date'}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4">
+                  <Bell className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-xs text-gray-500">No recent updates</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Goals */}
+          <div className="bg-gradient-to-br from-white to-green-50 rounded-lg shadow-sm border border-green-100 p-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <Target size={16} className="text-green-600" />
+              <h3 className="text-base font-semibold text-gray-900">Your Goals</h3>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-3 border border-green-100">
+              <p className="text-xs text-green-800 leading-relaxed">
+                {dashboardStats.patient?.goals || 'Your therapy goals will be set during your first session with your therapist.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Diagnosis Info */}
+          <div className="bg-gradient-to-br from-white to-teal-50 rounded-lg shadow-sm border border-teal-100 p-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <FileText size={16} className="text-teal-600" />
+              <h3 className="text-base font-semibold text-gray-900">Diagnosis</h3>
+            </div>
+            <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-lg p-3 border border-teal-100">
+              <p className="text-xs text-teal-800 font-medium">{dashboardStats.diagnosis}</p>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Alerts */}
-      {stats.pendingTasks > 0 && (
-        <div className="rounded-md bg-yellow-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-yellow-400" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">Home Exercises</h3>
-              <div className="mt-2 text-sm text-yellow-700">
-                <p>You have {stats.pendingTasks} home exercises to complete this week.</p>
-              </div>
-              <div className="mt-4">
-                <div className="-mx-2 -my-1.5 flex">
-                  <Link
-                    to="/patient/progress"
-                    className="bg-yellow-50 px-2 py-1.5 rounded-md text-sm font-medium text-yellow-800 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-yellow-50 focus:ring-yellow-600"
-                  >
-                    View Exercises
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

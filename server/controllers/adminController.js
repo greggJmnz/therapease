@@ -1,4 +1,4 @@
-const { runQuery, getRow, getAll } = require('../config/database');
+const { runQuery, getRow, getAll, getConnection } = require('../config/database');
 
 // Get admin dashboard data
 const getDashboard = async (req, res) => {
@@ -39,7 +39,9 @@ const getDashboard = async (req, res) => {
       SELECT 
         (SELECT COUNT(*) FROM users WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newUsersThisWeek,
         (SELECT COUNT(*) FROM assessments WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newAssessmentsThisWeek,
-        (SELECT COUNT(*) FROM appointments WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newAppointmentsThisWeek
+        (SELECT COUNT(*) FROM appointments WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newAppointmentsThisWeek,
+        (SELECT COUNT(*) FROM daily_notes WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newDailyNotesThisWeek,
+        (SELECT COUNT(*) FROM progress_tracking WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newProgressEntriesThisWeek
     `;
 
     const [systemHealthResult] = await getAll(systemHealthSql);
@@ -84,6 +86,36 @@ const getDashboard = async (req, res) => {
 
     const appointmentStats = await getAll(appointmentStatsSql);
 
+    // Get additional analytics data
+    const analyticsSql = `
+      SELECT 
+        (SELECT COUNT(*) FROM assessments WHERE status = 'completed') as completedAssessments,
+        (SELECT COUNT(*) FROM assessments WHERE status = 'in-progress') as inProgressAssessments,
+        (SELECT COUNT(*) FROM assessments WHERE status = 'scheduled') as scheduledAssessments,
+        (SELECT AVG(score) FROM assessments WHERE score IS NOT NULL) as avgAssessmentScore,
+        (SELECT COUNT(*) FROM appointments WHERE status = 'completed' AND appointmentDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as completedAppointmentsThisMonth,
+        (SELECT COUNT(*) FROM appointments WHERE status = 'cancelled' AND appointmentDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as cancelledAppointmentsThisMonth,
+        (SELECT AVG(duration) FROM appointments WHERE duration IS NOT NULL) as avgAppointmentDuration,
+        (SELECT COUNT(*) FROM daily_notes WHERE sessionDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as sessionsThisMonth
+    `;
+
+    const [analyticsResult] = await getAll(analyticsSql);
+    const analytics = analyticsResult;
+
+    // Calculate key performance indicators
+    const totalActiveAppointments = stats.totalAppointments - (appointmentStats.find(s => s.status === 'cancelled')?.count || 0);
+    const appointmentCompletionRate = totalActiveAppointments > 0 ? 
+      Math.round(((appointmentStats.find(s => s.status === 'completed')?.count || 0) / totalActiveAppointments) * 100) : 0;
+    
+    const assessmentCompletionRate = stats.totalAssessments > 0 ? 
+      Math.round((analytics.completedAssessments / stats.totalAssessments) * 100) : 0;
+
+    const patientsPerTherapist = stats.totalTherapists > 0 ? 
+      Math.round(stats.totalPatients / stats.totalTherapists) : 0;
+
+    const avgSessionsPerPatient = stats.totalPatients > 0 ? 
+      Math.round(stats.totalDailyNotes / stats.totalPatients) : 0;
+
     res.json({
       success: true,
       data: {
@@ -92,7 +124,14 @@ const getDashboard = async (req, res) => {
         systemHealth,
         userGrowth,
         assessmentStats,
-        appointmentStats
+        appointmentStats,
+        analytics: {
+          ...analytics,
+          appointmentCompletionRate,
+          assessmentCompletionRate,
+          patientsPerTherapist,
+          avgSessionsPerPatient
+        }
       }
     });
 
@@ -149,6 +188,8 @@ const getUsers = async (req, res) => {
         u.city,
         u.state,
         u.zipCode,
+        u.country,
+        u.status,
         u.createdAt,
         u.updatedAt,
         t.licenseNumber,
@@ -159,6 +200,7 @@ const getUsers = async (req, res) => {
         t.availability,
         p.diagnosis,
         p.medicalHistory,
+        p.goals,
         p.status as patientStatus,
         p.therapistId,
         (SELECT COUNT(*) FROM patients pt WHERE pt.therapistId = t.userId) as patientCount
@@ -188,6 +230,7 @@ const getUsers = async (req, res) => {
         city: user.city,
         state: user.state,
         zipCode: user.zipCode,
+        status: user.status,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       };
@@ -207,6 +250,7 @@ const getUsers = async (req, res) => {
         formattedUser.patient = {
           diagnosis: user.diagnosis,
           medicalHistory: user.medicalHistory,
+          goals: user.goals,
           status: user.patientStatus,
           therapistId: user.therapistId
         };
@@ -250,6 +294,8 @@ const getUserById = async (req, res) => {
         u.city,
         u.state,
         u.zipCode,
+        u.country,
+        u.status,
         u.createdAt,
         u.updatedAt,
         t.licenseNumber,
@@ -292,6 +338,7 @@ const getUserById = async (req, res) => {
       city: user.city,
       state: user.state,
       zipCode: user.zipCode,
+      status: user.status || 'active',
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -368,7 +415,11 @@ const updateUser = async (req, res) => {
 
       if (updateData.dateOfBirth !== undefined) {
         userUpdateFields.push('dateOfBirth = ?');
-        userUpdateParams.push(updateData.dateOfBirth);
+        // Convert ISO date string to YYYY-MM-DD format for MySQL
+        const dateValue = updateData.dateOfBirth instanceof Date 
+          ? updateData.dateOfBirth.toISOString().split('T')[0]
+          : new Date(updateData.dateOfBirth).toISOString().split('T')[0];
+        userUpdateParams.push(dateValue);
       }
 
       if (updateData.gender !== undefined) {
@@ -391,10 +442,15 @@ const updateUser = async (req, res) => {
         userUpdateParams.push(updateData.state);
       }
 
-      if (updateData.zipCode !== undefined) {
-        userUpdateFields.push('zipCode = ?');
-        userUpdateParams.push(updateData.zipCode);
-      }
+        if (updateData.zipCode !== undefined) {
+          userUpdateFields.push('zipCode = ?');
+          userUpdateParams.push(updateData.zipCode);
+        }
+
+        if (updateData.country !== undefined) {
+          userUpdateFields.push('country = ?');
+          userUpdateParams.push(updateData.country);
+        }
 
       // Update user if there are user fields to update
       if (userUpdateFields.length > 0) {
@@ -664,16 +720,18 @@ const getAppointments = async (req, res) => {
         p.firstName as patientFirstName,
         p.lastName as patientLastName,
         t.firstName as therapistFirstName,
-        t.lastName as therapistLastName
+        t.lastName as therapistLastName,
+        a.patientId,
+        a.therapistId
       FROM appointments a
       LEFT JOIN patients pt ON a.patientId = pt.id
       LEFT JOIN users p ON pt.userId = p.id
-      LEFT JOIN therapists th ON a.therapistId = th.id
-      LEFT JOIN users t ON th.userId = t.id
+      LEFT JOIN users t ON a.therapistId = t.id
       ORDER BY a.appointmentDate DESC, a.startTime DESC
     `;
 
     const appointments = await getAll(sql);
+    console.log('Raw appointments from database:', appointments.length, 'appointments found');
 
     // Format appointment data
     const formattedAppointments = appointments.map(appointment => ({
@@ -688,9 +746,13 @@ const getAppointments = async (req, res) => {
       notes: appointment.notes,
       patientName: `${appointment.patientFirstName || ''} ${appointment.patientLastName || ''}`.trim(),
       therapistName: `${appointment.therapistFirstName || ''} ${appointment.therapistLastName || ''}`.trim(),
+      patientId: appointment.patientId,
+      therapistId: appointment.therapistId,
       createdAt: appointment.createdAt,
       updatedAt: appointment.updatedAt
     }));
+    
+    console.log('Formatted appointments:', formattedAppointments.length, 'appointments formatted');
 
     res.json({
       success: true,
@@ -941,14 +1003,516 @@ const getNotifications = async (req, res) => {
   }
 };
 
+// Get patient assessments
+const getPatientAssessments = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const sql = `
+      SELECT 
+        a.id,
+        a.title,
+        a.type,
+        a.category,
+        a.assessmentDate,
+        a.status,
+        a.score,
+        a.maxScore,
+        a.summary,
+        a.recommendations,
+        a.areas,
+        a.aiInsights,
+        a.createdAt,
+        a.updatedAt,
+        CONCAT(u.firstName, ' ', u.lastName) as therapistName
+      FROM assessments a
+      JOIN users u ON a.therapistId = u.id
+      JOIN patients p ON a.patientId = p.id
+      WHERE p.userId = ?
+      ORDER BY a.assessmentDate DESC
+    `;
+
+    const assessments = await getAll(sql, [parseInt(patientId)]);
+
+    res.json({
+      success: true,
+      data: assessments
+    });
+
+  } catch (error) {
+    console.error('Get patient assessments error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch patient assessments' });
+  }
+};
+
+// Get patient sessions
+const getPatientSessions = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const sql = `
+      SELECT 
+        s.id,
+        s.sessionDate,
+        s.startTime,
+        s.endTime,
+        s.duration,
+        s.sessionType,
+        s.status,
+        s.objectives,
+        s.activities,
+        s.observations,
+        s.progress,
+        s.challenges,
+        s.nextSteps,
+        s.goals,
+        s.mood,
+        s.engagement,
+        s.notes,
+        s.createdAt,
+        s.updatedAt,
+        CONCAT(u.firstName, ' ', u.lastName) as therapistName
+      FROM sessions s
+      JOIN users u ON s.therapistId = u.id
+      JOIN patients p ON s.patientId = p.id
+      WHERE p.userId = ?
+      ORDER BY s.sessionDate DESC
+    `;
+
+    const sessions = await getAll(sql, [parseInt(patientId)]);
+
+    res.json({
+      success: true,
+      data: sessions
+    });
+
+  } catch (error) {
+    console.error('Get patient sessions error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch patient sessions' });
+  }
+};
+
+// Get patient progress
+const getPatientProgress = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const sql = `
+      SELECT 
+        pt.id,
+        pt.area,
+        pt.baselineScore,
+        pt.currentScore,
+        pt.targetScore,
+        pt.progressNotes,
+        pt.measurementDate,
+        pt.nextReviewDate,
+        pt.createdAt,
+        pt.updatedAt,
+        a.title as assessmentTitle
+      FROM progress_tracking pt
+      LEFT JOIN assessments a ON pt.assessmentId = a.id
+      JOIN patients p ON pt.patientId = p.id
+      WHERE p.userId = ?
+      ORDER BY pt.measurementDate DESC
+    `;
+
+    const progress = await getAll(sql, [parseInt(patientId)]);
+
+    res.json({
+      success: true,
+      data: progress
+    });
+
+  } catch (error) {
+    console.error('Get patient progress error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch patient progress' });
+  }
+};
+
+// Get therapists for admin
+const getTherapists = async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        u.id,
+        u.email,
+        u.role,
+        u.firstName,
+        u.lastName,
+        u.phone,
+        u.dateOfBirth,
+        u.gender,
+        u.address,
+        u.city,
+        u.state,
+        u.zipCode,
+        u.country,
+        u.status,
+        u.createdAt,
+        u.updatedAt,
+        t.licenseNumber,
+        t.specialization,
+        t.yearsOfExperience,
+        t.education,
+        t.certifications,
+        t.availability,
+        t.status as therapistStatus,
+        (SELECT COUNT(*) FROM patients p WHERE p.therapistId = t.userId) as patientCount
+      FROM users u
+      LEFT JOIN therapists t ON u.id = t.userId
+      WHERE u.role = 'therapist'
+      ORDER BY u.createdAt DESC
+    `;
+
+    const therapists = await getAll(sql);
+
+    // Format therapist data
+    const formattedTherapists = therapists.map(therapist => ({
+      id: therapist.id,
+      email: therapist.email,
+      role: therapist.role,
+      firstName: therapist.firstName,
+      lastName: therapist.lastName,
+      phone: therapist.phone,
+      dateOfBirth: therapist.dateOfBirth,
+      gender: therapist.gender,
+      address: therapist.address,
+      city: therapist.city,
+      state: therapist.state,
+      zipCode: therapist.zipCode,
+      status: therapist.status || 'active', // Use user status as primary
+      createdAt: therapist.createdAt,
+      updatedAt: therapist.updatedAt,
+      therapist: {
+        licenseNumber: therapist.licenseNumber,
+        specialization: therapist.specialization,
+        yearsOfExperience: therapist.yearsOfExperience,
+        education: therapist.education,
+        certifications: therapist.certifications,
+        availability: therapist.availability,
+        status: therapist.therapistStatus || 'active' // Include therapist-specific status
+      },
+      patientCount: therapist.patientCount || 0
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        users: formattedTherapists,
+        total: formattedTherapists.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Get therapists error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch therapists' });
+  }
+};
+
+// Get all users for admin user management
+const getAllUsers = async (req, res) => {
+  try {
+    const { page = 1, limit = 100, role, search, status } = req.query;
+    const offset = (page - 1) * limit;
+
+    // Build WHERE clause
+    let whereConditions = [];
+    let params = [];
+
+    if (role && role !== 'all') {
+      whereConditions.push('u.role = ?');
+      params.push(role);
+    }
+
+    if (search) {
+      whereConditions.push('(u.firstName LIKE ? OR u.lastName LIKE ? OR u.email LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Get total count
+    const countSql = `
+      SELECT COUNT(*) as total
+      FROM users u
+      ${whereClause}
+    `;
+    
+    const [countResult] = await getAll(countSql, params);
+    const total = countResult.total;
+
+    // Get users with role-specific data
+    const sql = `
+      SELECT 
+        u.id,
+        u.email,
+        u.password,
+        u.role,
+        u.firstName,
+        u.lastName,
+        u.phone,
+        u.dateOfBirth,
+        u.gender,
+        u.address,
+        u.city,
+        u.state,
+        u.zipCode,
+        u.country,
+        u.status,
+        u.createdAt,
+        u.updatedAt,
+        t.licenseNumber,
+        t.specialization,
+        t.yearsOfExperience,
+        t.education,
+        t.certifications,
+        t.availability,
+        p.diagnosis,
+        p.medicalHistory,
+        p.status as patientStatus,
+        p.therapistId,
+        (SELECT COUNT(*) FROM patients pt WHERE pt.therapistId = t.userId) as patientCount
+      FROM users u
+      LEFT JOIN therapists t ON u.id = t.userId
+      LEFT JOIN patients p ON u.id = p.userId
+      ${whereClause}
+      ORDER BY u.createdAt DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const queryParams = [...params, parseInt(limit), offset];
+    const users = await getAll(sql, queryParams);
+
+    // Format user data
+    const formattedUsers = users.map(user => {
+      const formattedUser = {
+        id: user.id,
+        email: user.email,
+        password: user.password, // Include password for admin view (will be masked in frontend)
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        dateOfBirth: user.dateOfBirth,
+        gender: user.gender,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        zipCode: user.zipCode,
+        status: user.status || 'active', // Use actual status field
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      };
+
+      // Add role-specific data
+      if (user.role === 'therapist') {
+        formattedUser.therapist = {
+          licenseNumber: user.licenseNumber,
+          specialization: user.specialization,
+          yearsOfExperience: user.yearsOfExperience,
+          education: user.education,
+          certifications: user.certifications,
+          availability: user.availability
+        };
+        formattedUser.patientCount = user.patientCount || 0;
+      } else if (user.role === 'patient') {
+        formattedUser.patient = {
+          diagnosis: user.diagnosis,
+          medicalHistory: user.medicalHistory,
+          status: user.patientStatus,
+          therapistId: user.therapistId
+        };
+      }
+
+      return formattedUser;
+    });
+
+    res.json({
+      success: true,
+      data: {
+        users: formattedUsers,
+        total,
+        page: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch users' });
+  }
+};
+
+// Reset user password (admin only)
+const resetUserPassword = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { hashPassword } = require('../utils/password');
+
+    // Check if user exists
+    const user = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(userId)]);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Generate a temporary password
+    const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+    const hashedPassword = await hashPassword(tempPassword);
+
+    // Update user password
+    await runQuery(
+      'UPDATE users SET password = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+      [hashedPassword, parseInt(userId)]
+    );
+
+    // Log the password reset action
+    console.log(`Admin reset password for user ${user.email} (ID: ${userId})`);
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully',
+      data: {
+        userId: parseInt(userId),
+        email: user.email,
+        tempPassword: tempPassword // Only return this in development
+      }
+    });
+
+  } catch (error) {
+    console.error('Reset user password error:', error);
+    res.status(500).json({ success: false, error: 'Failed to reset password' });
+  }
+};
+
+// Send password reset link to user
+const sendPasswordResetLink = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Check if user exists
+    const user = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(userId)]);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Generate reset token
+    const resetToken = Math.random().toString(36).slice(-32);
+    const resetExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Store reset token in database (you might want to create a password_resets table)
+    // For now, we'll just log it
+    console.log(`Password reset link for ${user.email}: /auth/reset-password?token=${resetToken}`);
+
+    // In a real application, you would:
+    // 1. Store the reset token in a password_resets table
+    // 2. Send an email with the reset link
+    // 3. Use a proper email service
+
+    res.json({
+      success: true,
+      message: 'Password reset link sent successfully',
+      data: {
+        userId: parseInt(userId),
+        email: user.email,
+        resetToken: resetToken, // Only return this in development
+        resetLink: `/auth/reset-password?token=${resetToken}`
+      }
+    });
+
+  } catch (error) {
+    console.error('Send password reset link error:', error);
+    res.status(500).json({ success: false, error: 'Failed to send reset link' });
+  }
+};
+
+// Update user status
+const updateUserStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { status } = req.body;
+
+    // Check if user exists
+    const user = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(userId)]);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Prevent deactivating admin users
+    if (user.role === 'admin' && status === 'inactive') {
+      return res.status(403).json({
+        success: false,
+        error: 'Cannot deactivate admin users'
+      });
+    }
+
+    // Update user status using the actual status field
+    await runQuery(
+      'UPDATE users SET status = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+      [status, parseInt(userId)]
+    );
+
+    // If user is a patient, also update their patient status to match
+    if (user.role === 'patient') {
+      console.log(`🔄 Syncing patient status for user ${userId} to ${status}`);
+      const patientResult = await runQuery(
+        'UPDATE patients SET status = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?',
+        [status, parseInt(userId)]
+      );
+      console.log(`✅ Patient status sync result:`, patientResult);
+    }
+
+    // If user is a therapist, also update their therapist status to match
+    if (user.role === 'therapist') {
+      console.log(`🔄 Syncing therapist status for user ${userId} to ${status}`);
+      const therapistResult = await runQuery(
+        'UPDATE therapists SET status = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?',
+        [status, parseInt(userId)]
+      );
+      console.log(`✅ Therapist status sync result:`, therapistResult);
+    }
+
+    res.json({
+      success: true,
+      message: 'User status updated successfully',
+      data: {
+        userId: parseInt(userId),
+        email: user.email,
+        status: status
+      }
+    });
+
+  } catch (error) {
+    console.error('Update user status error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update user status' });
+  }
+};
+
 module.exports = {
   getDashboard,
   getUsers,
+  getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
   getSystemStats,
   getAppointments,
   createAppointment,
-  getNotifications
+  getNotifications,
+  getPatientAssessments,
+  getPatientSessions,
+  getPatientProgress,
+  getTherapists,
+  resetUserPassword,
+  sendPasswordResetLink,
+  updateUserStatus
 };

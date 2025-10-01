@@ -100,7 +100,7 @@ export const useRealtimeData = (queryKey, refetchFn) => {
   });
 
   useWebSocketEvent('profile_change', () => {
-    if (queryKey.includes('profile') || queryKey.includes('user')) {
+    if (queryKey.includes('profile') || queryKey.includes('Profile') || queryKey.includes('user')) {
       setIsRefreshing(true);
       refetchFn().finally(() => setIsRefreshing(false));
     }

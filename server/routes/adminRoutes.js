@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
 const adminController = require('../controllers/adminController');
 const profileController = require('../controllers/profileController');
+const upload = require('../middleware/uploadMiddleware');
 const settingsController = require('../controllers/settingsController');
 
 // Apply authentication and admin role authorization to all routes
@@ -14,16 +15,24 @@ router.get('/dashboard', adminController.getDashboard);
 
 // Patient management
 router.get('/patients', adminController.getUsers);
+router.get('/patients/:patientId/assessments', adminController.getPatientAssessments);
+router.get('/patients/:patientId/sessions', adminController.getPatientSessions);
+router.get('/patients/:patientId/progress', adminController.getPatientProgress);
 
 // Therapist management
-router.get('/therapists', adminController.getUsers);
+router.get('/therapists', adminController.getTherapists);
 
 // Appointment management
 router.get('/appointments', adminController.getAppointments);
 router.post('/appointments', adminController.createAppointment);
 
 // User management
+router.get('/users', adminController.getAllUsers);
 router.put('/users/:userId', adminController.updateUser);
+router.delete('/users/:userId', adminController.deleteUser);
+router.put('/users/:userId/status', adminController.updateUserStatus);
+router.post('/users/:userId/reset-password', adminController.resetUserPassword);
+router.post('/users/:userId/send-reset-link', adminController.sendPasswordResetLink);
 
 // Reports
 router.get('/reports', adminController.getSystemStats);
@@ -32,6 +41,7 @@ router.get('/reports', adminController.getSystemStats);
 router.get('/profile', profileController.getProfile);
 router.put('/profile', profileController.updateProfile);
 router.post('/change-password', profileController.changePassword);
+router.post('/upload-profile-image', upload.single('profileImage'), profileController.uploadProfileImage);
 
 // Settings management
 router.get('/settings', settingsController.getSettings);

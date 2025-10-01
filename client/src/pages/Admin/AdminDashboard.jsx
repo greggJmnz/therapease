@@ -183,17 +183,45 @@ const AdminDashboard = () => {
 
   // Generate real data for charts based on API data
   const generatePatientGrowthData = () => {
+    // Use actual user growth data from API if available
+    const userGrowth = dashboardData?.data?.data?.userGrowth || dashboardData?.data?.userGrowth || [];
+    
+    if (userGrowth.length > 0) {
+      // Process user growth data to show patient growth over time
+      const patientGrowth = userGrowth
+        .filter(item => item.role === 'patient')
+        .reduce((acc, item) => {
+          const existing = acc.find(month => month.month === item.month);
+          if (existing) {
+            existing.patients += item.count;
+          } else {
+            acc.push({
+              month: item.month,
+              patients: item.count
+            });
+          }
+          return acc;
+        }, [])
+        .sort((a, b) => a.month.localeCompare(b.month))
+        .map(item => ({
+          month: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short' }),
+          patients: item.patients
+        }));
+      
+      return patientGrowth;
+    }
+    
+    // Fallback to calculated data if API data not available
     const currentMonth = new Date().getMonth();
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const totalPatients = dashboardStats.totalPatients || 0;
     
     // Generate realistic growth data based on current patient count
-    const baseGrowth = Math.max(1, Math.floor(totalPatients * 0.1));
     const data = [];
     
     for (let i = 0; i < 6; i++) {
       const monthIndex = (currentMonth - 5 + i + 12) % 12;
-      const growthFactor = 0.8 + (i * 0.1); // Gradual growth
+      const growthFactor = 0.7 + (i * 0.1); // Gradual growth
       const patients = Math.max(0, Math.floor(totalPatients * growthFactor));
       
       data.push({
@@ -206,26 +234,60 @@ const AdminDashboard = () => {
   };
 
   const generateAppointmentData = () => {
+    // Use actual appointment stats from API if available
+    const appointmentStats = dashboardData?.data?.data?.appointmentStats || dashboardData?.data?.appointmentStats || [];
+    
+    if (appointmentStats.length > 0) {
+      return appointmentStats.map(stat => ({
+        status: stat.status.charAt(0).toUpperCase() + stat.status.slice(1),
+        count: stat.count
+      }));
+    }
+    
+    // Fallback to calculated data if API data not available
     const totalAppointments = dashboardStats.totalAppointments || 0;
-    const completed = Math.floor(totalAppointments * 0.7);
-    const scheduled = Math.floor(totalAppointments * 0.25);
-    const cancelled = Math.max(0, totalAppointments - completed - scheduled);
+    const completed = Math.floor(totalAppointments * 0.6);
+    const scheduled = Math.floor(totalAppointments * 0.3);
+    const confirmed = Math.floor(totalAppointments * 0.1);
+    const cancelled = Math.max(0, totalAppointments - completed - scheduled - confirmed);
     
     return [
       { status: 'Scheduled', count: scheduled },
+      { status: 'Confirmed', count: confirmed },
       { status: 'Completed', count: completed },
       { status: 'Cancelled', count: cancelled }
     ];
   };
 
   const generateWeeklyActivityData = () => {
+    // Use actual appointment data if available
+    const appointments = dashboardData?.data?.data?.appointments || dashboardData?.data?.appointments || [];
+    
+    if (appointments.length > 0) {
+      // Group appointments by day of week
+      const dayCounts = {};
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      
+      appointments.forEach(appointment => {
+        const dayOfWeek = new Date(appointment.appointmentDate).getDay();
+        const dayName = days[dayOfWeek === 0 ? 6 : dayOfWeek - 1]; // Convert Sunday=0 to Monday=0
+        dayCounts[dayName] = (dayCounts[dayName] || 0) + 1;
+      });
+      
+      return days.map(day => ({
+        day,
+        sessions: dayCounts[day] || 0
+      }));
+    }
+    
+    // Fallback to calculated data if API data not available
     const totalSessions = dashboardStats.totalAppointments || 0;
     const avgDaily = Math.floor(totalSessions / 7);
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     
     return days.map(day => ({
       day,
-      sessions: Math.max(0, avgDaily + Math.floor(Math.random() * 6) - 3) // Add some variation
+      sessions: Math.max(0, avgDaily + Math.floor(Math.random() * 4) - 2) // Add some variation
     }));
   };
 
@@ -364,25 +426,23 @@ const AdminDashboard = () => {
 
   const renderDashboard = () => (
     <div className="admin-dashboard">
-      {/* Dashboard Header */}
-      <div className="dashboard-header">
-        <h1>Admin Dashboard</h1>
-        <p>Manage your practice and monitor key metrics</p>
-      </div>
-
       {/* Welcome Section */}
       <div className="welcome-section">
-        <h2>Welcome back, Admin!</h2>
-        <p>Here's your practice overview and key metrics for today</p>
-        <div className="welcome-actions">
-          <button className="btn-primary" onClick={() => navigate('/admin/patients')}>
-            <Users size={18} />
-            <span>Manage Patients</span>
-          </button>
-          <button className="btn-secondary" onClick={() => navigate('/admin/appointments')}>
-            <Calendar size={18} />
-            <span>Schedule Session</span>
-          </button>
+        <div className="welcome-content">
+          <div className="welcome-text">
+            <h1>Welcome back, Admin!</h1>
+            <p>Here's your practice overview and key metrics for today</p>
+          </div>
+          <div className="welcome-actions">
+            <button className="btn-primary" onClick={() => navigate('/admin/patients')}>
+              <Users size={18} />
+              <span>Manage Patients</span>
+            </button>
+            <button className="btn-secondary" onClick={() => navigate('/admin/appointments')}>
+              <Calendar size={18} />
+              <span>Schedule Session</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -628,7 +688,7 @@ const AdminDashboard = () => {
               <FileText size={20} className="text-orange-500" />
             </div>
             <div className="metric-content">
-              <h4>Assessments</h4>
+              <h4>Assessment Coverage</h4>
               <p className="metric-value">
                 {dashboardStats.totalPatients > 0 ? 
                   `${Math.round((dashboardStats.totalAssessments / dashboardStats.totalPatients) * 100)}%` : 

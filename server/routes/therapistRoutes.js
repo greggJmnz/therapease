@@ -10,6 +10,7 @@ const progressTrackingController = require('../controllers/progressTrackingContr
 const appointmentController = require('../controllers/appointmentController');
 const sessionController = require('../controllers/sessionController');
 const profileController = require('../controllers/profileController');
+const upload = require('../middleware/uploadMiddleware');
 const notificationController = require('../controllers/notificationController');
 const dashboardController = require('../controllers/dashboardController');
 const settingsController = require('../controllers/settingsController');
@@ -78,6 +79,7 @@ router.get('/notifications/stats', notificationController.getNotificationStats);
 router.get('/profile', profileController.getProfile);
 router.put('/profile', profileController.updateProfile);
 router.post('/change-password', profileController.changePassword);
+router.post('/upload-profile-image', upload.single('profileImage'), profileController.uploadProfileImage);
 
 // Settings management
 router.get('/settings', settingsController.getSettings);

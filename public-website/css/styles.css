@@ -138,6 +138,125 @@ body {
     transform: translateY(-2px);
 }
 
+/* Dropdown Styles */
+.dropdown {
+    position: relative;
+}
+
+.portals-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary-green);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.portals-btn:hover {
+    background: var(--secondary-green);
+    transform: translateY(-2px);
+    color: white;
+}
+
+.portals-btn i:last-child {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.dropdown:hover .portals-btn i:last-child,
+.dropdown.active .portals-btn i:last-child {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    padding: 8px 0;
+    min-width: 280px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 9999;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    margin-top: 8px;
+}
+
+.dropdown:hover .dropdown-menu,
+.dropdown.active .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: #374151;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background: #f8fafc;
+    color: var(--primary-green);
+}
+
+.dropdown-item i {
+    font-size: 1.2rem;
+    width: 20px;
+    text-align: center;
+    color: var(--primary-blue);
+}
+
+.dropdown-item:hover i {
+    color: var(--primary-green);
+}
+
+.dropdown-item::after {
+    content: '\f35d';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin-left: auto;
+    opacity: 0.7;
+}
+
+.dropdown-item:hover::after {
+    color: var(--primary-green);
+}
+
+.portal-title {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 2px;
+}
+
+.portal-desc {
+    display: block;
+    font-size: 0.8rem;
+    color: #6b7280;
+    line-height: 1.2;
+}
+
 .hamburger {
     display: none;
     flex-direction: column;
@@ -1015,14 +1134,48 @@ body {
         margin: 1rem 0;
     }
 
+    /* Mobile dropdown styles */
+    .dropdown-menu {
+        position: static;
+        opacity: 0;
+        visibility: hidden;
+        transform: none;
+        box-shadow: none;
+        border: none;
+        background: #f8fafc;
+        margin-top: 0.5rem;
+        border-radius: 8px;
+        min-width: auto;
+        transition: all 0.3s ease;
+    }
+
+    .dropdown.active .dropdown-menu {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .dropdown-item {
+        padding: 10px 16px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .dropdown-item:last-child {
+        border-bottom: none;
+    }
+
     .hero-container {
         grid-template-columns: 1fr;
         text-align: center;
         gap: 2rem;
+        padding: 0 15px;
+        padding-top: 80px; /* Account for fixed navbar */
     }
 
     .hero-title {
         font-size: 2.5rem;
+        line-height: 1.3;
+        margin-bottom: 1rem;
+        word-wrap: break-word;
     }
 
     .hero-buttons {
@@ -1082,8 +1235,22 @@ body {
 }
 
 @media (max-width: 480px) {
+    .hero-container {
+        padding: 0 10px;
+        padding-top: 90px; /* Extra padding for smaller screens */
+    }
+
     .hero-title {
-        font-size: 2rem;
+        font-size: 1.8rem;
+        line-height: 1.4;
+        margin-bottom: 1rem;
+        word-wrap: break-word;
+        hyphens: auto;
+    }
+
+    .hero-description {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
     }
 
     .section-header h2 {
@@ -1111,6 +1278,23 @@ body {
 
     .modal-header h2 {
         font-size: 1.3rem;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 360px) {
+    .hero-container {
+        padding: 0 8px;
+        padding-top: 100px;
+    }
+
+    .hero-title {
+        font-size: 1.6rem;
+        line-height: 1.5;
+    }
+
+    .hero-description {
+        font-size: 0.9rem;
     }
 }
 

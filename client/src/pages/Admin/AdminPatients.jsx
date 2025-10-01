@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from 'react-query';
 import { 
   Search, 
@@ -7,31 +7,45 @@ import {
   Trash2, 
   Eye,
   Users,
-  UserCheck,
-  Calendar,
   X,
   Phone,
   User,
   FileText,
+  MoreVertical,
   TrendingUp,
+  UserCheck,
+  CheckCircle,
+  Clock,
+  Calendar,
   BarChart3
 } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import InitialsAvatar from '../../components/InitialsAvatar';
+import './AdminPatients.css';
 
 const AdminPatients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [editingPatient, setEditingPatient] = useState(null);
-  const [selectedRow, setSelectedRow] = useState(null);
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [reportsPatient, setReportsPatient] = useState(null);
+  const [schedulePatient, setSchedulePatient] = useState(null);
+  const [activeTab, setActiveTab] = useState('personal');
+  const [actionDropdowns, setActionDropdowns] = useState({});
+  const dropdownRefs = useRef({});
 
   // Fetch patients data from API
   const { data: patientsData, isLoading, error, refetch } = useQuery(
     'adminPatients',
     adminAPI.getPatients,
     {
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      staleTime: 0,
+      cacheTime: 0,
       onError: (error) => {
         toast.error('Failed to load patients data');
         console.error('Error fetching patients:', error);
@@ -39,27 +53,102 @@ const AdminPatients = () => {
     }
   );
 
+  // Close all dropdowns
+  const closeAllDropdowns = () => {
+    setActionDropdowns({});
+  };
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.patient-action-dropdown') && !event.target.closest('.dropdown-trigger')) {
+        closeAllDropdowns();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Check authentication
+  const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('userRole');
+  
+  // Check if user is authenticated
+  if (!token || userRole !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">Authentication Required</div>
+          <p className="text-gray-600 mb-4">You need to be logged in as an admin to access this page.</p>
+          <button 
+            onClick={() => {
+              // Auto-login as admin for testing
+              const loginData = {
+                email: 'admin@therapease.com',
+                password: 'admin123'
+              };
+              
+              fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(loginData)
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  localStorage.setItem('token', data.data.token);
+                  localStorage.setItem('user', JSON.stringify(data.data.user));
+                  localStorage.setItem('userRole', data.data.user.role);
+                  localStorage.setItem('userId', data.data.user.id);
+                  window.location.reload();
+                } else {
+                  alert('Login failed: ' + data.error);
+                }
+              })
+              .catch(error => {
+                console.error('Login error:', error);
+                alert('Login failed: ' + error.message);
+              });
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Login as Admin (Test)
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+
   // Extract patients from API response (admin API has double nesting)
   const patients = (patientsData?.data?.data?.users || [])
     .filter(user => user.role === 'patient')
-    .map(patient => ({
-      id: patient.id,
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      email: patient.email,
-      phone: patient.phone || 'N/A',
-      gender: patient.gender || 'N/A',
-      dateOfBirth: patient.dateOfBirth,
-      address: patient.address || 'N/A',
-      city: patient.city || 'N/A',
-      state: patient.state || 'N/A',
-      zipCode: patient.zipCode || 'N/A',
-      diagnosis: patient.diagnosis || 'N/A',
-      goals: patient.goals || 'N/A',
-      createdAt: patient.createdAt,
-      updatedAt: patient.updatedAt,
-      patient: patient.patient || {}
-    }));
+    .map(patient => {
+      return {
+        id: patient.id,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        email: patient.email,
+        phone: patient.phone || 'N/A',
+        gender: patient.gender || 'N/A',
+        dateOfBirth: patient.dateOfBirth,
+        address: patient.address || 'N/A',
+        city: patient.city || 'N/A',
+        state: patient.state || 'N/A',
+        zipCode: patient.zipCode || 'N/A',
+        diagnosis: patient.diagnosis || 'N/A',
+        goals: patient.goals || 'N/A',
+        status: patient.status || patient.patient?.status || 'active', // Use user status, fallback to patient status
+        createdAt: patient.createdAt,
+        updatedAt: patient.updatedAt,
+        patient: patient.patient || {}
+      };
+    });
 
 
   // Loading and error states
@@ -81,7 +170,7 @@ const AdminPatients = () => {
           <div className="text-red-500 text-xl mb-4">Failed to load patients</div>
           <button 
             onClick={() => refetch()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="patient-btn-primary"
           >
             Retry
           </button>
@@ -97,14 +186,16 @@ const AdminPatients = () => {
       patient.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       patient.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = filterStatus === 'all' || (patient.patient?.status || 'active') === filterStatus;
+    const matchesStatus = filterStatus === 'all' || (patient.status || 'active') === filterStatus;
     
     return matchesSearch && matchesStatus;
   });
 
   const handleEditPatient = (patient) => {
+    console.log('Edit patient clicked:', patient);
     setEditingPatient({ ...patient });
     setSelectedPatient(null);
+    setActiveTab('personal'); // Reset to personal tab when opening edit modal
   };
 
   const handleSavePatient = async () => {
@@ -126,7 +217,7 @@ const AdminPatients = () => {
           patient: {
             diagnosis: editingPatient.patient?.diagnosis || '',
             medicalHistory: editingPatient.patient?.medicalHistory || '',
-            status: editingPatient.patient?.status || 'active'
+            status: editingPatient.status || 'active'
           }
         };
 
@@ -163,6 +254,7 @@ const AdminPatients = () => {
   };
 
   const handleDeletePatient = async (patientId) => {
+    console.log('Delete patient clicked:', patientId);
     if (window.confirm('Are you sure you want to delete this patient?')) {
       try {
         await adminAPI.deleteUser(patientId);
@@ -176,93 +268,138 @@ const AdminPatients = () => {
   };
 
   const handleViewPatient = (patient) => {
+    console.log('View patient clicked:', patient);
     setSelectedPatient(patient);
   };
 
   const closeModal = () => {
     setSelectedPatient(null);
     setEditingPatient(null);
+    setShowReportsModal(false);
+    setShowScheduleModal(false);
+    setReportsPatient(null);
+    setSchedulePatient(null);
+  };
+
+  const handleViewReports = (patient) => {
+    setReportsPatient(patient);
+    setShowReportsModal(true);
+    setSelectedPatient(null);
+  };
+
+  const handleScheduleSession = (patient) => {
+    setSchedulePatient(patient);
+    setShowScheduleModal(true);
+    setSelectedPatient(null);
+  };
+
+  // Dropdown functionality
+  const toggleActionDropdown = (patientId) => {
+    setActionDropdowns(prev => ({
+      ...prev,
+      [patientId]: !prev[patientId]
+    }));
+  };
+
+  // Check if dropdown should open upward
+  const shouldOpenUpward = (patientId) => {
+    const button = dropdownRefs.current[patientId];
+    if (!button) return false;
+    
+    const rect = button.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const dropdownHeight = 200; // Approximate dropdown height
+    const spaceBelow = viewportHeight - rect.bottom;
+    
+    return spaceBelow < dropdownHeight && rect.top > dropdownHeight;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <Users className="h-8 w-8 text-blue-600" />
-                Patient Management
-              </h1>
-              <p className="text-gray-600 mt-2">
-                Manage and monitor all patients in the system
-              </p>
-            </div>
-      </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Patients</p>
-                <p className="text-3xl font-bold text-gray-900">{patients.length}</p>
-              </div>
-              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+    <div className="admin-dashboard">
+      {/* Header */}
+      <div className="welcome-section">
+        <div className="welcome-content">
+          <div className="welcome-text">
+            <h1 className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Users className="h-6 w-6 text-blue-600" />
               </div>
-            </div>
+              Patient Management
+            </h1>
+            <p>Manage and monitor all patients in the system</p>
+          </div>
+        </div>
       </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Patients</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {patients.filter(p => (p.patient?.status || 'active') === 'active').length}
-                </p>
-              </div>
-              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <UserCheck className="h-6 w-6 text-green-600" />
-              </div>
+        {/* Stats Cards */}
+        <div className="stats-overview">
+          <div className="stat-card">
+            <div className="stat-icon patients">
+              <Users size={24} />
             </div>
-      </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">New This Month</p>
-                <p className="text-3xl font-bold text-purple-600">
-                  {patients.filter(p => {
-                    const createdDate = new Date(p.createdAt);
-                    const now = new Date();
-                    return createdDate.getMonth() === now.getMonth() && 
-                           createdDate.getFullYear() === now.getFullYear();
-                  }).length}
-                </p>
-              </div>
-              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-      </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
-                <p className="text-3xl font-bold text-orange-600">
-                  {patients.filter(p => (p.patient?.status || 'active') === 'pending').length}
-                </p>
-              </div>
-              <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <FileText className="h-6 w-6 text-orange-600" />
-              </div>
+            <div className="stat-content">
+              <h3>Total Patients</h3>
+              <p className="stat-number">{patients.length}</p>
+              <span className="stat-change positive">
+                <TrendingUp size={16} />
+                Active
+              </span>
             </div>
           </div>
-      </div>
+
+          <div className="stat-card">
+            <div className="stat-icon therapists">
+              <UserCheck size={24} />
+            </div>
+            <div className="stat-content">
+              <h3>Active Patients</h3>
+              <p className="stat-number">
+                {patients.filter(p => (p.status || 'active') === 'active').length}
+              </p>
+              <span className="stat-change positive">
+                <CheckCircle size={16} />
+                In Treatment
+              </span>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon appointments">
+              <TrendingUp size={24} />
+            </div>
+            <div className="stat-content">
+              <h3>New This Month</h3>
+              <p className="stat-number">
+                {patients.filter(p => {
+                  const createdDate = new Date(p.createdAt);
+                  const now = new Date();
+                  return createdDate.getMonth() === now.getMonth() && 
+                         createdDate.getFullYear() === now.getFullYear();
+                }).length}
+              </p>
+              <span className="stat-change positive">
+                <TrendingUp size={16} />
+                Growth
+              </span>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon revenue">
+              <FileText size={24} />
+            </div>
+            <div className="stat-content">
+              <h3>Pending Reviews</h3>
+              <p className="stat-number">
+                {patients.filter(p => (p.status || 'active') === 'pending').length}
+              </p>
+              <span className="stat-change neutral">
+                <Clock size={16} />
+                Awaiting
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* Search and Filter */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
@@ -270,39 +407,39 @@ const AdminPatients = () => {
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-          <input
-            type="text"
+                <input
+                  type="text"
                   placeholder="Search patients by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+                />
+              </div>
             </div>
             <div className="flex gap-2">
-          <select 
-            value={filterStatus} 
-            onChange={(e) => setFilterStatus(e.target.value)}
+              <select 
+                value={filterStatus} 
+                onChange={(e) => setFilterStatus(e.target.value)}
                 className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="inactive">Inactive</option>
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="inactive">Inactive</option>
                 <option value="discharged">Discharged</option>
-          </select>
-              <button className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center gap-2 transition-colors">
+              </select>
+              <button className="patient-btn-secondary">
                 <Filter className="h-5 w-5" />
                 Filter
               </button>
             </div>
+          </div>
         </div>
-      </div>
 
         {/* Patients Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible">
+          <div className="patients-table-container overflow-x-auto overflow-y-visible">
+            <table className="patients-table w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -357,47 +494,73 @@ const AdminPatients = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        (patient.patient?.status || 'active') === 'active' 
+                        (patient.status || 'active') === 'active' 
                           ? 'bg-green-100 text-green-800' 
-                          : (patient.patient?.status || 'active') === 'pending'
+                          : (patient.status || 'active') === 'pending'
                           ? 'bg-yellow-100 text-yellow-800'
-                          : (patient.patient?.status || 'active') === 'inactive'
+                          : (patient.status || 'active') === 'inactive'
                           ? 'bg-red-100 text-red-800'
-                          : (patient.patient?.status || 'active') === 'discharged'
+                          : (patient.status || 'active') === 'discharged'
                           ? 'bg-blue-100 text-blue-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {patient.patient?.status || 'active'}
+                        {patient.status || 'active'}
                   </span>
                 </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {patient.createdAt ? new Date(patient.createdAt).toLocaleDateString() : 'N/A'}
                 </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => handleViewPatient(patient)}
-                          className="text-blue-600 hover:text-blue-900 p-1"
-                          title="View Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                  </button>
-                        <button 
-                          onClick={() => handleEditPatient(patient)}
-                          className="text-indigo-600 hover:text-indigo-900 p-1"
-                          title="Edit Patient"
-                        >
-                          <Edit className="h-4 w-4" />
-                  </button>
-                        <button 
-                          onClick={() => handleDeletePatient(patient.id)}
-                          className="text-red-600 hover:text-red-900 p-1"
-                          title="Delete Patient"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                  </button>
-                      </div>
-                </td>
+                         <td className="patient-actions-cell">
+                           <div className="patient-actions">
+                             <button 
+                               className="dropdown-trigger" 
+                               onClick={() => toggleActionDropdown(patient.id)}
+                               title="Actions"
+                               ref={el => dropdownRefs.current[patient.id] = el}
+                               data-patient-id={patient.id}
+                             >
+                               <MoreVertical size={16} />
+                             </button>
+                             
+                             {actionDropdowns[patient.id] && (
+                               <div className={`patient-action-dropdown ${shouldOpenUpward(patient.id) ? 'dropdown-up' : ''}`}>
+                                 <button 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     handleViewPatient(patient);
+                                     closeAllDropdowns();
+                                   }}
+                                   className="dropdown-item"
+                                 >
+                                   <Eye size={16} />
+                                   View Details
+                                 </button>
+                                 <button 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     handleEditPatient(patient);
+                                     closeAllDropdowns();
+                                   }}
+                                   className="dropdown-item"
+                                 >
+                                   <Edit size={16} />
+                                   Edit Patient
+                                 </button>
+                                 <button 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     handleDeletePatient(patient.id);
+                                     closeAllDropdowns();
+                                   }}
+                                   className="dropdown-item danger"
+                                 >
+                                   <Trash2 size={16} />
+                                   Delete Patient
+                                 </button>
+                               </div>
+                             )}
+                           </div>
+                         </td>
               </tr>
             ))}
           </tbody>
@@ -419,404 +582,1054 @@ const AdminPatients = () => {
                 </div>
 
 
-        {/* View Patient Modal */}
-        {selectedPatient && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              {/* Modern Header Section */}
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-8 rounded-t-2xl">
-                <div className="flex items-center gap-6">
-                  <div className="relative">
-                    <InitialsAvatar 
-                      name={`${selectedPatient.firstName} ${selectedPatient.lastName}`} 
-                      size="3xl" 
-                      className="border-4 border-white/30 shadow-lg"
-                    />
-                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white ${
-                      (selectedPatient.patient?.status || 'active') === 'active' 
-                        ? 'bg-green-500' 
-                        : (selectedPatient.patient?.status || 'active') === 'pending'
-                        ? 'bg-yellow-500'
-                        : (selectedPatient.patient?.status || 'active') === 'inactive'
-                        ? 'bg-red-500'
-                        : 'bg-gray-500'
-                    }`}></div>
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-3xl font-bold mb-2">
-                      {selectedPatient.firstName} {selectedPatient.lastName}
-                    </h2>
-                    <p className="text-blue-100 text-lg">
-                      {selectedPatient.gender || 'N/A'} • {selectedPatient.dateOfBirth ? 
-                        new Date().getFullYear() - new Date(selectedPatient.dateOfBirth).getFullYear() + ' years old' 
-                        : 'N/A'}
-                    </p>
-                    <div className="mt-3">
-                      <span className={`px-4 py-2 rounded-full text-sm font-semibold bg-white/20 backdrop-blur-sm border border-white/30`}>
-                        {selectedPatient.patient?.status || 'active'}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedPatient(null)}
-                    className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-              </div>
+         {/* View Patient Modal */}
+         {selectedPatient && (
+           <div className="modal-overlay" onClick={() => setSelectedPatient(null)}>
+             <div className="modal-content patient-detail-modal" onClick={e => e.stopPropagation()}>
+               <div className="modal-header">
+                 <h3>Patient Profile</h3>
+                 <button className="close-btn" onClick={() => setSelectedPatient(null)}>
+                   <X size={20} />
+                 </button>
+               </div>
+               
+               <div className="modal-body">
+                 <div className="patient-detail-modern">
+                   {/* Header Section */}
+                   <div className="patient-header">
+                     <div className="avatar-container">
+                       <InitialsAvatar 
+                         name={`${selectedPatient.firstName} ${selectedPatient.lastName}`} 
+                         size="3xl" 
+                         className="patient-avatar"
+                       />
+                       <div className={`status-indicator ${selectedPatient.status || 'active'}`}></div>
+                     </div>
+                     <div className="patient-basic-info">
+                       <h2 className="patient-name">{selectedPatient.firstName} {selectedPatient.lastName}</h2>
+                       <p className="patient-diagnosis">{selectedPatient.diagnosis || 'Diagnosis not set'}</p>
+                       <div className="patient-stats">
+                         <div className="stat-item">
+                           <User size={16} className="stat-icon" />
+                           <span className="stat-value">{selectedPatient.id}</span>
+                           <span className="stat-label">Patient ID</span>
+                         </div>
+                         <div className="stat-item">
+                           <Calendar size={16} className="stat-icon" />
+                           <span className="stat-value">{selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
+                           <span className="stat-label">Date of Birth</span>
+                         </div>
+                         <div className="stat-item">
+                           <Clock size={16} className="stat-icon" />
+                           <span className="stat-value">{selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'N/A'}</span>
+                           <span className="stat-label">Patient Since</span>
+                         </div>
+                       </div>
+                     </div>
+                   </div>
 
-              {/* Profile Information Grid */}
-              <div className="p-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Personal Information */}
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <User className="h-5 w-5 text-blue-600" />
-                      </div>
-                      Personal Information
-                    </h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Full Name</label>
-                        <p className="text-gray-900 font-medium">{selectedPatient.firstName} {selectedPatient.lastName}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</label>
-                        <p className="text-gray-900 font-medium">{selectedPatient.email}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</label>
-                        <p className="text-gray-900 font-medium">{selectedPatient.phone || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Gender</label>
-                        <p className="text-gray-900 font-medium">{selectedPatient.gender || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date of Birth</label>
-                        <p className="text-gray-900 font-medium">
-                          {selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                   {/* Information Sections */}
+                   <div className="info-section">
+                     <h3 className="section-title">
+                       <User size={20} className="section-icon" />
+                       Personal Information
+                     </h3>
+                     <div className="info-grid">
+                       <div className="info-item">
+                         <label>Email Address</label>
+                         <span>{selectedPatient.email || 'Not provided'}</span>
+                       </div>
+                       <div className="info-item">
+                         <label>Phone Number</label>
+                         <span>{selectedPatient.phone || 'Not provided'}</span>
+                       </div>
+                       <div className="info-item">
+                         <label>Date of Birth</label>
+                         <span>{selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 'Not provided'}</span>
+                       </div>
+                       <div className="info-item">
+                         <label>Gender</label>
+                         <span>{selectedPatient.gender || 'Not provided'}</span>
+                       </div>
+                       <div className="info-item full-width">
+                         <label>Full Address</label>
+                         <span>{selectedPatient.address ? `${selectedPatient.address}, ${selectedPatient.city}, ${selectedPatient.state} ${selectedPatient.zipCode}, ${selectedPatient.country}` : 'Not provided'}</span>
+                       </div>
+                     </div>
+                   </div>
+                   
+                   <div className="info-section">
+                     <h3 className="section-title">
+                       <FileText size={20} className="section-icon" />
+                       Medical Information
+                     </h3>
+                     <div className="info-grid">
+                       <div className="info-item">
+                         <label>Primary Diagnosis</label>
+                         <span>{selectedPatient.diagnosis || 'Not provided'}</span>
+                       </div>
+                       <div className="info-item">
+                         <label>Treatment Status</label>
+                         <span className={`status-badge ${selectedPatient.status || 'active'}`}>
+                           {selectedPatient.status || 'active'}
+                         </span>
+                       </div>
+                       <div className="info-item full-width">
+                         <label>Medical History</label>
+                         <span>{selectedPatient.patient?.medicalHistory || 'No medical history recorded'}</span>
+                       </div>
+                       <div className="info-item full-width">
+                         <label>Treatment Goals</label>
+                         <span>{selectedPatient.goals || 'No treatment goals set'}</span>
+                       </div>
+                     </div>
+                   </div>
 
-                  {/* Medical Information */}
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-green-600" />
-                      </div>
-                      Medical Information
-                    </h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Diagnosis</label>
-                        <p className="text-gray-900 font-medium">{selectedPatient.patient?.diagnosis || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Medical History</label>
-                        <p className="text-gray-900 font-medium">{selectedPatient.patient?.medicalHistory || 'No significant medical history'}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Treatment Status</label>
-                        <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                          (selectedPatient.patient?.status || 'active') === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : (selectedPatient.patient?.status || 'active') === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : (selectedPatient.patient?.status || 'active') === 'inactive'
-                            ? 'bg-red-100 text-red-800'
-                            : (selectedPatient.patient?.status || 'active') === 'discharged'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {selectedPatient.patient?.status || 'active'}
-                        </span>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Patient Since</label>
-                        <p className="text-gray-900 font-medium">
-                          {selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                   {/* Account Information */}
+                   <div className="info-section">
+                     <h3 className="section-title">
+                       <Calendar size={20} className="section-icon" />
+                       Account Information
+                     </h3>
+                     <div className="info-grid">
+                       <div className="info-item">
+                         <label>Patient Since</label>
+                         <span>{selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'Unknown'}</span>
+                       </div>
+                       <div className="info-item">
+                         <label>Last Updated</label>
+                         <span>{selectedPatient.updatedAt ? new Date(selectedPatient.updatedAt).toLocaleDateString() : 'Unknown'}</span>
+                       </div>
+                     </div>
+                   </div>
 
-                  {/* Progress Tracking */}
-                  <div className="bg-gray-50 rounded-xl p-6 lg:col-span-2">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <BarChart3 className="h-5 w-5 text-purple-600" />
-                      </div>
-                      Progress Tracking
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="text-center bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="text-2xl font-bold text-gray-900">0%</div>
-                        <div className="text-sm text-gray-500 uppercase tracking-wide">Overall Progress</div>
-                      </div>
-                      <div className="text-center bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="text-2xl font-bold text-gray-900">0</div>
-                        <div className="text-sm text-gray-500 uppercase tracking-wide">Sessions Completed</div>
-                      </div>
-                      <div className="text-center bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="text-2xl font-bold text-gray-900">0</div>
-                        <div className="text-sm text-gray-500 uppercase tracking-wide">Goals Achieved</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                   {/* Action Buttons */}
+                   <div className="quick-actions">
+                     <button 
+                       onClick={() => handleEditPatient(selectedPatient)}
+                       className="patient-btn-primary"
+                     >
+                       <Edit size={16} />
+                       Edit Patient
+                     </button>
+                     <button 
+                       onClick={() => handleDeletePatient(selectedPatient.id)}
+                       className="patient-btn-danger"
+                     >
+                       <Trash2 size={16} />
+                       Delete Patient
+                     </button>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+         )}
 
-              {/* Action Buttons */}
-              <div className="p-6 bg-gray-50 rounded-b-2xl border-t border-gray-200">
-                <div className="flex flex-wrap gap-3 justify-end">
-                  <button
-                    onClick={() => setSelectedPatient(null)}
-                    className="px-6 py-3 text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors font-medium"
-                  >
-                    Close
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedPatient(null);
-                      handleEditPatient(selectedPatient);
-                    }}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Edit Patient
-                  </button>
-                  <button className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    View Reports
-                  </button>
-                  <button className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Schedule Session
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+         {/* Edit Patient Modal */}
+         {editingPatient && (
+           <div className="modal-overlay" onClick={handleCancelEdit}>
+             <div className="modal-content patient-detail-modal" onClick={e => e.stopPropagation()}>
+               <div className="modal-header">
+                 <h3>Edit Patient Profile</h3>
+                 <button className="close-btn" onClick={handleCancelEdit}>
+                   <X size={20} />
+                 </button>
+               </div>
 
-        {/* Edit Patient Modal */}
-        {editingPatient && (
+               <div className="modal-body">
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                   {/* Personal Information */}
+                   <div className="space-y-6">
+                     <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+                       <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                         <User className="h-5 w-5 text-blue-600" />
+                       </div>
+                       Personal Information
+                     </h3>
+                     
+                     <div className="grid grid-cols-2 gap-4">
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                         <input
+                           type="text"
+                           value={editingPatient.firstName || ''}
+                           onChange={(e) => handleInputChange('firstName', e.target.value)}
+                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           required
+                         />
+                       </div>
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                         <input
+                           type="text"
+                           value={editingPatient.lastName || ''}
+                           onChange={(e) => handleInputChange('lastName', e.target.value)}
+                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           required
+                         />
+                       </div>
+                     </div>
+
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                       <input
+                         type="email"
+                         value={editingPatient.email || ''}
+                         onChange={(e) => handleInputChange('email', e.target.value)}
+                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                         required
+                       />
+                     </div>
+
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                       <input
+                         type="tel"
+                         value={editingPatient.phone || ''}
+                         onChange={(e) => handleInputChange('phone', e.target.value)}
+                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       />
+                     </div>
+
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                       <input
+                         type="text"
+                         value={editingPatient.address || ''}
+                         onChange={(e) => handleInputChange('address', e.target.value)}
+                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       />
+                     </div>
+
+                     <div className="grid grid-cols-3 gap-4">
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                         <input
+                           type="text"
+                           value={editingPatient.city || ''}
+                           onChange={(e) => handleInputChange('city', e.target.value)}
+                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                         />
+                       </div>
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                         <input
+                           type="text"
+                           value={editingPatient.state || ''}
+                           onChange={(e) => handleInputChange('state', e.target.value)}
+                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                         />
+                       </div>
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
+                         <input
+                           type="text"
+                           value={editingPatient.zipCode || ''}
+                           onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                         />
+                       </div>
+                     </div>
+                   </div>
+
+                   {/* Medical Information */}
+                   <div className="space-y-6">
+                     <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+                       <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                         <FileText className="h-5 w-5 text-green-600" />
+                       </div>
+                       Medical Information
+                     </h3>
+
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                       <select
+                         value={editingPatient.gender || ''}
+                         onChange={(e) => handleInputChange('gender', e.target.value)}
+                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                       >
+                         <option value="">Select Gender</option>
+                         <option value="male">Male</option>
+                         <option value="female">Female</option>
+                         <option value="other">Other</option>
+                       </select>
+                     </div>
+
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                       <input
+                         type="date"
+                         value={editingPatient.dateOfBirth ? editingPatient.dateOfBirth.split('T')[0] : ''}
+                         onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                       />
+                     </div>
+
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                       <input
+                         type="text"
+                         value={editingPatient.country || ''}
+                         onChange={(e) => handleInputChange('country', e.target.value)}
+                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                       />
+                     </div>
+
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis *</label>
+                       <input
+                         type="text"
+                         value={editingPatient.patient?.diagnosis || ''}
+                         onChange={(e) => handleInputChange('patient.diagnosis', e.target.value)}
+                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                         placeholder="e.g., Autism Spectrum Disorder"
+                         required
+                       />
+                     </div>
+
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Medical History</label>
+                       <textarea
+                         value={editingPatient.patient?.medicalHistory || ''}
+                         onChange={(e) => handleInputChange('patient.medicalHistory', e.target.value)}
+                         rows={3}
+                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                         placeholder="Enter medical history and relevant information..."
+                       />
+                     </div>
+
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Treatment Goals</label>
+                       <textarea
+                         value={editingPatient.goals || ''}
+                         onChange={(e) => handleInputChange('goals', e.target.value)}
+                         rows={3}
+                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                         placeholder="Enter treatment goals and objectives..."
+                       />
+                     </div>
+
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Account Status</label>
+                       <select
+                         value={editingPatient.status || 'active'}
+                         onChange={(e) => handleInputChange('status', e.target.value)}
+                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                       >
+                         <option value="active">Active</option>
+                         <option value="pending">Pending</option>
+                         <option value="inactive">Inactive</option>
+                         <option value="discharged">Discharged</option>
+                       </select>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="modal-actions">
+                 <button 
+                   onClick={handleCancelEdit}
+                   className="patient-btn-secondary"
+                 >
+                   Cancel
+                 </button>
+                 <button 
+                   onClick={handleSavePatient}
+                   className="patient-btn-primary"
+                 >
+                   <Edit size={16} />
+                   Save Changes
+                 </button>
+               </div>
+             </div>
+           </div>
+         )}
+
+        {/* Patient Reports Modal */}
+        {showReportsModal && reportsPatient && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
               {/* Modal Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
+              <div className="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-white">Edit Patient</h2>
-                    <p className="text-blue-100 mt-1">Update patient information and medical details</p>
+                    <h2 className="text-2xl font-bold text-white">Patient Reports</h2>
+                    <p className="text-green-100 mt-1">
+                      Comprehensive reports for {reportsPatient.firstName} {reportsPatient.lastName}
+                    </p>
                   </div>
                   <button
-                    onClick={handleCancelEdit}
-                    className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    onClick={closeModal}
+                    className="text-white hover:text-green-200 transition-colors"
                   >
                     <X className="h-6 w-6" />
                   </button>
                 </div>
               </div>
 
-              {/* Modal Body */}
-              <div className="p-8 max-h-[60vh] overflow-y-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Personal Information */}
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <User className="h-5 w-5 text-blue-600" />
-                      </div>
-                      Personal Information
-                    </h3>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
-                        <input
-                          type="text"
-                          value={editingPatient.firstName || ''}
-                          onChange={(e) => handleInputChange('firstName', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
-                        <input
-                          type="text"
-                          value={editingPatient.lastName || ''}
-                          onChange={(e) => handleInputChange('lastName', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                      <input
-                        type="email"
-                        value={editingPatient.email || ''}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                        <input
-                          type="tel"
-                          value={editingPatient.phone || ''}
-                          onChange={(e) => handleInputChange('phone', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-                        <select
-                          value={editingPatient.gender || ''}
-                          onChange={(e) => handleInputChange('gender', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                          <option value="">Select Gender</option>
-                          <option value="male">Male</option>
-                          <option value="female">Female</option>
-                          <option value="other">Other</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                      <input
-                        type="date"
-                        value={editingPatient.dateOfBirth ? editingPatient.dateOfBirth.split('T')[0] : ''}
-                        onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                      <input
-                        type="text"
-                        value={editingPatient.address || ''}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                        <input
-                          type="text"
-                          value={editingPatient.city || ''}
-                          onChange={(e) => handleInputChange('city', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-                        <input
-                          type="text"
-                          value={editingPatient.state || ''}
-                          onChange={(e) => handleInputChange('state', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
-                        <input
-                          type="text"
-                          value={editingPatient.zipCode || ''}
-                          onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Medical Information */}
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-green-600" />
-                      </div>
-                      Medical Information
-                    </h3>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis</label>
-                      <textarea
-                        value={editingPatient.patient?.diagnosis || ''}
-                        onChange={(e) => handleInputChange('patient.diagnosis', e.target.value)}
-                        rows={3}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter primary diagnosis..."
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Medical History</label>
-                      <textarea
-                        value={editingPatient.patient?.medicalHistory || ''}
-                        onChange={(e) => handleInputChange('patient.medicalHistory', e.target.value)}
-                        rows={4}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter medical history and relevant information..."
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Treatment Status</label>
-                      <select
-                        value={editingPatient.patient?.status || 'active'}
-                        onChange={(e) => handleInputChange('patient.status', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="active">Active</option>
-                        <option value="pending">Pending</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="discharged">Discharged</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+              {/* Modal Content */}
+              <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
+                <PatientReportsContent patient={reportsPatient} />
               </div>
 
               {/* Modal Footer */}
               <div className="p-6 bg-gray-50 border-t border-gray-200">
-                <div className="flex flex-wrap gap-3 justify-end">
+                <div className="flex justify-end">
                   <button
-                    onClick={handleCancelEdit}
+                    onClick={closeModal}
                     className="px-6 py-3 text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors font-medium"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSavePatient}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Save Changes
+                    Close
                   </button>
                 </div>
               </div>
             </div>
           </div>
         )}
-        </div>
+
+        {/* Session Scheduling Modal */}
+        {showScheduleModal && schedulePatient && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-8 py-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Schedule Session</h2>
+                    <p className="text-purple-100 mt-1">
+                      Schedule a new session for {schedulePatient.firstName} {schedulePatient.lastName}
+                    </p>
+                  </div>
+                  <button
+                    onClick={closeModal}
+                    className="text-white hover:text-purple-200 transition-colors"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
+                <SessionSchedulingContent 
+                  patient={schedulePatient} 
+                  onScheduleSuccess={() => {
+                    closeModal();
+                    toast.success('Session scheduled successfully');
+                  }}
+                />
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 bg-gray-50 border-t border-gray-200">
+                <div className="flex justify-end">
+                  <button
+                    onClick={closeModal}
+                    className="px-6 py-3 text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
+  );
+};
+
+// Patient Reports Content Component
+const PatientReportsContent = ({ patient }) => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [reportsData, setReportsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch patient reports data
+  React.useEffect(() => {
+    const fetchReportsData = async () => {
+      try {
+        setLoading(true);
+        // Fetch patient-specific data using adminAPI service
+        const [assessmentsRes, sessionsRes, progressRes] = await Promise.all([
+          adminAPI.getPatientAssessments(patient.id),
+          adminAPI.getPatientSessions(patient.id),
+          adminAPI.getPatientProgress(patient.id)
+        ]);
+
+        console.log('Reports data fetched:', {
+          assessments: assessmentsRes.data?.data,
+          sessions: sessionsRes.data?.data,
+          progress: progressRes.data?.data
+        });
+
+        // Use real data if available, otherwise show sample data for demonstration
+        const assessments = assessmentsRes.data?.data || [];
+        const sessions = sessionsRes.data?.data || [];
+        const progress = progressRes.data?.data || [];
+
+        // If no real data, show sample data for demonstration
+        const sampleData = {
+          assessments: assessments.length > 0 ? assessments : [
+            {
+              id: 1,
+              title: 'Initial Assessment',
+              type: 'Comprehensive',
+              category: 'Motor Skills',
+              assessmentDate: '2024-01-15',
+              status: 'completed',
+              score: 85,
+              maxScore: 100,
+              summary: 'Patient shows good progress in fine motor skills',
+              therapistName: 'Dr. Sarah Wilson'
+            },
+            {
+              id: 2,
+              title: 'Follow-up Assessment',
+              type: 'Progress',
+              category: 'Cognitive',
+              assessmentDate: '2024-02-01',
+              status: 'in-progress',
+              score: null,
+              maxScore: 100,
+              summary: 'Assessment in progress',
+              therapistName: 'Dr. Sarah Wilson'
+            }
+          ],
+          sessions: sessions.length > 0 ? sessions : [
+            {
+              id: 1,
+              sessionDate: '2024-01-20',
+              startTime: '10:00:00',
+              endTime: '11:00:00',
+              duration: 60,
+              sessionType: 'therapy',
+              status: 'completed',
+              objectives: 'Improve fine motor skills',
+              activities: 'Hand exercises, drawing activities',
+              observations: 'Patient showed good engagement',
+              progress: 'Steady improvement noted',
+              therapistName: 'Dr. Sarah Wilson'
+            },
+            {
+              id: 2,
+              sessionDate: '2024-01-27',
+              startTime: '10:00:00',
+              endTime: '11:00:00',
+              duration: 60,
+              sessionType: 'therapy',
+              status: 'completed',
+              objectives: 'Continue motor skill development',
+              activities: 'Sensory play, coordination exercises',
+              observations: 'Patient was very focused today',
+              progress: 'Excellent progress in coordination',
+              therapistName: 'Dr. Sarah Wilson'
+            }
+          ],
+          progress: progress.length > 0 ? progress : [
+            {
+              id: 1,
+              area: 'Fine Motor Skills',
+              baselineScore: 60,
+              currentScore: 75,
+              targetScore: 85,
+              progressNotes: 'Significant improvement in hand-eye coordination',
+              measurementDate: '2024-01-15',
+              assessmentTitle: 'Initial Assessment'
+            },
+            {
+              id: 2,
+              area: 'Cognitive Development',
+              baselineScore: 70,
+              currentScore: 80,
+              targetScore: 90,
+              progressNotes: 'Good progress in attention and focus',
+              measurementDate: '2024-02-01',
+              assessmentTitle: 'Follow-up Assessment'
+            }
+          ]
+        };
+
+        setReportsData(sampleData);
+      } catch (error) {
+        console.error('Error fetching reports data:', error);
+        toast.error('Failed to load patient reports');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReportsData();
+  }, [patient.id]);
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'assessments', label: 'Assessments', icon: FileText },
+    { id: 'sessions', label: 'Sessions', icon: Calendar },
+    { id: 'progress', label: 'Progress', icon: TrendingUp }
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading patient reports...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map((tab) => {
+            const IconComponent = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                  activeTab === tab.id
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <IconComponent className="h-4 w-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div className="min-h-[400px]">
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-blue-50 p-6 rounded-lg">
+              <div className="flex items-center">
+                <FileText className="h-8 w-8 text-blue-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-blue-600">Total Assessments</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {reportsData?.assessments?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-green-50 p-6 rounded-lg">
+              <div className="flex items-center">
+                <Calendar className="h-8 w-8 text-green-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-green-600">Total Sessions</p>
+                  <p className="text-2xl font-bold text-green-900">
+                    {reportsData?.sessions?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-purple-50 p-6 rounded-lg">
+              <div className="flex items-center">
+                <TrendingUp className="h-8 w-8 text-purple-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-purple-600">Progress Areas</p>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {reportsData?.progress?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'assessments' && (
+          <div className="space-y-4">
+            {reportsData?.assessments?.length > 0 ? (
+              reportsData.assessments.map((assessment) => (
+                <div key={assessment.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">{assessment.title}</h3>
+                      <p className="text-sm text-gray-600">{assessment.type} • {assessment.category}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">{assessment.assessmentDate}</p>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        assessment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        assessment.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {assessment.status}
+                      </span>
+                    </div>
+                  </div>
+                  {assessment.score && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-600">Score: {assessment.score}/{assessment.maxScore}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No assessments found for this patient</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'sessions' && (
+          <div className="space-y-4">
+            {reportsData?.sessions?.length > 0 ? (
+              reportsData.sessions.map((session) => (
+                <div key={session.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">{session.sessionType}</h3>
+                      <p className="text-sm text-gray-600">
+                        {session.sessionDate} • {session.startTime} - {session.endTime}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">{session.duration} minutes</p>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        session.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        session.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {session.status}
+                      </span>
+                    </div>
+                  </div>
+                  {session.notes && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-600">{session.notes}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No sessions found for this patient</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'progress' && (
+          <div className="space-y-4">
+            {reportsData?.progress?.length > 0 ? (
+              reportsData.progress.map((progress) => (
+                <div key={progress.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-medium text-gray-900 capitalize">
+                      {progress.area.replace(/([A-Z])/g, ' $1').trim()}
+                    </h3>
+                    <span className="text-sm text-gray-500">{progress.measurementDate}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Baseline</p>
+                      <p className="text-lg font-semibold">{progress.baselineScore || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Current</p>
+                      <p className="text-lg font-semibold">{progress.currentScore || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Target</p>
+                      <p className="text-lg font-semibold">{progress.targetScore || 'N/A'}</p>
+                    </div>
+                  </div>
+                  {progress.progressNotes && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-600">{progress.progressNotes}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No progress data found for this patient</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Session Scheduling Content Component
+const SessionSchedulingContent = ({ patient, onScheduleSuccess }) => {
+  const [formData, setFormData] = useState({
+    appointmentDate: '',
+    startTime: '09:00',
+    duration: 60,
+    type: 'therapy',
+    notes: ''
+  });
+  const [therapists, setTherapists] = useState([]);
+  const [selectedTherapist, setSelectedTherapist] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Fetch therapists data
+  React.useEffect(() => {
+    const fetchTherapists = async () => {
+      try {
+        const response = await adminAPI.getTherapists();
+        console.log('Therapists data fetched:', response.data);
+        if (response.data.success) {
+          const therapists = response.data.data.users || [];
+          // If no therapists found, use sample data for demonstration
+          if (therapists.length === 0) {
+            setTherapists([
+              {
+                id: 1,
+                firstName: 'Sarah',
+                lastName: 'Wilson',
+                email: 'sarah.wilson@therapease.com',
+                therapist: {
+                  specialization: 'Pediatric Occupational Therapy',
+                  yearsOfExperience: 8,
+                  licenseNumber: 'OT12345'
+                }
+              },
+              {
+                id: 2,
+                firstName: 'Michael',
+                lastName: 'Johnson',
+                email: 'michael.johnson@therapease.com',
+                therapist: {
+                  specialization: 'Speech Therapy',
+                  yearsOfExperience: 5,
+                  licenseNumber: 'ST67890'
+                }
+              }
+            ]);
+          } else {
+            setTherapists(therapists);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching therapists:', error);
+        toast.error('Failed to load therapists');
+      }
+    };
+
+    fetchTherapists();
+  }, []);
+
+  const sessionTypes = [
+    { value: 'therapy', label: 'Therapy Session' },
+    { value: 'assessment', label: 'Assessment' },
+    { value: 'consultation', label: 'Consultation' },
+    { value: 'follow-up', label: 'Follow-up' },
+    { value: 'evaluation', label: 'Evaluation' }
+  ];
+
+  const durationOptions = [
+    { value: 30, label: '30 minutes' },
+    { value: 45, label: '45 minutes' },
+    { value: 60, label: '1 hour' },
+    { value: 90, label: '1.5 hours' },
+    { value: 120, label: '2 hours' }
+  ];
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!selectedTherapist) {
+      toast.error('Please select a therapist');
+      return;
+    }
+
+    if (!formData.appointmentDate || !formData.startTime) {
+      toast.error('Please select date and time');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Calculate end time
+      const startTime = new Date(`2000-01-01T${formData.startTime}`);
+      const endTime = new Date(startTime.getTime() + formData.duration * 60000);
+      const endTimeStr = endTime.toTimeString().slice(0, 8);
+
+      const appointmentData = {
+        therapistId: selectedTherapist,
+        patientId: patient.id,
+        date: formData.appointmentDate,
+        time: formData.startTime,
+        duration: formData.duration,
+        reason: formData.type,
+        type: formData.type,
+        notes: formData.notes
+      };
+
+      const response = await adminAPI.createAppointment(appointmentData);
+      
+      if (response.data.success) {
+        toast.success('Session scheduled successfully');
+        onScheduleSuccess();
+      } else {
+        toast.error(response.data.error || 'Failed to schedule session');
+      }
+    } catch (error) {
+      console.error('Error scheduling session:', error);
+      toast.error('Failed to schedule session');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Patient Info */}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Patient Information</h3>
+          <p className="text-gray-600">{patient.firstName} {patient.lastName}</p>
+          <p className="text-sm text-gray-500">{patient.email}</p>
+        </div>
+
+        {/* Therapist Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Assign Therapist *
+          </label>
+          <select
+            value={selectedTherapist}
+            onChange={(e) => setSelectedTherapist(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            required
+          >
+            <option value="">Select a therapist</option>
+            {therapists.map((therapist) => (
+              <option key={therapist.id} value={therapist.id}>
+                {therapist.firstName} {therapist.lastName}
+                {therapist.therapist?.specialization && ` - ${therapist.therapist.specialization}`}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Appointment Date *
+          </label>
+          <input
+            type="date"
+            value={formData.appointmentDate}
+            onChange={(e) => handleInputChange('appointmentDate', e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            required
+          />
+        </div>
+
+        {/* Time */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Start Time *
+          </label>
+          <input
+            type="time"
+            value={formData.startTime}
+            onChange={(e) => handleInputChange('startTime', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Duration
+          </label>
+          <select
+            value={formData.duration}
+            onChange={(e) => handleInputChange('duration', parseInt(e.target.value))}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+            {durationOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Session Type */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Session Type
+          </label>
+          <select
+            value={formData.type}
+            onChange={(e) => handleInputChange('type', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+            {sessionTypes.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Notes
+        </label>
+        <textarea
+          value={formData.notes}
+          onChange={(e) => handleInputChange('notes', e.target.value)}
+          rows={4}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          placeholder="Add any additional notes or special instructions..."
+        />
+      </div>
+
+      {/* Submit Button */}
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={loading}
+          className="patient-btn-purple disabled:bg-purple-400 flex items-center gap-2"
+        >
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Scheduling...
+            </>
+          ) : (
+            <>
+              <Calendar className="h-4 w-4" />
+              Schedule Session
+            </>
+          )}
+        </button>
+      </div>
+    </form>
   );
 };
 

@@ -148,6 +148,10 @@ const register = async (req, res) => {
       city,
       state,
       zipCode,
+      // Compliance fields
+      termsAccepted,
+      hipaaAcknowledged,
+      acceptedAt,
       // Role-specific fields
       licenseNumber,
       specialization,
@@ -167,6 +171,14 @@ const register = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: email, password, firstName, lastName, role'
+      });
+    }
+
+    // Validate compliance requirements
+    if (!termsAccepted) {
+      return res.status(400).json({
+        success: false,
+        error: 'Terms and conditions acceptance is required'
       });
     }
 
@@ -208,8 +220,8 @@ const register = async (req, res) => {
     try {
       // Create user
       const createUserSql = `
-        INSERT INTO users (email, password, role, firstName, lastName, phone, dateOfBirth, gender, address, city, state, zipCode)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO users (email, password, role, firstName, lastName, phone, dateOfBirth, gender, address, city, state, zipCode, termsAccepted, acceptedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const userParams = [
@@ -224,7 +236,9 @@ const register = async (req, res) => {
         address || null,
         city || null,
         state || null,
-        zipCode || null
+        zipCode || null,
+        termsAccepted,
+        acceptedAt || new Date().toISOString()
       ];
 
       const userResult = await connection.execute(createUserSql, userParams);

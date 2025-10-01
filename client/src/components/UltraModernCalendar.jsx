@@ -13,7 +13,6 @@ import {
   Grid3X3,
   List,
   Eye,
-  Edit,
   Trash2,
   Star,
   AlertCircle,
@@ -32,7 +31,7 @@ const UltraModernCalendar = ({
   showSearch = false,
   showFilters = false
 }) => {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 0, 1)); // Set to January 2025
+  const [currentDate, setCurrentDate] = useState(new Date()); // Set to current date
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [viewMode, setViewMode] = useState(view);
@@ -136,6 +135,7 @@ const UltraModernCalendar = ({
 
   // Event priority colors and styles
   const getEventStyles = useCallback((priority = 'medium', type = 'default') => {
+    console.log(`getEventStyles called with priority="${priority}", type="${type}"`);
     // Therapy-specific color coding (matching the sample calendar)
     const therapyTypeStyles = {
       'sensory-assessment': {
@@ -240,6 +240,7 @@ const UltraModernCalendar = ({
     };
 
     const result = therapyTypeStyles[type] || therapyTypeStyles.default;
+    console.log(`getEventStyles returning:`, result);
     return result;
   }, []);
 
@@ -378,40 +379,6 @@ const UltraModernCalendar = ({
               )}
             </div>
             
-            {showQuickActions && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onAddEvent?.()}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all duration-200 flex items-center gap-2 text-sm"
-                >
-                  <Plus size={16} />
-                  Add Event
-                </button>
-                
-                <div className="flex bg-white rounded-lg border border-gray-200 p-1">
-                  <button
-                    onClick={() => setViewMode('month')}
-                    className={`p-1.5 rounded transition-all ${
-                      viewMode === 'month' 
-                        ? 'bg-blue-100 text-blue-600' 
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    <Grid3X3 size={16} />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-1.5 rounded transition-all ${
-                      viewMode === 'list' 
-                        ? 'bg-blue-100 text-blue-600' 
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    <List size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -572,9 +539,6 @@ const UltraModernCalendar = ({
                         <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                           <Eye size={16} />
                         </button>
-                        <button className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                          <Edit size={16} />
-                        </button>
                         <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                           <Trash2 size={16} />
                         </button>
@@ -688,11 +652,16 @@ const UltraModernCalendar = ({
                 </div>
 
                 <div className="pt-6 border-t border-gray-100">
-                  <div className="flex gap-3">
-                    <button className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl hover:bg-blue-700 transition-colors font-medium">
-                      Edit Event
-                    </button>
-                    <button className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors font-medium">
+                  <div className="flex justify-end">
+                    <button 
+                      onClick={() => {
+                        setShowEventModal(false);
+                        if (onEventClick) {
+                          onEventClick(selectedEvent);
+                        }
+                      }}
+                      className="px-8 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                    >
                       View Details
                     </button>
                   </div>

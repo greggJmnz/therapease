@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { useRealtimeData } from '../../hooks/useWebSocket';
+import { useAuth } from '../../context/AuthContext';
 import {
   Users,
   Calendar,
@@ -11,12 +12,15 @@ import {
   AlertCircle,
   Plus,
   Eye,
+  Target,
 } from 'lucide-react';
 import { therapistAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import InitialsAvatar from '../../components/InitialsAvatar';
 
 const TherapistDashboard = () => {
+  const { user } = useAuth();
+  
   // Fetch dashboard data from API
   const { data: dashboardData, isLoading, error, refetch } = useQuery(
     'therapistDashboard',
@@ -36,59 +40,27 @@ const TherapistDashboard = () => {
   // Enable real-time updates
   const { isRefreshing } = useRealtimeData('therapistDashboard', refetch);
 
-  // Extract data from API response (handle double nesting)
+  // Extract data from API response
   const apiData = dashboardData?.data?.data || dashboardData?.data;
   const overview = apiData?.overview || {};
   const appointments = apiData?.appointments || {};
   const recent = apiData?.recent || {};
   const progress = apiData?.progress || {};
   const assessments = apiData?.assessments || {};
+  const trends = apiData?.trends || {};
 
-
-  // Calculate stats from real data
+  // Calculate stats from real API data
   const stats = {
     totalPatients: overview.totalPatients || 0,
-    todayAppointments: appointments.scheduled || 0,
-    pendingNotes: overview.todayNotes || 0,
-    recentProgress: progress.byArea?.length || 0,
+    todayAppointments: appointments.scheduled || 0, // Using scheduled appointments as today's sessions
+    pendingNotes: overview.todayNotes || 0, // Using todayNotes from API
+    totalAssessments: assessments.total || 0,
   };
 
-
-  // Transform recent patients data with robust deduplication
-  const recentPatients = (recent.dailyNotes || [])
-    .filter(patient => patient.patientName && patient.patientId) // Filter out invalid entries
-    .map(patient => ({
-      id: patient.patientId,
-      name: patient.patientName.trim(), // Trim whitespace
-      age: 'N/A', // Age would need to be fetched from patient data
-      lastSession: patient.lastSession ? new Date(patient.lastSession).toLocaleDateString() : 'No sessions'
-    }))
-    .reduce((unique, patient) => {
-      // Deduplicate by patient ID (most reliable)
-      const existing = unique.find(p => p.id === patient.id);
-      if (!existing) {
-        unique.push(patient);
-      } else {
-        // If same ID but different name, keep the one with more recent session
-        if (patient.lastSession > existing.lastSession) {
-          const index = unique.findIndex(p => p.id === patient.id);
-          unique[index] = patient;
-        }
-      }
-      return unique;
-    }, [])
-    .sort((a, b) => new Date(b.lastSession) - new Date(a.lastSession)); // Sort by most recent
-
-
-  // Transform appointments data
-  const upcomingAppointments = (recent.appointments || []).map(appointment => ({
-    id: appointment.id,
-    patientName: appointment.patientName || 'Unknown Patient',
-    time: appointment.startTime || 'TBD',
-    type: appointment.type || 'Regular Session',
-    date: appointment.appointmentDate ? new Date(appointment.appointmentDate).toLocaleDateString() : 'TBD'
-  }));
-
+  // Extract recent data from API
+  const recentPatients = recent.dailyNotes || []; // Using dailyNotes as recent patients data
+  const recentAppointments = recent.appointments || [];
+  const recentAssessments = recent.assessments || [];
 
 
   // Error state
@@ -134,138 +106,142 @@ const TherapistDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="sm:flex sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Therapist Dashboard</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Welcome back! Here's what's happening with your patients today.
-          </p>
+    <div className="therapist-dashboard">
+      {/* Loading indicator for real-time updates */}
+      {isRefreshing && (
+        <div className="fixed top-4 right-4 z-50 bg-green-100 text-green-800 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+          <span className="text-sm font-medium">Updating data...</span>
+        </div>
+      )}
+      
+      {/* Welcome Section */}
+      <div className="welcome-section">
+        <div className="welcome-content">
+          <div className="welcome-text">
+            <h1>Welcome back, Dr. {user?.lastName || 'Therapist'}!</h1>
+            <p>Here's your practice overview and key metrics for today</p>
+          </div>
+          <div className="welcome-actions">
+            <button className="btn-primary" onClick={() => window.location.href = '/therapist/patients'}>
+              <Users size={18} />
+              <span>View Patients</span>
+            </button>
+            <button className="btn-secondary" onClick={() => window.location.href = '/therapist/schedule'}>
+              <Calendar size={18} />
+              <span>Schedule Session</span>
+            </button>
+          </div>
         </div>
       </div>
 
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Users className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Patients</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.totalPatients}</dd>
-                </dl>
-              </div>
-            </div>
+      {/* Stats Overview */}
+      <div className="stats-overview">
+        <div className="stat-card">
+          <div className="stat-icon patients">
+            <Users size={20} />
+          </div>
+          <div className="stat-content">
+            <h3>Total Patients</h3>
+            <p className="stat-number">{stats.totalPatients}</p>
+            <span className="stat-change positive">
+              <TrendingUp size={12} />
+              Active
+            </span>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Calendar className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Today's Appointments</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.todayAppointments}</dd>
-                </dl>
-              </div>
-            </div>
+        <div className="stat-card">
+          <div className="stat-icon appointments">
+            <Calendar size={20} />
+          </div>
+          <div className="stat-content">
+            <h3>Today's Sessions</h3>
+            <p className="stat-number">{stats.todayAppointments}</p>
+            <span className="stat-change positive">
+              <Clock size={12} />
+              Scheduled
+            </span>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <FileText className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Pending Notes</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.pendingNotes}</dd>
-                </dl>
-              </div>
-            </div>
+        <div className="stat-card">
+          <div className="stat-icon notes">
+            <FileText size={20} />
+          </div>
+          <div className="stat-content">
+            <h3>Pending Notes</h3>
+            <p className="stat-number">{stats.pendingNotes}</p>
+            <span className="stat-change neutral">
+              <AlertCircle size={12} />
+              Awaiting
+            </span>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <TrendingUp className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Recent Progress</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.recentProgress}</dd>
-                </dl>
-              </div>
-            </div>
+        <div className="stat-card">
+          <div className="stat-icon assessments">
+            <Target size={20} />
+          </div>
+          <div className="stat-content">
+            <h3>Total Assessments</h3>
+            <p className="stat-number">{stats.totalAssessments}</p>
+            <span className="stat-change positive">
+              <TrendingUp size={12} />
+              Completed
+            </span>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Link
-              to="/therapist/daily-notes"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500"
-            >
-              <div className="flex-shrink-0">
-                <FileText className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">Write Daily Note</p>
-                <p className="text-sm text-gray-500">Document today's session</p>
-              </div>
-            </Link>
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="actions-grid">
+          <Link
+            to="/therapist/daily-notes"
+            className="action-card"
+          >
+            <div className="action-icon">
+              <FileText className="h-6 w-6" />
+            </div>
+            <div className="action-content">
+              <h4>Write Daily Note</h4>
+              <p>Document today's session</p>
+            </div>
+          </Link>
 
-            <Link
-              to="/therapist/ai-insights"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500"
-            >
-              <div className="flex-shrink-0">
-                <TrendingUp className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">AI Insights</p>
-                <p className="text-sm text-gray-500">Get AI-powered analysis</p>
-              </div>
-            </Link>
+          <Link
+            to="/therapist/ai-insights"
+            className="action-card"
+          >
+            <div className="action-icon">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+            <div className="action-content">
+              <h4>AI Insights</h4>
+              <p>Get AI-powered analysis</p>
+            </div>
+          </Link>
 
-            <Link
-              to="/therapist/progress-tracking"
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500"
-            >
-              <div className="flex-shrink-0">
-                <Eye className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900">Track Progress</p>
-                <p className="text-sm text-gray-500">Monitor patient development</p>
-              </div>
-            </Link>
-          </div>
+          <Link
+            to="/therapist/progress-tracking"
+            className="action-card"
+          >
+            <div className="action-icon">
+              <Eye className="h-6 w-6" />
+            </div>
+            <div className="action-content">
+              <h4>Track Progress</h4>
+              <p>Monitor patient development</p>
+            </div>
+          </Link>
         </div>
       </div>
 
       {/* Assessment Statistics */}
       {assessments && Object.keys(assessments).length > 0 && (
-        <div className="bg-white shadow rounded-lg">
+        <div className="mt-8 bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Assessment Statistics</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -273,7 +249,7 @@ const TherapistDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-blue-600">Total Assessments</p>
-                    <p className="text-2xl font-bold text-blue-900">{assessments.total}</p>
+                    <p className="text-2xl font-bold text-blue-900">{assessments.total || 0}</p>
                   </div>
                   <FileText className="h-8 w-8 text-blue-600" />
                 </div>
@@ -282,7 +258,7 @@ const TherapistDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-green-600">Completed</p>
-                    <p className="text-2xl font-bold text-green-900">{assessments.completed}</p>
+                    <p className="text-2xl font-bold text-green-900">{assessments.completed || 0}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-green-600" />
                 </div>
@@ -291,7 +267,7 @@ const TherapistDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-yellow-600">In Progress</p>
-                    <p className="text-2xl font-bold text-yellow-900">{assessments.inProgress}</p>
+                    <p className="text-2xl font-bold text-yellow-900">{assessments.inProgress || 0}</p>
                   </div>
                   <Clock className="h-8 w-8 text-yellow-600" />
                 </div>
@@ -300,7 +276,7 @@ const TherapistDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-purple-600">Completion Rate</p>
-                    <p className="text-2xl font-bold text-purple-900">{assessments.completionRate}%</p>
+                    <p className="text-2xl font-bold text-purple-900">{assessments.completionRate || 0}%</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-purple-600" />
                 </div>
@@ -310,46 +286,14 @@ const TherapistDashboard = () => {
         </div>
       )}
 
-      {/* Progress Overview */}
-      {progress.byArea && progress.byArea.length > 0 && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Progress Overview</h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {progress.byArea.map((area, index) => (
-                <div key={index} className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-medium text-gray-900 capitalize">{area.area}</h4>
-                    <span className="text-xs text-gray-500">{area.entryCount} entries</span>
-                  </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-lg font-bold text-gray-900">{Math.round(area.avgCurrentScore)}</span>
-                    <span className="text-sm text-gray-500">/ {Math.round(area.avgTargetScore)}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-green-600 h-2 rounded-full"
-                      style={{ width: `${area.progressPercentage}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {area.progressPercentage}% complete
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Recent Assessments */}
-      {recent.assessments && recent.assessments.length > 0 && (
-        <div className="bg-white shadow rounded-lg">
+      {recentAssessments && recentAssessments.length > 0 && (
+        <div className="mt-8 bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Assessments</h3>
             <div className="flow-root">
               <ul className="-my-5 divide-y divide-gray-200">
-                {recent.assessments.slice(0, 5).map((assessment) => (
+                {recentAssessments.slice(0, 5).map((assessment) => (
                   <li key={assessment.id} className="py-4">
                     <div className="flex items-center space-x-4">
                       <div className="flex-shrink-0">
@@ -358,10 +302,10 @@ const TherapistDashboard = () => {
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{assessment.title}</p>
-                        <p className="text-sm text-gray-500">{assessment.patientName} • {new Date(assessment.assessmentDate).toLocaleDateString()}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">{assessment.title || 'Assessment'}</p>
+                        <p className="text-sm text-gray-500">{assessment.type || 'Assessment'} • {assessment.assessmentDate ? new Date(assessment.assessmentDate).toLocaleDateString() : 'No date'}</p>
                       </div>
-                      <div>
+                      <div className="flex-shrink-0">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           assessment.status === 'completed' 
                             ? 'bg-green-100 text-green-800' 
@@ -369,7 +313,7 @@ const TherapistDashboard = () => {
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-blue-100 text-blue-800'
                         }`}>
-                          {assessment.status}
+                          {assessment.status || 'Unknown'}
                         </span>
                       </div>
                     </div>
@@ -382,7 +326,7 @@ const TherapistDashboard = () => {
       )}
 
       {/* Recent Patients and Appointments */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Patients */}
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
@@ -391,21 +335,24 @@ const TherapistDashboard = () => {
               {recentPatients.length > 0 ? (
                 <ul className="-my-5 divide-y divide-gray-200">
                   {recentPatients.map((patient) => (
-                    <li key={patient.id} className="py-4">
+                    <li key={patient.patientId} className="py-4">
                       <div className="flex items-center space-x-4">
                         <div className="flex-shrink-0">
                           <InitialsAvatar 
-                            name={patient.name} 
+                            name={patient.patientName || 'Patient'} 
                             size="md" 
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{patient.name}</p>
-                          <p className="text-sm text-gray-500">Age: {patient.age} • Last: {patient.lastSession}</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">{patient.patientName || 'Unknown Patient'}</p>
+                          <p className="text-sm text-gray-500">
+                            Last Session: {patient.lastSession ? new Date(patient.lastSession).toLocaleDateString() : 'No sessions yet'}
+                            {patient.sessionDuration && ` • ${patient.sessionDuration} min`}
+                          </p>
                         </div>
                         <div>
                           <Link
-                            to={`/therapist/patients/${patient.id}`}
+                            to={`/therapist/patients/${patient.patientId}`}
                             className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-full text-green-700 bg-green-100 hover:bg-green-200"
                           >
                             View
@@ -441,26 +388,40 @@ const TherapistDashboard = () => {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Upcoming Appointments</h3>
             <div className="flow-root">
-              <ul className="-my-5 divide-y divide-gray-200">
-                {upcomingAppointments.map((appointment) => (
-                  <li key={appointment.id} className="py-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <Clock className="h-5 w-5 text-gray-400" />
+              {recentAppointments.length > 0 ? (
+                <ul className="-my-5 divide-y divide-gray-200">
+                  {recentAppointments.slice(0, 5).map((appointment) => (
+                    <li key={appointment.id} className="py-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <Calendar className="h-5 w-5 text-green-600" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{appointment.patientName || 'Appointment'}</p>
+                          <p className="text-sm text-gray-500">
+                            {appointment.appointmentDate ? new Date(appointment.appointmentDate).toLocaleDateString() : 'No date'} 
+                            {appointment.startTime && ` at ${appointment.startTime}`}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0 text-right">
+                          <p className="text-sm text-gray-900">{appointment.type || 'Session'}</p>
+                          <p className="text-xs text-gray-500">{appointment.status || 'Scheduled'}</p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{appointment.patientName}</p>
-                        <p className="text-sm text-gray-500">{appointment.date} • {appointment.time} • {appointment.type}</p>
-                      </div>
-                      <div>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {appointment.time}
-                        </span>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-2">
+                    <Calendar className="h-12 w-12 mx-auto" />
+                  </div>
+                  <p className="text-sm text-gray-500">No upcoming appointments</p>
+                  <p className="text-xs text-gray-400 mt-1">Schedule sessions to see them here</p>
+                </div>
+              )}
             </div>
             <div className="mt-6">
               <Link
@@ -474,9 +435,82 @@ const TherapistDashboard = () => {
         </div>
       </div>
 
+      {/* Progress by Area */}
+      {progress.byArea && progress.byArea.length > 0 && (
+        <div className="mt-8 bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Progress by Area</h3>
+            <div className="space-y-4">
+              {progress.byArea.map((area, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-900">{area.area}</span>
+                      <span className="text-sm text-gray-500">{area.progressPercentage}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.max(0, area.progressPercentage))}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>{area.entryCount} entries</span>
+                      <span>Avg: {Math.round(area.avgCurrentScore)}/{Math.round(area.avgTargetScore)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Monthly Trends */}
+      {trends.monthlyAppointments && trends.monthlyAppointments.length > 0 && (
+        <div className="mt-8 bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Monthly Appointments</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {trends.monthlyAppointments.slice(0, 6).map((month, index) => (
+                <div key={index} className="text-center p-3 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{month.appointmentCount}</div>
+                  <div className="text-sm text-gray-500">
+                    {new Date(2024, month.month - 1).toLocaleDateString('en-US', { month: 'short' })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Session Statistics */}
+      {progress.avgSessionDuration > 0 && (
+        <div className="mt-8 bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Session Statistics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{progress.avgSessionDuration} min</div>
+                <div className="text-sm text-gray-500">Average Session Duration</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{overview.totalProgressEntries}</div>
+                <div className="text-sm text-gray-500">Total Progress Entries</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">{assessments.completionRate || 0}%</div>
+                <div className="text-sm text-gray-500">Assessment Completion Rate</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Alerts */}
       {stats.pendingNotes > 0 && (
-        <div className="rounded-md bg-yellow-50 p-4">
+        <div className="mt-8 rounded-md bg-yellow-50 p-4">
           <div className="flex">
             <div className="flex-shrink-0">
               <AlertCircle className="h-5 w-5 text-yellow-400" />

@@ -8,9 +8,7 @@ import {
   TrendingUp, 
   TrendingDown,
   Calendar,
-  Activity,
-  Target,
-  Award
+  Activity
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -116,6 +114,7 @@ const AdminReports = () => {
   const assessmentStats = dashboardData?.data?.assessmentStats || [];
   const systemHealth = dashboardData?.data?.systemHealth || {};
   const recentUsers = dashboardData?.data?.recentUsers || [];
+  const analytics = dashboardData?.data?.analytics || {};
   
   // Extract real users data for demographics and role distribution
   const allPatients = Array.isArray(patientsData?.data?.patients) ? patientsData.data.patients : 
@@ -329,62 +328,6 @@ const AdminReports = () => {
   const appointmentDistribution = processAppointmentDistribution(appointmentStats);
   const userRoleDistribution = processUserRoleDistribution(allUsers);
 
-  // Calculate performance metrics from real data
-  const calculatePerformanceMetrics = () => {
-    const totalAppointments = stats.totalAppointments || 0;
-    const confirmedAppointments = appointmentStats.find(stat => stat.status === 'confirmed')?.count || 0;
-    const completionRate = totalAppointments > 0 ? Math.round((confirmedAppointments / totalAppointments) * 100) : 0;
-    
-    const totalUsers = stats.totalPatients + stats.totalTherapists + stats.totalAdmins;
-    const patientPercentage = totalUsers > 0 ? Math.round((stats.totalPatients / totalUsers) * 100) : 0;
-    
-    // Calculate average appointments per therapist
-    const avgAppointmentsPerTherapist = stats.totalTherapists > 0 ? Math.round(totalAppointments / stats.totalTherapists) : 0;
-    
-    // Calculate assessment completion rate
-    const totalAssessments = stats.totalAssessments || 0;
-    const assessmentRate = stats.totalPatients > 0 ? Math.round((totalAssessments / stats.totalPatients) * 100) : 0;
-    
-    // Calculate daily notes per patient
-    const dailyNotesPerPatient = stats.totalPatients > 0 ? Math.round((stats.totalDailyNotes || 0) / stats.totalPatients) : 0;
-    
-    return [
-      {
-        title: 'Appointment Completion Rate',
-        value: `${completionRate}%`,
-        change: completionRate > 80 ? '+5%' : completionRate > 60 ? '+2%' : '-1%',
-        trend: completionRate > 60 ? 'up' : 'down',
-        icon: Award,
-        color: completionRate > 80 ? 'text-green-600' : completionRate > 60 ? 'text-blue-600' : 'text-red-600'
-      },
-      {
-        title: 'Avg Sessions per Therapist',
-        value: `${avgAppointmentsPerTherapist}`,
-        change: avgAppointmentsPerTherapist > 20 ? '+3' : '+1',
-        trend: 'up',
-        icon: Target,
-        color: 'text-blue-600'
-      },
-      {
-        title: 'Assessment Coverage',
-        value: `${assessmentRate}%`,
-        change: assessmentRate > 80 ? '+5%' : '+2%',
-        trend: 'up',
-        icon: FileText,
-        color: 'text-purple-600'
-      },
-      {
-        title: 'Notes per Patient',
-        value: `${dailyNotesPerPatient}`,
-        change: `+${systemHealth.newDailyNotesThisWeek || 0} this week`,
-        trend: 'up',
-        icon: Activity,
-        color: 'text-green-600'
-      }
-    ];
-  };
-
-  const performanceMetrics = calculatePerformanceMetrics();
 
   // Loading state
   if (dashboardLoading || reportsLoading || patientsLoading || therapistsLoading) {
@@ -490,25 +433,6 @@ const AdminReports = () => {
         </div>
       </div>
       
-      {/* Performance Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {performanceMetrics.map((metric, index) => {
-          const IconComponent = metric.icon;
-          return (
-            <div key={index} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <IconComponent className={`w-8 h-8 ${metric.color}`} />
-                <div className={`flex items-center text-sm ${metric.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                  {metric.trend === 'up' ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
-                  {metric.change}
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">{metric.value}</h3>
-              <p className="text-sm text-gray-600">{metric.title}</p>
-            </div>
-          );
-        })}
-      </div>
       
       {/* Growth Trends Section */}
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
@@ -738,38 +662,6 @@ const AdminReports = () => {
         </div>
       </div>
 
-      {/* Recent Activity and Insights */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Activity & Insights</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <div className="flex items-center mb-2">
-              <Users className="w-5 h-5 text-blue-600 mr-2" />
-              <h4 className="font-medium text-gray-900">New Patients This Week</h4>
-            </div>
-            <p className="text-2xl font-bold text-blue-600">{Math.round(stats.totalPatients * 0.05) || 0}</p>
-            <p className="text-sm text-gray-600">Average growth rate</p>
-          </div>
-          
-          <div className="p-4 bg-green-50 rounded-lg">
-            <div className="flex items-center mb-2">
-              <Clock className="w-5 h-5 text-green-600 mr-2" />
-              <h4 className="font-medium text-gray-900">Sessions This Week</h4>
-            </div>
-            <p className="text-2xl font-bold text-green-600">{Math.round(stats.totalAppointments * 0.1) || 0}</p>
-            <p className="text-sm text-gray-600">Scheduled sessions</p>
-          </div>
-          
-          <div className="p-4 bg-purple-50 rounded-lg">
-            <div className="flex items-center mb-2">
-              <FileText className="w-5 h-5 text-purple-600 mr-2" />
-              <h4 className="font-medium text-gray-900">Notes This Week</h4>
-            </div>
-            <p className="text-2xl font-bold text-purple-600">{Math.round((stats.totalDailyNotes || 0) * 0.2) || 0}</p>
-            <p className="text-sm text-gray-600">Progress notes logged</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

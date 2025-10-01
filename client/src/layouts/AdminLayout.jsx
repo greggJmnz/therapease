@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import InitialsAvatar from '../components/InitialsAvatar';
+import { useNotificationStats } from '../hooks/useNotifications';
 import {
   Users,
   Calendar,
@@ -27,6 +28,7 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const profileDropdownRef = useRef(null);
+  const { stats: notificationStats } = useNotificationStats();
 
   // Check screen size on mount and resize
   useEffect(() => {
@@ -54,6 +56,7 @@ const AdminLayout = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: BarChart3 },
+    { name: 'User Management', href: '/admin/users', icon: Users },
     { name: 'Patients', href: '/admin/patients', icon: Users },
     { name: 'Therapists', href: '/admin/therapists', icon: Users },
     { name: 'Appointments', href: '/admin/appointments', icon: Calendar },
@@ -245,7 +248,7 @@ const AdminLayout = () => {
           
           <div className="header-actions">
             <a 
-              href="http://localhost:5000/public-website/index.html"
+              href="http://localhost:8000/"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary"
@@ -256,10 +259,12 @@ const AdminLayout = () => {
             </a>
             <button 
               onClick={() => navigate('/admin/notifications')}
-              className="btn-secondary"
+              className="btn-secondary relative"
             >
               <Bell size={16} />
-              <span className="notification-count">5</span>
+              {notificationStats?.unreadCount > 0 && (
+                <span className="notification-count">{notificationStats.unreadCount}</span>
+              )}
             </button>
             <button 
               onClick={() => navigate('/admin/settings')}

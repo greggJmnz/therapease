@@ -40,7 +40,8 @@ const authenticateToken = (req, res, next) => {
 
       // Add user info to request
       req.user = {
-        userId: decoded.userId,
+        id: decoded.id || decoded.userId,
+        userId: decoded.id || decoded.userId,
         email: decoded.email,
         role: decoded.role
       };

@@ -7,6 +7,7 @@ const getSchedule = async (req, res) => {
     // Get therapist ID from authenticated user
     const therapistId = req.user.userId;
     const { date, startDate, endDate, status } = req.query;
+    
 
     // Build WHERE clause
     let whereConditions = ['a.therapistId = ?'];
@@ -53,6 +54,7 @@ const getSchedule = async (req, res) => {
     `;
 
     const appointments = await getAll(sql, params);
+    
 
     // Get sessions for the same therapist
     const sessionsSql = `

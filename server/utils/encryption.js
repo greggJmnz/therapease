@@ -89,12 +89,19 @@ const decryptField = (encryptedValue) => {
   if (encryptedValue === null || encryptedValue === undefined || encryptedValue === '') {
     return encryptedValue;
   }
-  try {
-    return decrypt(encryptedValue);
-  } catch (error) {
-    console.error('Field decryption error:', error);
-    return encryptedValue; // Return original if decryption fails
+  
+  // Check if the value looks like encrypted data (contains colon separator)
+  if (typeof encryptedValue === 'string' && encryptedValue.includes(':')) {
+    try {
+      return decrypt(encryptedValue);
+    } catch (error) {
+      // If decryption fails, return original value
+      return encryptedValue;
+    }
   }
+  
+  // If it doesn't look like encrypted data, return as-is
+  return encryptedValue;
 };
 
 // Encrypt sensitive fields in an object

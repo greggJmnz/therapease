@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { FileText, Calendar, User, MessageSquare, Image, Video, Send, Plus, Edit, Trash2, MoreVertical, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, Calendar, User, MessageSquare, Image, Video, Send, Plus, Edit, Trash2, MoreVertical, ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import { patientAPI } from '../../services/api';
 import { useRealtimeData } from '../../hooks/useWebSocket';
 import { useAuth } from '../../context/AuthContext';
@@ -224,351 +224,369 @@ const DailyNotes = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Daily Notes</h1>
-        <p className="mt-2 text-sm text-gray-700">
-          View your therapy session notes and communicate with your therapist
-        </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Modern Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Daily Notes</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  View your therapy session notes and communicate with your therapist
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {notes.length} note{notes.length !== 1 ? 's' : ''} available
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-blue-600" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Notes List */}
-      <div className="space-y-4">
-        {Array.isArray(notes) && notes.length > 0 ? notes.map((note) => (
-          <div key={note.id} className="bg-white shadow rounded-lg overflow-hidden">
-            {/* Note Header */}
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      Session on {new Date(note.sessionDate).toLocaleDateString()}
-                    </h3>
-                    <div className="mt-1 flex items-center text-sm text-gray-500">
-                      <User className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                      Therapist
-                      <Calendar className="ml-4 flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                      {new Date(note.sessionDate).toLocaleDateString()}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* Notes List */}
+        <div className="space-y-4">
+          {Array.isArray(notes) && notes.length > 0 ? notes.map((note) => (
+            <div key={note.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                      </div>
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3 mb-1">
+                        <h3 className="text-base font-semibold text-gray-900 truncate">
+                          Session on {new Date(note.sessionDate).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </h3>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {new Date(note.sessionDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <User className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                        {note.therapistName || 'Therapist'}
+                        <Calendar className="ml-4 flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                        {note.sessionDate}
+                        {note.sessionDuration && (
+                          <>
+                            <span className="mx-2">•</span>
+                            <span>{note.sessionDuration} min</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setSelectedNote(selectedNote?.id === note.id ? null : note)}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      {selectedNote?.id === note.id ? 'Hide' : 'View Note'}
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedNote(selectedNote?.id === note.id ? null : note)}
-                  className="text-blue-600 hover:text-blue-900 text-sm font-medium"
-                >
-                  {selectedNote?.id === note.id ? 'Hide Details' : 'View Details'}
-                </button>
               </div>
-            </div>
 
-            {/* Note Content - Only show when details are expanded */}
-            {selectedNote?.id === note.id && (
-            <div className="px-6 py-4">
-                    <div className="prose max-w-none">
-                      {note.content && (
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">Session Summary:</h4>
-                          <p className="text-sm text-gray-600">{note.content}</p>
+              {/* Expanded Note Details */}
+              {selectedNote?.id === note.id && (
+                <div className="border-t border-gray-200 bg-gray-50">
+                  <div className="p-6 space-y-4">
+                    {note.content && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Session Summary</h4>
+                        <p className="text-sm text-gray-600 leading-relaxed bg-white p-3 rounded-lg border">{note.content}</p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {note.activities && (
+                        <div className="bg-white p-4 rounded-lg border">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Activities Performed</h4>
+                          <p className="text-sm text-gray-600">{note.activities}</p>
                         </div>
                       )}
-                      
-                      {note.observations && (
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">Session Observations:</h4>
-                          <p className="text-sm text-gray-600">{note.observations}</p>
+
+                      {note.goals && (
+                        <div className="bg-white p-4 rounded-lg border">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Goals Addressed</h4>
+                          <p className="text-sm text-gray-600">{note.goals}</p>
                         </div>
                       )}
-                
-                {note.activities && (
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Activities Performed:</h4>
-                    <p className="text-sm text-gray-600">{note.activities}</p>
-                  </div>
-                )}
-
-                  {note.progress && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Progress Made:</h4>
-                      <p className="text-sm text-gray-600">{note.progress}</p>
                     </div>
-                  )}
 
-                  {note.challenges && (
-                  <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Challenges:</h4>
-                      <p className="text-sm text-gray-600">{note.challenges}</p>
-                  </div>
-                )}
+                    {note.nextSteps && (
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h4 className="text-sm font-semibold text-blue-700 mb-2">Next Steps</h4>
+                        <p className="text-sm text-blue-600">{note.nextSteps}</p>
+                      </div>
+                    )}
 
-                  {note.goals && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Goals Addressed:</h4>
-                      <p className="text-sm text-gray-600">{note.goals}</p>
-                    </div>
-                  )}
-
-                  {note.nextSteps && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Next Steps:</h4>
-                      <p className="text-sm text-gray-600">{note.nextSteps}</p>
-                    </div>
-                  )}
-
-                  {(note.mood || note.engagement) && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Session Details:</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {note.mood && (
-                          <div>
-                            <span className="text-xs font-medium text-gray-500">Mood:</span>
-                            <p className="text-sm text-gray-600">{note.mood}</p>
+                    {(note.observations || note.progress || note.challenges || note.mood || note.engagement) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {note.observations && (
+                          <div className="bg-white p-4 rounded-lg border">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">Observations</h4>
+                            <p className="text-sm text-gray-600">{note.observations}</p>
                           </div>
                         )}
-                        {note.engagement && (
-                          <div>
-                            <span className="text-xs font-medium text-gray-500">Engagement:</span>
-                            <p className="text-sm text-gray-600">{note.engagement}</p>
+
+                        {note.progress && (
+                          <div className="bg-white p-4 rounded-lg border">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">Progress</h4>
+                            <p className="text-sm text-gray-600">{note.progress}</p>
+                          </div>
+                        )}
+
+                        {note.challenges && (
+                          <div className="bg-white p-4 rounded-lg border">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">Challenges</h4>
+                            <p className="text-sm text-gray-600">{note.challenges}</p>
+                          </div>
+                        )}
+
+                        {(note.mood || note.engagement) && (
+                          <div className="bg-white p-4 rounded-lg border">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">Session Metrics</h4>
+                            <div className="space-y-2">
+                              {note.mood && (
+                                <div className="flex justify-between">
+                                  <span className="text-sm text-gray-600">Mood:</span>
+                                  <span className="text-sm font-medium text-gray-900">{note.mood}</span>
+                                </div>
+                              )}
+                              {note.engagement && (
+                                <div className="flex justify-between">
+                                  <span className="text-sm text-gray-600">Engagement:</span>
+                                  <span className="text-sm font-medium text-gray-900">{note.engagement}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
-                  </div>
-                )}
-              </div>
+                    )}
 
-                {/* Comments Section - Compact Facebook Style */}
-                <div className="mt-4 border-t border-gray-200 pt-3">
-                  {/* Comments Header */}
-                  <div className="flex items-center justify-between mb-3">
-                    <button
-                      onClick={() => toggleComments(note.id)}
-                      className="flex items-center text-sm text-gray-600 hover:text-gray-900"
-                    >
-                      <MessageSquare className="h-4 w-4 mr-1" />
-                      {note.comments?.length || 0} comments
-                      {showComments[note.id] ? (
-                        <ChevronUp className="h-4 w-4 ml-1" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 ml-1" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedNote(note);
-                        setShowCommentForm(!showCommentForm);
-                      }}
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      {showCommentForm && selectedNote?.id === note.id ? 'Cancel' : 'Add Comment'}
-                    </button>
-                  </div>
+                    {/* Comments Section */}
+                    <div className="mt-6 border-t border-gray-200 pt-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <button
+                          onClick={() => toggleComments(note.id)}
+                          className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors duration-200"
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          {note.comments?.length || 0} comments
+                          {showComments[note.id] ? (
+                            <ChevronUp className="h-4 w-4 ml-1" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 ml-1" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedNote(note);
+                            setShowCommentForm(!showCommentForm);
+                          }}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                        >
+                          {showCommentForm && selectedNote?.id === note.id ? 'Cancel' : 'Add Comment'}
+                        </button>
+                      </div>
 
-                  {/* Comments List - Collapsible */}
-                  {showComments[note.id] && note.comments && Array.isArray(note.comments) && note.comments.length > 0 && (
-                    <div className="space-y-2 mb-3">
-                      {note.comments.map((comment) => (
-                        <div key={comment.id} className="flex items-start space-x-2 group">
-                          <div className="flex-shrink-0">
-                            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                              <User className="h-3 w-3 text-blue-600" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium text-gray-900">{comment.author}</span>
-                              <span className="text-xs text-gray-500">
-                                {new Date(comment.timestamp).toLocaleString()}
-                              </span>
-                              {comment.edited && (
-                                <span className="text-xs text-gray-400">(edited)</span>
+                      {/* Comments List */}
+                      {showComments[note.id] && note.comments && Array.isArray(note.comments) && note.comments.length > 0 && (
+                        <div className="space-y-4 mb-4">
+                          {note.comments.map((comment) => (
+                            <div key={comment.id} className="flex items-start space-x-3 group">
+                              <div className="flex-shrink-0">
+                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <User className="h-4 w-4 text-blue-600" />
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <span className="text-sm font-semibold text-gray-900">{comment.author}</span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(comment.timestamp).toLocaleString()}
+                                  </span>
+                                  {comment.edited && (
+                                    <span className="text-xs text-gray-400">(edited)</span>
+                                  )}
+                                </div>
+                                {editingComment === comment.id ? (
+                                  <form onSubmit={handleEditSubmit} className="mt-2">
+                                    <textarea
+                                      value={editCommentText}
+                                      onChange={(e) => setEditCommentText(e.target.value)}
+                                      className="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3"
+                                      rows={3}
+                                      autoFocus
+                                    />
+                                    <div className="flex items-center space-x-2 mt-2">
+                                      <button
+                                        type="submit"
+                                        className="inline-flex items-center px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                                        disabled={editCommentMutation.isLoading}
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingComment(null);
+                                          setEditCommentText('');
+                                        }}
+                                        className="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </form>
+                                ) : (
+                                  <p className="text-sm text-gray-600">{comment.content}</p>
+                                )}
+                              </div>
+                              {comment.author === 'Patient' && (
+                                <div className="relative">
+                                  <button
+                                    onClick={() => setShowCommentMenu(showCommentMenu === comment.id ? null : comment.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-2 hover:bg-gray-200 rounded-lg transition-all duration-200"
+                                  >
+                                    <MoreVertical className="h-4 w-4 text-gray-500" />
+                                  </button>
+                                  {showCommentMenu === comment.id && (
+                                    <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                                      <button
+                                        onClick={() => {
+                                          handleEditComment(note.id, comment);
+                                          setShowCommentMenu(null);
+                                        }}
+                                        className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full rounded-t-lg"
+                                      >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          handleDeleteComment(note.id, comment.id);
+                                          setShowCommentMenu(null);
+                                        }}
+                                        className="flex items-center px-3 py-2 text-sm text-red-700 hover:bg-red-50 w-full rounded-b-lg"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
-                            {editingComment === comment.id ? (
-                              <form onSubmit={handleEditSubmit} className="mt-1">
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add Comment Form */}
+                      {showCommentForm && selectedNote?.id === note.id && (
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0">
+                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <User className="h-4 w-4 text-blue-600" />
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <form onSubmit={handleCommentSubmit}>
                                 <textarea
-                                  value={editCommentText}
-                                  onChange={(e) => setEditCommentText(e.target.value)}
-                                  className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                  rows={2}
+                                  value={comment}
+                                  onChange={(e) => setComment(e.target.value)}
+                                  className="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 resize-none"
+                                  placeholder="Write a comment..."
+                                  rows={3}
                                   autoFocus
                                 />
-                                <div className="flex items-center space-x-2 mt-1">
-                                  <button
-                                    type="submit"
-                                    className="text-xs text-blue-600 hover:text-blue-800"
-                                    disabled={editCommentMutation.isLoading}
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setEditingComment(null);
-                                      setEditCommentText('');
-                                    }}
-                                    className="text-xs text-gray-500 hover:text-gray-700"
-                                  >
-                                    Cancel
-                                  </button>
+                                <div className="flex items-center justify-between mt-3">
+                                  <div className="flex items-center space-x-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAttachmentUpload(note.id)}
+                                      className="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                                    >
+                                      <Image className="h-3 w-3 mr-1" />
+                                      Photo
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAttachmentUpload(note.id)}
+                                      className="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                                    >
+                                      <Video className="h-3 w-3 mr-1" />
+                                      Video
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setShowCommentForm(false);
+                                        setComment('');
+                                      }}
+                                      className="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                                      disabled={addCommentMutation.isLoading || !comment.trim()}
+                                    >
+                                      <Send className="h-4 w-4 mr-1" />
+                                      {addCommentMutation.isLoading ? 'Sending...' : 'Post Comment'}
+                                    </button>
+                                  </div>
                                 </div>
                               </form>
-                            ) : (
-                              <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
-                            )}
-                          </div>
-                          {comment.author === 'Patient' && (
-                            <div className="relative">
-                              <button
-                                onClick={() => setShowCommentMenu(showCommentMenu === comment.id ? null : comment.id)}
-                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded-full"
-                              >
-                                <MoreVertical className="h-4 w-4 text-gray-400" />
-                              </button>
-                              {showCommentMenu === comment.id && (
-                                <div className="absolute right-0 top-6 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                                  <button
-                                    onClick={() => {
-                                      handleEditComment(note.id, comment);
-                                      setShowCommentMenu(null);
-                                    }}
-                                    className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full"
-                                  >
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      handleDeleteComment(note.id, comment.id);
-                                      setShowCommentMenu(null);
-                                    }}
-                                    className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </button>
-                                </div>
-                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
 
-                  {/* Add Comment Form - Compact */}
-                  {showCommentForm && selectedNote?.id === note.id && (
-                    <div className="flex items-start space-x-2">
-                      <div className="flex-shrink-0">
-                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User className="h-3 w-3 text-blue-600" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <form onSubmit={handleCommentSubmit}>
-                          <textarea
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Write a comment..."
-                            rows={2}
-                            autoFocus
-                          />
-                          <div className="flex items-center justify-between mt-2">
-                            <div className="flex items-center space-x-2">
-                              <button
-                                type="button"
-                                onClick={() => handleAttachmentUpload(note.id)}
-                                className="text-xs text-gray-500 hover:text-gray-700"
-                              >
-                                <Image className="h-3 w-3 inline mr-1" />
-                                Photo
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleAttachmentUpload(note.id)}
-                                className="text-xs text-gray-500 hover:text-gray-700"
-                              >
-                                <Video className="h-3 w-3 inline mr-1" />
-                                Video
-                              </button>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowCommentForm(false);
-                                  setComment('');
-                                }}
-                                className="text-xs text-gray-500 hover:text-gray-700"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="submit"
-                                className="inline-flex items-center px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                                disabled={addCommentMutation.isLoading || !comment.trim()}
-                              >
-                                <Send className="h-3 w-3 mr-1" />
-                                {addCommentMutation.isLoading ? 'Sending...' : 'Post'}
-                              </button>
-                            </div>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  )}
                 </div>
             </div>
             )}
           </div>
-        )) : (
-        <div className="text-center py-12">
-          <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No notes yet</h3>
-          <p className="text-sm text-gray-500">
-            Your therapist will add session notes here after each appointment.
-          </p>
-        </div>
-      )}
-      </div>
-
-
-      {/* Quick Actions */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="bg-white rounded-lg p-4 border border-blue-200">
-            <div className="flex items-center">
-              <MessageSquare className="h-6 w-6 text-blue-600 mr-3" />
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">Ask Questions</h4>
-                <p className="text-xs text-gray-500">Comment on notes to ask questions</p>
+          )) : (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-8 w-8 text-blue-600" />
               </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No notes yet</h3>
+              <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+                Your therapist will add session notes here after each appointment. Check back after your next session!
+              </p>
             </div>
-          </div>
-          <div className="bg-white rounded-lg p-4 border border-blue-200">
-            <div className="flex items-center">
-              <Image className="h-6 w-6 text-blue-600 mr-3" />
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">Share Progress</h4>
-                <p className="text-xs text-gray-500">Upload photos/videos of home practice</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-4 border border-blue-200">
-            <div className="flex items-center">
-              <Calendar className="h-6 w-6 text-blue-600 mr-3" />
-              <div>
-                <h4 className="text-sm font-medium text-gray-900">Track Sessions</h4>
-                <p className="text-xs text-gray-500">Review your therapy journey</p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

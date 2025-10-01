@@ -19,6 +19,7 @@ const getUpdatedProfileData = async (userId, userRole) => {
         u.city,
         u.state,
         u.zipCode,
+        u.country,
         u.createdAt,
         u.updatedAt
       FROM users u
@@ -43,6 +44,7 @@ const getUpdatedProfileData = async (userId, userRole) => {
       city: user.city,
       state: user.state,
       zipCode: user.zipCode,
+      country: user.country,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -130,6 +132,8 @@ const getProfile = async (req, res) => {
         u.city,
         u.state,
         u.zipCode,
+        u.country,
+        u.profileImage,
         u.createdAt,
         u.updatedAt
       FROM users u
@@ -137,6 +141,7 @@ const getProfile = async (req, res) => {
     `;
 
     const user = await getRow(userSql, [userId]);
+    
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -214,6 +219,7 @@ const updateProfile = async (req, res) => {
     const userId = req.user.userId;
     const userRole = req.user.role;
     const updateData = req.body;
+    
 
     // Validate required fields
     if (!updateData.firstName || !updateData.lastName || !updateData.email) {
@@ -283,7 +289,11 @@ const updateProfile = async (req, res) => {
 
       if (updateData.dateOfBirth !== undefined) {
         userUpdateFields.push('dateOfBirth = ?');
-        userUpdateParams.push(updateData.dateOfBirth);
+        // Convert ISO date string to YYYY-MM-DD format for MySQL
+        const dateValue = updateData.dateOfBirth instanceof Date 
+          ? updateData.dateOfBirth.toISOString().split('T')[0]
+          : new Date(updateData.dateOfBirth).toISOString().split('T')[0];
+        userUpdateParams.push(dateValue);
       }
 
       if (updateData.gender !== undefined) {
@@ -309,6 +319,11 @@ const updateProfile = async (req, res) => {
       if (updateData.zipCode !== undefined) {
         userUpdateFields.push('zipCode = ?');
         userUpdateParams.push(updateData.zipCode);
+      }
+
+      if (updateData.country !== undefined) {
+        userUpdateFields.push('country = ?');
+        userUpdateParams.push(updateData.country);
       }
 
       // Update user if there are user fields to update
@@ -523,8 +538,46 @@ const changePassword = async (req, res) => {
   }
 };
 
+// Upload profile image
+const uploadProfileImage = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No image file provided'
+      });
+    }
+
+    // Get the uploaded file info
+    const imageUrl = `/uploads/profile-images/${req.file.filename}`;
+    
+    // Update user's profile image in database
+    const updateSql = 'UPDATE users SET profileImage = ? WHERE id = ?';
+    await runQuery(updateSql, [imageUrl, userId]);
+
+    res.json({
+      success: true,
+      message: 'Profile image uploaded successfully',
+      data: {
+        imageUrl: imageUrl
+      }
+    });
+
+  } catch (error) {
+    console.error('Upload profile image error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to upload profile image' 
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
-  changePassword
+  changePassword,
+  uploadProfileImage
 };

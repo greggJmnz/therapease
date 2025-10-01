@@ -3,6 +3,7 @@ import './Layouts.css';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import InitialsAvatar from '../components/InitialsAvatar';
+import { useNotificationStats } from '../hooks/useNotifications';
 import {
   Users,
   Calendar,
@@ -18,7 +19,6 @@ import {
   HelpCircle,
   ChevronDown,
   User,
-  Shield,
   Globe,
 } from 'lucide-react';
 
@@ -30,6 +30,7 @@ const TherapistLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const profileDropdownRef = useRef(null);
+  const { stats: notificationStats } = useNotificationStats();
 
   // Check screen size on mount and resize
   useEffect(() => {
@@ -56,13 +57,48 @@ const TherapistLayout = () => {
   }, []);
 
   const navigation = [
-    { name: 'Dashboard', href: '/therapist/dashboard', icon: BarChart3 },
-    { name: 'Patients', href: '/therapist/patients', icon: Users },
-    { name: 'Daily Notes', href: '/therapist/daily-notes', icon: FileText },
-    { name: 'AI Insights', href: '/therapist/ai-insights', icon: Brain },
-    { name: 'Progress Tracking', href: '/therapist/progress-tracking', icon: Target },
-    { name: 'Schedule', href: '/therapist/schedule', icon: Calendar },
-    { name: 'Notifications', href: '/therapist/notifications', icon: Bell },
+    { 
+      name: 'Dashboard', 
+      href: '/therapist/dashboard', 
+      icon: BarChart3,
+      description: 'Overview and analytics'
+    },
+    { 
+      name: 'Patients', 
+      href: '/therapist/patients', 
+      icon: Users,
+      description: 'Manage patient records'
+    },
+    { 
+      name: 'Daily Notes', 
+      href: '/therapist/daily-notes', 
+      icon: FileText,
+      description: 'Session documentation'
+    },
+    { 
+      name: 'AI Insights', 
+      href: '/therapist/ai-insights', 
+      icon: Brain,
+      description: 'AI-powered analysis'
+    },
+    { 
+      name: 'Progress Tracking', 
+      href: '/therapist/progress-tracking', 
+      icon: Target,
+      description: 'Monitor patient progress and treatment plans'
+    },
+    { 
+      name: 'Schedule', 
+      href: '/therapist/schedule', 
+      icon: Calendar,
+      description: 'Manage appointments'
+    },
+    { 
+      name: 'Notifications', 
+      href: '/therapist/notifications', 
+      icon: Bell,
+      description: 'Alerts and messages'
+    },
   ];
 
   const handleLogout = () => {
@@ -103,21 +139,37 @@ const TherapistLayout = () => {
                     to={item.href}
                     className={`nav-link ${isActive ? 'active' : ''}`}
                     onClick={() => setSidebarOpen(false)}
+                    title={item.description}
                   >
-                    <item.icon size={20} />
-                    {item.name}
+                    <div className="nav-link-content">
+                      <item.icon size={20} />
+                      <div className="nav-link-text">
+                        <span className="nav-link-name">{item.name}</span>
+                        <span className="nav-link-description">{item.description}</span>
+                      </div>
+                    </div>
                   </Link>
                 );
               })}
             <div className="tools-section">
               <h4>Tools</h4>
-              <Link to="/therapist/settings" className="nav-link">
-                  <Settings size={20} />
-                  Settings
+              <Link to="/therapist/settings" className="nav-link" title="Account and system settings">
+                  <div className="nav-link-content">
+                    <Settings size={20} />
+                    <div className="nav-link-text">
+                      <span className="nav-link-name">Settings</span>
+                      <span className="nav-link-description">Account settings</span>
+                    </div>
+                  </div>
                 </Link>
-                <Link to="/therapist/help" className="nav-link">
-                  <HelpCircle size={20} />
-                  Help Center
+                <Link to="/therapist/help" className="nav-link" title="Help and support resources">
+                  <div className="nav-link-content">
+                    <HelpCircle size={20} />
+                    <div className="nav-link-text">
+                      <span className="nav-link-name">Help Center</span>
+                      <span className="nav-link-description">Support resources</span>
+                    </div>
+                  </div>
                 </Link>
               </div>
               <div className="user-profile">
@@ -157,22 +209,38 @@ const TherapistLayout = () => {
                 key={item.name}
                 to={item.href}
                 className={`nav-link ${isActive ? 'active' : ''}`}
+                title={item.description}
               >
-                <item.icon size={20} />
-                {item.name}
+                <div className="nav-link-content">
+                  <item.icon size={20} />
+                  <div className="nav-link-text">
+                    <span className="nav-link-name">{item.name}</span>
+                    <span className="nav-link-description">{item.description}</span>
+                  </div>
+                </div>
               </Link>
             );
           })}
           
           <div className="tools-section">
             <h4>Tools</h4>
-            <Link to="/therapist/settings" className="nav-link">
-              <Settings size={20} />
-              Settings
+            <Link to="/therapist/settings" className="nav-link" title="Account and system settings">
+              <div className="nav-link-content">
+                <Settings size={20} />
+                <div className="nav-link-text">
+                  <span className="nav-link-name">Settings</span>
+                  <span className="nav-link-description">Account settings</span>
+                </div>
+              </div>
             </Link>
-            <Link to="/therapist/help" className="nav-link">
-              <HelpCircle size={20} />
-              Help Center
+            <Link to="/therapist/help" className="nav-link" title="Help and support resources">
+              <div className="nav-link-content">
+                <HelpCircle size={20} />
+                <div className="nav-link-text">
+                  <span className="nav-link-name">Help Center</span>
+                  <span className="nav-link-description">Support resources</span>
+                </div>
+              </div>
             </Link>
           </div>
         </nav>
@@ -225,25 +293,27 @@ const TherapistLayout = () => {
       {/* Main content */}
       <main className="main-content">
         <div className="content-header">
-          {isMobile && (
-            <button
-              type="button"
-              className="mobile-menu-btn"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={20} />
-            </button>
-          )}
-          
-          <div className="breadcrumb">
-            <span>Therapist</span>
-            <span>/</span>
-            <span>{navigation.find(item => item.href === location.pathname)?.name || 'Dashboard'}</span>
+          <div className="header-left">
+            {isMobile && (
+              <button
+                type="button"
+                className="mobile-menu-btn"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu size={20} />
+              </button>
+            )}
+
+            <div className="breadcrumb">
+              <span className="breadcrumb-main">Therapist Portal</span>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-current">{navigation.find(item => item.href === location.pathname)?.name || 'Dashboard'}</span>
+            </div>
           </div>
           
           <div className="header-actions">
             <a 
-              href="http://localhost:5000/public-website/index.html"
+              href="http://localhost:8000/"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary"
@@ -254,14 +324,18 @@ const TherapistLayout = () => {
             </a>
             <button 
               onClick={() => navigate('/therapist/notifications')}
-              className="btn-secondary"
+              className="btn-secondary relative"
+              title="View Notifications"
             >
               <Bell size={16} />
-              <span className="notification-count">2</span>
+              {notificationStats?.unreadCount > 0 && (
+                <span className="notification-count">{notificationStats.unreadCount}</span>
+              )}
             </button>
             <button 
               onClick={() => navigate('/therapist/settings')}
               className="btn-secondary"
+              title="Settings"
             >
               <Settings size={16} />
             </button>

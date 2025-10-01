@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Lock, Mail, LogIn, Shield, CheckCircle, AlertCircle, Copy, Check } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, LogIn, Shield, CheckCircle, AlertCircle, Copy, Check, Clock, UserCheck, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import ModernInput from '../../components/ModernInput';
 import ModernButton from '../../components/ModernButton';
+import TermsAndConditions from '../../components/TermsAndConditions';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +17,11 @@ const Login = () => {
   const [passwordValid, setPasswordValid] = useState(null);
   const [copiedAccount, setCopiedAccount] = useState(null);
   const [loginError, setLoginError] = useState('');
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockoutTime, setLockoutTime] = useState(null);
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -29,6 +35,27 @@ const Login = () => {
   // Watch form values for real-time validation
   const watchedEmail = watch('email', '');
   const watchedPassword = watch('password', '');
+
+  // Terms acceptance is now always unchecked by default
+  // Removed automatic checking from localStorage to ensure user must explicitly accept each time
+
+  // Check for account lockout
+  useEffect(() => {
+    const lockoutData = localStorage.getItem('loginLockout');
+    if (lockoutData) {
+      const { attempts, timestamp } = JSON.parse(lockoutData);
+      const now = Date.now();
+      const lockoutDuration = 5 * 60 * 1000; // 5 minutes
+      
+      if (now - timestamp < lockoutDuration) {
+        setIsLocked(true);
+        setLoginAttempts(attempts);
+        setLockoutTime(new Date(timestamp + lockoutDuration));
+      } else {
+        localStorage.removeItem('loginLockout');
+      }
+    }
+  }, []);
 
   // Real-time validation effects
   useEffect(() => {
@@ -69,6 +96,18 @@ const Login = () => {
   };
 
   const onSubmit = async (data) => {
+    // Check if account is locked
+    if (isLocked) {
+      toast.error('Account is temporarily locked due to multiple failed login attempts. Please try again later.');
+      return;
+    }
+
+    // Check terms acceptance for first-time users
+    if (!termsAccepted) {
+      setShowTermsModal(true);
+      return;
+    }
+
     console.log('Login attempt with:', { email: data.email, password: data.password });
     setIsLoading(true);
     setLoginError(''); // Clear any previous errors
@@ -79,6 +118,11 @@ const Login = () => {
       console.log('Login result:', result);
       
       if (result.success) {
+        // Clear any lockout data on successful login
+        localStorage.removeItem('loginLockout');
+        setLoginAttempts(0);
+        setIsLocked(false);
+        
         toast.success('Login successful!');
         console.log('Login successful, redirecting to:', result.user.role);
         
@@ -98,9 +142,29 @@ const Login = () => {
         }
       } else {
         console.error('Login failed:', result.message);
-        const errorMessage = result.message || 'Login failed. Please check your credentials.';
-        setLoginError(errorMessage);
-        toast.error(errorMessage);
+        
+        // Handle failed login attempts
+        const newAttempts = loginAttempts + 1;
+        setLoginAttempts(newAttempts);
+        
+        if (newAttempts >= 5) {
+          // Lock account for 5 minutes (reduced from 15)
+          const lockoutData = {
+            attempts: newAttempts,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('loginLockout', JSON.stringify(lockoutData));
+          setIsLocked(true);
+          setLockoutTime(new Date(Date.now() + 5 * 60 * 1000));
+          
+          const errorMessage = 'Too many failed login attempts. Account locked for 5 minutes.';
+          setLoginError(errorMessage);
+          toast.error(errorMessage);
+        } else {
+          const errorMessage = result.message || 'Login failed. Please check your credentials.';
+          setLoginError(errorMessage);
+          toast.error(errorMessage);
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -110,6 +174,18 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTermsAccept = () => {
+    setTermsAccepted(true);
+    setShowTermsModal(false);
+    toast.success('Terms and conditions accepted');
+  };
+
+  const handleTermsDecline = () => {
+    setTermsAccepted(false);
+    setShowTermsModal(false);
+    toast.error('You must accept the terms and conditions to continue');
   };
 
   return (
@@ -175,8 +251,27 @@ const Login = () => {
           
           {/* Login Form */}
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            {/* Account Lockout Notice */}
+            {isLocked && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-in fade-in-0 slide-in-from-top-2 duration-300">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <Clock className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">
+                      Account Temporarily Locked
+                    </h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>Too many failed login attempts. Please try again after {lockoutTime?.toLocaleTimeString()}.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Login Error Display */}
-            {loginError && (
+            {loginError && !isLocked && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-in fade-in-0 slide-in-from-top-2 duration-300">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -188,11 +283,15 @@ const Login = () => {
                     </h3>
                     <div className="mt-2 text-sm text-red-700">
                       <p>{loginError}</p>
+                      {loginAttempts > 0 && loginAttempts < 5 && (
+                        <p className="mt-1">Attempts remaining: {5 - loginAttempts}</p>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
             )}
+
             
             <div className="space-y-5">
               {/* Enhanced Email Field */}
@@ -304,6 +403,33 @@ const Login = () => {
               </Link>
             </div>
 
+            {/* Terms and Conditions Checkbox */}
+            <div className="mt-6">
+              <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center h-5 mt-0.5">
+                  <input
+                    id="terms-checkbox"
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                </div>
+                <div className="text-sm leading-relaxed">
+                  <label htmlFor="terms-checkbox" className="text-gray-700 cursor-pointer block">
+                    <span className="text-gray-700">I have read and agree to the </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsModal(true)}
+                      className="text-blue-600 hover:text-blue-700 font-medium underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded px-1"
+                    >
+                      Terms of Service, Privacy Policy, and Data Privacy Act 2012 compliance requirements
+                    </button>
+                  </label>
+                </div>
+              </div>
+            </div>
+
             {/* Submit Button */}
             <ModernButton
               type="submit"
@@ -311,13 +437,14 @@ const Login = () => {
               size="lg"
               loading={isLoading}
               icon={LogIn}
-              className="w-full"
+              className="w-full mt-6"
+              disabled={isLocked || !termsAccepted}
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? 'Signing in...' : isLocked ? 'Account Locked' : 'Sign in'}
             </ModernButton>
 
             {/* Sign Up Link */}
-            <div className="text-center pt-4 border-t border-gray-100">
+            <div className="text-center pt-4 border-t border-gray-100 mt-6">
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
                 <Link
@@ -463,6 +590,14 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* Terms and Conditions Modal */}
+      <TermsAndConditions
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={handleTermsAccept}
+        onDecline={handleTermsDecline}
+      />
     </div>
   );
 };

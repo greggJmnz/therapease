@@ -49,6 +49,9 @@ CREATE TABLE users (
   city VARCHAR(100),
   state VARCHAR(50),
   zipCode VARCHAR(20),
+  termsAccepted BOOLEAN DEFAULT FALSE,
+  hipaaAcknowledged BOOLEAN DEFAULT FALSE,
+  acceptedAt TIMESTAMP NULL,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -259,6 +262,28 @@ CREATE TABLE notifications (
 - `PRIMARY KEY (id)`
 - `INDEX (userId, isRead)` - For user unread notifications
 - `INDEX (type, createdAt)` - For notification type queries
+
+### 9. Compliance Audit Log Table
+**Purpose**: Track compliance-related actions for HIPAA and regulatory requirements
+
+```sql
+CREATE TABLE compliance_audit_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  userId INT NOT NULL,
+  action ENUM('terms_accepted', 'hipaa_acknowledged', 'terms_updated', 'hipaa_updated') NOT NULL,
+  previousValue BOOLEAN,
+  newValue BOOLEAN,
+  ipAddress VARCHAR(45),
+  userAgent TEXT,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+**Indexes**:
+- `PRIMARY KEY (id)`
+- `INDEX (userId, timestamp)` - For user compliance history
+- `INDEX (action, timestamp)` - For compliance action tracking
 
 ## 🔗 Database Relationships
 

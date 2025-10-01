@@ -8,6 +8,9 @@ const registerModal = document.getElementById('registerModal');
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 const contactForm = document.getElementById('contact-form');
+const portalsDropdown = document.getElementById('portalsDropdown');
+const portalsMenu = document.getElementById('portalsMenu');
+const portalItems = document.querySelectorAll('.dropdown-item[data-portal]');
 
 // Navigation functionality
 function initNavigation() {
@@ -24,6 +27,14 @@ function initNavigation() {
             hamburger.classList.remove('active');
         });
     });
+    
+    // Close mobile menu when clicking on portal dropdown
+    if (portalsDropdown) {
+        portalsDropdown.addEventListener('click', () => {
+            navMenu.classList.remove('active');
+            hamburger.classList.remove('active');
+        });
+    }
 
     // Navbar scroll effect
     window.addEventListener('scroll', () => {
@@ -54,6 +65,92 @@ function initNavigation() {
             }
         });
     });
+}
+
+// Portal navigation functionality
+function initPortalNavigation() {
+    const dropdown = document.querySelector('.dropdown');
+    
+    // Debug logging
+    console.log('Initializing portal navigation...');
+    console.log('Dropdown element:', dropdown);
+    console.log('Portals dropdown:', portalsDropdown);
+    console.log('Portal items:', portalItems);
+    
+    // Check if elements exist
+    if (!dropdown) {
+        console.error('Dropdown element not found!');
+        return;
+    }
+    
+    if (!portalsDropdown) {
+        console.error('Portals dropdown element not found!');
+        return;
+    }
+    
+    // Handle portal dropdown clicks
+    portalsDropdown.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Portals dropdown clicked');
+        // Toggle dropdown for both desktop and mobile
+        const isActive = dropdown.classList.contains('active');
+        if (isActive) {
+            dropdown.classList.remove('active');
+            console.log('Dropdown closed');
+        } else {
+            dropdown.classList.add('active');
+            console.log('Dropdown opened');
+        }
+    });
+
+    // Handle portal item clicks
+    portalItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            // Don't prevent default - let the browser handle the new tab navigation
+            e.stopPropagation();
+            
+            const portal = item.dataset.portal;
+            console.log(`Opening ${portal} portal in new tab`);
+            
+            // Show loading state briefly
+            const originalContent = item.innerHTML;
+            item.innerHTML = '<i class="fas fa-external-link-alt"></i> Opening...';
+            
+            // Close dropdown
+            dropdown.classList.remove('active');
+            
+            // Reset button content after a short delay
+            setTimeout(() => {
+                item.innerHTML = originalContent;
+            }, 1000);
+        });
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (dropdown && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('active');
+            console.log('Dropdown closed by clicking outside');
+        }
+    });
+
+    // Close dropdown on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && dropdown.classList.contains('active')) {
+            dropdown.classList.remove('active');
+        }
+    });
+
+    // Handle window resize to reset dropdown
+    window.addEventListener('resize', () => {
+        dropdown.classList.remove('active');
+    });
+    
+    // Initialize dropdown state
+    dropdown.classList.remove('active');
+    console.log('Portal navigation initialized successfully');
 }
 
 // Modal functionality
@@ -465,6 +562,7 @@ function initDemoAccounts() {
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
+    initPortalNavigation();
     initModals();
     initForms();
     initSmoothScrolling();

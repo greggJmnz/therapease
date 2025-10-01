@@ -4,6 +4,7 @@ const { authenticateToken, authorizePatient } = require('../middleware/authMiddl
 const { decryptResponseData } = require('../middleware/encryptionMiddleware');
 const patientController = require('../controllers/patientController');
 const profileController = require('../controllers/profileController');
+const upload = require('../middleware/uploadMiddleware');
 const settingsController = require('../controllers/settingsController');
 
 // Apply authentication and patient role authorization to all routes
@@ -21,10 +22,12 @@ router.get('/progress', patientController.getProgress);
 router.get('/appointments', patientController.getAppointments);
 router.post('/appointments', patientController.bookAppointment);
 router.put('/appointments/:id/cancel', patientController.cancelAppointment);
+router.put('/appointments/:id/postpone', patientController.postponeAppointment);
 router.put('/appointments/:id/reschedule', patientController.rescheduleAppointment);
 
 // Daily notes
 router.get('/daily-notes', patientController.getDailyNotes);
+router.post('/daily-notes/cleanup', patientController.cleanupDailyNotes);
 router.post('/daily-notes/:id/comments', patientController.addNoteComment);
 router.put('/daily-notes/:id/comments/:commentId', patientController.editNoteComment);
 router.delete('/daily-notes/:id/comments/:commentId', patientController.deleteNoteComment);
@@ -48,6 +51,7 @@ router.get('/settings', patientController.getSettings);
 router.get('/profile', profileController.getProfile);
 router.put('/profile', profileController.updateProfile);
 router.post('/change-password', profileController.changePassword);
+router.post('/upload-profile-image', upload.single('profileImage'), profileController.uploadProfileImage);
 
 // Settings management
 router.get('/settings', settingsController.getSettings);

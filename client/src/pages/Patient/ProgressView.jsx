@@ -1,256 +1,486 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, Target, Calendar, Award, Eye } from 'lucide-react';
+import React, { useState } from 'react';
 import { useQuery } from 'react-query';
+import { 
+  Target, 
+  Calendar, 
+  Award, 
+  CheckCircle,
+  Circle,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  User,
+  BarChart3
+} from 'lucide-react';
 import { patientAPI } from '../../services/api';
+import InitialsAvatar from '../../components/InitialsAvatar';
 
 const ProgressView = () => {
-  const [milestones, setMilestones] = useState([]);
-  const [recentAssessments, setRecentAssessments] = useState([]);
+  const [expandedObjectives, setExpandedObjectives] = useState({});
 
-  // Fetch progress data from API
-  const { data: progressData, isLoading: progressLoading, error: progressError } = useQuery(
-    'patientProgress',
-    patientAPI.getProgress,
+  // Fetch treatment plan
+  const { data: treatmentPlanData, isLoading, error } = useQuery(
+    'patient-treatment-plan',
+    () => patientAPI.getTreatmentPlan(),
     {
       onError: (error) => {
-        console.error('Error fetching progress data:', error);
-      }
-    }
-  );
-
-  // Fetch assessments data for recent assessments
-  const { data: assessmentsData, isLoading: assessmentsLoading } = useQuery(
-    'patientAssessments',
-    patientAPI.getAssessments,
-    {
-      onSuccess: (data) => {
-        // Set recent assessments from API data
-        const assessments = Array.isArray(data?.data) ? data.data : [];
-        setRecentAssessments(assessments.slice(0, 3));
+        console.error('Error fetching treatment plan:', error);
       },
-      onError: (error) => {
-        console.error('Error fetching assessments:', error);
-      }
+      refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
     }
   );
 
-  const isLoading = progressLoading || assessmentsLoading;
 
-  // Transform progress data from array to object format for display
-  const progressDataObject = React.useMemo(() => {
-    if (!Array.isArray(progressData?.data)) return {};
-    
-    const transformed = {};
-    progressData.data.forEach(entry => {
-      transformed[entry.area] = {
-        current: entry.currentScore,
-        target: entry.targetScore,
-        trend: entry.currentScore > entry.baselineScore ? 'up' : 
-               entry.currentScore < entry.baselineScore ? 'down' : 'stable'
-      };
-    });
-    return transformed;
-  }, [progressData]);
-
-  const getTrendIcon = (trend) => {
-    switch (trend) {
-      case 'up':
-        return <TrendingUp className="h-4 w-4 text-green-500" />;
-      case 'down':
-        return <TrendingUp className="h-4 w-4 text-red-500 transform rotate-180" />;
-      case 'stable':
-        return <TrendingUp className="h-4 w-4 text-gray-500" />;
-      default:
-        return null;
-    }
+  const toggleObjectiveExpansion = (mainObjectiveId) => {
+    setExpandedObjectives(prev => ({
+      ...prev,
+      [mainObjectiveId]: !prev[mainObjectiveId]
+    }));
   };
 
-  const getProgressColor = (current, target) => {
-    const percentage = (current / target) * 100;
-    if (percentage >= 90) return 'text-green-600';
-    if (percentage >= 75) return 'text-blue-600';
-    if (percentage >= 60) return 'text-yellow-600';
+
+  const getProgressColor = (progress) => {
+    if (progress >= 80) return 'text-green-600';
+    if (progress >= 60) return 'text-yellow-600';
+    if (progress >= 40) return 'text-orange-600';
     return 'text-red-600';
+  };
+
+  const getStatusColor = (isCompleted) => {
+    return (isCompleted === 1 || isCompleted === true) ? 'text-green-600' : 'text-gray-500';
+  };
+
+  const getStatusIcon = (isCompleted) => {
+    return (isCompleted === 1 || isCompleted === true) ? (
+      <CheckCircle size={20} className="text-green-600" />
+    ) : (
+      <Circle size={20} className="text-gray-400" />
+    );
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-6"></div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading Your Progress</h3>
+          <p className="text-gray-600">Please wait while we fetch your treatment plan...</p>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Progress Tracking</h1>
-        <p className="mt-2 text-sm text-gray-700">
-          Monitor your therapy progress and celebrate achievements
-        </p>
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Target className="w-10 h-10 text-red-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">Error Loading Progress</h3>
+          <p className="text-gray-600 mb-6">
+            There was an error loading your treatment plan: {error.message}
+          </p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200"
+          >
+            Retry
+          </button>
+        </div>
       </div>
+    );
+  }
 
-      {/* Progress Overview */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Progress Overview</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Object.entries(progressDataObject).map(([skill, data]) => (
-            <div key={skill} className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-gray-900 capitalize">
-                  {skill.replace(/([A-Z])/g, ' $1').trim()}
-                </h3>
-                {getTrendIcon(data.trend)}
+  if (!treatmentPlanData?.data?.data || !Array.isArray(treatmentPlanData.data.data) || treatmentPlanData.data.data.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Target className="w-10 h-10 text-gray-400" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">No Treatment Plans</h3>
+          <p className="text-gray-600 text-lg">
+            Your therapist hasn't created any treatment plans for you yet. Please contact your therapist for more information.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Ensure data is properly loaded before processing
+  // The API now returns an array of treatment plans
+  const treatmentPlans = treatmentPlanData?.data?.data || [];
+
+  // Calculate overall statistics across all treatment plans
+  const calculateOverallStats = () => {
+    // Safety check - ensure we have valid data
+    if (!treatmentPlans || !Array.isArray(treatmentPlans) || treatmentPlans.length === 0) {
+      return {
+        totalMainObjectives: 0,
+        totalSpecificObjectives: 0,
+        totalCompletedObjectives: 0,
+        averageProgress: 0,
+        activePlans: 0
+      };
+    }
+
+    let totalMainObjectives = 0;
+    let totalSpecificObjectives = 0;
+    let totalCompletedObjectives = 0;
+    let totalProgress = 0;
+    let activePlans = 0;
+
+    treatmentPlans.forEach((plan) => {
+      if (plan.status === 'active') {
+        activePlans++;
+        totalProgress += parseFloat(plan.overallProgress) || 0;
+      }
+      
+      if (plan.mainObjectives && Array.isArray(plan.mainObjectives)) {
+        totalMainObjectives += plan.mainObjectives.length;
+        plan.mainObjectives.forEach((mainObj) => {
+          if (mainObj.specificObjectives && Array.isArray(mainObj.specificObjectives)) {
+            totalSpecificObjectives += mainObj.specificObjectives.length;
+            const completedCount = mainObj.specificObjectives.filter(so => so.isCompleted === 1 || so.isCompleted === true).length;
+            totalCompletedObjectives += completedCount;
+          }
+        });
+      }
+    });
+
+    const averageProgress = activePlans > 0 ? totalProgress / activePlans : 0;
+
+    return {
+      totalMainObjectives,
+      totalSpecificObjectives,
+      totalCompletedObjectives,
+      averageProgress,
+      activePlans
+    };
+  };
+
+  const overallStats = calculateOverallStats();
+
+  return (
+    <>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">My Progress</h1>
+                <p className="text-gray-600 text-lg">Track your therapy progress and objectives</p>
               </div>
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-2xl font-bold ${getProgressColor(data.current, data.target)}`}>
-                  {data.current}%
-                </span>
-                <span className="text-sm text-gray-500">Target: {data.target}%</span>
+              <div className="mt-6 lg:mt-0 lg:ml-8">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 text-center">
+                  <div className={`text-4xl font-bold mb-1 ${getProgressColor(overallStats.averageProgress)}`}>
+                    {overallStats.averageProgress?.toFixed(1) || 0}%
+                  </div>
+                  <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">Overall Progress</div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full ${
-                    data.current >= data.target ? 'bg-green-500' : 'bg-blue-500'
-                  }`}
-                  style={{ width: `${Math.min((data.current / data.target) * 100, 100)}%` }}
-                ></div>
               </div>
             </div>
-          ))}
+          </div>
+        </div>
+
+        {/* Treatment Plans Overview */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Treatment Plans</h2>
+          <div className="space-y-6">
+            {treatmentPlans.map((treatmentPlan, index) => (
+              <div key={treatmentPlan.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-white mb-2">{treatmentPlan.title}</h3>
+                      <p className="text-blue-100 text-lg">{treatmentPlan.description}</p>
+                      <div className="flex items-center space-x-4 mt-2 text-sm text-blue-100">
+                        <span>Status: <span className="font-semibold capitalize">{treatmentPlan.status}</span></span>
+                        <span>Created: {new Date(treatmentPlan.createdAt).toLocaleDateString()}</span>
+                        {treatmentPlan.endDate && (
+                          <span>End: {new Date(treatmentPlan.endDate).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Therapist Info */}
+                    {(treatmentPlan.therapistFirstName && treatmentPlan.therapistLastName) && (
+                      <div className="flex items-center space-x-3 mt-4 lg:mt-0 lg:ml-6">
+                        <InitialsAvatar 
+                          name={`${treatmentPlan.therapistFirstName} ${treatmentPlan.therapistLastName}`}
+                          size="lg"
+                          className="shadow-lg border-2 border-white"
+                        />
+                        <div className="text-right">
+                          <div className="text-lg font-semibold text-white">
+                            {treatmentPlan.therapistFirstName} {treatmentPlan.therapistLastName}
+                          </div>
+                          <div className="text-blue-100 text-sm">Your Therapist</div>
+                        </div>
+                      </div>
+                    )}
         </div>
       </div>
 
-      {/* Milestones */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Milestones & Achievements</h2>
+                <div className="p-6">
+                  {/* Plan Details */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <Calendar className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Created</div>
+                        <div className="text-sm text-gray-600">{new Date(treatmentPlan.createdAt).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <Award className="w-5 h-5 text-green-600" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Status</div>
+                        <div className="text-sm text-gray-600 capitalize">{treatmentPlan.status}</div>
+                      </div>
+                    </div>
+                    {treatmentPlan.endDate && (
+                      <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <Clock className="w-5 h-5 text-purple-600" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">Target End</div>
+                          <div className="text-sm text-gray-600">{new Date(treatmentPlan.endDate).toLocaleDateString()}</div>
+                        </div>
         </div>
-        <div className="divide-y divide-gray-200">
-          {milestones.map((milestone) => (
-            <div key={milestone.id} className="px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${
-                    milestone.achieved ? 'bg-green-100' : 'bg-gray-100'
-                  }`}>
-                    {milestone.achieved ? (
-                      <Award className="h-5 w-5 text-green-600" />
-                    ) : (
-                      <Target className="h-5 w-5 text-gray-400" />
                     )}
                   </div>
-                  <div className="ml-4">
-                    <h3 className={`text-sm font-medium ${
-                      milestone.achieved ? 'text-green-900' : 'text-gray-900'
-                    }`}>
-                      {milestone.title}
-                    </h3>
-                    <p className="text-sm text-gray-500">{milestone.description}</p>
-                    <div className="mt-1 flex items-center text-xs text-gray-400">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {milestone.date}
-                      <span className="mx-2">•</span>
-                      {milestone.category}
+
+                  {/* Progress Bar */}
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700">Plan Progress</span>
+                      <span className="text-sm font-bold text-gray-900">{(parseFloat(treatmentPlan.overallProgress) || 0).toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${parseFloat(treatmentPlan.overallProgress) || 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Progress Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="text-center p-4 bg-blue-50 rounded-xl">
+                      <div className="text-3xl font-bold text-blue-600 mb-1">
+                        {treatmentPlan.mainObjectives?.length || 0}
+                      </div>
+                      <div className="text-sm font-medium text-blue-800">Main Objectives</div>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-xl">
+                      <div className="text-3xl font-bold text-green-600 mb-1">
+                        {treatmentPlan.mainObjectives?.reduce((total, obj) => total + (obj.specificObjectives?.length || 0), 0) || 0}
+                      </div>
+                      <div className="text-sm font-medium text-green-800">Specific Objectives</div>
+                    </div>
+                    <div className="text-center p-4 bg-emerald-50 rounded-xl">
+                      <div className="text-3xl font-bold text-emerald-600 mb-1">
+                        {treatmentPlan.mainObjectives?.reduce((total, obj) => 
+                          total + (obj.specificObjectives?.filter(so => so.isCompleted).length || 0), 0) || 0}
+                      </div>
+                      <div className="text-sm font-medium text-emerald-800">Completed</div>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center">
-                  {milestone.achieved ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Achieved
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      In Progress
-                    </span>
-                  )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Overall Progress Chart */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex items-center space-x-3 mb-6">
+            <BarChart3 className="w-6 h-6 text-blue-600" />
+            <h3 className="text-xl font-bold text-gray-900">Overall Progress Visualization</h3>
+          </div>
+          <div className="flex items-center justify-center">
+            <div className="relative w-40 h-40">
+              <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  stroke="#e5e7eb"
+                  strokeWidth="8"
+                  fill="none"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  stroke="url(#gradient)"
+                  strokeWidth="8"
+                  fill="none"
+                  strokeDasharray={`${2 * Math.PI * 40}`}
+                  strokeDashoffset={`${2 * Math.PI * 40 * (1 - (overallStats.averageProgress || 0) / 100)}`}
+                  strokeLinecap="round"
+                  className="transition-all duration-1000 ease-out"
+                />
+                <defs>
+                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#6366f1" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className={`text-2xl font-bold ${getProgressColor(overallStats.averageProgress)}`}>
+                    {overallStats.averageProgress?.toFixed(1) || 0}%
+                  </div>
+                  <div className="text-xs font-medium text-gray-600">Complete</div>
                 </div>
               </div>
             </div>
-          ))}
+          </div>
+          
+          {/* Overall Stats Summary */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-blue-50 rounded-xl">
+              <div className="text-2xl font-bold text-blue-600 mb-1">
+                {overallStats.totalMainObjectives}
+              </div>
+              <div className="text-sm font-medium text-blue-800">Total Main Objectives</div>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-xl">
+              <div className="text-2xl font-bold text-green-600 mb-1">
+                {overallStats.totalSpecificObjectives}
+              </div>
+              <div className="text-sm font-medium text-green-800">Total Specific Objectives</div>
+            </div>
+            <div className="text-center p-4 bg-emerald-50 rounded-xl">
+              <div className="text-2xl font-bold text-emerald-600 mb-1">
+                {overallStats.totalCompletedObjectives}
+              </div>
+              <div className="text-sm font-medium text-emerald-800">Completed Objectives</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-xl">
+              <div className="text-2xl font-bold text-purple-600 mb-1">
+                {overallStats.activePlans}
+              </div>
+              <div className="text-sm font-medium text-purple-800">Active Plans</div>
         </div>
       </div>
-
-      {/* Recent Assessments */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Recent Assessments</h2>
         </div>
-        <div className="divide-y divide-gray-200">
-          {recentAssessments.map((assessment) => (
-            <div key={assessment.id} className="px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Eye className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-900">{assessment.type}</h3>
-                    <p className="text-sm text-gray-500">{assessment.notes}</p>
-                    <div className="mt-1 flex items-center text-xs text-gray-400">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {assessment.date}
-                      <span className="mx-2">•</span>
-                      {assessment.therapist}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    {assessment.score}
+
+        {/* Main Objectives */}
+        <div className="mb-8">
+          <div className="flex items-center space-x-3 mb-6">
+            <Target className="w-6 h-6 text-blue-600" />
+            <h3 className="text-2xl font-bold text-gray-900">Your Objectives</h3>
+          </div>
+          <div className="space-y-6">
+            {treatmentPlans.map((treatmentPlan) => (
+              <div key={treatmentPlan.id} className="mb-8">
+                <div className="flex items-center space-x-3 mb-4">
+                  <h4 className="text-lg font-semibold text-gray-800">{treatmentPlan.title}</h4>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    treatmentPlan.status === 'active' ? 'bg-green-100 text-green-800' :
+                    treatmentPlan.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {treatmentPlan.status}
                   </span>
                 </div>
+                <div className="space-y-4">
+                  {treatmentPlan.mainObjectives?.map((mainObj) => (
+              <div key={mainObj.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h4 className="text-xl font-bold text-gray-900">{mainObj.title}</h4>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                          {mainObj.category}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 text-lg mb-3">{mainObj.description}</p>
+                      <div className="flex flex-wrap items-center gap-4 text-sm">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <span className="text-gray-600">
+                            {mainObj.specificObjectives?.filter(so => so.isCompleted === 1 || so.isCompleted === true).length || 0} / {mainObj.specificObjectives?.length || 0} completed
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className={`font-semibold ${getProgressColor(parseFloat(mainObj.progress) || 0)}`}>
+                            {(parseFloat(mainObj.progress) || 0).toFixed(1)}% complete
+                          </span>
+                        </div>
+                  </div>
+                    </div>
+                    <button
+                      onClick={() => toggleObjectiveExpansion(mainObj.id)}
+                      className="ml-4 p-3 hover:bg-white/50 rounded-xl transition-colors duration-200"
+                    >
+                      {expandedObjectives[mainObj.id] ? (
+                        <ChevronDown size={24} className="text-gray-600" />
+                      ) : (
+                        <ChevronRight size={24} className="text-gray-600" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {expandedObjectives[mainObj.id] && (
+                  <div className="p-6 bg-gray-50">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <h5 className="text-lg font-semibold text-gray-900">Specific Objectives</h5>
+                      <div className="flex-1 h-px bg-gray-300"></div>
+                    </div>
+                    <div className="space-y-4">
+                      {mainObj.specificObjectives?.map((specificObj) => (
+                        <div key={specificObj.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow duration-200">
+                          <div className="flex items-start space-x-4">
+                            <div className="flex-shrink-0 mt-1">
+                              {getStatusIcon(specificObj.isCompleted)}
+                            </div>
+                            <div className="flex-1">
+                              <h6 className="font-semibold text-gray-900 text-lg mb-2">{specificObj.title}</h6>
+                              <p className="text-gray-600 mb-3">{specificObj.description}</p>
+                              
+                              {specificObj.targetDate && (
+                                <div className="flex items-center space-x-2 mb-3 text-sm text-gray-500">
+                                  <Clock size={16} />
+                                  <span>Target: {new Date(specificObj.targetDate).toLocaleDateString()}</span>
+                                </div>
+                              )}
+
+                              {specificObj.remarks && (
+                                <div className="mb-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <User size={16} className="text-blue-600" />
+                                    <span className="text-sm font-semibold text-blue-800">Therapist Notes</span>
+                                  </div>
+                                  <p className="text-sm text-blue-700">{specificObj.remarks}</p>
+                                </div>
+                              )}
+                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Progress Chart Placeholder */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Progress Over Time</h2>
-        <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-          <div className="text-center">
-            <TrendingUp className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-            <p className="text-sm text-gray-500">Progress chart will be displayed here</p>
-            <p className="text-xs text-gray-400">Showing trends over the last 6 months</p>
+                )}
           </div>
+                  ))}
         </div>
       </div>
-
-      {/* Recommendations */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Recommendations</h2>
-        <div className="space-y-3">
-          <div className="flex items-start">
-            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center mt-0.5">
-              <Target className="h-4 w-4 text-blue-600" />
-            </div>
-            <p className="ml-3 text-sm text-gray-700">
-              Continue practicing fine motor activities at home for 15-20 minutes daily
-            </p>
-          </div>
-          <div className="flex items-start">
-            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center mt-0.5">
-              <Target className="h-4 w-4 text-blue-600" />
-            </div>
-            <p className="ml-3 text-sm text-gray-700">
-              Work on balance exercises using household items like pillows and cushions
-            </p>
-          </div>
-          <div className="flex items-start">
-            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center mt-0.5">
-              <Target className="h-4 w-4 text-blue-600" />
-            </div>
-            <p className="ml-3 text-sm text-gray-700">
-              Practice dressing skills independently, starting with simple items
-            </p>
+            ))}
           </div>
         </div>
       </div>
     </div>
+    </>
   );
 };
 

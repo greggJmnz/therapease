@@ -356,453 +356,568 @@ const DailyNotes = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Daily Notes</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Document therapy sessions and track patient progress
-          </p>
-        </div>
-
-        {/* Patient Selection */}
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="flex items-center space-x-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Patient
-              </label>
-              <select
-                value={selectedPatientId}
-                onChange={(e) => handlePatientSelect(e.target.value)}
-                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-              >
-                <option value="">Choose a patient to view their notes...</option>
-                {patients.map((patient) => (
-                  <option key={patient.id} value={patient.id}>
-                    {patient.name} (Age: {patient.age}) - {patient.diagnosis}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-shrink-0">
-              <button
-                onClick={handleCreateNote}
-                disabled={!selectedPatientId}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                New Note
-              </button>
-            </div>
-          </div>
-          
-          {selectedPatient && (
-            <div className="mt-3 p-3 bg-green-50 rounded-md">
-              <div className="flex items-center">
-                <User className="h-5 w-5 text-green-600 mr-2" />
-                <div>
-                  <p className="text-sm font-medium text-green-800">
-                    Viewing notes for {selectedPatient.name}
+    <div className="min-h-screen bg-gray-50">
+      {/* Modern Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Daily Notes</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  Document therapy sessions and track patient progress
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900">
+                    {selectedPatient ? selectedPatient.name : 'No patient selected'}
                   </p>
-                  <p className="text-xs text-green-600">
-                    {selectedPatient.diagnosis} • {notes.length} note{notes.length !== 1 ? 's' : ''}
+                  <p className="text-xs text-gray-500">
+                    {selectedPatient ? `${notes.length} notes` : 'Select a patient to begin'}
                   </p>
                 </div>
+                <button
+                  onClick={handleCreateNote}
+                  disabled={!selectedPatientId}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Note
+                </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Create/Edit Note Form */}
-      {showForm && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
-            {editingNote ? 'Edit Note' : 'Create New Note'}
-          </h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Selected Patient Display */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Patient Selection Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+          <div className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="flex-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Select Patient
+                </label>
+                <select
+                  value={selectedPatientId}
+                  onChange={(e) => handlePatientSelect(e.target.value)}
+                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200"
+                >
+                  <option value="">Choose a patient to view their notes...</option>
+                  {patients.map((patient) => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.name} (Age: {patient.age}) - {patient.diagnosis}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
             {selectedPatient && (
-              <div className="bg-green-50 p-3 rounded-md">
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center">
-                  <User className="h-5 w-5 text-green-600 mr-2" />
-                  <div>
-                    <p className="text-sm font-medium text-green-800">
-                      Creating note for {selectedPatient.name}
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="h-5 w-5 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-semibold text-blue-900">
+                      Viewing notes for {selectedPatient.name}
                     </p>
-                    <p className="text-xs text-green-600">
-                      {selectedPatient.diagnosis}
+                    <p className="text-sm text-blue-700">
+                      {selectedPatient.diagnosis} • {notes.length} note{notes.length !== 1 ? 's' : ''}
                     </p>
                   </div>
                 </div>
               </div>
             )}
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Session Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.sessionDate}
-                  onChange={(e) => setFormData({...formData, sessionDate: e.target.value})}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Session Duration (minutes)
-                </label>
-                <input
-                  type="number"
-                  value={formData.sessionDuration}
-                  onChange={(e) => setFormData({...formData, sessionDuration: e.target.value})}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                  placeholder="45"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Session Summary *
-              </label>
-              <textarea
-                value={formData.content}
-                onChange={(e) => setFormData({...formData, content: e.target.value})}
-                rows={4}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="Describe what was accomplished during the session..."
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Activities Performed
-              </label>
-              <textarea
-                value={formData.activities}
-                onChange={(e) => setFormData({...formData, activities: e.target.value})}
-                rows={2}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="List the specific activities and exercises..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Goals Addressed
-              </label>
-              <textarea
-                value={formData.goals}
-                onChange={(e) => setFormData({...formData, goals: e.target.value})}
-                rows={2}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="What therapy goals were worked on today?"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Next Steps
-              </label>
-              <textarea
-                value={formData.nextSteps}
-                onChange={(e) => setFormData({...formData, nextSteps: e.target.value})}
-                rows={2}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="What should be done next? Home exercises? Follow-up plans?"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={cancelForm}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                {editingNote ? 'Update Note' : 'Create Note'}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
-      )}
 
-      {/* Notes List */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        {!selectedPatientId ? (
-          <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Patient</h3>
-            <p className="text-sm text-gray-500">
-              Choose a patient from the dropdown above to view their daily notes and create new ones.
-            </p>
-          </div>
-        ) : notes.length === 0 ? (
-          <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No notes yet for {selectedPatient?.name}</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Start documenting therapy sessions by creating your first daily note.
-            </p>
-            <button
-              onClick={handleCreateNote}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create First Note
-            </button>
-          </div>
-        ) : (
-          <ul className="divide-y divide-gray-200">
-            {notes.map((note) => (
-            <li key={note.id}>
-              <div className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-green-600" />
-                      </div>
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-900">
-                            {note.patientName}
-                          </h3>
-                          <div className="mt-1 flex items-center text-sm text-gray-500">
-                            <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                            {note.sessionDate}
-                            <User className="ml-4 flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                            {note.patientName}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleEdit(note)}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(note.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+        {/* Create/Edit Note Form */}
+        {showForm && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {editingNote ? 'Edit Note' : 'Create New Note'}
+                </h2>
+                <button
+                  onClick={cancelForm}
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Selected Patient Display */}
+                {selectedPatient && (
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <User className="h-5 w-5 text-blue-600" />
                         </div>
                       </div>
-                      
-                      {note.content && (
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-700">{note.content}</p>
-                        </div>
-                      )}
-
-                      {note.activities && (
-                        <div className="mt-2">
-                          <p className="text-xs font-medium text-gray-500">Activities:</p>
-                          <p className="text-xs text-gray-600">{note.activities}</p>
-                        </div>
-                      )}
-
-                      {note.goals && (
-                        <div className="mt-2">
-                          <p className="text-xs font-medium text-gray-500">Goals:</p>
-                          <p className="text-xs text-gray-600">{note.goals}</p>
-                        </div>
-                      )}
-
-                      {note.nextSteps && (
-                        <div className="mt-2">
-                          <p className="text-xs font-medium text-gray-500">Next Steps:</p>
-                          <p className="text-xs text-gray-600">{note.nextSteps}</p>
-                        </div>
-                      )}
-
-                      {/* Comments Section - Compact Facebook Style */}
-                      <div className="mt-4 border-t border-gray-200 pt-3">
-                        {/* Comments Header */}
-                        <div className="flex items-center justify-between mb-3">
-                          <button
-                            onClick={() => toggleComments(note.id)}
-                            className="flex items-center text-sm text-gray-600 hover:text-gray-900"
-                          >
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            {note.comments?.length || 0} comments
-                            {showComments[note.id] ? (
-                              <ChevronUp className="h-4 w-4 ml-1" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 ml-1" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedNote(note);
-                              setShowCommentForm(!showCommentForm);
-                            }}
-                            className="text-sm text-green-600 hover:text-green-800"
-                          >
-                            {showCommentForm && selectedNote?.id === note.id ? 'Cancel' : 'Reply'}
-                          </button>
-                        </div>
-
-                        {/* Comments List - Collapsible */}
-                        {showComments[note.id] && note.comments && Array.isArray(note.comments) && note.comments.length > 0 && (
-                          <div className="space-y-2 mb-3">
-                            {note.comments.map((comment) => (
-                              <div key={comment.id} className="flex items-start space-x-2 group">
-                                <div className="flex-shrink-0">
-                                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                                    <User className="h-3 w-3 text-green-600" />
-                                  </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-sm font-medium text-gray-900">{comment.author}</span>
-                                    <span className="text-xs text-gray-500">
-                                      {new Date(comment.timestamp).toLocaleString()}
-                                    </span>
-                                    {comment.edited && (
-                                      <span className="text-xs text-gray-400">(edited)</span>
-                                    )}
-                                  </div>
-                                  {editingComment === comment.id ? (
-                                    <form onSubmit={handleEditSubmit} className="mt-1">
-                                      <textarea
-                                        value={editCommentText}
-                                        onChange={(e) => setEditCommentText(e.target.value)}
-                                        className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                                        rows={2}
-                                        autoFocus
-                                      />
-                                      <div className="flex items-center space-x-2 mt-1">
-                                        <button
-                                          type="submit"
-                                          className="text-xs text-green-600 hover:text-green-800"
-                                          disabled={editCommentMutation.isLoading}
-                                        >
-                                          Save
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setEditingComment(null);
-                                            setEditCommentText('');
-                                          }}
-                                          className="text-xs text-gray-500 hover:text-gray-700"
-                                        >
-                                          Cancel
-                                        </button>
-                                      </div>
-                                    </form>
-                                  ) : (
-                                    <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
-                                  )}
-                                </div>
-                                {comment.author === 'Therapist' && (
-                                  <div className="relative">
-                                    <button
-                                      onClick={() => setShowCommentMenu(showCommentMenu === comment.id ? null : comment.id)}
-                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded-full"
-                                    >
-                                      <MoreVertical className="h-4 w-4 text-gray-400" />
-                                    </button>
-                                    {showCommentMenu === comment.id && (
-                                      <div className="absolute right-0 top-6 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                                        <button
-                                          onClick={() => {
-                                            handleEditComment(note.id, comment);
-                                            setShowCommentMenu(null);
-                                          }}
-                                          className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full"
-                                        >
-                                          <Edit className="h-4 w-4 mr-2" />
-                                          Edit
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            handleDeleteComment(note.id, comment.id);
-                                            setShowCommentMenu(null);
-                                          }}
-                                          className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          Delete
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Add Comment Form - Compact */}
-                        {showCommentForm && selectedNote?.id === note.id && (
-                          <div className="flex items-start space-x-2">
-                            <div className="flex-shrink-0">
-                              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                                <User className="h-3 w-3 text-green-600" />
-                              </div>
-                            </div>
-                            <div className="flex-1">
-                              <form onSubmit={handleCommentSubmit}>
-                                <textarea
-                                  value={therapistComment}
-                                  onChange={(e) => setTherapistComment(e.target.value)}
-                                  className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                                  placeholder="Write a reply..."
-                                  rows={2}
-                                  autoFocus
-                                />
-                                <div className="flex items-center justify-end mt-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setShowCommentForm(false);
-                                      setTherapistComment('');
-                                    }}
-                                    className="text-xs text-gray-500 hover:text-gray-700 mr-3"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    type="submit"
-                                    className="inline-flex items-center px-3 py-1 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
-                                    disabled={addCommentMutation.isLoading || !therapistComment.trim()}
-                                  >
-                                    <Send className="h-3 w-3 mr-1" />
-                                    {addCommentMutation.isLoading ? 'Sending...' : 'Reply'}
-                                  </button>
-                                </div>
-                              </form>
-                            </div>
-                          </div>
-                        )}
+                      <div className="ml-4">
+                        <p className="text-sm font-semibold text-blue-900">
+                          Creating note for {selectedPatient.name}
+                        </p>
+                        <p className="text-sm text-blue-700">
+                          {selectedPatient.diagnosis}
+                        </p>
                       </div>
                     </div>
                   </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Session Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.sessionDate}
+                      onChange={(e) => setFormData({...formData, sessionDate: e.target.value})}
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Session Duration (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.sessionDuration}
+                      onChange={(e) => setFormData({...formData, sessionDuration: e.target.value})}
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200"
+                      placeholder="45"
+                    />
+                  </div>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Session Summary *
+                  </label>
+                  <textarea
+                    value={formData.content}
+                    onChange={(e) => setFormData({...formData, content: e.target.value})}
+                    rows={4}
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200"
+                    placeholder="Describe what was accomplished during the session..."
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Activities Performed
+                    </label>
+                    <textarea
+                      value={formData.activities}
+                      onChange={(e) => setFormData({...formData, activities: e.target.value})}
+                      rows={3}
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200"
+                      placeholder="List the specific activities and exercises..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Goals Addressed
+                    </label>
+                    <textarea
+                      value={formData.goals}
+                      onChange={(e) => setFormData({...formData, goals: e.target.value})}
+                      rows={3}
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200"
+                      placeholder="What therapy goals were worked on today?"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Next Steps
+                  </label>
+                  <textarea
+                    value={formData.nextSteps}
+                    onChange={(e) => setFormData({...formData, nextSteps: e.target.value})}
+                    rows={3}
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200"
+                    placeholder="What should be done next? Home exercises? Follow-up plans?"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={cancelForm}
+                    className="px-6 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  >
+                    {editingNote ? 'Update Note' : 'Create Note'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Notes List */}
+        {!selectedPatientId ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-8 w-8 text-gray-400" />
               </div>
-            </li>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Select a Patient</h3>
+              <p className="text-sm text-gray-500 max-w-md mx-auto">
+                Choose a patient from the dropdown above to view their daily notes and create new ones.
+              </p>
+            </div>
+          </div>
+        ) : notes.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No notes yet for {selectedPatient?.name}</h3>
+              <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+                Start documenting therapy sessions by creating your first daily note.
+              </p>
+              <button
+                onClick={handleCreateNote}
+                className="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create First Note
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {notes.map((note) => (
+              <div key={note.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-3 mb-1">
+                          <h3 className="text-base font-semibold text-gray-900 truncate">
+                            {note.patientName}
+                          </h3>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {note.sessionDate}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                          {note.sessionDate}
+                          {note.sessionDuration && (
+                            <>
+                              <span className="mx-2">•</span>
+                              <span>{note.sessionDuration} min</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setSelectedNote(selectedNote?.id === note.id ? null : note)}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        {selectedNote?.id === note.id ? 'Hide' : 'View Note'}
+                      </button>
+                      <button
+                        onClick={() => handleEdit(note)}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(note.id)}
+                        className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-lg text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded Note Details */}
+                {selectedNote?.id === note.id && (
+                  <div className="border-t border-gray-200 bg-gray-50">
+                    <div className="p-6 space-y-4">
+                      {note.content && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Session Summary</h4>
+                          <p className="text-sm text-gray-600 leading-relaxed bg-white p-3 rounded-lg border">{note.content}</p>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {note.activities && (
+                          <div className="bg-white p-4 rounded-lg border">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">Activities Performed</h4>
+                            <p className="text-sm text-gray-600">{note.activities}</p>
+                          </div>
+                        )}
+
+                        {note.goals && (
+                          <div className="bg-white p-4 rounded-lg border">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">Goals Addressed</h4>
+                            <p className="text-sm text-gray-600">{note.goals}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {note.nextSteps && (
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <h4 className="text-sm font-semibold text-blue-700 mb-2">Next Steps</h4>
+                          <p className="text-sm text-blue-600">{note.nextSteps}</p>
+                        </div>
+                      )}
+
+                      {(note.observations || note.progress || note.challenges || note.mood || note.engagement) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {note.observations && (
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-2">Observations</h4>
+                              <p className="text-sm text-gray-600">{note.observations}</p>
+                            </div>
+                          )}
+
+                          {note.progress && (
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-2">Progress</h4>
+                              <p className="text-sm text-gray-600">{note.progress}</p>
+                            </div>
+                          )}
+
+                          {note.challenges && (
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-2">Challenges</h4>
+                              <p className="text-sm text-gray-600">{note.challenges}</p>
+                            </div>
+                          )}
+
+                          {(note.mood || note.engagement) && (
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-2">Session Metrics</h4>
+                              <div className="space-y-2">
+                                {note.mood && (
+                                  <div className="flex justify-between">
+                                    <span className="text-sm text-gray-600">Mood:</span>
+                                    <span className="text-sm font-medium text-gray-900">{note.mood}</span>
+                                  </div>
+                                )}
+                                {note.engagement && (
+                                  <div className="flex justify-between">
+                                    <span className="text-sm text-gray-600">Engagement:</span>
+                                    <span className="text-sm font-medium text-gray-900">{note.engagement}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                        {/* Comments Section */}
+                        <div className="mt-6 border-t border-gray-200 pt-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <button
+                              onClick={() => toggleComments(note.id)}
+                              className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors duration-200"
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              {note.comments?.length || 0} comments
+                              {showComments[note.id] ? (
+                                <ChevronUp className="h-4 w-4 ml-1" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 ml-1" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedNote(note);
+                                setShowCommentForm(!showCommentForm);
+                              }}
+                              className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                            >
+                              {showCommentForm && selectedNote?.id === note.id ? 'Cancel' : 'Add Comment'}
+                            </button>
+                          </div>
+
+                          {/* Comments List */}
+                          {showComments[note.id] && note.comments && Array.isArray(note.comments) && note.comments.length > 0 && (
+                            <div className="space-y-4 mb-4">
+                              {note.comments.map((comment) => (
+                                <div key={comment.id} className="flex items-start space-x-3 group">
+                                  <div className="flex-shrink-0">
+                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                      <User className="h-4 w-4 text-blue-600" />
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center space-x-2 mb-1">
+                                      <span className="text-sm font-semibold text-gray-900">{comment.author}</span>
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(comment.timestamp).toLocaleString()}
+                                      </span>
+                                      {comment.edited && (
+                                        <span className="text-xs text-gray-400">(edited)</span>
+                                      )}
+                                    </div>
+                                    {editingComment === comment.id ? (
+                                      <form onSubmit={handleEditSubmit} className="mt-2">
+                                        <textarea
+                                          value={editCommentText}
+                                          onChange={(e) => setEditCommentText(e.target.value)}
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                          rows={2}
+                                          autoFocus
+                                        />
+                                        <div className="flex items-center space-x-3 mt-2">
+                                          <button
+                                            type="submit"
+                                            className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
+                                            disabled={editCommentMutation.isLoading}
+                                          >
+                                            Save
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingComment(null);
+                                              setEditCommentText('');
+                                            }}
+                                            className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      </form>
+                                    ) : (
+                                      <p className="text-sm text-gray-700 leading-relaxed">{comment.content}</p>
+                                    )}
+                                  </div>
+                                  {comment.author === 'Therapist' && (
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => setShowCommentMenu(showCommentMenu === comment.id ? null : comment.id)}
+                                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded-full transition-opacity duration-200"
+                                      >
+                                        <MoreVertical className="h-4 w-4 text-gray-400" />
+                                      </button>
+                                      {showCommentMenu === comment.id && (
+                                        <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                                          <button
+                                            onClick={() => {
+                                              handleEditComment(note.id, comment);
+                                              setShowCommentMenu(null);
+                                            }}
+                                            className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full transition-colors duration-200"
+                                          >
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              handleDeleteComment(note.id, comment.id);
+                                              setShowCommentMenu(null);
+                                            }}
+                                            className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full transition-colors duration-200"
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Add Comment Form */}
+                          {showCommentForm && selectedNote?.id === note.id && (
+                            <div className="flex items-start space-x-3">
+                              <div className="flex-shrink-0">
+                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <User className="h-4 w-4 text-blue-600" />
+                                </div>
+                              </div>
+                              <div className="flex-1">
+                                <form onSubmit={handleCommentSubmit}>
+                                  <textarea
+                                    value={therapistComment}
+                                    onChange={(e) => setTherapistComment(e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                    placeholder="Write a comment..."
+                                    rows={3}
+                                    autoFocus
+                                  />
+                                  <div className="flex items-center justify-end mt-3 space-x-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setShowCommentForm(false);
+                                        setTherapistComment('');
+                                      }}
+                                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                                      disabled={addCommentMutation.isLoading || !therapistComment.trim()}
+                                    >
+                                      <Send className="h-4 w-4 mr-2" />
+                                      {addCommentMutation.isLoading ? 'Sending...' : 'Post Comment'}
+                                    </button>
+                                  </div>
+                                </form>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                )}
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

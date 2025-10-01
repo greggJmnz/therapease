@@ -22,6 +22,7 @@ import AdminReports from './pages/Admin/AdminReports';
 import AdminSettings from './pages/Admin/AdminSettings';
 import AdminHelpCenter from './pages/Admin/AdminHelpCenter';
 import AdminProfile from './pages/Admin/AdminProfile';
+import AdminUserManagement from './pages/Admin/AdminUserManagement';
 
 import TherapistDashboard from './pages/Therapist/Dashboard';
 import TherapistDailyNotes from './pages/Therapist/DailyNotes';
@@ -33,15 +34,12 @@ import TherapistNotifications from './pages/Therapist/TherapistNotifications';
 import TherapistSettings from './pages/Therapist/TherapistSettings';
 import TherapistHelpCenter from './pages/Therapist/TherapistHelpCenter';
 import TherapistProfile from './pages/Therapist/Profile';
-import CreateAssessment from './pages/Therapist/CreateAssessment';
-import EditAssessment from './pages/Therapist/EditAssessment';
 
 
 import PatientDashboard from './pages/Patient/Dashboard';
 import PatientProgressView from './pages/Patient/ProgressView';
 import PatientAppointments from './pages/Patient/Appointments';
 import PatientDailyNotes from './pages/Patient/DailyNotes';
-import PatientSessions from './pages/Patient/Sessions';
 import PatientAssessments from './pages/Patient/Assessments';
 import PatientNotifications from './pages/Patient/Notifications';
 import PatientSettings from './pages/Patient/Settings';
@@ -113,6 +111,7 @@ function App() {
               }>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUserManagement />} />
                 <Route path="patients" element={<AdminPatients />} />
                 <Route path="therapists" element={<AdminTherapists />} />
                 <Route path="appointments" element={<AdminAppointments />} />
@@ -153,7 +152,6 @@ function App() {
                 <Route path="progress" element={<PatientProgressView />} />
                 <Route path="appointments" element={<PatientAppointments />} />
                 <Route path="daily-notes" element={<PatientDailyNotes />} />
-                <Route path="sessions" element={<PatientSessions />} />
                 <Route path="assessments" element={<PatientAssessments />} />
                 <Route path="notifications" element={<PatientNotifications />} />
                 <Route path="settings" element={<PatientSettings />} />

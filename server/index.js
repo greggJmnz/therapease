@@ -29,6 +29,7 @@ const patientRoutes = require('./routes/patientRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const smsRoutes = require('./routes/smsRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const treatmentPlanRoutes = require('./routes/treatmentPlanRoutes');
 
 // Security Middleware
 app.use(helmet({
@@ -95,8 +96,162 @@ app.get('/health', (req, res) => {
 // SSL Health check endpoint
 app.get('/health/ssl', sslHealthCheck);
 
+// Temporary test endpoint for patient selection (bypasses authentication)
+app.get('/api/test/patients', async (req, res) => {
+  try {
+    const { getPatients } = require('./controllers/patientController');
+    const mockReq = {
+      user: { id: 44, role: 'therapist' },
+      query: {}
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await getPatients(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
+// Temporary test endpoint for patient treatment plan (bypasses authentication)
+app.get('/api/test/patient-treatment-plan', async (req, res) => {
+  try {
+    const { getPatientTreatmentPlan } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      user: { id: 49 }, // Alexandra Santos user ID
+      query: {}
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await getPatientTreatmentPlan(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
+// Temporary test endpoint for therapist treatment plans (bypasses authentication)
+app.get('/api/test/treatment-plans', async (req, res) => {
+  try {
+    const { getTreatmentPlans } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      user: { id: 44, role: 'therapist' },
+      query: req.query
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await getTreatmentPlans(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
+// Temporary test endpoint for getting treatment plan details (bypasses authentication)
+app.get('/api/test/treatment-plan/:id', async (req, res) => {
+  try {
+    const { getTreatmentPlan } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      params: req.params,
+      user: { id: 44, role: 'therapist' }
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await getTreatmentPlan(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
+// Temporary test endpoint for updating specific objectives (bypasses authentication)
+app.put('/api/test/specific-objectives/:id', async (req, res) => {
+  try {
+    const { updateSpecificObjective } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      params: req.params,
+      body: req.body,
+      user: { id: 44, role: 'therapist' }
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await updateSpecificObjective(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
+// Serve debug page
+app.get('/debug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'debug.html'));
+});
+
 // Serve public website static files
 app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve root-level assets
 app.get('/favicon.ico', (req, res) => {
@@ -125,6 +280,7 @@ app.use('/api/patient', patientRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/notifications/sms', smsRoutes);
+app.use('/api/treatment-plans', treatmentPlanRoutes);
 
 // Error handling middleware
 app.use(handleEncryptionError);

@@ -14,8 +14,8 @@ const PatientHelp = () => {
 
   const faqs = [
     {
-      question: "How do I schedule an appointment?",
-      answer: "You can schedule appointments through the Appointments page. Click on 'Schedule New Appointment' and select your preferred date and time. Your therapist will confirm the appointment within 24 hours."
+      question: "How do I schedule a session?",
+      answer: "You can schedule sessions through the Schedule page. Click on 'Book Session' and select your preferred date and time. Your therapist will confirm the session within 24 hours."
     },
     {
       question: "How do I access my daily notes?",
@@ -30,8 +30,8 @@ const PatientHelp = () => {
       answer: "Use the 'Progress Tracking' feature to monitor your improvement over time. You can view charts, complete assessments, and see your therapy journey."
     },
     {
-      question: "Can I reschedule my appointment?",
-      answer: "Yes, you can reschedule appointments up to 24 hours before the scheduled time. Go to the Appointments page and click on the appointment you want to reschedule."
+      question: "Can I reschedule my session?",
+      answer: "Yes, you can reschedule sessions up to 24 hours before the scheduled time. Go to the Schedule page and click on the session you want to reschedule."
     },
     {
       question: "How do I contact my therapist?",
@@ -41,7 +41,7 @@ const PatientHelp = () => {
 
   const quickActions = [
     {
-      title: "Schedule Appointment",
+      title: "Book Session",
       description: "Book your next therapy session",
       icon: Calendar,
       action: () => window.location.href = '/patient/appointments'

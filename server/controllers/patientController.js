@@ -6,7 +6,7 @@ const websocketService = require('../services/websocketService');
 const getPatients = async (req, res) => {
   try {
     // Get therapist ID from JWT token
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     const sql = `
       SELECT 
@@ -264,7 +264,8 @@ const createPatient = async (req, res) => {
           u.address,
           u.city,
           u.state,
-          u.zipCode
+          u.zipCode,
+          u.country
         FROM patients p
         JOIN users u ON p.userId = u.id
         WHERE p.id = ?
@@ -358,7 +359,11 @@ const updatePatient = async (req, res) => {
 
       if (updateData.dateOfBirth !== undefined) {
         userUpdateFields.push('dateOfBirth = ?');
-        userUpdateParams.push(updateData.dateOfBirth);
+        // Convert ISO date string to YYYY-MM-DD format for MySQL
+        const dateValue = updateData.dateOfBirth instanceof Date 
+          ? updateData.dateOfBirth.toISOString().split('T')[0]
+          : new Date(updateData.dateOfBirth).toISOString().split('T')[0];
+        userUpdateParams.push(dateValue);
       }
 
       if (updateData.gender !== undefined) {
@@ -384,6 +389,11 @@ const updatePatient = async (req, res) => {
       if (updateData.zipCode !== undefined) {
         userUpdateFields.push('zipCode = ?');
         userUpdateParams.push(updateData.zipCode);
+      }
+
+      if (updateData.country !== undefined) {
+        userUpdateFields.push('country = ?');
+        userUpdateParams.push(updateData.country);
       }
 
       // Update patient fields
@@ -464,7 +474,8 @@ const updatePatient = async (req, res) => {
           u.address,
           u.city,
           u.state,
-          u.zipCode
+          u.zipCode,
+          u.country
         FROM patients p
         JOIN users u ON p.userId = u.id
         WHERE p.id = ?
@@ -603,6 +614,21 @@ const getDashboard = async (req, res) => {
       LIMIT 5
     `, [patient.id]);
 
+    // Clean up daily notes from other therapists (keep only assigned therapist's notes)
+    if (patient.therapistId) {
+      await runQuery(`
+        DELETE FROM daily_notes 
+        WHERE patientId = ? AND therapistId != ?
+      `, [patient.id, patient.therapistId]);
+    }
+
+    // Get daily notes count for the patient from assigned therapist only
+    const dailyNotesCount = await getRow(`
+      SELECT COUNT(*) as total
+      FROM daily_notes
+      WHERE patientId = ? AND therapistId = ?
+    `, [patient.id, patient.therapistId]);
+
     res.json({
       success: true,
       data: {
@@ -627,7 +653,8 @@ const getDashboard = async (req, res) => {
         } : null,
         recentAssessments: assessments,
         upcomingAppointments: appointments,
-        recentProgress: progress
+        recentProgress: progress,
+        dailyNotesCount: dailyNotesCount?.total || 0
       }
     });
 
@@ -678,12 +705,27 @@ const getAppointments = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Patient not found' });
     }
 
-    // Get appointments
+    // Get appointments with therapist information (therapist data is in users table)
     const appointments = await getAll(`
-      SELECT id, appointmentDate, startTime, endTime, duration, type, status, notes
-      FROM appointments
-      WHERE patientId = ?
-      ORDER BY appointmentDate DESC, startTime DESC
+      SELECT 
+        a.id, 
+        a.appointmentDate, 
+        a.startTime, 
+        a.endTime, 
+        a.duration, 
+        a.type, 
+        a.status, 
+        a.notes,
+        a.createdAt,
+        a.updatedAt,
+        COALESCE(CONCAT(u.firstName, ' ', u.lastName), 'Your Therapist') as therapistName,
+        COALESCE(t.specialization, 'Occupational Therapy') as therapistSpecialization
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      LEFT JOIN users u ON p.therapistId = u.id
+      LEFT JOIN therapists t ON u.id = t.userId
+      WHERE a.patientId = ?
+      ORDER BY a.appointmentDate DESC, a.startTime DESC
     `, [patient.id]);
 
     res.json({
@@ -701,6 +743,7 @@ const getAppointments = async (req, res) => {
 const cancelAppointment = async (req, res) => {
   try {
     const { id } = req.params;
+    const { reason } = req.body;
     const userId = req.user.userId;
     
     // Get patient ID
@@ -722,12 +765,20 @@ const cancelAppointment = async (req, res) => {
       });
     }
 
-    // Update appointment status
+    // Check if appointment can be cancelled (not already completed or cancelled)
+    if (appointment.status === 'completed' || appointment.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot cancel a completed or already cancelled appointment'
+      });
+    }
+
+    // Update appointment status with reason
     await runQuery(`
       UPDATE appointments 
-      SET status = 'cancelled', updatedAt = CURRENT_TIMESTAMP
+      SET status = 'cancelled', notes = CONCAT(COALESCE(notes, ''), '\nCancellation reason: ', ?), updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
-    `, [parseInt(id)]);
+    `, [reason || 'No reason provided', parseInt(id)]);
 
     res.json({
       success: true,
@@ -736,6 +787,71 @@ const cancelAppointment = async (req, res) => {
   } catch (error) {
     console.error('Cancel appointment error:', error);
     res.status(500).json({ success: false, error: 'Failed to cancel appointment' });
+  }
+};
+
+// Postpone appointment
+const postponeAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newDate, newTime, reason } = req.body;
+    const userId = req.user.userId;
+    
+    // Get patient ID
+    const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
+    if (!patient) {
+      return res.status(404).json({ success: false, error: 'Patient not found' });
+    }
+
+    // Check if appointment exists and belongs to patient
+    const appointment = await getRow(`
+      SELECT * FROM appointments 
+      WHERE id = ? AND patientId = ?
+    `, [parseInt(id), patient.id]);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Appointment not found or not authorized'
+      });
+    }
+
+    // Check if appointment can be postponed (not already completed or cancelled)
+    if (appointment.status === 'completed' || appointment.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot postpone a completed or cancelled appointment'
+      });
+    }
+
+    // Validate new date and time
+    if (!newDate || !newTime) {
+      return res.status(400).json({
+        success: false,
+        error: 'New date and time are required'
+      });
+    }
+
+    // Update appointment with new date/time and reason
+    await runQuery(`
+      UPDATE appointments 
+      SET 
+        appointmentDate = ?,
+        startTime = ?,
+        status = 'pending',
+        notes = CONCAT(COALESCE(notes, ''), '\nPostponement reason: ', ?),
+        updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, [newDate, newTime, reason || 'No reason provided', parseInt(id)]);
+
+    res.json({
+      success: true,
+      message: 'Appointment postponed successfully'
+    });
+
+  } catch (error) {
+    console.error('Postpone appointment error:', error);
+    res.status(500).json({ success: false, error: 'Failed to postpone appointment' });
   }
 };
 
@@ -787,13 +903,20 @@ const getDailyNotes = async (req, res) => {
   try {
     const userId = req.user.userId;
     
-    // Get patient ID
-    const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
+    // Get patient ID and assigned therapist
+    const patient = await getRow('SELECT id, therapistId FROM patients WHERE userId = ?', [userId]);
     if (!patient) {
       return res.status(404).json({ success: false, error: 'Patient not found' });
     }
 
-    // Get daily notes with comments
+    if (!patient.therapistId) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+
+    // Get daily notes with comments - only from assigned therapist
     const notes = await getAll(`
       SELECT 
         dn.id,
@@ -813,9 +936,9 @@ const getDailyNotes = async (req, res) => {
         CONCAT(u.firstName, ' ', u.lastName) as therapistName
       FROM daily_notes dn
       JOIN users u ON dn.therapistId = u.id
-      WHERE dn.patientId = ?
+      WHERE dn.patientId = ? AND dn.therapistId = ?
       ORDER BY dn.sessionDate DESC
-    `, [patient.id]);
+    `, [patient.id, patient.therapistId]);
 
     // Decrypt sensitive fields for patient and parse comments
     const decryptedNotes = notes.map(note => {
@@ -847,6 +970,40 @@ const getDailyNotes = async (req, res) => {
   } catch (error) {
     console.error('Get patient daily notes error:', error);
     res.status(500).json({ success: false, error: 'Failed to get daily notes' });
+  }
+};
+
+// Clean up daily notes from unassigned therapists
+const cleanupDailyNotes = async (req, res) => {
+  try {
+    // Get all patients with their assigned therapists
+    const patients = await getAll(`
+      SELECT p.id as patientId, p.therapistId
+      FROM patients p
+      WHERE p.therapistId IS NOT NULL
+    `);
+
+    let totalDeleted = 0;
+
+    for (const patient of patients) {
+      // Delete daily notes from other therapists for this patient
+      const result = await runQuery(`
+        DELETE FROM daily_notes 
+        WHERE patientId = ? AND therapistId != ?
+      `, [patient.patientId, patient.therapistId]);
+      
+      totalDeleted += result.affectedRows || 0;
+    }
+
+    res.json({
+      success: true,
+      message: `Cleaned up ${totalDeleted} daily notes from unassigned therapists`,
+      deletedCount: totalDeleted
+    });
+
+  } catch (error) {
+    console.error('Cleanup daily notes error:', error);
+    res.status(500).json({ success: false, error: 'Failed to cleanup daily notes' });
   }
 };
 
@@ -1326,8 +1483,10 @@ module.exports = {
   getAppointments,
   bookAppointment,
   cancelAppointment,
+  postponeAppointment,
   rescheduleAppointment,
   getDailyNotes,
+  cleanupDailyNotes,
   addNoteComment,
   editNoteComment,
   deleteNoteComment,

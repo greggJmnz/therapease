@@ -4,6 +4,11 @@
   "description": "TherapEase React Frontend",
   "private": true,
   "dependencies": {
+    "@fullcalendar/core": "^6.1.19",
+    "@fullcalendar/daygrid": "^6.1.19",
+    "@fullcalendar/interaction": "^6.1.19",
+    "@fullcalendar/react": "^6.1.19",
+    "@fullcalendar/timegrid": "^6.1.19",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -57,5 +62,5 @@
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18"
   },
-  "proxy": "http://localhost:5000"
+  "proxy": "https://localhost:5443"
 }

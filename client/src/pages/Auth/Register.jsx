@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Lock, Mail, User, Phone, Calendar, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User, Phone, Calendar, UserPlus, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ModernInput from '../../components/ModernInput';
 import ModernButton from '../../components/ModernButton';
+import TermsAndConditions from '../../components/TermsAndConditions';
+import { useAuth } from '../../context/AuthContext';
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const navigate = useNavigate();
+  const { register: registerUser } = useAuth();
 
   const {
     register,
@@ -23,22 +28,22 @@ const Register = () => {
   const password = watch('password');
 
   const onSubmit = async (data) => {
+    // Check if terms and conditions are accepted
+    if (!termsAccepted) {
+      toast.error('Please accept the terms and conditions to continue.');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          role: 'patient',
-        }),
+      const result = await registerUser({
+        ...data,
+        role: 'patient',
+        termsAccepted: true,
+        acceptedAt: new Date().toISOString()
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
+      if (result.success) {
         toast.success('Registration successful! Please log in.');
         navigate('/auth/login');
       } else {
@@ -50,6 +55,19 @@ const Register = () => {
       setIsLoading(false);
     }
   };
+
+  const handleTermsAccept = () => {
+    setTermsAccepted(true);
+    setShowTermsModal(false);
+    toast.success('Terms and conditions accepted');
+  };
+
+  const handleTermsDecline = () => {
+    setTermsAccepted(false);
+    setShowTermsModal(false);
+    toast.error('You must accept the terms and conditions to register');
+  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center relative py-12 px-4 sm:px-6 lg:px-8">
@@ -252,6 +270,35 @@ const Register = () => {
               </div>
             </div>
 
+
+
+            {/* Terms and Conditions Checkbox */}
+            <div className="mt-6">
+              <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center h-5 mt-0.5">
+                  <input
+                    id="terms-checkbox"
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                </div>
+                <div className="text-sm leading-relaxed">
+                  <label htmlFor="terms-checkbox" className="text-gray-700 cursor-pointer block">
+                    <span className="text-gray-700">I have read and agree to the </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsModal(true)}
+                      className="text-blue-600 hover:text-blue-700 font-medium underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded px-1"
+                    >
+                      Terms of Service, Privacy Policy, and Data Privacy Act 2012 compliance requirements
+                    </button>
+                  </label>
+                </div>
+              </div>
+            </div>
+
             {/* Submit Button */}
             <ModernButton
               type="submit"
@@ -259,13 +306,14 @@ const Register = () => {
               size="lg"
               loading={isLoading}
               icon={UserPlus}
-              className="w-full"
+              className="w-full mt-6"
+              disabled={!termsAccepted}
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </ModernButton>
 
             {/* Sign In Link */}
-            <div className="text-center pt-4 border-t border-gray-100">
+            <div className="text-center pt-4 border-t border-gray-100 mt-6">
               <p className="text-sm text-gray-600">
                 Already have an account?{' '}
                 <Link
@@ -278,7 +326,17 @@ const Register = () => {
             </div>
           </form>
         </div>
+
       </div>
+
+      {/* Terms and Conditions Modal */}
+      <TermsAndConditions
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={handleTermsAccept}
+        onDecline={handleTermsDecline}
+      />
+
     </div>
   );
 };

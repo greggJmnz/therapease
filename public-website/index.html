@@ -32,11 +32,35 @@
                 <li class="nav-item">
                     <a href="#contact" class="nav-link">Contact</a>
                 </li>
-                <li class="nav-item">
-                    <a href="/public-website/login.html" class="nav-link login-btn">Login</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/public-website/register.html" class="nav-link register-btn">Get Started</a>
+                <li class="nav-item dropdown">
+                    <a href="#" class="nav-link portals-btn" id="portalsDropdown">
+                        <i class="fas fa-users"></i>
+                        Portals
+                        <i class="fas fa-chevron-down"></i>
+                    </a>
+                    <div class="dropdown-menu" id="portalsMenu">
+                        <a href="http://localhost:3000/auth/login?portal=admin" class="dropdown-item" data-portal="admin" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-user-shield"></i>
+                            <div>
+                                <span class="portal-title">Admin Portal</span>
+                                <span class="portal-desc">System Administration</span>
+                            </div>
+                        </a>
+                        <a href="http://localhost:3000/auth/login?portal=therapist" class="dropdown-item" data-portal="therapist" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-user-md"></i>
+                            <div>
+                                <span class="portal-title">Therapist Portal</span>
+                                <span class="portal-desc">Patient Management</span>
+                            </div>
+                        </a>
+                        <a href="http://localhost:3000/auth/login?portal=patient" class="dropdown-item" data-portal="patient" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-user-injured"></i>
+                            <div>
+                                <span class="portal-title">Patient Portal</span>
+                                <span class="portal-desc">Personal Dashboard</span>
+                            </div>
+                        </a>
+                    </div>
                 </li>
             </ul>
             <div class="hamburger" id="hamburger">
@@ -60,13 +84,13 @@
                     Streamline your practice, enhance patient care, and improve therapeutic outcomes with our modern platform.
                 </p>
                 <div class="hero-buttons">
-                    <a href="/public-website/register.html" class="btn btn-primary">
+                    <a href="http://localhost:3000/auth/login" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
                         <i class="fas fa-rocket"></i>
-                        Get Started
+                        Access Portals
                     </a>
-                    <a href="/public-website/login.html" class="btn btn-secondary">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Sign In
+                    <a href="#services" class="btn btn-secondary">
+                        <i class="fas fa-info-circle"></i>
+                        Learn More
                     </a>
                 </div>
                 <div class="hero-stats">
