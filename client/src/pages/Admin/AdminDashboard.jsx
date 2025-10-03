@@ -108,12 +108,20 @@ const AdminDashboard = () => {
   );
 
   // Fetch notifications data from API
-  const { data: notificationsData } = useQuery(
-    'adminNotifications',
+  const { data: notificationsData, isLoading: notificationsLoading, error: notificationsError } = useQuery(
+    ['adminNotifications', Date.now()], // Add timestamp to force fresh fetch
     adminAPI.getNotifications,
     {
+      staleTime: 0,
+      cacheTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      retry: 3,
       onError: (error) => {
         console.error('Error fetching notifications:', error);
+      },
+      onSuccess: (data) => {
+        console.log('Notifications fetched successfully:', data);
       }
     }
   );
@@ -160,6 +168,11 @@ const AdminDashboard = () => {
     }));
 
   // Extract notifications from API response and map to expected format
+  console.log('AdminDashboard - notificationsData:', notificationsData);
+  console.log('AdminDashboard - notificationsLoading:', notificationsLoading);
+  console.log('AdminDashboard - notificationsError:', notificationsError);
+  console.log('AdminDashboard - notifications array:', notificationsData?.data?.notifications);
+  
   const notifications = (notificationsData?.data?.notifications || []).map(notification => ({
     id: notification.id,
     type: notification.type,
@@ -167,8 +180,11 @@ const AdminDashboard = () => {
     message: notification.message,
     time: new Date(notification.createdAt).toLocaleString(),
     priority: notification.type === 'system' ? 'high' : notification.type === 'appointment' ? 'medium' : 'low',
-    read: notification.isRead === 1
+    read: notification.read
   }));
+  
+  console.log('AdminDashboard - mapped notifications:', notifications);
+  console.log('AdminDashboard - notifications length:', notifications.length);
 
   // Generate real data for charts based on API data
   const generatePatientGrowthData = () => {
@@ -590,73 +606,6 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Key Metrics Section */}
-      <div className="metrics-section">
-        <div className="section-header">
-          <h2>Key Metrics</h2>
-        </div>
-        <div className="metrics-grid">
-          <div className="metric-card">
-            <div className="metric-icon">
-              <TrendingUp size={20} className="text-green-500" />
-            </div>
-            <div className="metric-content">
-              <h4>Growth Rate</h4>
-              <p className="metric-value">
-                {dashboardStats.totalPatients > 0 ? 
-                  `+${Math.floor((dashboardStats.totalPatients / Math.max(1, dashboardStats.totalPatients - 1)) * 100)}%` : 
-                  '0%'
-                }
-              </p>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-icon">
-              <Calendar size={20} className="text-blue-500" />
-            </div>
-            <div className="metric-content">
-              <h4>Completion</h4>
-              <p className="metric-value">
-                {dashboardStats.totalAppointments > 0 ? 
-                  `${Math.floor((dashboardStats.totalAppointments * 0.7) / dashboardStats.totalAppointments * 100)}%` : 
-                  '0%'
-                }
-              </p>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-icon">
-              <Users size={20} className="text-purple-500" />
-            </div>
-            <div className="metric-content">
-              <h4>Patient Ratio</h4>
-              <p className="metric-value">
-                {dashboardStats.totalTherapists > 0 ? 
-                  `${Math.round(dashboardStats.totalPatients / dashboardStats.totalTherapists)}:1` : 
-                  'N/A'
-                }
-              </p>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="metric-icon">
-              <FileText size={20} className="text-orange-500" />
-            </div>
-            <div className="metric-content">
-              <h4>Assessment Coverage</h4>
-              <p className="metric-value">
-                {dashboardStats.totalPatients > 0 ? 
-                  `${Math.round((dashboardStats.totalAssessments / dashboardStats.totalPatients) * 100)}%` : 
-                  '0%'
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 
