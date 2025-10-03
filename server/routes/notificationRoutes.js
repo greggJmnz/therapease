@@ -15,6 +15,9 @@ router.patch('/:id/read', notificationController.markAsRead);
 // Mark all notifications as read
 router.patch('/read-all', notificationController.markAllAsRead);
 
+// Delete all notifications (must come before /:id route)
+router.delete('/delete-all', notificationController.deleteAllNotifications);
+
 // Delete notification
 router.delete('/:id', notificationController.deleteNotification);
 

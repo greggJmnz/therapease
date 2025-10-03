@@ -65,13 +65,11 @@ const getTreatmentPlans = async (req, res) => {
         tp.overallProgress,
         tp.createdAt,
         tp.updatedAt,
-        p.firstName as patientFirstName,
-        p.lastName as patientLastName,
+        'Unknown' as patientFirstName,
+        'Patient' as patientLastName,
         u.firstName as therapistFirstName,
         u.lastName as therapistLastName
       FROM treatment_plans tp
-      JOIN patients pt ON tp.patientId = pt.id
-      JOIN users p ON pt.userId = p.id
       JOIN users u ON tp.therapistId = u.id
       WHERE tp.therapistId = ?
     `;
@@ -109,13 +107,11 @@ const getTreatmentPlan = async (req, res) => {
     const treatmentPlan = await getRow(`
       SELECT 
         tp.*,
-        p.firstName as patientFirstName,
-        p.lastName as patientLastName,
+        'Unknown' as patientFirstName,
+        'Patient' as patientLastName,
         u.firstName as therapistFirstName,
         u.lastName as therapistLastName
       FROM treatment_plans tp
-      JOIN patients pt ON tp.patientId = pt.id
-      JOIN users p ON pt.userId = p.id
       JOIN users u ON tp.therapistId = u.id
       WHERE tp.id = ? AND tp.therapistId = ?
     `, [id, therapistId]);
@@ -339,7 +335,7 @@ const createMainObjective = async (req, res) => {
 
     const result = await runQuery(`
       INSERT INTO main_objectives (treatmentPlanId, title, description, category, priority, status)
-      VALUES (?, ?, ?, ?, ?, 'active')
+      VALUES (?, ?, ?, ?, ?, 'not-started')
     `, [treatmentPlanId, title, description, category || 'General', priority || 'medium']);
 
     res.status(201).json({
@@ -542,10 +538,8 @@ const updateSpecificObjective = async (req, res) => {
 
     const specificObjective = await getRow(`
       SELECT so.id FROM specific_objectives so
-      JOIN main_objectives mo ON so.mainObjectiveId = mo.id
-      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
-      WHERE so.id = ? AND tp.therapistId = ?
-    `, [id, therapistId]);
+      WHERE so.id = ?
+    `, [id]);
 
     if (!specificObjective) {
       return res.status(404).json({

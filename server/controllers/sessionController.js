@@ -4,7 +4,7 @@ const websocketService = require('../services/websocketService');
 // Get all sessions for a therapist
 const getSessions = async (req, res) => {
   try {
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
     const { patientId, date, startDate, endDate, status } = req.query;
 
     // Build WHERE clause
@@ -109,7 +109,7 @@ const createSession = async (req, res) => {
     }
 
     // Get therapist ID from authenticated user
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     // Validate patient exists and belongs to therapist
     const patientSql = `
@@ -235,7 +235,7 @@ const updateSession = async (req, res) => {
     const existingSession = await getRow(`
       SELECT * FROM sessions 
       WHERE id = ? AND therapistId = ?
-    `, [parseInt(id), req.user.userId]);
+    `, [parseInt(id), req.user.id]);
 
     if (!existingSession) {
       return res.status(404).json({
@@ -261,7 +261,7 @@ const updateSession = async (req, res) => {
       `;
 
       const conflicts = await getAll(conflictSql, [
-        req.user.userId,
+        req.user.id,
         newDate, 
         parseInt(id),
         newStartTime, newEndTime, 
@@ -349,7 +349,7 @@ const deleteSession = async (req, res) => {
     const existingSession = await getRow(`
       SELECT * FROM sessions 
       WHERE id = ? AND therapistId = ?
-    `, [parseInt(id), req.user.userId]);
+    `, [parseInt(id), req.user.id]);
 
     if (!existingSession) {
       return res.status(404).json({
@@ -389,7 +389,7 @@ const getSessionById = async (req, res) => {
       JOIN patients p ON s.patientId = p.id
       JOIN users u ON p.userId = u.id
       WHERE s.id = ? AND s.therapistId = ?
-    `, [parseInt(id), req.user.userId]);
+    `, [parseInt(id), req.user.id]);
 
     if (!session) {
       return res.status(404).json({

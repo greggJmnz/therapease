@@ -247,7 +247,7 @@ const createAssessment = async (req, res) => {
     }
 
     // Get therapist ID from JWT token
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     // Validate patient exists
     const patientSql = `

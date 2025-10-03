@@ -4,7 +4,7 @@ const { runQuery, getRow, getAll } = require('../config/database');
 const getDashboard = async (req, res) => {
   try {
     // Get therapist ID from authenticated user (therapistId in patients table refers to userId)
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     // Get patient count
     const patientCountSql = `
@@ -123,9 +123,6 @@ const getDashboard = async (req, res) => {
     `;
 
     const recentDailyNotes = await getAll(recentDailyNotesSql, [therapistId, therapistId]);
-    
-    // Debug logging
-    console.log('Recent daily notes query result:', recentDailyNotes);
 
     // Get progress summary by area
     const progressByAreaSql = `
@@ -258,7 +255,7 @@ const getDashboard = async (req, res) => {
 const getQuickActions = async (req, res) => {
   try {
     // Get therapist ID from authenticated user (therapistId in patients table refers to userId)
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     // Get patients needing follow-up
     const followUpPatientsSql = `
@@ -336,7 +333,7 @@ const getQuickActions = async (req, res) => {
 const getDashboardCharts = async (req, res) => {
   try {
     // Get therapist ID from authenticated user (therapistId in patients table refers to userId)
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
     const { period = 'month' } = req.query;
 
     let dateFormat, dateRange;

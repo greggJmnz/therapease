@@ -27,8 +27,8 @@ const getDailyNotes = async (req, res) => {
     }
 
     // Get therapist ID from JWT token (this is the user ID from users table)
-    const therapistId = req.user.userId;
-    const { page = 1, limit = 20, patientId, dateFrom, dateTo } = req.query;
+    const therapistId = req.user.id;
+    const { page = 1, limit = 20, patientId, dateFrom, dateTo } = req.query || {};
     const offset = (page - 1) * limit;
 
     // Build WHERE clause
@@ -174,7 +174,7 @@ const createDailyNote = async (req, res) => {
     }
 
     // Get therapist ID from JWT token
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     // Validate patient exists and belongs to therapist
     const patientSql = `
@@ -253,7 +253,7 @@ const updateDailyNote = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     // Check if note exists and belongs to therapist
     const existingNote = await getRow(`
@@ -369,7 +369,7 @@ const updateDailyNote = async (req, res) => {
 const deleteDailyNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     // Check if note exists and belongs to therapist
     const existingNote = await getRow(`
@@ -443,7 +443,7 @@ const addNoteComment = async (req, res) => {
   try {
     const { id } = req.params;
     const { comment } = req.body;
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
     
     console.log('Add therapist comment called with:', { id, comment, therapistId });
     console.log('Request body:', req.body);
@@ -525,7 +525,7 @@ const editNoteComment = async (req, res) => {
   try {
     const { id, commentId } = req.params;
     const { comment } = req.body;
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
     
     // Validate comment
     if (!comment || typeof comment !== 'string' || comment.trim().length === 0) {
@@ -598,7 +598,7 @@ const editNoteComment = async (req, res) => {
 const deleteNoteComment = async (req, res) => {
   try {
     const { id, commentId } = req.params;
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
     
     // Verify note belongs to therapist
     const note = await getRow('SELECT * FROM daily_notes WHERE id = ? AND therapistId = ?', [id, therapistId]);

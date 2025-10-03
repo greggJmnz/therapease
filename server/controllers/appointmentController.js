@@ -5,7 +5,7 @@ const websocketService = require('../services/websocketService');
 const getSchedule = async (req, res) => {
   try {
     // Get therapist ID from authenticated user
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
     const { date, startDate, endDate, status } = req.query;
     
 
@@ -157,7 +157,7 @@ const createAppointment = async (req, res) => {
     }
 
     // Get therapist ID from request (in real app, get from auth token)
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     // Validate patient exists and belongs to therapist
     const patientSql = `
@@ -224,20 +224,62 @@ const createAppointment = async (req, res) => {
     const result = await runQuery(insertSql, insertParams);
     const appointmentId = result.insertId;
 
-    // Get the created appointment
+    // Get the created appointment with full details
     const getAppointmentSql = `
       SELECT 
         a.*,
-        CONCAT(u.firstName, ' ', u.lastName) as patientName,
-        p.diagnosis,
-        u.phone as patientPhone
+        CONCAT(pu.firstName, ' ', pu.lastName) as patientName,
+        CONCAT(tu.firstName, ' ', tu.lastName) as therapistName,
+        pu.phone as patientPhone,
+        tu.phone as therapistPhone,
+        pu.id as patientUserId,
+        tu.id as therapistUserId
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
-      JOIN users u ON p.userId = u.id
+      JOIN users pu ON p.userId = pu.id
+      JOIN users tu ON a.therapistId = tu.id
       WHERE a.id = ?
     `;
 
     const newAppointment = await getRow(getAppointmentSql, [appointmentId]);
+
+    // Create notifications for patient, therapist, and admin
+    try {
+      const notificationController = require('./notificationController');
+      
+      // Create notification for patient
+      await notificationController.createNotification(
+        newAppointment.patientUserId,
+        'Appointment Scheduled',
+        `Your ${type} appointment with ${newAppointment.therapistName} has been scheduled for ${appointmentDate} at ${startTime}`,
+        'appointment',
+        { relatedId: appointmentId }
+      );
+
+      // Create notification for therapist
+      await notificationController.createNotification(
+        newAppointment.therapistUserId,
+        'Appointment Created',
+        `You have created a ${type} appointment with ${newAppointment.patientName} on ${appointmentDate} at ${startTime}`,
+        'appointment',
+        { relatedId: appointmentId }
+      );
+
+      // Create notification for admin (get all admin users)
+      const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
+      for (const admin of adminUsers) {
+        await notificationController.createNotification(
+          admin.id,
+          'New Appointment Created',
+          `${newAppointment.therapistName} has created a ${type} appointment with ${newAppointment.patientName} on ${appointmentDate} at ${startTime}`,
+          'appointment',
+          { relatedId: appointmentId }
+        );
+      }
+    } catch (notificationError) {
+      console.error('Notification creation error:', notificationError);
+      // Continue without notifications if there's an error
+    }
 
     // Broadcast appointment change to all relevant portals
     websocketService.broadcastAppointmentChange(newAppointment, 'created');
@@ -264,7 +306,7 @@ const updateAppointment = async (req, res) => {
     const existingAppointment = await getRow(`
       SELECT * FROM appointments 
       WHERE id = ? AND therapistId = ?
-    `, [parseInt(id), req.user.userId]);
+    `, [parseInt(id), req.user.id]);
 
     if (!existingAppointment) {
       return res.status(404).json({
@@ -290,7 +332,7 @@ const updateAppointment = async (req, res) => {
       `;
 
       const conflicts = await getAll(conflictSql, [
-        req.user.userId,
+        req.user.id,
         newDate, 
         parseInt(id),
         newStartTime, newEndTime, 
@@ -400,7 +442,7 @@ const deleteAppointment = async (req, res) => {
     const existingAppointment = await getRow(`
       SELECT * FROM appointments 
       WHERE id = ? AND therapistId = ?
-    `, [parseInt(id), req.user.userId]);
+    `, [parseInt(id), req.user.id]);
 
     if (!existingAppointment) {
       return res.status(404).json({
@@ -498,7 +540,7 @@ const getAvailableTimeSlots = async (therapistId, startDate, endDate) => {
 const getAppointmentStats = async (req, res) => {
   try {
     // Get therapist ID from request (in real app, get from auth token)
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
     const { startDate, endDate } = req.query;
 
     // Build WHERE clause

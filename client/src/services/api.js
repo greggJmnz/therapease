@@ -57,22 +57,25 @@ export const authAPI = {
 
 // Admin API endpoints
 export const adminAPI = {
-  getDashboard: () => api.get(`/admin/dashboard?_t=${Date.now()}`),
-  getUsers: () => api.get(`/admin/users?_t=${Date.now()}`),
+  getDashboard: () => api.get(`/test/admin/dashboard?_t=${Date.now()}`),
+  getUsers: () => api.get(`/test/admin/users?_t=${Date.now()}`),
   getAllUsers: (params = {}) => {
     const queryParams = new URLSearchParams();
     if (params.search) queryParams.append('search', params.search);
     if (params.role && params.role !== 'all') queryParams.append('role', params.role);
     if (params.status && params.status !== 'all') queryParams.append('status', params.status);
     queryParams.append('_t', Date.now());
-    return api.get(`/admin/users?${queryParams.toString()}`);
+    return api.get(`/test/admin/users?${queryParams.toString()}`);
   },
-  getPatients: () => api.get(`/admin/patients?role=patient&_t=${Date.now()}`),
-  getTherapists: () => api.get(`/admin/therapists?role=therapist&_t=${Date.now()}`),
-  getAppointments: () => api.get(`/admin/appointments?_t=${Date.now()}`),
-  getReports: () => api.get(`/admin/reports?_t=${Date.now()}`),
-  getNotifications: () => api.get(`/notifications?_t=${Date.now()}`),
-  getSettings: () => api.get(`/admin/settings?_t=${Date.now()}`),
+  getPatients: () => api.get(`/test/admin/patients?_t=${Date.now()}`),
+  getTherapists: () => api.get(`/test/admin/therapists?_t=${Date.now()}`),
+  getAppointments: () => api.get(`/test/admin/appointments?_t=${Date.now()}`),
+  getReports: () => api.get(`/test/admin/reports?_t=${Date.now()}`),
+  getNotifications: () => api.get(`/test/admin/notifications?_t=${Date.now()}`),
+  deleteNotification: (id) => api.delete(`/test/admin/notifications/${id}`),
+  markNotificationAsRead: (id) => api.patch(`/test/admin/notifications/${id}/read`),
+  markAllNotificationsAsRead: () => api.patch('/test/admin/notifications/read-all'),
+  getSettings: () => api.get(`/test/admin/settings?_t=${Date.now()}`),
   
   // Profile management
   getProfile: () => api.get(`/admin/profile?_t=${Date.now()}`),
@@ -87,12 +90,14 @@ export const adminAPI = {
   
   // Create/Update operations
   createUser: (userData) => api.post('/admin/users', userData),
-  updateUser: (id, userData) => api.put(`/admin/users/${id}`, userData),
-  deleteUser: (id) => api.delete(`/admin/users/${id}`),
-  updateUserStatus: (id, status) => api.put(`/admin/users/${id}/status`, { status }),
+  updateUser: (id, userData) => api.put(`/test/admin/users/${id}`, userData),
+  deleteUser: (id) => api.delete(`/test/admin/users/${id}`),
+  updateUserStatus: (id, status) => api.put(`/test/admin/users/${id}/status`, { status }),
   resetUserPassword: (id) => api.post(`/admin/users/${id}/reset-password`),
   sendPasswordResetLink: (id) => api.post(`/admin/users/${id}/send-reset-link`),
   createAppointment: (appointmentData) => api.post('/admin/appointments', appointmentData),
+  updateAppointment: (id, appointmentData) => api.put(`/test/admin/appointments/${id}`, appointmentData),
+  deleteAppointment: (id) => api.delete(`/test/admin/appointments/${id}`),
   
   // Patient-specific data
   getPatientAssessments: (patientId) => api.get(`/admin/patients/${patientId}/assessments?_t=${Date.now()}`),
@@ -102,24 +107,24 @@ export const adminAPI = {
 
 // Therapist API endpoints
 export const therapistAPI = {
-  getDashboard: () => api.get(`/therapist/dashboard?_t=${Date.now()}`),
-  getPatients: () => api.get(`/test/patients?_t=${Date.now()}`),
+  getDashboard: (therapistId) => api.get(`/test/therapist/dashboard?therapistId=${therapistId}&_t=${Date.now()}`),
+  getPatients: (therapistId) => api.get(`/test/therapist/patients?therapistId=${therapistId}&_t=${Date.now()}`),
   getSchedule: () => api.get(`/therapist/schedule?_t=${Date.now()}`),
   createAppointment: (appointmentData) => api.post('/therapist/schedule', appointmentData),
   updateAppointment: (id, appointmentData) => api.put(`/therapist/schedule/${id}`, appointmentData),
   deleteAppointment: (id) => api.delete(`/therapist/schedule/${id}`),
   // Session management
-  getSessions: () => api.get(`/therapist/sessions?_t=${Date.now()}`),
-  createSession: (sessionData) => api.post('/therapist/sessions', sessionData),
+  getSessions: (therapistId) => api.get(`/test/therapist/sessions?therapistId=${therapistId}&_t=${Date.now()}`),
+  createSession: (sessionData, therapistId) => api.post(`/test/therapist/sessions?therapistId=${therapistId}`, sessionData),
   updateSession: (id, sessionData) => api.put(`/therapist/sessions/${id}`, sessionData),
   deleteSession: (id) => api.delete(`/therapist/sessions/${id}`),
   getSessionById: (id) => api.get(`/therapist/sessions/${id}`),
-  getDailyNotes: () => api.get(`/therapist/daily-notes?_t=${Date.now()}`),
+  getDailyNotes: (therapistId) => api.get(`/test/therapist/daily-notes?therapistId=${therapistId}&_t=${Date.now()}`),
   getAIInsights: () => api.get(`/therapist/ai-insights?_t=${Date.now()}`),
-  getProgressTracking: () => api.get(`/therapist/progress-tracking?_t=${Date.now()}`),
+  getProgressTracking: (therapistId) => api.get(`/test/therapist/progress-tracking?therapistId=${therapistId}&_t=${Date.now()}`),
   getPatientProgressSummary: (patientId) => api.get(`/therapist/progress-tracking/patient/${patientId}?_t=${Date.now()}`),
   getNotifications: () => api.get(`/notifications?_t=${Date.now()}`),
-  getSettings: () => api.get(`/therapist/settings?_t=${Date.now()}`),
+  getSettings: (therapistId) => api.get(`/test/therapist/settings?therapistId=${therapistId}&_t=${Date.now()}`),
   
   // Profile management
   getProfile: () => api.get(`/therapist/profile?_t=${Date.now()}`),
@@ -166,27 +171,27 @@ export const therapistAPI = {
 
 // Patient API endpoints
 export const patientAPI = {
-  getDashboard: () => api.get(`/patient/dashboard?_t=${Date.now()}`),
+  getDashboard: () => api.get(`/test/patient/dashboard?_t=${Date.now()}`),
   getProgress: () => api.get(`/patient/progress?_t=${Date.now()}`),
-  getAppointments: () => api.get(`/patient/appointments?_t=${Date.now()}`).then(response => response.data),
+  getAppointments: () => api.get(`/test/patient/appointments?_t=${Date.now()}`).then(response => response.data),
   bookAppointment: (appointmentData) => api.post('/patient/appointments', appointmentData),
   cancelAppointment: (id, reason) => api.put(`/patient/appointments/${id}/cancel`, { reason }),
   postponeAppointment: (id, newDate, newTime, reason) => api.put(`/patient/appointments/${id}/postpone`, { newDate, newTime, reason }),
   rescheduleAppointment: (id, data) => api.put(`/patient/appointments/${id}/reschedule`, data),
-  getDailyNotes: () => api.get(`/patient/daily-notes?_t=${Date.now()}`),
+  getDailyNotes: () => api.get(`/test/patient/daily-notes?_t=${Date.now()}`),
   cleanupDailyNotes: () => api.post('/patient/daily-notes/cleanup'),
   addNoteComment: (noteId, comment) => api.post(`/patient/daily-notes/${noteId}/comments`, { comment }),
   editNoteComment: (noteId, commentId, comment) => api.put(`/patient/daily-notes/${noteId}/comments/${commentId}`, { comment }),
   deleteNoteComment: (noteId, commentId) => api.delete(`/patient/daily-notes/${noteId}/comments/${commentId}`),
   getSessions: () => api.get(`/patient/sessions?_t=${Date.now()}`),
-  getAssessments: () => api.get(`/patient/assessments?_t=${Date.now()}`),
+  getAssessments: () => api.get(`/test/patient/assessments?_t=${Date.now()}`),
   getNotifications: () => api.get(`/notifications?_t=${Date.now()}`),
-  getSettings: () => api.get(`/patient/settings?_t=${Date.now()}`),
+  getSettings: () => api.get(`/test/patient/settings?_t=${Date.now()}`),
   getHomeExercises: () => api.get(`/patient/exercises?_t=${Date.now()}`),
   getTreatmentPlan: () => api.get(`/treatment-plans/patient/current?_t=${Date.now()}`),
   
   // Profile management
-  getProfile: () => api.get(`/patient/profile?_t=${Date.now()}`),
+  getProfile: () => api.get(`/test/patient/profile?_t=${Date.now()}`),
   updateProfile: (profileData) => api.put('/patient/profile', profileData),
   changePassword: (passwordData) => api.post('/patient/change-password', passwordData),
   uploadProfileImage: (formData) => api.post('/patient/upload-profile-image', formData, {

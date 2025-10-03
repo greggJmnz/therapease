@@ -25,10 +25,12 @@ import {
   Trash2
 } from 'lucide-react';
 import { therapistAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import InitialsAvatar from '../../components/InitialsAvatar';
 
 const TherapistPatients = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -39,8 +41,9 @@ const TherapistPatients = () => {
   // Fetch patients data from API
   const { data: patientsData, isLoading, error, refetch } = useQuery(
     'therapistPatients',
-    therapistAPI.getPatients,
+    () => therapistAPI.getPatients(user?.id),
     {
+      enabled: !!user?.id, // Only run query when user ID is available
       refetchInterval: 30000, // Refetch every 30 seconds
     }
   );

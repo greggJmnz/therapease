@@ -489,7 +489,7 @@ const ProfileForm = ({ userRole, apiService }) => {
                 {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
               </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Date of Birth
@@ -507,6 +507,7 @@ const ProfileForm = ({ userRole, apiService }) => {
                     className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                       !isEditing ? 'bg-gray-50' : 'bg-white'
                     }`}
+                    style={{ minWidth: '200px' }}
                   />
                 </div>
               </div>

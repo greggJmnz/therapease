@@ -4,7 +4,7 @@ const websocketService = require('../services/websocketService');
 // Get user settings by role
 const getSettings = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const userRole = req.user.role;
 
     // Get user-specific settings
@@ -140,7 +140,7 @@ const getSettings = async (req, res) => {
 // Update user settings by role
 const updateSettings = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const userRole = req.user.role;
     const updateData = req.body;
 

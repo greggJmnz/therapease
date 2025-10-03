@@ -4,7 +4,7 @@ const { runQuery, getRow, getAll } = require('../config/database');
 const getProgressTracking = async (req, res) => {
   try {
     // Get therapist ID from JWT token
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
     const { page = 1, limit = 20, patientId, area, dateFrom, dateTo } = req.query;
     const offset = (page - 1) * limit;
 
@@ -148,7 +148,7 @@ const createProgressEntry = async (req, res) => {
     }
 
     // Get therapist ID from JWT token
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     // Validate patient exists and belongs to therapist
     const patientSql = `
@@ -409,7 +409,7 @@ const getPatientProgressSummary = async (req, res) => {
     const { patientId } = req.params;
 
     // Get therapist ID from JWT token
-    const therapistId = req.user.userId;
+    const therapistId = req.user.id;
 
     // Validate patient exists and belongs to therapist
     const patientSql = `

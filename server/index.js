@@ -212,6 +212,106 @@ app.get('/api/test/treatment-plan/:id', async (req, res) => {
   }
 });
 
+// Test endpoint for creating treatment plans
+app.post('/api/test/treatment-plans', async (req, res) => {
+  try {
+    const { createTreatmentPlan } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      body: req.body,
+      user: { id: 62, role: 'therapist' }
+    };
+    
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    
+    await createTreatmentPlan(mockReq, mockRes);
+  } catch (error) {
+    console.error('Treatment plan creation test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Test endpoint to directly query treatment plans table
+app.get('/api/test/treatment-plans-raw', async (req, res) => {
+  try {
+    const { getAll } = require('./config/database');
+    const treatmentPlans = await getAll('SELECT * FROM treatment_plans WHERE therapistId = ?', [62]);
+    res.json({
+      success: true,
+      data: treatmentPlans,
+      count: treatmentPlans.length
+    });
+  } catch (error) {
+    console.error('Raw treatment plans query error:', error);
+    res.status(500).json({ success: false, error: `Query error: ${error.message}` });
+  }
+});
+
+// Simple test endpoint to verify server is running updated code
+app.get('/api/test/server-status', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Server is running with updated code',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Direct test endpoint for main objective creation (bypasses treatment plan lookup)
+app.post('/api/test/main-objectives-direct', async (req, res) => {
+  try {
+    const { runQuery } = require('./config/database');
+    const { title, description, category, priority } = req.body;
+    
+    console.log('Direct main objective creation with:', { title, description, category, priority });
+    
+    const result = await runQuery(`
+      INSERT INTO main_objectives (treatmentPlanId, title, description, category, priority, status)
+      VALUES (?, ?, ?, ?, ?, 'not-started')
+    `, [39, title, description, category || 'General', priority || 'medium']);
+    
+    res.json({
+      success: true,
+      data: { id: result.insertId },
+      message: 'Main objective created successfully'
+    });
+  } catch (error) {
+    console.error('Direct main objective creation error:', error);
+    res.status(500).json({ success: false, error: `Creation error: ${error.message}` });
+  }
+});
+
+// Test endpoint to check main_objectives table schema
+app.get('/api/test/main-objectives-schema', async (req, res) => {
+  try {
+    const { getAll } = require('./config/database');
+    const schema = await getAll('DESCRIBE main_objectives');
+    res.json({
+      success: true,
+      data: schema
+    });
+  } catch (error) {
+    console.error('Schema check error:', error);
+    res.status(500).json({ success: false, error: `Schema error: ${error.message}` });
+  }
+});
+
+// Test endpoint to check specific_objectives table schema
+app.get('/api/test/specific-objectives-schema', async (req, res) => {
+  try {
+    const { getAll } = require('./config/database');
+    const schema = await getAll('DESCRIBE specific_objectives');
+    res.json({
+      success: true,
+      data: schema
+    });
+  } catch (error) {
+    console.error('Schema check error:', error);
+    res.status(500).json({ success: false, error: `Schema error: ${error.message}` });
+  }
+});
+
 // Temporary test endpoint for updating specific objectives (bypasses authentication)
 app.put('/api/test/specific-objectives/:id', async (req, res) => {
   try {
@@ -234,6 +334,245 @@ app.put('/api/test/specific-objectives/:id', async (req, res) => {
     };
     
     await updateSpecificObjective(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
+// Test endpoints for treatment plan main objectives
+app.post('/api/test/treatment-plans/:treatmentPlanId/main-objectives', async (req, res) => {
+  try {
+    const { createMainObjective } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      params: req.params,
+      body: req.body,
+      user: { id: 62, role: 'therapist' }
+    };
+    
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    
+    await createMainObjective(mockReq, mockRes);
+  } catch (error) {
+    console.error('Main objective creation test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.put('/api/test/main-objectives/:id', async (req, res) => {
+  try {
+    const { updateMainObjective } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      params: req.params,
+      body: req.body,
+      user: { id: 62, role: 'therapist' }
+    };
+    
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    
+    await updateMainObjective(mockReq, mockRes);
+  } catch (error) {
+    console.error('Main objective update test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.delete('/api/test/main-objectives/:id', async (req, res) => {
+  try {
+    const { deleteMainObjective } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      params: req.params,
+      user: { id: 62, role: 'therapist' }
+    };
+    
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    
+    await deleteMainObjective(mockReq, mockRes);
+  } catch (error) {
+    console.error('Main objective deletion test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Test endpoints for treatment plan specific objectives
+app.post('/api/test/main-objectives/:mainObjectiveId/specific-objectives', async (req, res) => {
+  try {
+    const { createSpecificObjective } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      params: req.params,
+      body: req.body,
+      user: { id: 62, role: 'therapist' }
+    };
+    
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    
+    await createSpecificObjective(mockReq, mockRes);
+  } catch (error) {
+    console.error('Specific objective creation test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.put('/api/test/specific-objectives/:id', async (req, res) => {
+  try {
+    const { updateSpecificObjective } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      params: req.params,
+      body: req.body,
+      user: { id: 62, role: 'therapist' }
+    };
+    
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    
+    await updateSpecificObjective(mockReq, mockRes);
+  } catch (error) {
+    console.error('Specific objective update test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.delete('/api/test/specific-objectives/:id', async (req, res) => {
+  try {
+    const { deleteSpecificObjective } = require('./controllers/treatmentPlanController');
+    const mockReq = {
+      params: req.params,
+      user: { id: 62, role: 'therapist' }
+    };
+    
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    
+    await deleteSpecificObjective(mockReq, mockRes);
+  } catch (error) {
+    console.error('Specific objective deletion test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Temporary test endpoint for admin dashboard (bypasses authentication)
+app.get('/api/test/admin/dashboard', async (req, res) => {
+  try {
+    const { getDashboard } = require('./controllers/adminController');
+    const mockReq = {
+      user: { id: 61, role: 'admin' }
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await getDashboard(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
+// Temporary test endpoint for admin patients (bypasses authentication)
+app.get('/api/test/admin/patients', async (req, res) => {
+  try {
+    const { getUsers } = require('./controllers/adminController');
+    const mockReq = {
+      query: { role: 'patient' },
+      user: { id: 61, role: 'admin' }
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await getUsers(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
+// Temporary test endpoint for admin therapists (bypasses authentication)
+app.get('/api/test/admin/therapists', async (req, res) => {
+  try {
+    const { getTherapists } = require('./controllers/adminController');
+    const mockReq = {
+      user: { id: 61, role: 'admin' }
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await getTherapists(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
+// Temporary test endpoint for admin notifications (bypasses authentication)
+app.get('/api/test/admin/notifications', async (req, res) => {
+  try {
+    const { getNotifications } = require('./controllers/adminController');
+    const mockReq = {
+      user: { id: 61, role: 'admin' }
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await getNotifications(mockReq, mockRes);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -270,6 +609,637 @@ app.get('/', (req, res) => {
 // Handle public website routes
 app.get('/public-website', (req, res) => {
   res.redirect('/public-website/index.html');
+});
+
+// Test endpoints for admin (bypasses authentication)
+app.get('/api/test/admin/dashboard', async (req, res) => {
+  try {
+    const { getDashboard } = require('./controllers/adminController');
+    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getDashboard(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/admin/patients', async (req, res) => {
+  try {
+    const { getPatients } = require('./controllers/adminController');
+    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getPatients(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/admin/therapists', async (req, res) => {
+  try {
+    const { getTherapists } = require('./controllers/adminController');
+    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getTherapists(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/admin/appointments', async (req, res) => {
+  try {
+    const { getAppointments } = require('./controllers/adminController');
+    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getAppointments(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/admin/notifications', async (req, res) => {
+  try {
+    const { getNotifications } = require('./controllers/adminController');
+    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getNotifications(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/admin/users', async (req, res) => {
+  try {
+    const { getAllUsers } = require('./controllers/adminController');
+    const mockReq = { user: { id: 61, role: 'admin' }, query: req.query };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getAllUsers(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/admin/reports', async (req, res) => {
+  try {
+    const { getReports } = require('./controllers/adminController');
+    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getReports(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/admin/settings', async (req, res) => {
+  try {
+    const { getSettings } = require('./controllers/settingsController');
+    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getSettings(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// User management endpoints
+app.put('/api/test/admin/users/:id', async (req, res) => {
+  try {
+    const { updateUser } = require('./controllers/adminController');
+    const mockReq = { user: { id: 61, role: 'admin' }, params: req.params, body: req.body };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await updateUser(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/test/admin/users/:id', async (req, res) => {
+  try {
+    const { deleteUser } = require('./controllers/adminController');
+    const mockReq = { user: { id: 61, role: 'admin' }, params: req.params };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await deleteUser(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.put('/api/test/admin/users/:id/status', async (req, res) => {
+  try {
+    const { updateUserStatus } = require('./controllers/adminController');
+    const mockReq = { 
+      user: { id: 61, role: 'admin' }, 
+      params: { userId: req.params.id }, 
+      body: req.body 
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await updateUserStatus(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Appointment management endpoints
+app.put('/api/test/admin/appointments/:id', async (req, res) => {
+  try {
+    const { updateAppointment } = require('./controllers/adminController');
+    const mockReq = { 
+      user: { id: 61, role: 'admin' }, 
+      params: req.params, 
+      body: req.body 
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await updateAppointment(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/test/admin/appointments/:id', async (req, res) => {
+  try {
+    const { deleteAppointment } = require('./controllers/adminController');
+    const mockReq = { 
+      user: { id: 61, role: 'admin' }, 
+      params: req.params
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await deleteAppointment(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/test/admin/appointments', async (req, res) => {
+  try {
+    const { createAppointment } = require('./controllers/adminController');
+    const mockReq = { 
+      user: { id: 61, role: 'admin' }, 
+      body: req.body
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await createAppointment(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test endpoints for patient data
+app.get('/api/test/patient/dashboard', async (req, res) => {
+  try {
+    const { getDashboard } = require('./controllers/patientController');
+    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getDashboard(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/patient/appointments', async (req, res) => {
+  try {
+    const { getAppointments } = require('./controllers/patientController');
+    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getAppointments(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/patient/profile', async (req, res) => {
+  try {
+    const { getProfile } = require('./controllers/patientController');
+    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getProfile(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test endpoint for patient postpone appointment
+app.put('/api/test/patient/appointments/:id/postpone', async (req, res) => {
+  try {
+    const { postponeAppointment } = require('./controllers/patientController');
+    const appointmentId = parseInt(req.params.id);
+    const mockReq = { 
+      user: { userId: 67, role: 'patient' },
+      params: { id: appointmentId },
+      body: req.body
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await postponeAppointment(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test endpoint for patient cancel appointment
+app.put('/api/test/patient/appointments/:id/cancel', async (req, res) => {
+  try {
+    const { cancelAppointment } = require('./controllers/patientController');
+    const appointmentId = parseInt(req.params.id);
+    const mockReq = { 
+      user: { userId: 67, role: 'patient' },
+      params: { id: appointmentId },
+      body: req.body
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await cancelAppointment(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/patient/daily-notes', async (req, res) => {
+  try {
+    const { getDailyNotes } = require('./controllers/patientController');
+    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getDailyNotes(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/patient/assessments', async (req, res) => {
+  try {
+    const { getAssessments } = require('./controllers/patientController');
+    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getAssessments(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/patient/settings', async (req, res) => {
+  try {
+    const { getSettings } = require('./controllers/patientController');
+    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getSettings(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test endpoints for therapist data
+app.get('/api/test/therapist/dashboard', async (req, res) => {
+  try {
+    const { getDashboard } = require('./controllers/dashboardController');
+    // Allow testing with different therapist IDs via query parameter
+    const therapistId = req.query.therapistId ? parseInt(req.query.therapistId) : 62;
+    const mockReq = { user: { id: therapistId, role: 'therapist' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getDashboard(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/therapist/patients', async (req, res) => {
+  try {
+    const { getPatients } = require('./controllers/patientController');
+    // Allow testing with different therapist IDs via query parameter
+    const therapistId = req.query.therapistId ? parseInt(req.query.therapistId) : 62;
+    const mockReq = { user: { id: therapistId, role: 'therapist' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getPatients(mockReq, mockRes);
+  } catch (error) {
+    console.error('Therapist patients test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.get('/api/test/therapist/appointments', async (req, res) => {
+  try {
+    const { getSchedule } = require('./controllers/appointmentController');
+    const mockReq = { 
+      user: { id: 62, role: 'therapist' },
+      query: req.query || {}
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getSchedule(mockReq, mockRes);
+  } catch (error) {
+    console.error('Therapist appointments test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Therapist create appointment test endpoint
+app.post('/api/test/therapist/appointments', async (req, res) => {
+  try {
+    const { createAppointment } = require('./controllers/appointmentController');
+    const therapistId = req.query.therapistId ? parseInt(req.query.therapistId) : 62;
+    const mockReq = { 
+      user: { id: therapistId, role: 'therapist' },
+      body: req.body
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await createAppointment(mockReq, mockRes);
+  } catch (error) {
+    console.error('Therapist create appointment test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Therapist update appointment test endpoint
+app.put('/api/test/therapist/appointments/:id', async (req, res) => {
+  try {
+    const { updateAppointment } = require('./controllers/appointmentController');
+    const therapistId = req.query.therapistId ? parseInt(req.query.therapistId) : 62;
+    const mockReq = { 
+      user: { id: therapistId, role: 'therapist' },
+      params: req.params,
+      body: req.body
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await updateAppointment(mockReq, mockRes);
+  } catch (error) {
+    console.error('Therapist update appointment test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.get('/api/test/therapist/daily-notes', async (req, res) => {
+  try {
+    const { getDailyNotes } = require('./controllers/dailyNotesController');
+    const mockReq = { 
+      user: { id: 62, role: 'therapist' },
+      query: req.query || {}
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getDailyNotes(mockReq, mockRes);
+  } catch (error) {
+    console.error('Therapist daily notes test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.get('/api/test/therapist/progress-tracking', async (req, res) => {
+  try {
+    const { getProgressTracking } = require('./controllers/progressTrackingController');
+    const mockReq = { 
+      user: { id: 62, role: 'therapist' },
+      query: req.query || {}
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getProgressTracking(mockReq, mockRes);
+  } catch (error) {
+    console.error('Therapist progress tracking test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.get('/api/test/therapist/settings', async (req, res) => {
+  try {
+    const { getSettings } = require('./controllers/settingsController');
+    const mockReq = { user: { id: 62, role: 'therapist' } };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getSettings(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test endpoint for therapist sessions
+app.get('/api/test/therapist/sessions', async (req, res) => {
+  try {
+    const { getSessions } = require('./controllers/sessionController');
+    const therapistId = req.query.therapistId ? parseInt(req.query.therapistId) : 62;
+    const mockReq = { user: { id: therapistId, role: 'therapist' }, query: req.query || {} };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getSessions(mockReq, mockRes);
+  } catch (error) {
+    console.error('Therapist sessions test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Test endpoint for creating sessions
+app.post('/api/test/therapist/sessions', async (req, res) => {
+  try {
+    const { createSession } = require('./controllers/sessionController');
+    const therapistId = req.query.therapistId ? parseInt(req.query.therapistId) : 62;
+    const mockReq = { 
+      user: { id: therapistId, role: 'therapist' }, 
+      body: req.body 
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await createSession(mockReq, mockRes);
+  } catch (error) {
+    console.error('Create session test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Therapist notifications test endpoint
+app.get('/api/test/therapist/notifications', async (req, res) => {
+  try {
+    const { getNotifications } = require('./controllers/notificationController');
+    const therapistId = req.query.therapistId ? parseInt(req.query.therapistId) : 62;
+    const mockReq = { 
+      user: { id: therapistId, role: 'therapist' }, 
+      query: req.query || {} 
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getNotifications(mockReq, mockRes);
+  } catch (error) {
+    console.error('Therapist notifications test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Therapist notification operations test endpoints
+app.delete('/api/test/therapist/notifications/:id', async (req, res) => {
+  try {
+    const { deleteNotification } = require('./controllers/notificationController');
+    const therapistId = req.query.therapistId ? parseInt(req.query.therapistId) : 62;
+    const mockReq = { 
+      user: { id: therapistId, role: 'therapist' },
+      params: req.params
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await deleteNotification(mockReq, mockRes);
+  } catch (error) {
+    console.error('Therapist delete notification test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.patch('/api/test/therapist/notifications/:id/read', async (req, res) => {
+  try {
+    const { markAsRead } = require('./controllers/notificationController');
+    const therapistId = req.query.therapistId ? parseInt(req.query.therapistId) : 62;
+    const mockReq = { 
+      user: { id: therapistId, role: 'therapist' },
+      params: req.params
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await markAsRead(mockReq, mockRes);
+  } catch (error) {
+    console.error('Therapist mark as read test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Admin notification operations test endpoints
+app.delete('/api/test/admin/notifications/:id', async (req, res) => {
+  try {
+    const { deleteNotification } = require('./controllers/notificationController');
+    const mockReq = { 
+      user: { id: 61, role: 'admin' },
+      params: req.params
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await deleteNotification(mockReq, mockRes);
+  } catch (error) {
+    console.error('Admin delete notification test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.patch('/api/test/admin/notifications/:id/read', async (req, res) => {
+  try {
+    const { markAsRead } = require('./controllers/notificationController');
+    const mockReq = { 
+      user: { id: 61, role: 'admin' },
+      params: req.params
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await markAsRead(mockReq, mockRes);
+  } catch (error) {
+    console.error('Admin mark as read test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+app.patch('/api/test/admin/notifications/read-all', async (req, res) => {
+  try {
+    const { markAllAsRead } = require('./controllers/notificationController');
+    const mockReq = { 
+      user: { id: 61, role: 'admin' }
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await markAllAsRead(mockReq, mockRes);
+  } catch (error) {
+    console.error('Admin mark all as read test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
 });
 
 // API routes

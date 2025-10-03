@@ -157,6 +157,9 @@ const TherapistSchedule = () => {
   const filteredAppointments = useMemo(() => {
     let filtered = allAppointments;
 
+    // Remove appointments with "therapy" status
+    filtered = filtered.filter(appointment => appointment.status !== 'therapy');
+
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(appointment =>
@@ -226,14 +229,11 @@ const TherapistSchedule = () => {
       
       // Map appointment types to calendar-compatible types for better color coding
       const typeMapping = {
-        'session': 'fine-motor-skills',           // Pink
+        'therapy-session': 'fine-motor-skills',   // Pink
         'consultation': 'consultation',           // Orange  
         'assessment': 'sensory-assessment',       // Green
         'follow-up': 'coordination-training',     // Yellow
-        'emergency': 'motor-skills-evaluation',   // Yellow
-        'therapy': 'fine-motor-skills',           // Pink
-        'evaluation': 'sensory-assessment',       // Green
-        'checkup': 'coordination-training'        // Yellow
+        'emergency': 'emergency-care'             // Red
       };
       
       const calendarType = typeMapping[appointment.type] || 'fine-motor-skills';
@@ -437,7 +437,7 @@ const TherapistSchedule = () => {
             onClick={() => setShowSessionModal(true)}
           >
                 <Plus size={20} />
-            Create Session
+            Create Appointment
           </button>
             </div>
         </div>
@@ -510,7 +510,7 @@ const TherapistSchedule = () => {
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">All Types</option>
-                <option value="session">Therapy Session</option>
+                <option value="therapy-session">Therapy Session</option>
                 <option value="consultation">Consultation</option>
                 <option value="assessment">Assessment</option>
                 <option value="follow-up">Follow-up</option>

@@ -2,18 +2,21 @@ import React, { useState } from 'react';
 import { User, Bell, Shield, Settings as SettingsIcon, Clock, MapPin, Globe, Lock, Calendar, Smartphone, Monitor, Save, RefreshCw, Target, Users, Activity } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { therapistAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import ProfileForm from '../../components/Profile/ProfileForm';
 import toast from 'react-hot-toast';
 
 const TherapistSettings = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const queryClient = useQueryClient();
 
   // Fetch settings data
   const { data: settingsData, isLoading } = useQuery(
     'therapistSettings',
-    therapistAPI.getSettings,
+    () => therapistAPI.getSettings(user?.id),
     {
+      enabled: !!user?.id, // Only run query when user ID is available
       onError: (error) => {
         console.error('Error fetching settings:', error);
       }

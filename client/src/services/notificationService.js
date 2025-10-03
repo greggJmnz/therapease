@@ -107,6 +107,26 @@ class NotificationService {
     }
   }
 
+  // Delete all notifications
+  async deleteAllNotifications() {
+    try {
+      const response = await fetch(`${this.baseURL}/notifications/delete-all`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error deleting all notifications:', error);
+      throw error;
+    }
+  }
+
   // Get notification statistics
   async getNotificationStats() {
     try {
