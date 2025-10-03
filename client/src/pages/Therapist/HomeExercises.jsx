@@ -1,0 +1,1004 @@
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Edit, 
+  Trash2, 
+  Eye, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle,
+  Dumbbell,
+  User,
+  Calendar,
+  Target,
+  FileText,
+  Image,
+  Video,
+  File,
+  MessageSquare,
+  Send,
+  X,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
+import { therapistAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useRealtimeData } from '../../hooks/useWebSocket';
+import toast from 'react-hot-toast';
+
+const HomeExercises = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showProofModal, setShowProofModal] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [selectedProofs, setSelectedProofs] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [patientFilter, setPatientFilter] = useState('all');
+  const [patients, setPatients] = useState([]);
+  const [expandedExercises, setExpandedExercises] = useState(new Set());
+  const [formData, setFormData] = useState({
+    patientId: '',
+    title: '',
+    description: '',
+    category: '',
+    instructions: '',
+    duration: '',
+    frequency: '',
+    difficulty: 'Beginner',
+    equipment: '',
+    dueDate: ''
+  });
+
+  // Fetch exercises
+  const { data: exercisesData, isLoading, error, refetch } = useQuery(
+    'therapistHomeExercises',
+    () => therapistAPI.getHomeExercises(user?.id),
+    {
+      enabled: !!user?.id,
+      onError: (error) => {
+        console.error('Error fetching exercises:', error);
+        toast.error('Failed to load exercises');
+      }
+    }
+  );
+
+  // Fetch proofs
+  const { data: proofsData, refetch: refetchProofs } = useQuery(
+    'therapistHomeExerciseProofs',
+    () => therapistAPI.getHomeExerciseProofs(user?.id),
+    {
+      enabled: !!user?.id,
+      onError: (error) => {
+        console.error('Error fetching proofs:', error);
+      }
+    }
+  );
+
+  // Fetch patients for dropdown
+  const { data: patientsData } = useQuery(
+    'therapistPatients',
+    () => therapistAPI.getPatients(user?.id),
+    {
+      enabled: !!user?.id,
+      onSuccess: (data) => {
+        const transformedPatients = data?.data?.data?.patients?.map(patient => ({
+          id: patient.id,
+          name: `${patient.firstName} ${patient.lastName}`,
+          userId: patient.userId
+        })) || [];
+        setPatients(transformedPatients);
+      }
+    }
+  );
+
+  // Enable real-time updates
+  const { isRefreshing } = useRealtimeData('therapistHomeExercises', refetch);
+  const { isRefreshing: isRefreshingProofs } = useRealtimeData('therapistHomeExerciseProofs', refetchProofs);
+
+  // Create exercise mutation
+  const createExerciseMutation = useMutation(
+    therapistAPI.createHomeExercise,
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('therapistHomeExercises');
+        queryClient.invalidateQueries('therapistHomeExerciseProofs');
+        toast.success('Exercise created successfully!');
+        setShowCreateForm(false);
+        resetForm();
+      },
+      onError: (error) => {
+        console.error('Error creating exercise:', error);
+        toast.error(`Failed to create exercise: ${error.response?.data?.error || error.message}`);
+      }
+    }
+  );
+
+  // Update exercise mutation
+  const updateExerciseMutation = useMutation(
+    ({ id, exerciseData }) => therapistAPI.updateHomeExercise(id, exerciseData),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('therapistHomeExercises');
+        toast.success('Exercise updated successfully!');
+        setShowCreateForm(false);
+        resetForm();
+      },
+      onError: (error) => {
+        console.error('Error updating exercise:', error);
+        toast.error(`Failed to update exercise: ${error.response?.data?.error || error.message}`);
+      }
+    }
+  );
+
+  // Delete exercise mutation
+  const deleteExerciseMutation = useMutation(
+    therapistAPI.deleteHomeExercise,
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('therapistHomeExercises');
+        toast.success('Exercise deleted successfully!');
+      },
+      onError: (error) => {
+        console.error('Error deleting exercise:', error);
+        toast.error(`Failed to delete exercise: ${error.response?.data?.error || error.message}`);
+      }
+    }
+  );
+
+  // Review proof mutation
+  const reviewProofMutation = useMutation(
+    ({ proofId, reviewData }) => therapistAPI.reviewHomeExerciseProof(proofId, reviewData),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('therapistHomeExerciseProofs');
+        queryClient.invalidateQueries('therapistHomeExercises');
+        toast.success('Proof reviewed successfully!');
+        setShowProofModal(false);
+      },
+      onError: (error) => {
+        console.error('Error reviewing proof:', error);
+        toast.error(`Failed to review proof: ${error.response?.data?.error || error.message}`);
+      }
+    }
+  );
+
+  const exercises = Array.isArray(exercisesData?.data?.data) ? exercisesData.data.data : [];
+  const proofs = Array.isArray(proofsData?.data?.data) ? proofsData.data.data : [];
+
+  // Filter exercises
+  const filteredExercises = exercises.filter(exercise => {
+    const matchesSearch = exercise.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         exercise.patientFirstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         exercise.patientLastName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || exercise.status === statusFilter;
+    const matchesPatient = patientFilter === 'all' || exercise.patientId.toString() === patientFilter;
+    
+    return matchesSearch && matchesStatus && matchesPatient;
+  });
+
+  const resetForm = () => {
+    setFormData({
+      patientId: '',
+      title: '',
+      description: '',
+      category: '',
+      instructions: '',
+      duration: '',
+      frequency: '',
+      difficulty: 'Beginner',
+      equipment: '',
+      dueDate: ''
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!formData.patientId || !formData.title || !formData.description) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const exerciseData = {
+      ...formData,
+      therapistId: user.id,
+      instructions: formData.instructions.split('\n').filter(instruction => instruction.trim()),
+      equipment: formData.equipment ? formData.equipment.split(',').map(item => item.trim()) : []
+    };
+
+    if (selectedExercise) {
+      updateExerciseMutation.mutate({ id: selectedExercise.id, exerciseData });
+    } else {
+      createExerciseMutation.mutate(exerciseData);
+    }
+  };
+
+  const handleEdit = (exercise) => {
+    setSelectedExercise(exercise);
+    setFormData({
+      patientId: exercise.patientId.toString(),
+      title: exercise.title,
+      description: exercise.description,
+      category: exercise.category,
+      instructions: Array.isArray(exercise.instructions) ? exercise.instructions.join('\n') : exercise.instructions,
+      duration: exercise.duration.toString(),
+      frequency: exercise.frequency,
+      difficulty: exercise.difficulty,
+      equipment: Array.isArray(exercise.equipment) ? exercise.equipment.join(', ') : exercise.equipment || '',
+      dueDate: exercise.dueDate || ''
+    });
+    setShowCreateForm(true);
+  };
+
+  const handleDelete = (exerciseId) => {
+    if (window.confirm('Are you sure you want to delete this exercise?')) {
+      deleteExerciseMutation.mutate(exerciseId);
+    }
+  };
+
+  const handleViewProofs = (exercise) => {
+    const exerciseProofs = proofs.filter(proof => proof.exerciseId === exercise.id);
+    setSelectedProofs(exerciseProofs);
+    setSelectedExercise(exercise);
+    setShowProofModal(true);
+  };
+
+  const toggleExerciseExpansion = (exerciseId) => {
+    const newExpanded = new Set(expandedExercises);
+    if (newExpanded.has(exerciseId)) {
+      newExpanded.delete(exerciseId);
+    } else {
+      newExpanded.add(exerciseId);
+    }
+    setExpandedExercises(newExpanded);
+  };
+
+  const handleReviewProof = (proofId, status, feedback) => {
+    reviewProofMutation.mutate({
+      proofId,
+      reviewData: { status, therapistFeedback: feedback }
+    });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'assigned': return 'bg-blue-100 text-blue-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'overdue': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getDifficultyColor = (difficulty) => {
+    switch (difficulty) {
+      case 'Beginner': return 'bg-green-100 text-green-800';
+      case 'Intermediate': return 'bg-yellow-100 text-yellow-800';
+      case 'Advanced': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getProofIcon = (type) => {
+    switch (type) {
+      case 'image': return <Image className="h-4 w-4" />;
+      case 'video': return <Video className="h-4 w-4" />;
+      case 'file': return <File className="h-4 w-4" />;
+      default: return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-white rounded-xl shadow-sm border border-green-100">
+                <Dumbbell className="h-8 w-8 text-green-600" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Home Exercises</h1>
+                <p className="text-gray-600 mt-1">
+                  Assign and manage home exercises for your patients
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setSelectedExercise(null);
+                resetForm();
+                setShowCreateForm(true);
+              }}
+              className="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 transform hover:scale-105"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Assign Exercise
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Dumbbell className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Exercises</p>
+                  <p className="text-2xl font-bold text-gray-900">{exercises.length}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Completed</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {exercises.filter(e => e.status === 'completed').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <Clock className="h-6 w-6 text-yellow-600" />
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">In Progress</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {exercises.filter(e => e.status === 'in_progress').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <AlertCircle className="h-6 w-6 text-red-600" />
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Overdue</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {exercises.filter(e => e.status === 'overdue').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+      </div>
+
+          {/* Filters */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search exercises or patients..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+            >
+              <option value="all">All Statuses</option>
+              <option value="assigned">Assigned</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="overdue">Overdue</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Patient</label>
+            <select
+              value={patientFilter}
+              onChange={(e) => setPatientFilter(e.target.value)}
+              className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+            >
+              <option value="all">All Patients</option>
+              {patients.map(patient => (
+                <option key={patient.id} value={patient.id.toString()}>
+                  {patient.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+          {/* Exercises List */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Target className="h-5 w-5 text-green-600 mr-2" />
+                Assigned Exercises
+              </h3>
+            </div>
+        <div className="divide-y divide-gray-200">
+          {filteredExercises.map((exercise) => (
+            <div key={exercise.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-4 flex-1">
+                  <div className="flex-shrink-0">
+                    <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center shadow-sm">
+                      <Dumbbell className="h-7 w-7 text-green-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-3">
+                        <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          {exercise.title}
+                        </h3>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(exercise.status)}`}>
+                          {exercise.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => toggleExerciseExpansion(exercise.id)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                      >
+                        {expandedExercises.has(exercise.id) ? (
+                          <ChevronUp className="h-5 w-5 text-gray-500" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 text-gray-500" />
+                        )}
+                      </button>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <User className="h-4 w-4 mr-1.5 text-gray-400" />
+                        <span>{exercise.patientFirstName} {exercise.patientLastName}</span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Clock className="h-4 w-4 mr-1.5 text-gray-400" />
+                        <span>{exercise.duration} min</span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
+                        <span>{exercise.frequency}</span>
+                      </div>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getDifficultyColor(exercise.difficulty)}`}>
+                        {exercise.difficulty}
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                      {exercise.description}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-end space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleViewProofs(exercise)}
+                      className="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Proofs ({exercise.proofCount})
+                    </button>
+                    
+                    <button
+                      onClick={() => handleEdit(exercise)}
+                      className="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </button>
+                    
+                    <button
+                      onClick={() => handleDelete(exercise.id)}
+                      className="inline-flex items-center px-4 py-2 border border-red-200 shadow-sm text-sm font-medium rounded-lg text-red-700 bg-white hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Expanded Details */}
+              {expandedExercises.has(exercise.id) && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Exercise Instructions */}
+                    {exercise.instructions && Array.isArray(exercise.instructions) && exercise.instructions.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                          <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                          Instructions
+                        </h4>
+                        <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
+                          {exercise.instructions.map((instruction, index) => (
+                            <li key={index} className="leading-relaxed">{instruction}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
+                    {/* Equipment */}
+                    {exercise.equipment && Array.isArray(exercise.equipment) && exercise.equipment.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                          <Target className="h-4 w-4 mr-2 text-green-600" />
+                          Equipment Needed
+                        </h4>
+                        <div className="flex flex-wrap gap-2 bg-gray-50 p-4 rounded-lg">
+                          {exercise.equipment.map((item, index) => (
+                            <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Additional Details */}
+                    <div className="md:col-span-2">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-purple-600" />
+                        Exercise Details
+                      </h4>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium text-gray-700">Category:</span>
+                            <span className="ml-2 text-gray-600">{exercise.category || 'General'}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Assigned Date:</span>
+                            <span className="ml-2 text-gray-600">
+                              {new Date(exercise.assignedDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {exercise.streak > 0 && (
+                            <div>
+                              <span className="font-medium text-gray-700">Streak:</span>
+                              <span className="ml-2 text-gray-600">{exercise.streak} days</span>
+                            </div>
+                          )}
+                          {exercise.lastCompleted && (
+                            <div>
+                              <span className="font-medium text-gray-700">Last Completed:</span>
+                              <span className="ml-2 text-gray-600">
+                                {new Date(exercise.lastCompleted).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                          {exercise.dueDate && (
+                            <div>
+                              <span className="font-medium text-gray-700">Due Date:</span>
+                              <span className="ml-2 text-gray-600">
+                                {new Date(exercise.dueDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+          </div>
+        </div>
+        </div>
+      </div>
+
+      {/* Create/Edit Exercise Modal */}
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {selectedExercise ? 'Edit Exercise' : 'Assign New Exercise'}
+                </h3>
+                <button
+                  onClick={() => setShowCreateForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Patient *
+                    </label>
+                    <select
+                      value={formData.patientId}
+                      onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                      required
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    >
+                      <option value="">Select a patient</option>
+                      {patients.map(patient => (
+                        <option key={patient.id} value={patient.id}>
+                          {patient.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      required
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description *
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    required
+                    rows={3}
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category
+                    </label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    >
+                      <option value="">Select a category</option>
+                      <option value="Strength Training">Strength Training</option>
+                      <option value="Cardio">Cardio</option>
+                      <option value="Flexibility">Flexibility</option>
+                      <option value="Balance">Balance</option>
+                      <option value="Coordination">Coordination</option>
+                      <option value="Endurance">Endurance</option>
+                      <option value="Rehabilitation">Rehabilitation</option>
+                      <option value="Posture">Posture</option>
+                      <option value="Breathing">Breathing</option>
+                      <option value="Stretching">Stretching</option>
+                      <option value="Core">Core</option>
+                      <option value="Upper Body">Upper Body</option>
+                      <option value="Lower Body">Lower Body</option>
+                      <option value="Full Body">Full Body</option>
+                      <option value="Mental Health">Mental Health</option>
+                      <option value="Pain Management">Pain Management</option>
+                      <option value="Recovery">Recovery</option>
+                      <option value="General">General</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Duration (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.duration}
+                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Frequency
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.frequency}
+                      onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
+                      placeholder="e.g., Daily, 3x/week"
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Difficulty
+                    </label>
+                    <select
+                      value={formData.difficulty}
+                      onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    >
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.dueDate}
+                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Instructions (one per line)
+                  </label>
+                  <textarea
+                    value={formData.instructions}
+                    onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
+                    rows={4}
+                    placeholder="Enter step-by-step instructions..."
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Equipment (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.equipment}
+                    onChange={(e) => setFormData({ ...formData, equipment: e.target.value })}
+                    placeholder="e.g., Resistance band, Yoga mat, Water bottle"
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createExerciseMutation.isLoading || updateExerciseMutation.isLoading}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                  >
+                    {createExerciseMutation.isLoading || updateExerciseMutation.isLoading ? 'Saving...' : (selectedExercise ? 'Update Exercise' : 'Assign Exercise')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Proof Review Modal */}
+      {showProofModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Proof Submissions - {selectedExercise?.title}
+                </h3>
+                <button
+                  onClick={() => setShowProofModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {selectedProofs.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No proof submissions yet.</p>
+                ) : (
+                  selectedProofs.map((proof) => (
+                    <div key={proof.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            {getProofIcon(proof.submissionType)}
+                            <span className="text-sm font-medium text-gray-900">
+                              {proof.patientFirstName} {proof.patientLastName}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(proof.submittedAt).toLocaleDateString()}
+                            </span>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(proof.status)}`}>
+                              {proof.status.replace('_', ' ')}
+                            </span>
+                          </div>
+                          
+                          {proof.content && (
+                            <p className="text-sm text-gray-700 mb-2">{proof.content}</p>
+                          )}
+                          
+                          {proof.fileName && (
+                            <div className="mt-2">
+                              <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+                                {getProofIcon(proof.submissionType)}
+                                <span>{proof.fileName}</span>
+                                <span className="text-xs text-gray-500">
+                                  ({proof.fileSize ? Math.round(proof.fileSize / 1024) : 0} KB)
+                                </span>
+                              </div>
+                              
+                              {/* Display image */}
+                              {proof.submissionType === 'image' && proof.filePath && (
+                                <div className="mt-2">
+                                  {(() => {
+                                    const fileName = proof.filePath.split('/').pop();
+                                    const imageUrl = `http://localhost:5000/uploads/exercise-proofs/${fileName}`;
+                                    console.log('Proof filePath:', proof.filePath);
+                                    console.log('Extracted fileName:', fileName);
+                                    console.log('Image URL:', imageUrl);
+                                    return (
+                                      <img 
+                                        src={imageUrl}
+                                        alt="Submitted proof"
+                                        className="max-w-full h-auto max-h-64 rounded-lg border"
+                                        onError={(e) => {
+                                          console.error('Image load error:', e.target.src);
+                                          e.target.style.display = 'none';
+                                          e.target.nextSibling.style.display = 'block';
+                                        }}
+                                        onLoad={() => {
+                                          console.log('Image loaded successfully:', imageUrl);
+                                        }}
+                                      />
+                                    );
+                                  })()}
+                                  <div className="hidden text-sm text-red-500">
+                                    Failed to load image: {proof.filePath}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Display video */}
+                              {proof.submissionType === 'video' && proof.filePath && (
+                                <div className="mt-2">
+                                  <video 
+                                    controls 
+                                    className="max-w-full h-auto max-h-64 rounded-lg border"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display = 'block';
+                                    }}
+                                  >
+                                    <source 
+                                      src={`http://localhost:5000/uploads/exercise-proofs/${proof.filePath.split('/').pop()}`}
+                                      type={proof.mimeType || 'video/mp4'}
+                                    />
+                                    Your browser does not support the video tag.
+                                  </video>
+                                  <div className="hidden text-sm text-red-500">
+                                    Failed to load video
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Display file download link for other file types */}
+                              {proof.submissionType === 'file' && proof.filePath && (
+                                <div className="mt-2">
+                                  <a 
+                                    href={`http://localhost:5000/uploads/exercise-proofs/${proof.filePath.split('/').pop()}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    <File className="h-4 w-4" />
+                                    <span>Download file</span>
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {proof.therapistFeedback && (
+                            <div className="mt-2 p-2 bg-gray-50 rounded">
+                              <p className="text-sm text-gray-700">
+                                <strong>Your feedback:</strong> {proof.therapistFeedback}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          {proof.status === 'submitted' && (
+                            <>
+                              <button
+                                onClick={() => handleReviewProof(proof.id, 'approved', '')}
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200"
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const feedback = prompt('Please provide feedback for revision:');
+                                  if (feedback) {
+                                    handleReviewProof(proof.id, 'needs_revision', feedback);
+                                  }
+                                }}
+                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200"
+                              >
+                                <MessageSquare className="h-3 w-3 mr-1" />
+                                Request Revision
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default HomeExercises;

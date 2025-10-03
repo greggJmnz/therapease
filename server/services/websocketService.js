@@ -372,6 +372,52 @@ class WebSocketService {
 
     console.log(`📢 Broadcasted session change: ${changeType} for session ${session.id}`);
   }
+
+  // Broadcast home exercise change
+  broadcastHomeExerciseChange(exercise, changeType) {
+    const message = {
+      type: 'home_exercise_change',
+      data: {
+        exercise,
+        changeType, // 'created', 'updated', 'deleted', 'assigned'
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    // Send to therapist
+    this.sendToUser(exercise.therapistId, message);
+
+    // Send to patient
+    this.sendToUser(exercise.patientUserId, message);
+
+    // Send to patient-specific room
+    this.sendToRoom(`patient_${exercise.patientId}`, message);
+
+    console.log(`📢 Broadcasted home exercise change: ${changeType} for exercise ${exercise.id}`);
+  }
+
+  // Broadcast proof submission change
+  broadcastProofChange(proof, changeType) {
+    const message = {
+      type: 'proof_change',
+      data: {
+        proof,
+        changeType, // 'submitted', 'reviewed', 'approved', 'needs_revision'
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    // Send to therapist
+    this.sendToUser(proof.therapistId, message);
+
+    // Send to patient
+    this.sendToUser(proof.patientUserId, message);
+
+    // Send to patient-specific room
+    this.sendToRoom(`patient_${proof.patientId}`, message);
+
+    console.log(`📢 Broadcasted proof change: ${changeType} for proof ${proof.id}`);
+  }
 }
 
 module.exports = new WebSocketService();

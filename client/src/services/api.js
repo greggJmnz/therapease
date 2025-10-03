@@ -142,6 +142,14 @@ export const therapistAPI = {
   updateDailyNote: (id, noteData) => api.put(`/therapist/daily-notes/${id}`, noteData),
   deleteDailyNote: (id) => api.delete(`/therapist/daily-notes/${id}`),
   
+  // Home Exercises management
+  getHomeExercises: (therapistId) => api.get(`/home-exercises/therapist/exercises?therapistId=${therapistId}&_t=${Date.now()}`),
+  createHomeExercise: (exerciseData) => api.post('/home-exercises/therapist/exercises', exerciseData),
+  updateHomeExercise: (id, exerciseData) => api.put(`/home-exercises/therapist/exercises/${id}`, exerciseData),
+  deleteHomeExercise: (id) => api.delete(`/home-exercises/therapist/exercises/${id}`),
+  getHomeExerciseProofs: (therapistId) => api.get(`/home-exercises/therapist/proofs?therapistId=${therapistId}&_t=${Date.now()}`),
+  reviewHomeExerciseProof: (proofId, reviewData) => api.put(`/home-exercises/therapist/proofs/${proofId}/review`, reviewData),
+  
   // Patient management
   updatePatientGoals: (patientId, goals) => api.put(`/therapist/patients/${patientId}`, { goals: JSON.stringify(goals) }),
   addNoteComment: (id, comment) => api.post(`/therapist/daily-notes/${id}/comments`, { comment }),
@@ -188,6 +196,12 @@ export const patientAPI = {
   getNotifications: () => api.get(`/notifications?_t=${Date.now()}`),
   getSettings: () => api.get(`/test/patient/settings?_t=${Date.now()}`),
   getHomeExercises: () => api.get(`/patient/exercises?_t=${Date.now()}`),
+  getHomeExercisesNew: (patientId) => api.get(`/home-exercises/patient/exercises?patientId=${patientId}&_t=${Date.now()}`),
+  submitHomeExerciseProof: (exerciseId, formData) => api.post(`/home-exercises/patient/exercises/${exerciseId}/proof`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getHomeExerciseProofs: (patientId) => api.get(`/home-exercises/patient/proofs?patientId=${patientId}&_t=${Date.now()}`),
+  getExerciseProofs: (exerciseId) => api.get(`/home-exercises/patient/exercises/${exerciseId}/proofs?_t=${Date.now()}`),
   getTreatmentPlan: () => api.get(`/treatment-plans/patient/current?_t=${Date.now()}`),
   
   // Profile management

@@ -11,11 +11,13 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Clock,
   Edit,
   Save,
   X,
-  Trash2
+  Trash2,
+  Target
 } from 'lucide-react';
 import { therapistAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -31,6 +33,7 @@ const ProgressTracking = () => {
   const [showCreateMainObjective, setShowCreateMainObjective] = useState(false);
   const [showCreateSpecificObjective, setShowCreateSpecificObjective] = useState(false);
   const [expandedObjectives, setExpandedObjectives] = useState({});
+  const [expandedPlans, setExpandedPlans] = useState(new Set());
   const [editingMainObjective, setEditingMainObjective] = useState(null);
   const [editingSpecificObjective, setEditingSpecificObjective] = useState(null);
   const [editingTreatmentPlan, setEditingTreatmentPlan] = useState(null);
@@ -556,6 +559,16 @@ const ProgressTracking = () => {
     }));
   };
 
+  const togglePlanExpansion = (planId) => {
+    const newExpanded = new Set(expandedPlans);
+    if (newExpanded.has(planId)) {
+      newExpanded.delete(planId);
+    } else {
+      newExpanded.add(planId);
+    }
+    setExpandedPlans(newExpanded);
+  };
+
   // Reset functions
   const resetPlanForm = useCallback(() => {
     setPlanForm({
@@ -775,39 +788,6 @@ const ProgressTracking = () => {
             </div>
           )}
 
-          {/* Treatment Plans Breakdown */}
-          {treatmentPlansList && Array.isArray(treatmentPlansList) && treatmentPlansList.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold mb-4">Treatment Plans Overview</h3>
-              <div className="space-y-4">
-                {treatmentPlansList.map((plan) => (
-                  <div key={plan.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{plan.title}</h4>
-                      <p className="text-sm text-gray-500">Status: {plan.status}</p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <div className={`text-lg font-bold ${getProgressColor(parseFloat(plan.overallProgress || 0))}`}>
-                          {parseFloat(plan.overallProgress || 0).toFixed(1)}%
-                        </div>
-                        <div className="text-xs text-gray-500">Progress</div>
-                      </div>
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            parseFloat(plan.overallProgress || 0) >= 100 ? 'bg-green-500' :
-                            parseFloat(plan.overallProgress || 0) >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${Math.min(100, parseFloat(plan.overallProgress || 0))}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {activeTab === 'treatment-plans' && (
             <div className="space-y-6">

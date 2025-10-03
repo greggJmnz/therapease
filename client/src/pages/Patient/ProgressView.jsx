@@ -8,6 +8,7 @@ import {
   Circle,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Clock,
   User,
   BarChart3
@@ -17,6 +18,7 @@ import InitialsAvatar from '../../components/InitialsAvatar';
 
 const ProgressView = () => {
   const [expandedObjectives, setExpandedObjectives] = useState({});
+  const [expandedPlans, setExpandedPlans] = useState(new Set());
 
   // Fetch treatment plan
   const { data: treatmentPlanData, isLoading, error } = useQuery(
@@ -36,6 +38,16 @@ const ProgressView = () => {
       ...prev,
       [mainObjectiveId]: !prev[mainObjectiveId]
     }));
+  };
+
+  const togglePlanExpansion = (planId) => {
+    const newExpanded = new Set(expandedPlans);
+    if (newExpanded.has(planId)) {
+      newExpanded.delete(planId);
+    } else {
+      newExpanded.add(planId);
+    }
+    setExpandedPlans(newExpanded);
   };
 
 
@@ -195,14 +207,29 @@ const ProgressView = () => {
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-white mb-2">{treatmentPlan.title}</h3>
-                      <p className="text-blue-100 text-lg">{treatmentPlan.description}</p>
-                      <div className="flex items-center space-x-4 mt-2 text-sm text-blue-100">
-                        <span>Status: <span className="font-semibold capitalize">{treatmentPlan.status}</span></span>
-                        <span>Created: {new Date(treatmentPlan.createdAt).toLocaleDateString()}</span>
-                        {treatmentPlan.endDate && (
-                          <span>End: {new Date(treatmentPlan.endDate).toLocaleDateString()}</span>
-                        )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-white mb-2">{treatmentPlan.title}</h3>
+                          <p className="text-blue-100 text-lg">{treatmentPlan.description}</p>
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-blue-100">
+                            <span>Status: <span className="font-semibold capitalize">{treatmentPlan.status}</span></span>
+                            <span>Created: {new Date(treatmentPlan.createdAt).toLocaleDateString()}</span>
+                            {treatmentPlan.endDate && (
+                              <span>End: {new Date(treatmentPlan.endDate).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => togglePlanExpansion(treatmentPlan.id)}
+                          className="ml-4 p-2 hover:bg-white/20 rounded-lg transition-colors duration-200"
+                          title={expandedPlans.has(treatmentPlan.id) ? "Hide details" : "Show details"}
+                        >
+                          {expandedPlans.has(treatmentPlan.id) ? (
+                            <ChevronUp size={24} className="text-white" />
+                          ) : (
+                            <ChevronDown size={24} className="text-white" />
+                          )}
+                        </button>
                       </div>
                     </div>
 
@@ -225,71 +252,167 @@ const ProgressView = () => {
         </div>
       </div>
 
-                <div className="p-6">
-                  {/* Plan Details */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <Calendar className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Created</div>
-                        <div className="text-sm text-gray-600">{new Date(treatmentPlan.createdAt).toLocaleDateString()}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <Award className="w-5 h-5 text-green-600" />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Status</div>
-                        <div className="text-sm text-gray-600 capitalize">{treatmentPlan.status}</div>
-                      </div>
-                    </div>
-                    {treatmentPlan.endDate && (
-                      <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <Clock className="w-5 h-5 text-purple-600" />
+                {expandedPlans.has(treatmentPlan.id) && (
+                  <div className="p-6 bg-gray-50 border-t border-gray-200">
+                    {/* Plan Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
+                        <Calendar className="w-5 h-5 text-blue-600" />
                         <div>
-                          <div className="text-sm font-medium text-gray-900">Target End</div>
-                          <div className="text-sm text-gray-600">{new Date(treatmentPlan.endDate).toLocaleDateString()}</div>
+                          <div className="text-sm font-medium text-gray-900">Created</div>
+                          <div className="text-sm text-gray-600">{new Date(treatmentPlan.createdAt).toLocaleDateString()}</div>
                         </div>
-        </div>
+                      </div>
+                      <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
+                        <Award className="w-5 h-5 text-green-600" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">Status</div>
+                          <div className="text-sm text-gray-600 capitalize">{treatmentPlan.status}</div>
+                        </div>
+                      </div>
+                      {treatmentPlan.endDate && (
+                        <div className="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm">
+                          <Clock className="w-5 h-5 text-purple-600" />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Target End</div>
+                            <div className="text-sm text-gray-600">{new Date(treatmentPlan.endDate).toLocaleDateString()}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="mb-6">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-700">Plan Progress</span>
+                        <span className="text-sm font-bold text-gray-900">{(parseFloat(treatmentPlan.overallProgress) || 0).toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out"
+                          style={{ width: `${parseFloat(treatmentPlan.overallProgress) || 0}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Progress Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center p-4 bg-blue-50 rounded-xl">
+                        <div className="text-3xl font-bold text-blue-600 mb-1">
+                          {treatmentPlan.mainObjectives?.length || 0}
+                        </div>
+                        <div className="text-sm font-medium text-blue-800">Main Objectives</div>
+                      </div>
+                      <div className="text-center p-4 bg-green-50 rounded-xl">
+                        <div className="text-3xl font-bold text-green-600 mb-1">
+                          {treatmentPlan.mainObjectives?.reduce((total, obj) => total + (obj.specificObjectives?.length || 0), 0) || 0}
+                        </div>
+                        <div className="text-sm font-medium text-green-800">Specific Objectives</div>
+                      </div>
+                      <div className="text-center p-4 bg-emerald-50 rounded-xl">
+                        <div className="text-3xl font-bold text-emerald-600 mb-1">
+                          {treatmentPlan.mainObjectives?.reduce((total, obj) => 
+                            total + (obj.specificObjectives?.filter(so => so.isCompleted).length || 0), 0) || 0}
+                        </div>
+                        <div className="text-sm font-medium text-emerald-800">Completed</div>
+                      </div>
+                    </div>
+
+                    {/* Objectives Section */}
+                    {treatmentPlan.mainObjectives && treatmentPlan.mainObjectives.length > 0 && (
+                      <div className="mt-8">
+                        <div className="flex items-center space-x-3 mb-6">
+                          <Target className="w-6 h-6 text-blue-600" />
+                          <h4 className="text-xl font-bold text-gray-900">Objectives</h4>
+                        </div>
+                        <div className="space-y-4">
+                          {treatmentPlan.mainObjectives.map((mainObj) => (
+                            <div key={mainObj.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                              <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-3 mb-2">
+                                      <h5 className="text-lg font-bold text-gray-900">{mainObj.title}</h5>
+                                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                                        {mainObj.category}
+                                      </span>
+                                    </div>
+                                    <p className="text-gray-600 text-base mb-3">{mainObj.description}</p>
+                                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                                      <div className="flex items-center space-x-2">
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                        <span className="text-gray-600">
+                                          {mainObj.specificObjectives?.filter(so => so.isCompleted === 1 || so.isCompleted === true).length || 0} / {mainObj.specificObjectives?.length || 0} completed
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                        <span className={`font-semibold ${getProgressColor(parseFloat(mainObj.progress) || 0)}`}>
+                                          {(parseFloat(mainObj.progress) || 0).toFixed(1)}% complete
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => toggleObjectiveExpansion(mainObj.id)}
+                                    className="ml-4 p-3 hover:bg-white/50 rounded-xl transition-colors duration-200"
+                                  >
+                                    {expandedObjectives[mainObj.id] ? (
+                                      <ChevronDown size={24} className="text-gray-600" />
+                                    ) : (
+                                      <ChevronRight size={24} className="text-gray-600" />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+
+                              {expandedObjectives[mainObj.id] && (
+                                <div className="p-6 bg-gray-50">
+                                  <div className="flex items-center space-x-2 mb-4">
+                                    <h6 className="text-lg font-semibold text-gray-900">Specific Objectives</h6>
+                                    <div className="flex-1 h-px bg-gray-300"></div>
+                                  </div>
+                                  <div className="space-y-4">
+                                    {mainObj.specificObjectives?.map((specificObj) => (
+                                      <div key={specificObj.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow duration-200">
+                                        <div className="flex items-start space-x-4">
+                                          <div className="flex-shrink-0 mt-1">
+                                            {getStatusIcon(specificObj.isCompleted)}
+                                          </div>
+                                          <div className="flex-1">
+                                            <h7 className="font-semibold text-gray-900 text-lg mb-2">{specificObj.title}</h7>
+                                            <p className="text-gray-600 mb-3">{specificObj.description}</p>
+                                            
+                                            {specificObj.targetDate && (
+                                              <div className="flex items-center space-x-2 mb-3 text-sm text-gray-500">
+                                                <Clock size={16} />
+                                                <span>Target: {new Date(specificObj.targetDate).toLocaleDateString()}</span>
+                                              </div>
+                                            )}
+
+                                            {specificObj.remarks && (
+                                              <div className="mb-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+                                                <div className="flex items-center space-x-2 mb-1">
+                                                  <User size={16} className="text-blue-600" />
+                                                  <span className="text-sm font-semibold text-blue-800">Therapist Notes</span>
+                                                </div>
+                                                <p className="text-sm text-blue-700">{specificObj.remarks}</p>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
-
-                  {/* Progress Bar */}
-                  <div className="mb-6">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">Plan Progress</span>
-                      <span className="text-sm font-bold text-gray-900">{(parseFloat(treatmentPlan.overallProgress) || 0).toFixed(1)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div
-                        className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out"
-                        style={{ width: `${parseFloat(treatmentPlan.overallProgress) || 0}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {/* Progress Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center p-4 bg-blue-50 rounded-xl">
-                      <div className="text-3xl font-bold text-blue-600 mb-1">
-                        {treatmentPlan.mainObjectives?.length || 0}
-                      </div>
-                      <div className="text-sm font-medium text-blue-800">Main Objectives</div>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-xl">
-                      <div className="text-3xl font-bold text-green-600 mb-1">
-                        {treatmentPlan.mainObjectives?.reduce((total, obj) => total + (obj.specificObjectives?.length || 0), 0) || 0}
-                      </div>
-                      <div className="text-sm font-medium text-green-800">Specific Objectives</div>
-                    </div>
-                    <div className="text-center p-4 bg-emerald-50 rounded-xl">
-                      <div className="text-3xl font-bold text-emerald-600 mb-1">
-                        {treatmentPlan.mainObjectives?.reduce((total, obj) => 
-                          total + (obj.specificObjectives?.filter(so => so.isCompleted).length || 0), 0) || 0}
-                      </div>
-                      <div className="text-sm font-medium text-emerald-800">Completed</div>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             ))}
           </div>
@@ -371,113 +494,6 @@ const ProgressView = () => {
       </div>
         </div>
 
-        {/* Main Objectives */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-3 mb-6">
-            <Target className="w-6 h-6 text-blue-600" />
-            <h3 className="text-2xl font-bold text-gray-900">Your Objectives</h3>
-          </div>
-          <div className="space-y-6">
-            {treatmentPlans.map((treatmentPlan) => (
-              <div key={treatmentPlan.id} className="mb-8">
-                <div className="flex items-center space-x-3 mb-4">
-                  <h4 className="text-lg font-semibold text-gray-800">{treatmentPlan.title}</h4>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    treatmentPlan.status === 'active' ? 'bg-green-100 text-green-800' :
-                    treatmentPlan.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {treatmentPlan.status}
-                  </span>
-                </div>
-                <div className="space-y-4">
-                  {treatmentPlan.mainObjectives?.map((mainObj) => (
-              <div key={mainObj.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-200">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h4 className="text-xl font-bold text-gray-900">{mainObj.title}</h4>
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                          {mainObj.category}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 text-lg mb-3">{mainObj.description}</p>
-                      <div className="flex flex-wrap items-center gap-4 text-sm">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span className="text-gray-600">
-                            {mainObj.specificObjectives?.filter(so => so.isCompleted === 1 || so.isCompleted === true).length || 0} / {mainObj.specificObjectives?.length || 0} completed
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className={`font-semibold ${getProgressColor(parseFloat(mainObj.progress) || 0)}`}>
-                            {(parseFloat(mainObj.progress) || 0).toFixed(1)}% complete
-                          </span>
-                        </div>
-                  </div>
-                    </div>
-                    <button
-                      onClick={() => toggleObjectiveExpansion(mainObj.id)}
-                      className="ml-4 p-3 hover:bg-white/50 rounded-xl transition-colors duration-200"
-                    >
-                      {expandedObjectives[mainObj.id] ? (
-                        <ChevronDown size={24} className="text-gray-600" />
-                      ) : (
-                        <ChevronRight size={24} className="text-gray-600" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {expandedObjectives[mainObj.id] && (
-                  <div className="p-6 bg-gray-50">
-                    <div className="flex items-center space-x-2 mb-4">
-                      <h5 className="text-lg font-semibold text-gray-900">Specific Objectives</h5>
-                      <div className="flex-1 h-px bg-gray-300"></div>
-                    </div>
-                    <div className="space-y-4">
-                      {mainObj.specificObjectives?.map((specificObj) => (
-                        <div key={specificObj.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow duration-200">
-                          <div className="flex items-start space-x-4">
-                            <div className="flex-shrink-0 mt-1">
-                              {getStatusIcon(specificObj.isCompleted)}
-                            </div>
-                            <div className="flex-1">
-                              <h6 className="font-semibold text-gray-900 text-lg mb-2">{specificObj.title}</h6>
-                              <p className="text-gray-600 mb-3">{specificObj.description}</p>
-                              
-                              {specificObj.targetDate && (
-                                <div className="flex items-center space-x-2 mb-3 text-sm text-gray-500">
-                                  <Clock size={16} />
-                                  <span>Target: {new Date(specificObj.targetDate).toLocaleDateString()}</span>
-                                </div>
-                              )}
-
-                              {specificObj.remarks && (
-                                <div className="mb-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
-                                  <div className="flex items-center space-x-2 mb-1">
-                                    <User size={16} className="text-blue-600" />
-                                    <span className="text-sm font-semibold text-blue-800">Therapist Notes</span>
-                                  </div>
-                                  <p className="text-sm text-blue-700">{specificObj.remarks}</p>
-                                </div>
-                              )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-                )}
-          </div>
-                  ))}
-        </div>
-      </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
     </>

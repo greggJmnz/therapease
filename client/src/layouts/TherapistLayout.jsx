@@ -20,6 +20,7 @@ import {
   ChevronDown,
   User,
   Globe,
+  Dumbbell,
 } from 'lucide-react';
 
 const TherapistLayout = () => {
@@ -74,6 +75,12 @@ const TherapistLayout = () => {
       href: '/therapist/daily-notes', 
       icon: FileText,
       description: 'Session documentation'
+    },
+    { 
+      name: 'Home Exercises', 
+      href: '/therapist/home-exercises', 
+      icon: Dumbbell,
+      description: 'Assign and manage home exercises'
     },
     { 
       name: 'AI Insights', 

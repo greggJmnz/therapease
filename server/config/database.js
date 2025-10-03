@@ -304,8 +304,34 @@ const createTables = async () => {
         isCompleted BOOLEAN DEFAULT FALSE,
         assignedDate DATE NOT NULL,
         dueDate DATE,
+        status ENUM('assigned', 'in_progress', 'completed', 'overdue') DEFAULT 'assigned',
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Home Exercise Proof Submissions table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS home_exercise_proofs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        exerciseId INT NOT NULL,
+        patientId INT NOT NULL,
+        therapistId INT NOT NULL,
+        submissionType ENUM('text', 'image', 'video', 'file') NOT NULL,
+        content TEXT,
+        filePath VARCHAR(500),
+        fileName VARCHAR(255),
+        fileSize INT,
+        mimeType VARCHAR(100),
+        status ENUM('submitted', 'reviewed', 'approved', 'needs_revision') DEFAULT 'submitted',
+        therapistFeedback TEXT,
+        submittedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        reviewedAt TIMESTAMP NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (exerciseId) REFERENCES home_exercises(id) ON DELETE CASCADE,
         FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
         FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
