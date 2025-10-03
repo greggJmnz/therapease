@@ -1030,7 +1030,7 @@ const getNotifications = async (req, res) => {
         title: notification.title,
         message: notification.message,
         priority: 'medium', // Default priority since it's not in the table
-        read: notification.isRead,
+        read: notification.isRead === 1,
         user: notification.firstName ? `${notification.firstName} ${notification.lastName}` : null,
         createdAt: notification.createdAt,
         updatedAt: notification.createdAt, // Use createdAt as updatedAt since updatedAt doesn't exist

@@ -172,16 +172,47 @@ const PatientLayout = () => {
                 </div>
               </Link>
             </div>
-            <div className="user-profile">
-              <InitialsAvatar 
-                name={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'} 
-                size="md" 
-                className="profile-picture" 
-              />
-              <div className="profile-info">
-                <strong>{user?.firstName} {user?.lastName}</strong>
-                <span>{user?.email}</span>
+            <div className="user-profile" ref={profileDropdownRef}>
+              <div className="profile-main" onClick={toggleProfileDropdown}>
+                <InitialsAvatar 
+                  name={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'User'} 
+                  size="md" 
+                  className="profile-picture" 
+                />
+                <div className="profile-info">
+                  <strong>{user?.firstName} {user?.lastName}</strong>
+                  <span>{user?.email}</span>
+                </div>
+                <ChevronDown 
+                  size={16} 
+                  className={`profile-dropdown-arrow ${profileDropdownOpen ? 'open' : ''}`} 
+                />
               </div>
+              
+              {profileDropdownOpen && (
+                <div className="profile-dropdown">
+                  <div className="dropdown-header">
+                    <span>Signed in as</span>
+                    <strong>{user?.email}</strong>
+                  </div>
+                  <Link to="/patient/profile" className="dropdown-item" onClick={() => setSidebarOpen(false)}>
+                    <User size={16} />
+                    <span>Your Profile</span>
+                  </Link>
+                  <Link to="/patient/settings" className="dropdown-item" onClick={() => setSidebarOpen(false)}>
+                    <Settings size={16} />
+                    <span>Settings</span>
+                  </Link>
+                  <Link to="/patient/help" className="dropdown-item" onClick={() => setSidebarOpen(false)}>
+                    <HelpCircle size={16} />
+                    <span>Help Center</span>
+                  </Link>
+                  <button onClick={handleLogout} className="dropdown-item logout-item">
+                    <LogOut size={16} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
             </div>
           </nav>
         </div>
