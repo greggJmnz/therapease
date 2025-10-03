@@ -57,6 +57,16 @@ export const useNotifications = (options = {}) => {
     }
   );
 
+  // Delete all notifications mutation
+  const deleteAllNotificationsMutation = useMutation(
+    () => notificationService.deleteAllNotifications(),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('notifications');
+      }
+    }
+  );
+
   // Listen for real-time notifications
   useWebSocketEvent('notification', (data) => {
     // Invalidate and refetch notifications when new one arrives
@@ -100,6 +110,10 @@ export const useNotifications = (options = {}) => {
     deleteNotificationMutation.mutate(notificationId);
   }, [deleteNotificationMutation]);
 
+  const deleteAllNotifications = useCallback(() => {
+    deleteAllNotificationsMutation.mutate();
+  }, [deleteAllNotificationsMutation]);
+
   const refreshNotifications = useCallback(() => {
     refetch();
   }, [refetch]);
@@ -116,10 +130,12 @@ export const useNotifications = (options = {}) => {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAllNotifications,
     refreshNotifications,
     isMarkingAsRead: markAsReadMutation.isLoading,
     isMarkingAllAsRead: markAllAsReadMutation.isLoading,
-    isDeleting: deleteNotificationMutation.isLoading
+    isDeleting: deleteNotificationMutation.isLoading,
+    isDeletingAll: deleteAllNotificationsMutation.isLoading
   };
 };
 

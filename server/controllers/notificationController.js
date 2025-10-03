@@ -3,6 +3,27 @@ const smsService = require('../services/smsService');
 const webpush = require('web-push');
 const websocketService = require('../services/websocketService');
 
+// Helper function to calculate time ago
+const getTimeAgo = (date) => {
+  const now = new Date();
+  const diffInMs = now - date;
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 1) {
+    return 'Just now';
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+  } else if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+  } else if (diffInDays < 7) {
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  } else {
+    return date.toLocaleDateString();
+  }
+};
+
 // Configure web-push only if VAPID keys are available
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
@@ -19,7 +40,7 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 const getNotifications = async (req, res) => {
   try {
     // Get user ID from request (in real app, get from auth token)
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { page = 1, limit = 20, type, isRead } = req.query;
     const offset = (page - 1) * limit;
 
@@ -68,6 +89,29 @@ const getNotifications = async (req, res) => {
     const queryParams = [...params, parseInt(limit), offset];
     const notifications = await getAll(sql, queryParams);
 
+    // Format notification data with date and time
+    const formattedNotifications = notifications.map(notification => {
+      const createdAt = new Date(notification.createdAt);
+      const date = createdAt.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      const time = createdAt.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+      
+      return {
+        ...notification,
+        date: date,
+        time: time,
+        timeAgo: getTimeAgo(createdAt)
+      };
+    });
+
     // Get unread count
     const unreadSql = `
       SELECT COUNT(*) as unread
@@ -81,7 +125,7 @@ const getNotifications = async (req, res) => {
     res.json({
       success: true,
       data: {
-        notifications,
+        notifications: formattedNotifications,
         total,
         unreadCount,
         page: parseInt(page),
@@ -99,18 +143,27 @@ const getNotifications = async (req, res) => {
 const markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-    // Check if notification exists and belongs to user
-    const userId = req.user.userId;
+    // Check if notification exists
     const existingNotification = await getRow(`
       SELECT * FROM notifications 
-      WHERE id = ? AND userId = ?
-    `, [parseInt(id), userId]);
+      WHERE id = ?
+    `, [parseInt(id)]);
 
     if (!existingNotification) {
       return res.status(404).json({
         success: false,
-        error: 'Notification not found or not authorized'
+        error: 'Notification not found'
+      });
+    }
+
+    // Allow admins to mark any notification as read, others can only mark their own
+    if (userRole !== 'admin' && existingNotification.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Not authorized to mark this notification as read'
       });
     }
 
@@ -132,11 +185,16 @@ const markAsRead = async (req, res) => {
 // Mark all notifications as read
 const markAllAsRead = async (req, res) => {
   try {
-    // Get user ID from request (in real app, get from auth token)
-    const userId = req.user.userId;
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-    // Mark all as read
-    const result = await runQuery('UPDATE notifications SET isRead = 1 WHERE userId = ?', [userId]);
+    // For admins, mark all notifications as read; for others, only their own
+    let result;
+    if (userRole === 'admin') {
+      result = await runQuery('UPDATE notifications SET isRead = 1');
+    } else {
+      result = await runQuery('UPDATE notifications SET isRead = 1 WHERE userId = ?', [userId]);
+    }
 
     res.json({
       success: true,
@@ -154,18 +212,27 @@ const markAllAsRead = async (req, res) => {
 const deleteNotification = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-    // Check if notification exists and belongs to user
-    const userId = req.user.userId;
+    // Check if notification exists
     const existingNotification = await getRow(`
       SELECT * FROM notifications 
-      WHERE id = ? AND userId = ?
-    `, [parseInt(id), userId]);
+      WHERE id = ?
+    `, [parseInt(id)]);
 
     if (!existingNotification) {
       return res.status(404).json({
         success: false,
-        error: 'Notification not found or not authorized'
+        error: 'Notification not found'
+      });
+    }
+
+    // Allow admins to delete any notification, others can only delete their own
+    if (userRole !== 'admin' && existingNotification.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Not authorized to delete this notification'
       });
     }
 
@@ -181,6 +248,40 @@ const deleteNotification = async (req, res) => {
   } catch (error) {
     console.error('Delete notification error:', error);
     res.status(500).json({ success: false, error: 'Failed to delete notification' });
+  }
+};
+
+// Delete all notifications
+const deleteAllNotifications = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    // For admins, delete all notifications; for others, only their own
+    let result;
+    if (userRole === 'admin') {
+      result = await runQuery('DELETE FROM notifications');
+    } else {
+      result = await runQuery('DELETE FROM notifications WHERE userId = ?', [userId]);
+    }
+
+    // Check if any notifications were deleted
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No notifications found to delete'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'All notifications deleted successfully',
+      data: { deletedCount: result.affectedRows }
+    });
+
+  } catch (error) {
+    console.error('Delete all notifications error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete all notifications' });
   }
 };
 
@@ -335,7 +436,7 @@ const createProgressReviewNotification = async (patientId, area) => {
 const getNotificationStats = async (req, res) => {
   try {
     // Get user ID from request (in real app, get from auth token)
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Get total notifications
     const totalSql = `
@@ -517,7 +618,7 @@ const handleSMSDeliveryStatus = async (req, res) => {
 // Subscribe to push notifications
 const subscribeToPush = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { subscription, userAgent, endpoint } = req.body;
 
     if (!subscription || !subscription.endpoint) {
@@ -565,7 +666,7 @@ const subscribeToPush = async (req, res) => {
 // Unsubscribe from push notifications
 const unsubscribeFromPush = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Remove subscription from database
     await runQuery(
@@ -690,6 +791,7 @@ module.exports = {
   markAsRead,
   markAllAsRead,
   deleteNotification,
+  deleteAllNotifications,
   createNotification,
   createAppointmentReminder,
   createAssessmentDueNotification,

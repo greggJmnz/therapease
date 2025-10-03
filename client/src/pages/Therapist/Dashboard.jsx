@@ -24,8 +24,9 @@ const TherapistDashboard = () => {
   // Fetch dashboard data from API
   const { data: dashboardData, isLoading, error, refetch } = useQuery(
     'therapistDashboard',
-    therapistAPI.getDashboard,
+    () => therapistAPI.getDashboard(user?.id),
     {
+      enabled: !!user?.id, // Only run query when user ID is available
       onError: (error) => {
         toast.error('Failed to load dashboard data');
         console.error('Error fetching dashboard:', error);

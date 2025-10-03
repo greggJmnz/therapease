@@ -40,8 +40,9 @@ const DailyNotes = () => {
   // Fetch daily notes data from API
   const { data: notesData, isLoading: notesLoading, error: notesError, refetch: refetchNotes } = useQuery(
     'therapistDailyNotes',
-    therapistAPI.getDailyNotes,
+    () => therapistAPI.getDailyNotes(user?.id),
     {
+      enabled: !!user?.id, // Only run query when user ID is available
       onError: (error) => {
         toast.error('Failed to load daily notes');
         console.error('Error fetching daily notes:', error);
@@ -52,8 +53,9 @@ const DailyNotes = () => {
   // Fetch patients data from API
   const { data: patientsData, isLoading: patientsLoading, error: patientsError } = useQuery(
     'therapistPatients',
-    therapistAPI.getPatients,
+    () => therapistAPI.getPatients(user?.id),
     {
+      enabled: !!user?.id, // Only run query when user ID is available
       onError: (error) => {
         toast.error('Failed to load patients data');
         console.error('Error fetching patients:', error);

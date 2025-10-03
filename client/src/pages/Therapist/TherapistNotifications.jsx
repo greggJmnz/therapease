@@ -17,8 +17,10 @@ import {
   Star,
   Trash2,
   Archive,
-  Loader2
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
 
 const TherapistNotifications = () => {
@@ -29,6 +31,8 @@ const TherapistNotifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  const navigate = useNavigate();
 
   const {
     notifications,
@@ -48,6 +52,19 @@ const TherapistNotifications = () => {
   // Clear all notifications function
   const handleClearAllNotifications = () => {
     setShowClearConfirm(true);
+  };
+
+  // Handle viewing appointment from notification
+  const handleViewAppointment = (notification) => {
+    // Close the notification modal
+    setSelectedNotification(null);
+    
+    // Navigate to therapist schedule page
+    navigate('/therapist/schedule');
+    
+    // Note: In a real implementation, you might want to pass the appointment ID
+    // and have the schedule page automatically open that specific appointment
+    // For now, we'll just navigate to the schedule page
   };
 
   const confirmClearAll = async () => {
@@ -658,9 +675,19 @@ const TherapistNotifications = () => {
 
                 <div className="pt-6 border-t border-gray-100">
                   <div className="flex gap-3">
-                    <button className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl hover:bg-blue-700 transition-colors font-medium">
-                      {selectedNotification.action}
-                    </button>
+                    {selectedNotification.type === 'appointment' ? (
+                      <button 
+                        onClick={() => handleViewAppointment(selectedNotification)}
+                        className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        View Appointment
+                      </button>
+                    ) : (
+                      <button className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl hover:bg-blue-700 transition-colors font-medium">
+                        {selectedNotification.action}
+                      </button>
+                    )}
                     {!selectedNotification.read && (
                       <button 
                         onClick={() => {

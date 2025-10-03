@@ -15,9 +15,11 @@ const Notifications = () => {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAllNotifications,
     refreshNotifications,
     isMarkingAsRead,
-    isDeleting
+    isDeleting,
+    isDeletingAll
   } = useNotifications();
 
   const getTypeIcon = (type) => {
@@ -210,6 +212,12 @@ const Notifications = () => {
     deleteNotification(notificationId);
   };
 
+  const handleDeleteAll = () => {
+    if (window.confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
+      deleteAllNotifications();
+    }
+  };
+
   const filteredNotifications = notifications
     .map(notification => ({
       ...notification,
@@ -282,6 +290,25 @@ const Notifications = () => {
               'Mark all as read'
             )}
           </button>
+          {notifications.length > 0 && (
+            <button
+              onClick={handleDeleteAll}
+              disabled={isDeletingAll}
+              className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+            >
+              {isDeletingAll ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <X className="h-4 w-4 mr-2" />
+                  Delete All
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -389,15 +416,21 @@ const Notifications = () => {
                   )}
                   
                   <button
-                    onClick={() => handleDelete(notification.id)}
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete this notification?')) {
+                        handleDelete(notification.id);
+                      }
+                    }}
                     disabled={isDeleting}
-                    className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                    className="inline-flex items-center px-2 py-1 border border-red-200 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Delete notification"
                   >
                     {isDeleting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                     ) : (
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3 mr-1" />
                     )}
+                    Delete
                   </button>
                 </div>
               </div>

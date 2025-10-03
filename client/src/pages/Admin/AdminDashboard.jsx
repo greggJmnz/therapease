@@ -8,8 +8,6 @@ import {
   UserCheck, 
   Calendar, 
   Bell, 
-  Settings, 
-  HelpCircle, 
   Search, 
   Filter, 
   Plus, 
@@ -17,13 +15,8 @@ import {
   Trash2, 
   Eye,
   TrendingUp,
-  TrendingDown,
-  Activity,
   Clock,
   MapPin,
-  Phone,
-  Mail,
-  Star,
   FileText,
   X,
   BarChart3,
@@ -36,15 +29,12 @@ import { adminAPI } from '../../services/api';
 import './AdminDashboard.css';
 import '../../layouts/Layouts.css';
 import { 
-  LineChart, 
-  Line, 
   AreaChart, 
   Area, 
   BarChart, 
   Bar, 
   XAxis, 
   YAxis, 
-  CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
   PieChart,
@@ -56,7 +46,6 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
 
   // Recent Activity handlers
@@ -94,7 +83,7 @@ const AdminDashboard = () => {
   );
 
   // Enable real-time updates for admin dashboard
-  const { isRefreshing: isDashboardRefreshing } = useRealtimeData('adminDashboard', refetchDashboard);
+  useRealtimeData('adminDashboard', refetchDashboard);
 
   // Fetch patients data from API
   const { data: patientsData, isLoading: patientsLoading, error: patientsError } = useQuery(
@@ -119,7 +108,7 @@ const AdminDashboard = () => {
   );
 
   // Fetch notifications data from API
-  const { data: notificationsData, isLoading: notificationsLoading, error: notificationsError } = useQuery(
+  const { data: notificationsData } = useQuery(
     'adminNotifications',
     adminAPI.getNotifications,
     {
@@ -259,37 +248,6 @@ const AdminDashboard = () => {
     ];
   };
 
-  const generateWeeklyActivityData = () => {
-    // Use actual appointment data if available
-    const appointments = dashboardData?.data?.data?.appointments || dashboardData?.data?.appointments || [];
-    
-    if (appointments.length > 0) {
-      // Group appointments by day of week
-      const dayCounts = {};
-      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      
-      appointments.forEach(appointment => {
-        const dayOfWeek = new Date(appointment.appointmentDate).getDay();
-        const dayName = days[dayOfWeek === 0 ? 6 : dayOfWeek - 1]; // Convert Sunday=0 to Monday=0
-        dayCounts[dayName] = (dayCounts[dayName] || 0) + 1;
-      });
-      
-      return days.map(day => ({
-        day,
-        sessions: dayCounts[day] || 0
-      }));
-    }
-    
-    // Fallback to calculated data if API data not available
-    const totalSessions = dashboardStats.totalAppointments || 0;
-    const avgDaily = Math.floor(totalSessions / 7);
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    
-    return days.map(day => ({
-      day,
-      sessions: Math.max(0, avgDaily + Math.floor(Math.random() * 4) - 2) // Add some variation
-    }));
-  };
 
   const generateUserDistributionData = () => {
     return [
@@ -706,7 +664,7 @@ const AdminDashboard = () => {
           <div className="patients-section">
       <div className="section-header">
         <h2>Patient Management</h2>
-        <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+        <button className="btn-primary" onClick={() => navigate('/admin/patients')}>
           <Plus size={16} />
           Add Patient
         </button>

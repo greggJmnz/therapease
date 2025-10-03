@@ -21,9 +21,11 @@ import {
 } from 'lucide-react';
 import { SessionCreator, ModernCard, ModernButton } from '../../components';
 import { therapistAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const Sessions = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -35,8 +37,9 @@ const Sessions = () => {
   // Fetch sessions data from API
   const { data: sessionsData, isLoading, error } = useQuery(
     'therapistSessions',
-    therapistAPI.getSessions,
+    () => therapistAPI.getSessions(user?.id),
     {
+      enabled: !!user?.id, // Only run query when user ID is available
       onError: (error) => {
         toast.error('Failed to load sessions');
         console.error('Error fetching sessions:', error);

@@ -54,6 +54,8 @@ const AdminAppointments = () => {
   const [sortOrder, setSortOrder] = useState('asc');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Fetch appointments data from API
   const { data: appointmentsData, isLoading, error, refetch } = useQuery(
@@ -111,7 +113,7 @@ const AdminAppointments = () => {
       const dateTime = new Date(appointmentDate);
       dateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       
-      return {
+      const processedAppointment = {
     id: appointment.id,
     patientName: appointment.patientName || 'Unknown Patient',
     therapistName: appointment.therapistName || 'Unassigned',
@@ -133,6 +135,8 @@ const AdminAppointments = () => {
         isToday: dateTime.toDateString() === new Date().toDateString(),
         isPast: dateTime < new Date()
       };
+      
+      return processedAppointment;
     });
   }, [appointmentsData]);
 
@@ -265,10 +269,11 @@ const AdminAppointments = () => {
       // Map appointment types to calendar-compatible types for better color coding
       const typeMapping = {
         'session': 'fine-motor-skills',           // Pink
+        'Regular Session': 'fine-motor-skills',   // Pink
         'consultation': 'consultation',           // Orange  
         'assessment': 'sensory-assessment',       // Green
         'follow-up': 'coordination-training',     // Yellow
-        'emergency': 'motor-skills-evaluation',   // Yellow
+        'emergency': 'emergency-care',            // Red
         'therapy': 'fine-motor-skills',           // Pink
         'evaluation': 'sensory-assessment',       // Green
         'checkup': 'coordination-training'        // Yellow
@@ -324,6 +329,28 @@ const AdminAppointments = () => {
         ...prev,
         [field]: ''
       }));
+    }
+
+    // Validate time if it's being changed
+    if (field === 'time' && value) {
+      const [hours, minutes] = value.split(':').map(Number);
+      const selectedDateTime = new Date();
+      selectedDateTime.setHours(hours, minutes, 0, 0);
+      
+      // Check if time is in the past (for today's date)
+      const now = new Date();
+      const today = new Date().toISOString().split('T')[0];
+      if (newAppointment.date === today && selectedDateTime <= now) {
+        setFormErrors(prev => ({
+          ...prev,
+          time: 'Cannot select a time in the past'
+        }));
+      } else {
+        setFormErrors(prev => ({
+          ...prev,
+          time: ''
+        }));
+      }
     }
   };
 
@@ -423,6 +450,48 @@ const AdminAppointments = () => {
     setShowAppointmentModal(false);
   };
 
+  const handleEditAppointment = (appointment) => {
+    setEditingAppointment({ ...appointment });
+    setShowEditModal(true);
+    setShowAppointmentModal(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingAppointment) return;
+
+    try {
+      const updateData = {
+        appointmentDate: editingAppointment.date,
+        startTime: editingAppointment.time,
+        duration: editingAppointment.duration,
+        type: editingAppointment.type,
+        status: editingAppointment.status,
+        notes: editingAppointment.notes
+      };
+
+      await adminAPI.updateAppointment(editingAppointment.id, updateData);
+      toast.success('Appointment updated successfully!');
+      setShowEditModal(false);
+      setEditingAppointment(null);
+      refetch();
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      toast.error('Failed to update appointment. Please try again.');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAppointment(null);
+    setShowEditModal(false);
+  };
+
+  const handleEditInputChange = (field, value) => {
+    setEditingAppointment(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   const handleSort = (field) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -474,6 +543,26 @@ const AdminAppointments = () => {
         return 'bg-red-100 text-red-800 border-red-200';
       case 'scheduled':
         return 'bg-blue-100 text-blue-800 border-blue-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getTypeColor = (type) => {
+    switch (type) {
+      case 'session':
+      case 'therapy':
+      case 'Regular Session':
+        return 'bg-pink-100 text-pink-800 border-pink-200';
+      case 'consultation':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'assessment':
+      case 'evaluation':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'follow-up':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'emergency':
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -593,6 +682,7 @@ const AdminAppointments = () => {
               >
                 <option value="all">All Types</option>
                 <option value="session">Therapy Session</option>
+                <option value="Regular Session">Regular Session</option>
                 <option value="consultation">Consultation</option>
                 <option value="assessment">Assessment</option>
                 <option value="follow-up">Follow-up</option>
@@ -648,7 +738,7 @@ const AdminAppointments = () => {
               <span className="text-sm text-gray-700">Follow-up</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-4 h-4 bg-yellow-200 border border-yellow-300 rounded"></div>
+              <div className="w-4 h-4 bg-red-200 border border-red-300 rounded"></div>
               <span className="text-sm text-gray-700">Emergency</span>
             </div>
           </div>
@@ -758,8 +848,17 @@ const AdminAppointments = () => {
                   <p className="text-gray-600">Try adjusting your search or filters</p>
                 </div>
               ) : (
-                filteredAppointments.map((appointment) => (
-                  <div key={appointment.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                filteredAppointments.map((appointment) => {
+                  const typeColor = getTypeColor(appointment.type);
+                  const borderColor = typeColor.includes('pink') ? 'border-l-pink-400' :
+                                    typeColor.includes('orange') ? 'border-l-orange-400' :
+                                    typeColor.includes('green') ? 'border-l-green-400' :
+                                    typeColor.includes('yellow') ? 'border-l-yellow-400' :
+                                    typeColor.includes('red') ? 'border-l-red-400' :
+                                    'border-l-gray-400';
+                  
+                  return (
+                  <div key={appointment.id} className={`px-6 py-4 hover:bg-gray-50 transition-colors border-l-4 ${borderColor}`}>
                     <div className="grid grid-cols-12 gap-4 items-center">
                       {/* Date & Time */}
                       <div className="col-span-3">
@@ -812,14 +911,15 @@ const AdminAppointments = () => {
                       <div className="col-span-2">
                         <div className="flex items-center gap-2">
                           {getTypeIcon(appointment.type)}
-                          <span className="text-sm text-gray-900 capitalize">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getTypeColor(appointment.type)}`}>
                             {appointment.type.replace('-', ' ')}
-                </span>
-              </div>
+                          </span>
+                          <div className={`w-2 h-2 rounded-full ${getTypeColor(appointment.type).split(' ')[0]}`}></div>
+                        </div>
                         <div className="text-xs text-gray-500 mt-1">
                           {appointment.duration} min
-            </div>
-        </div>
+                        </div>
+                      </div>
 
                       {/* Status */}
                       <div className="col-span-2">
@@ -843,7 +943,8 @@ const AdminAppointments = () => {
                       </div>
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -997,12 +1098,16 @@ const AdminAppointments = () => {
                   </label>
                   <input
                     type="time"
+                    step="300"
                     value={newAppointment.time}
                     onChange={(e) => handleInputChange('time', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       formErrors.time ? 'border-red-500' : 'border-gray-300'
                     }`}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select exact time (5-minute intervals)
+                  </p>
                   {formErrors.time && (
                     <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
                       <AlertCircle className="h-4 w-4" />
@@ -1040,6 +1145,7 @@ const AdminAppointments = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="session">Therapy Session</option>
+                    <option value="Regular Session">Regular Session</option>
                     <option value="consultation">Consultation</option>
                     <option value="assessment">Assessment</option>
                     <option value="follow-up">Follow-up</option>
@@ -1153,7 +1259,19 @@ const AdminAppointments = () => {
                       </div>
                       <div className="flex items-center gap-2 text-gray-600 mt-1">
                         <Clock className="h-4 w-4 text-gray-400" />
-                        <span>{selectedAppointment.time} ({selectedAppointment.duration} minutes)</span>
+                        <span>
+                          {selectedAppointment.time} - {(() => {
+                            const [hours, minutes] = selectedAppointment.time.split(':');
+                            const startTime = new Date();
+                            startTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                            const endTime = new Date(startTime.getTime() + (selectedAppointment.duration * 60000));
+                            return endTime.toLocaleTimeString('en-US', { 
+                              hour: '2-digit', 
+                              minute: '2-digit',
+                              hour12: false 
+                            });
+                          })()} ({selectedAppointment.duration} minutes)
+                        </span>
                       </div>
                     </div>
 
@@ -1255,10 +1373,162 @@ const AdminAppointments = () => {
                   Close
                 </button>
                 <button
+                  onClick={() => handleEditAppointment(selectedAppointment)}
                   className="btn-primary"
                 >
                   <Edit className="h-4 w-4" />
                   Edit Appointment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Appointment Modal */}
+      {showEditModal && editingAppointment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Edit Appointment</h2>
+                  <p className="text-green-100 mt-1">Update appointment information</p>
+                </div>
+                <button
+                  onClick={handleCancelEdit}
+                  className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 max-h-[60vh] overflow-y-auto">
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="space-y-6">
+                {/* Date and Time */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={editingAppointment.date}
+                      onChange={(e) => handleEditInputChange('date', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Time *
+                    </label>
+                    <input
+                      type="time"
+                      step="300"
+                      value={editingAppointment.time}
+                      onChange={(e) => handleEditInputChange('time', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Select exact time (5-minute intervals)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Duration and Type */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Duration (minutes) *
+                    </label>
+                    <select
+                      value={editingAppointment.duration}
+                      onChange={(e) => handleEditInputChange('duration', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="30">30 minutes</option>
+                      <option value="45">45 minutes</option>
+                      <option value="60">60 minutes</option>
+                      <option value="90">90 minutes</option>
+                      <option value="120">120 minutes</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Type *
+                    </label>
+                    <select
+                      value={editingAppointment.type}
+                      onChange={(e) => handleEditInputChange('type', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="session">Therapy Session</option>
+                      <option value="Regular Session">Regular Session</option>
+                      <option value="consultation">Consultation</option>
+                      <option value="assessment">Assessment</option>
+                      <option value="follow-up">Follow-up</option>
+                      <option value="emergency">Emergency</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status *
+                  </label>
+                  <select
+                    value={editingAppointment.status}
+                    onChange={(e) => handleEditInputChange('status', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="scheduled">Scheduled</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    value={editingAppointment.notes || ''}
+                    onChange={(e) => handleEditInputChange('notes', e.target.value)}
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Add any additional notes..."
+                  />
+                </div>
+              </form>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 bg-gray-50 border-t border-gray-200">
+              <div className="flex flex-wrap gap-3 justify-end">
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  Save Changes
                 </button>
               </div>
             </div>

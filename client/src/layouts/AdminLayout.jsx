@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import InitialsAvatar from '../components/InitialsAvatar';
-import { useNotificationStats } from '../hooks/useNotifications';
+import { useQuery } from 'react-query';
+import { adminAPI } from '../services/api';
 import {
   Users,
   Calendar,
@@ -28,7 +29,31 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const profileDropdownRef = useRef(null);
-  const { stats: notificationStats } = useNotificationStats();
+  // Fetch notifications for unread count
+  const { data: notificationsData, isLoading, error } = useQuery(
+    'adminNotificationsHeader',
+    adminAPI.getNotifications,
+    {
+      refetchOnWindowFocus: false,
+      staleTime: 30000, // 30 seconds
+      cacheTime: 300000, // 5 minutes
+    }
+  );
+
+  // Calculate unread count from notifications data
+  // Note: axios response has data.data structure, so we need notificationsData.data.data.notifications
+  const unreadCount = notificationsData?.data?.data?.notifications?.filter(notification => 
+    notification.read === 0 || notification.isRead === false
+  ).length || 0;
+
+  // Debug logging
+  console.log('AdminLayout - isLoading:', isLoading);
+  console.log('AdminLayout - error:', error);
+  console.log('AdminLayout - notificationsData:', notificationsData);
+  console.log('AdminLayout - notificationsData.data:', notificationsData?.data);
+  console.log('AdminLayout - notifications count:', notificationsData?.data?.data?.notifications?.length);
+  console.log('AdminLayout - unreadCount:', unreadCount);
+  console.log('AdminLayout - first notification:', notificationsData?.data?.data?.notifications?.[0]);
 
   // Check screen size on mount and resize
   useEffect(() => {
@@ -262,8 +287,8 @@ const AdminLayout = () => {
               className="btn-secondary relative"
             >
               <Bell size={16} />
-              {notificationStats?.unreadCount > 0 && (
-                <span className="notification-count">{notificationStats.unreadCount}</span>
+              {!isLoading && unreadCount > 0 && (
+                <span className="notification-count">{unreadCount}</span>
               )}
             </button>
             <button 

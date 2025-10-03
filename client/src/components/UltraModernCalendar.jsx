@@ -201,6 +201,13 @@ const UltraModernCalendar = ({
         shadow: 'shadow-sm',
         icon: User
       },
+      'emergency-care': {
+        bg: 'bg-red-200',
+        border: 'border-red-300',
+        text: 'text-red-900',
+        shadow: 'shadow-sm',
+        icon: AlertCircle
+      },
       // Fallback styles for other types
       session: {
         bg: 'bg-blue-200',

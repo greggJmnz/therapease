@@ -13,9 +13,12 @@ import {
   User,
   Loader2,
   Search,
-  Clock
+  Clock,
+  ExternalLink
 } from 'lucide-react';
-import { useNotifications } from '../../hooks/useNotifications';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useNavigate } from 'react-router-dom';
+import { adminAPI } from '../../services/api';
 
 const AdminNotifications = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -26,18 +29,108 @@ const AdminNotifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  // Fetch notifications using admin API
   const {
-    notifications,
+    data: notificationsData,
     isLoading,
     error,
-    stats,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    refreshNotifications,
-    isMarkingAsRead,
-    isDeleting
-  } = useNotifications({ filter: filterStatus });
+    refetch
+  } = useQuery(
+    'adminNotifications',
+    adminAPI.getNotifications,
+    {
+      refetchOnWindowFocus: false,
+      staleTime: 30000, // 30 seconds
+      cacheTime: 300000, // 5 minutes
+    }
+  );
+
+  // Format notifications for display
+  const notifications = notificationsData?.data?.data?.notifications.map(notification => ({
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    message: notification.message,
+    priority: notification.priority || 'medium',
+    isRead: notification.read === 1 || notification.isRead === true,
+    user: notification.user,
+    createdAt: notification.createdAt,
+    updatedAt: notification.updatedAt,
+    timeAgo: notification.timeAgo || 'Just now'
+  })) || [];
+
+
+  // Get statistics
+  const stats = {
+    total: notificationsData?.data?.total || notifications.length,
+    unreadCount: notifications.filter(n => !n.isRead).length,
+    page: 1,
+    totalPages: 1
+  };
+
+  // Mark as read mutation
+  const markAsReadMutation = useMutation(
+    (notificationId) => adminAPI.markNotificationAsRead(notificationId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('adminNotifications');
+      },
+      onError: (error) => {
+        console.error('Error marking notification as read:', error);
+      }
+    }
+  );
+
+  // Mark all as read mutation
+  const markAllAsReadMutation = useMutation(
+    () => adminAPI.markAllNotificationsAsRead(),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('adminNotifications');
+      },
+      onError: (error) => {
+        console.error('Error marking all notifications as read:', error);
+      }
+    }
+  );
+
+  // Delete notification mutation
+  const deleteNotificationMutation = useMutation(
+    (notificationId) => adminAPI.deleteNotification(notificationId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('adminNotifications');
+      },
+      onError: (error) => {
+        console.error('Error deleting notification:', error);
+      }
+    }
+  );
+
+  // Actions
+  const markAsRead = (notificationId) => {
+    markAsReadMutation.mutate(notificationId);
+  };
+
+  const markAllAsRead = () => {
+    markAllAsReadMutation.mutate();
+  };
+
+  const deleteNotification = (notificationId) => {
+    if (window.confirm('Are you sure you want to delete this notification?')) {
+      deleteNotificationMutation.mutate(notificationId);
+    }
+  };
+
+  const refreshNotifications = () => {
+    refetch();
+  };
+
+  const isMarkingAsRead = markAsReadMutation.isLoading;
+  const isDeleting = deleteNotificationMutation.isLoading;
 
   // Filter notifications by search term and filters
   const filteredNotifications = notifications.filter(notification => {
@@ -77,6 +170,7 @@ const AdminNotifications = () => {
     return true;
   });
 
+
   const getTypeIcon = (type) => {
     switch (type) {
       case 'appointment': return Calendar;
@@ -114,6 +208,18 @@ const AdminNotifications = () => {
     } catch (error) {
       console.error('Error clearing notifications:', error);
     }
+  };
+
+  const handleViewAppointment = (notification) => {
+    // Close the notification modal
+    setSelectedNotification(null);
+    
+    // Navigate to appointments page
+    navigate('/admin/appointments');
+    
+    // Note: In a real implementation, you might want to pass the appointment ID
+    // and have the appointments page automatically open that specific appointment
+    // For now, we'll just navigate to the appointments page
   };
 
   const renderOverview = () => (
@@ -411,9 +517,14 @@ const AdminNotifications = () => {
                           
                           <button
                             onClick={() => deleteNotification(notification.id)}
-                            className="bg-red-50 text-red-700 py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 border border-red-200 hover:bg-red-100 transition-colors"
+                            disabled={deleteNotificationMutation.isLoading}
+                            className="bg-red-50 text-red-700 py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            {deleteNotificationMutation.isLoading ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
                             Delete
                           </button>
                         </div>
@@ -596,6 +707,15 @@ const AdminNotifications = () => {
               </div>
 
               <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+                {selectedNotification.type === 'appointment' && (
+                  <button
+                    onClick={() => handleViewAppointment(selectedNotification)}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 font-semibold"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                    View Appointment
+                  </button>
+                )}
                 {!selectedNotification.isRead && (
                   <button
                     onClick={() => {
@@ -610,12 +730,19 @@ const AdminNotifications = () => {
                 )}
                 <button 
                   onClick={() => {
-                    deleteNotification(selectedNotification.id);
-                    setSelectedNotification(null);
+                    if (window.confirm('Are you sure you want to delete this notification?')) {
+                      deleteNotification(selectedNotification.id);
+                      setSelectedNotification(null);
+                    }
                   }}
-                  className="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-colors flex items-center gap-2 font-semibold"
+                  disabled={deleteNotificationMutation.isLoading}
+                  className="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-colors flex items-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  {deleteNotificationMutation.isLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-5 h-5" />
+                  )}
                   Delete
                 </button>
               <button 

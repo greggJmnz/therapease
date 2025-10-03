@@ -18,10 +18,12 @@ import {
   Trash2
 } from 'lucide-react';
 import { therapistAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import InitialsAvatar from '../../components/InitialsAvatar';
 
 const ProgressTracking = () => {
+  const { user } = useAuth();
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -87,10 +89,12 @@ const ProgressTracking = () => {
 
   useEffect(() => {
     const fetchPatients = async () => {
+      if (!user?.id) return;
+      
       setPatientsLoading(true);
       setPatientsError(null);
       try {
-        const response = await therapistAPI.getPatients();
+        const response = await therapistAPI.getPatients(user.id);
         if (response.data?.data?.patients) {
           setPatients(response.data.data.patients);
         }
@@ -102,7 +106,7 @@ const ProgressTracking = () => {
     };
 
     fetchPatients();
-  }, []);
+  }, [user?.id]);
 
   // Fetch treatment plans
   const { data: treatmentPlansData, refetch: refetchPlans } = useQuery(

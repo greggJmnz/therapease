@@ -1,5 +1,26 @@
 const { runQuery, getRow, getAll, getConnection } = require('../config/database');
 
+// Helper function to calculate time ago
+const getTimeAgo = (date) => {
+  const now = new Date();
+  const diffInMs = now - date;
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 1) {
+    return 'Just now';
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+  } else if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+  } else if (diffInDays < 7) {
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  } else {
+    return date.toLocaleDateString();
+  }
+};
+
 // Get admin dashboard data
 const getDashboard = async (req, res) => {
   try {
@@ -895,7 +916,7 @@ const createAppointment = async (req, res) => {
 
     const newAppointment = await getRow(getAppointmentSql, [appointmentId]);
 
-    // Create notifications for both therapist and patient
+    // Create notifications for therapist, patient, and admin
     try {
       const notificationController = require('./notificationController');
       
@@ -916,6 +937,18 @@ const createAppointment = async (req, res) => {
         'appointment',
         { relatedId: appointmentId }
       );
+
+      // Create notification for admin (get all admin users)
+      const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
+      for (const admin of adminUsers) {
+        await notificationController.createNotification(
+          admin.id,
+          'Appointment Created by Admin',
+          `An admin has created a ${type} appointment between ${therapist.therapistName} and ${patient.patientName} on ${date} at ${time}`,
+          'appointment',
+          { relatedId: appointmentId }
+        );
+      }
     } catch (notificationError) {
       console.error('Notification creation error:', notificationError);
       // Continue without notifications if there's an error
@@ -969,23 +1002,43 @@ const getNotifications = async (req, res) => {
         u.lastName
       FROM notifications n
       LEFT JOIN users u ON n.userId = u.id
+      WHERE n.userId = ? OR n.type IN ('system', 'admin', 'user_management', 'reports') OR n.title LIKE '%admin%' OR n.title LIKE '%system%'
       ORDER BY n.createdAt DESC
     `;
 
-    const notifications = await getAll(sql);
+    const adminUserId = req.user.id;
+    const notifications = await getAll(sql, [adminUserId]);
 
     // Format notification data
-    const formattedNotifications = notifications.map(notification => ({
-      id: notification.id,
-      type: notification.type,
-      title: notification.title,
-      message: notification.message,
-      priority: 'medium', // Default priority since it's not in the table
-      read: notification.isRead,
-      user: notification.firstName ? `${notification.firstName} ${notification.lastName}` : null,
-      createdAt: notification.createdAt,
-      updatedAt: notification.createdAt // Use createdAt as updatedAt since updatedAt doesn't exist
-    }));
+    const formattedNotifications = notifications.map(notification => {
+      const createdAt = new Date(notification.createdAt);
+      const date = createdAt.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      const time = createdAt.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+      
+      return {
+        id: notification.id,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        priority: 'medium', // Default priority since it's not in the table
+        read: notification.isRead,
+        user: notification.firstName ? `${notification.firstName} ${notification.lastName}` : null,
+        createdAt: notification.createdAt,
+        updatedAt: notification.createdAt, // Use createdAt as updatedAt since updatedAt doesn't exist
+        date: date,
+        time: time,
+        timeAgo: getTimeAgo(createdAt)
+      };
+    });
 
     res.json({
       success: true,
@@ -1497,6 +1550,253 @@ const updateUserStatus = async (req, res) => {
   }
 };
 
+// Update appointment (admin)
+const updateAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Check if appointment exists
+    const existingAppointment = await getRow(`
+      SELECT * FROM appointments 
+      WHERE id = ?
+    `, [parseInt(id)]);
+
+    if (!existingAppointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Appointment not found'
+      });
+    }
+
+    // Check for scheduling conflicts if time is being changed
+    if (updateData.appointmentDate || updateData.startTime || updateData.endTime) {
+      const newDate = updateData.appointmentDate || existingAppointment.appointmentDate;
+      const newStartTime = updateData.startTime || existingAppointment.startTime;
+      const newEndTime = updateData.endTime || existingAppointment.endTime;
+
+      const conflictSql = `
+        SELECT id FROM appointments 
+        WHERE therapistId = ? AND appointmentDate = ? AND status != 'cancelled' AND id != ?
+        AND (
+          (startTime <= ? AND endTime > ?) OR
+          (startTime < ? AND endTime >= ?) OR
+          (startTime >= ? AND endTime <= ?)
+        )
+      `;
+
+      const conflicts = await getAll(conflictSql, [
+        existingAppointment.therapistId,
+        newDate, 
+        parseInt(id),
+        newStartTime, newEndTime, 
+        newStartTime, newEndTime, 
+        newStartTime, newEndTime
+      ]);
+
+      if (conflicts.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Time slot conflicts with existing appointment'
+        });
+      }
+    }
+
+    // Build update query dynamically
+    const updateFields = [];
+    const updateValues = [];
+
+    if (updateData.appointmentDate) {
+      updateFields.push('appointmentDate = ?');
+      updateValues.push(updateData.appointmentDate);
+    }
+    if (updateData.startTime) {
+      updateFields.push('startTime = ?');
+      updateValues.push(updateData.startTime);
+    }
+    if (updateData.endTime) {
+      updateFields.push('endTime = ?');
+      updateValues.push(updateData.endTime);
+    }
+    if (updateData.duration) {
+      updateFields.push('duration = ?');
+      updateValues.push(updateData.duration);
+    }
+    if (updateData.type) {
+      updateFields.push('type = ?');
+      updateValues.push(updateData.type);
+    }
+    if (updateData.status) {
+      updateFields.push('status = ?');
+      updateValues.push(updateData.status);
+    }
+    if (updateData.notes !== undefined) {
+      updateFields.push('notes = ?');
+      updateValues.push(updateData.notes);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No valid fields to update'
+      });
+    }
+
+    updateFields.push('updatedAt = NOW()');
+    updateValues.push(parseInt(id));
+
+    const updateSql = `UPDATE appointments SET ${updateFields.join(', ')} WHERE id = ?`;
+    await runQuery(updateSql, updateValues);
+
+    // Get updated appointment
+    const updatedAppointment = await getRow(`
+      SELECT 
+        a.*,
+        CONCAT(pu.firstName, ' ', pu.lastName) as patientName,
+        CONCAT(tu.firstName, ' ', tu.lastName) as therapistName
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users pu ON p.userId = pu.id
+      JOIN users tu ON a.therapistId = tu.id
+      WHERE a.id = ?
+    `, [parseInt(id)]);
+
+    res.json({
+      success: true,
+      message: 'Appointment updated successfully',
+      data: updatedAppointment
+    });
+
+  } catch (error) {
+    console.error('Update appointment error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to update appointment' 
+    });
+  }
+};
+
+// Delete appointment (admin)
+const deleteAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if appointment exists
+    const existingAppointment = await getRow(`
+      SELECT * FROM appointments 
+      WHERE id = ?
+    `, [parseInt(id)]);
+
+    if (!existingAppointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Appointment not found'
+      });
+    }
+
+    // Delete appointment
+    await runQuery('DELETE FROM appointments WHERE id = ?', [parseInt(id)]);
+
+    res.json({
+      success: true,
+      message: 'Appointment deleted successfully',
+      data: existingAppointment
+    });
+
+  } catch (error) {
+    console.error('Delete appointment error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete appointment' });
+  }
+};
+
+// Get reports data (admin)
+const getReports = async (req, res) => {
+  try {
+    // Get basic statistics
+    const totalUsers = await getRow('SELECT COUNT(*) as count FROM users');
+    const totalPatients = await getRow('SELECT COUNT(*) as count FROM patients');
+    const totalTherapists = await getRow('SELECT COUNT(*) as count FROM therapists');
+    const totalAppointments = await getRow('SELECT COUNT(*) as count FROM appointments');
+    
+    // Get appointment statistics by status
+    const appointmentStats = await getAll(`
+      SELECT status, COUNT(*) as count 
+      FROM appointments 
+      GROUP BY status
+    `);
+    
+    // Get appointment statistics by type
+    const appointmentTypes = await getAll(`
+      SELECT type, COUNT(*) as count 
+      FROM appointments 
+      GROUP BY type
+    `);
+    
+    // Get monthly appointment trends (last 6 months)
+    const monthlyTrends = await getAll(`
+      SELECT 
+        DATE_FORMAT(appointmentDate, '%Y-%m') as month,
+        COUNT(*) as count
+      FROM appointments 
+      WHERE appointmentDate >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+      GROUP BY DATE_FORMAT(appointmentDate, '%Y-%m')
+      ORDER BY month
+    `);
+    
+    // Get user registration trends (last 6 months)
+    const userTrends = await getAll(`
+      SELECT 
+        DATE_FORMAT(createdAt, '%Y-%m') as month,
+        COUNT(*) as count
+      FROM users 
+      WHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m')
+      ORDER BY month
+    `);
+    
+    // Get recent activity (last 30 days)
+    const recentActivity = await getAll(`
+      SELECT 
+        'appointment' as type,
+        COUNT(*) as count,
+        'Appointments scheduled' as description
+      FROM appointments 
+      WHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+      UNION ALL
+      SELECT 
+        'user' as type,
+        COUNT(*) as count,
+        'New users registered' as description
+      FROM users 
+      WHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalUsers: totalUsers.count,
+          totalPatients: totalPatients.count,
+          totalTherapists: totalTherapists.count,
+          totalAppointments: totalAppointments.count
+        },
+        appointmentStats: appointmentStats,
+        appointmentTypes: appointmentTypes,
+        monthlyTrends: monthlyTrends,
+        userTrends: userTrends,
+        recentActivity: recentActivity
+      }
+    });
+
+  } catch (error) {
+    console.error('Get reports error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch reports data'
+    });
+  }
+};
+
 module.exports = {
   getDashboard,
   getUsers,
@@ -1507,7 +1807,10 @@ module.exports = {
   getSystemStats,
   getAppointments,
   createAppointment,
+  updateAppointment,
+  deleteAppointment,
   getNotifications,
+  getReports,
   getPatientAssessments,
   getPatientSessions,
   getPatientProgress,

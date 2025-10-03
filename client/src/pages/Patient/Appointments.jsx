@@ -48,10 +48,37 @@ const Appointments = () => {
   const [newAppointmentDate, setNewAppointmentDate] = useState('');
   const [newAppointmentTime, setNewAppointmentTime] = useState('');
 
-  const timeSlots = [
-    '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-    '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM'
-  ];
+  // Generate more precise time slots (5-minute intervals)
+  const timeSlots = (() => {
+    const slots = [];
+    // Morning slots: 8:00 AM to 12:00 PM
+    for (let hour = 8; hour < 12; hour++) {
+      for (let minute = 0; minute < 60; minute += 5) {
+        const time = new Date();
+        time.setHours(hour, minute, 0, 0);
+        const timeString = time.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        });
+        slots.push(timeString);
+      }
+    }
+    // Afternoon slots: 1:00 PM to 6:00 PM
+    for (let hour = 13; hour < 18; hour++) {
+      for (let minute = 0; minute < 60; minute += 5) {
+        const time = new Date();
+        time.setHours(hour, minute, 0, 0);
+        const timeString = time.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        });
+        slots.push(timeString);
+      }
+    }
+    return slots;
+  })();
 
   // Fetch appointments data from API
   const { data: appointmentsData, isLoading: appointmentsLoading, error: appointmentsError, refetch: refetchAppointments } = useQuery(
@@ -569,6 +596,9 @@ const Appointments = () => {
                           </option>
                         ))}
                       </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Select exact time (5-minute intervals)
+                      </p>
                     </div>
 
                     <div>
@@ -1094,6 +1124,9 @@ const Appointments = () => {
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select exact time (5-minute intervals)
+                  </p>
                 </div>
 
                 <div>

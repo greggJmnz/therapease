@@ -773,12 +773,53 @@ const cancelAppointment = async (req, res) => {
       });
     }
 
+    // Check if appointment is on the same day (cannot cancel on appointment day)
+    const appointmentDate = new Date(appointment.appointmentDate);
+    const today = new Date();
+    
+    // Compare dates in local timezone by comparing year, month, and day
+    const appointmentYear = appointmentDate.getFullYear();
+    const appointmentMonth = appointmentDate.getMonth();
+    const appointmentDay = appointmentDate.getDate();
+    
+    const todayYear = today.getFullYear();
+    const todayMonth = today.getMonth();
+    const todayDay = today.getDate();
+    
+    const isSameDay = appointmentYear === todayYear && 
+                     appointmentMonth === todayMonth && 
+                     appointmentDay === todayDay;
+    
+    if (isSameDay) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot cancel an appointment on the same day. Please contact the clinic directly.'
+      });
+    }
+
     // Update appointment status with reason
     await runQuery(`
       UPDATE appointments 
       SET status = 'cancelled', notes = CONCAT(COALESCE(notes, ''), '\nCancellation reason: ', ?), updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
     `, [reason || 'No reason provided', parseInt(id)]);
+
+    // Get updated appointment for broadcasting
+    const updatedAppointment = await getRow(`
+      SELECT 
+        a.*,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        p.diagnosis,
+        u.phone as patientPhone
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE a.id = ?
+    `, [parseInt(id)]);
+
+    // Broadcast appointment change to therapist portal
+    const websocketService = require('../services/websocketService');
+    websocketService.broadcastAppointmentChange(updatedAppointment, 'updated');
 
     res.json({
       success: true,
@@ -824,6 +865,30 @@ const postponeAppointment = async (req, res) => {
       });
     }
 
+    // Check if appointment is on the same day (cannot postpone on appointment day)
+    const appointmentDate = new Date(appointment.appointmentDate);
+    const today = new Date();
+    
+    // Compare dates in local timezone by comparing year, month, and day
+    const appointmentYear = appointmentDate.getFullYear();
+    const appointmentMonth = appointmentDate.getMonth();
+    const appointmentDay = appointmentDate.getDate();
+    
+    const todayYear = today.getFullYear();
+    const todayMonth = today.getMonth();
+    const todayDay = today.getDate();
+    
+    const isSameDay = appointmentYear === todayYear && 
+                     appointmentMonth === todayMonth && 
+                     appointmentDay === todayDay;
+    
+    if (isSameDay) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot postpone an appointment on the same day. Please contact the clinic directly.'
+      });
+    }
+
     // Validate new date and time
     if (!newDate || !newTime) {
       return res.status(400).json({
@@ -832,17 +897,55 @@ const postponeAppointment = async (req, res) => {
       });
     }
 
+    // Convert time format from "10:00 AM" to "10:00" if needed
+    let formattedTime = newTime;
+    if (newTime.includes('AM') || newTime.includes('PM')) {
+      try {
+        const timeObj = new Date(`2000-01-01 ${newTime}`);
+        formattedTime = timeObj.toTimeString().slice(0, 5); // Get HH:MM format
+      } catch (error) {
+        console.error('Time conversion error:', error);
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid time format. Please use HH:MM format.'
+        });
+      }
+    }
+
+    // Calculate new end time based on original duration
+    const startTime = new Date(`2000-01-01T${formattedTime}`);
+    const endTime = new Date(startTime.getTime() + (appointment.duration || 60) * 60000);
+    const endTimeStr = endTime.toTimeString().slice(0, 5);
+
     // Update appointment with new date/time and reason
     await runQuery(`
       UPDATE appointments 
       SET 
         appointmentDate = ?,
         startTime = ?,
-        status = 'pending',
+        endTime = ?,
+        status = 'scheduled',
         notes = CONCAT(COALESCE(notes, ''), '\nPostponement reason: ', ?),
         updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
-    `, [newDate, newTime, reason || 'No reason provided', parseInt(id)]);
+    `, [newDate, formattedTime, endTimeStr, reason || 'No reason provided', parseInt(id)]);
+
+    // Get updated appointment for broadcasting
+    const updatedAppointment = await getRow(`
+      SELECT 
+        a.*,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        p.diagnosis,
+        u.phone as patientPhone
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE a.id = ?
+    `, [parseInt(id)]);
+
+    // Broadcast appointment change to therapist portal
+    const websocketService = require('../services/websocketService');
+    websocketService.broadcastAppointmentChange(updatedAppointment, 'updated');
 
     res.json({
       success: true,
@@ -851,6 +954,14 @@ const postponeAppointment = async (req, res) => {
 
   } catch (error) {
     console.error('Postpone appointment error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      appointmentId: req.params.id,
+      newDate: req.body.newDate,
+      newTime: req.body.newTime,
+      reason: req.body.reason
+    });
     res.status(500).json({ success: false, error: 'Failed to postpone appointment' });
   }
 };
@@ -1470,6 +1581,82 @@ const bookAppointment = async (req, res) => {
   }
 };
 
+// Get patient profile for patient portal
+const getProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+
+    const sql = `
+      SELECT 
+        p.id,
+        p.userId,
+        p.diagnosis,
+        p.medicalHistory,
+        p.goals,
+        p.therapistId,
+        p.emergencyContact,
+        p.insuranceInfo,
+        p.createdAt,
+        p.updatedAt,
+        u.firstName,
+        u.lastName,
+        u.email,
+        u.phone,
+        u.dateOfBirth,
+        u.gender,
+        u.address,
+        u.city,
+        u.state,
+        u.zipCode,
+        u.country
+      FROM patients p
+      JOIN users u ON p.userId = u.id
+      WHERE p.userId = ?
+    `;
+
+    const patient = await getRow(sql, [parseInt(userId)]);
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient profile not found'
+      });
+    }
+
+    // Format patient data
+    const formattedPatient = {
+      id: patient.id,
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      email: patient.email,
+      phone: patient.phone,
+      dateOfBirth: patient.dateOfBirth,
+      gender: patient.gender,
+      address: patient.address,
+      city: patient.city,
+      state: patient.state,
+      zipCode: patient.zipCode,
+      country: patient.country,
+      diagnosis: patient.diagnosis,
+      medicalHistory: patient.medicalHistory,
+      goals: patient.goals,
+      therapistId: patient.therapistId,
+      emergencyContact: patient.emergencyContact,
+      insuranceInfo: patient.insuranceInfo,
+      createdAt: patient.createdAt,
+      updatedAt: patient.updatedAt
+    };
+
+    res.json({
+      success: true,
+      data: formattedPatient
+    });
+
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get profile' });
+  }
+};
 
 module.exports = {
   getPatients,
@@ -1478,6 +1665,7 @@ module.exports = {
   updatePatient,
   deletePatient,
   // Patient portal methods
+  getProfile,
   getDashboard,
   getProgress,
   getAppointments,
