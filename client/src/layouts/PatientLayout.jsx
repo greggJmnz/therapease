@@ -20,6 +20,7 @@ import {
   ChevronDown,
   User,
   Globe,
+  Dumbbell,
 } from 'lucide-react';
 
 const PatientLayout = () => {
@@ -84,7 +85,7 @@ const PatientLayout = () => {
     { 
       name: 'Home Exercises', 
       href: '/patient/exercises', 
-      icon: Target,
+      icon: Dumbbell,
       description: 'Exercise routines'
     },
     { 

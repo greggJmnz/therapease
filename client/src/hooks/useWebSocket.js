@@ -114,6 +114,46 @@ export const useRealtimeData = (queryKey, refetchFn) => {
     }
   });
 
+  // Listen for home exercise changes
+  useWebSocketEvent('home_exercise_change', () => {
+    if (queryKey.includes('exercise') || queryKey.includes('Exercise')) {
+      setIsRefreshing(true);
+      refetchFn().finally(() => setIsRefreshing(false));
+    }
+  });
+
+  // Listen for proof changes
+  useWebSocketEvent('proof_change', () => {
+    if (queryKey.includes('proof') || queryKey.includes('Proof')) {
+      setIsRefreshing(true);
+      refetchFn().finally(() => setIsRefreshing(false));
+    }
+  });
+
+  // Listen for exercise assignment
+  useWebSocketEvent('exercise_assigned', () => {
+    if (queryKey.includes('exercise') || queryKey.includes('Exercise')) {
+      setIsRefreshing(true);
+      refetchFn().finally(() => setIsRefreshing(false));
+    }
+  });
+
+  // Listen for proof submission
+  useWebSocketEvent('proof_submitted', () => {
+    if (queryKey.includes('proof') || queryKey.includes('Proof')) {
+      setIsRefreshing(true);
+      refetchFn().finally(() => setIsRefreshing(false));
+    }
+  });
+
+  // Listen for proof review
+  useWebSocketEvent('proof_reviewed', () => {
+    if (queryKey.includes('proof') || queryKey.includes('Proof')) {
+      setIsRefreshing(true);
+      refetchFn().finally(() => setIsRefreshing(false));
+    }
+  });
+
   return { isRefreshing };
 };
 

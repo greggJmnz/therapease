@@ -120,7 +120,7 @@ const login = async (req, res) => {
         user: { 
           ...userWithoutPassword, 
           ...roleData,
-          id: user.id  // Ensure user ID is preserved, not overwritten by role data
+          id: user.role === 'patient' ? roleData.id : user.id  // Use patient ID for patients, user ID for others
         },
         token
       }
@@ -472,7 +472,11 @@ const verify = async (req, res) => {
     res.json({
       success: true,
       data: {
-        user: { ...user, ...roleData }
+        user: { 
+          ...user, 
+          ...roleData,
+          id: user.role === 'patient' ? roleData.id : user.id  // Use patient ID for patients, user ID for others
+        }
       }
     });
 

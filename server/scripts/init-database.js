@@ -204,6 +204,59 @@ const createTables = async (connection) => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
+  // Home Exercises table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS home_exercises (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      patientId INT NOT NULL,
+      therapistId INT NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      description TEXT NOT NULL,
+      category VARCHAR(100) NOT NULL,
+      instructions JSON NOT NULL,
+      duration INT NOT NULL,
+      frequency VARCHAR(50) NOT NULL,
+      difficulty ENUM('Beginner', 'Intermediate', 'Advanced') NOT NULL,
+      equipment JSON,
+      progressScore INT DEFAULT 0,
+      lastCompleted DATE,
+      streak INT DEFAULT 0,
+      isCompleted BOOLEAN DEFAULT FALSE,
+      assignedDate DATE NOT NULL,
+      dueDate DATE,
+      status ENUM('assigned', 'in_progress', 'completed', 'overdue') DEFAULT 'assigned',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+      FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Home Exercise Proof Submissions table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS home_exercise_proofs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      exerciseId INT NOT NULL,
+      patientId INT NOT NULL,
+      therapistId INT NOT NULL,
+      submissionType ENUM('text', 'image', 'video', 'file') NOT NULL,
+      content TEXT,
+      filePath VARCHAR(500),
+      fileName VARCHAR(255),
+      fileSize INT,
+      mimeType VARCHAR(100),
+      status ENUM('submitted', 'reviewed', 'approved', 'needs_revision') DEFAULT 'submitted',
+      therapistFeedback TEXT,
+      submittedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      reviewedAt TIMESTAMP NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (exerciseId) REFERENCES home_exercises(id) ON DELETE CASCADE,
+      FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+      FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
   // Notifications table
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS notifications (

@@ -26,6 +26,7 @@ import AdminUserManagement from './pages/Admin/AdminUserManagement';
 
 import TherapistDashboard from './pages/Therapist/Dashboard';
 import TherapistDailyNotes from './pages/Therapist/DailyNotes';
+import TherapistHomeExercises from './pages/Therapist/HomeExercises';
 import TherapistAIInsights from './pages/Therapist/AIInsights';
 import TherapistProgressTracking from './pages/Therapist/ProgressTracking';
 import TherapistPatients from './pages/Therapist/TherapistPatients';
@@ -44,6 +45,7 @@ import PatientAssessments from './pages/Patient/Assessments';
 import PatientNotifications from './pages/Patient/Notifications';
 import PatientSettings from './pages/Patient/Settings';
 import PatientHomeExercises from './pages/Patient/HomeExercises';
+import PatientHomeExercisesNew from './pages/Patient/HomeExercisesNew';
 import PatientProfile from './pages/Patient/Profile';
 import PatientHelp from './pages/Patient/Help';
 
@@ -133,6 +135,7 @@ function App() {
                 <Route path="patients" element={<TherapistPatients />} />
                 <Route path="schedule" element={<TherapistSchedule />} />
                 <Route path="daily-notes" element={<TherapistDailyNotes />} />
+                <Route path="home-exercises" element={<TherapistHomeExercises />} />
                 <Route path="ai-insights" element={<TherapistAIInsights />} />
                 <Route path="progress-tracking" element={<TherapistProgressTracking />} />
                 <Route path="notifications" element={<TherapistNotifications />} />
@@ -155,7 +158,7 @@ function App() {
                 <Route path="assessments" element={<PatientAssessments />} />
                 <Route path="notifications" element={<PatientNotifications />} />
                 <Route path="settings" element={<PatientSettings />} />
-                <Route path="exercises" element={<PatientHomeExercises />} />
+                <Route path="exercises" element={<PatientHomeExercisesNew />} />
                 <Route path="profile" element={<PatientProfile />} />
                 <Route path="help" element={<PatientHelp />} />
               </Route>
