@@ -1,31 +1,35 @@
-// Mock OpenAI service for development
-// In production, this would be replaced with actual OpenAI integration
+const OpenAI = require('openai');
 
-const mockOpenAI = {
-  chat: {
-    completions: {
-      create: async (options) => {
-        // Mock response
-        return {
-          choices: [{
-            message: {
-              content: "This is a mock AI response. OpenAI integration is not configured."
-            }
-          }],
-          usage: { total_tokens: 0 },
-          model: "gpt-4-mock"
-        };
-      }
+// Initialize OpenAI with API key
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || 'your-api-key-here'
+});
+
+// Test OpenAI connection
+const testOpenAI = async () => {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      console.log('⚠️  OPENAI_API_KEY not found in environment variables');
+      return false;
     }
+    
+    // Test the connection with a simple request
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: 'Hello' }],
+      max_tokens: 5
+    });
+    
+    console.log('✅ OpenAI API connection successful!');
+    console.log('Model available:', response.model);
+    return true;
+  } catch (error) {
+    console.log('❌ OpenAI API connection failed:', error.message);
+    return false;
   }
 };
 
-// Test OpenAI connection (mock)
-const testOpenAI = async () => {
-  console.log('⚠️  Using mock OpenAI service (not configured)');
-};
-
 module.exports = { 
-  openai: mockOpenAI, 
+  openai, 
   testOpenAI 
 };

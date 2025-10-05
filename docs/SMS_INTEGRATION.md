@@ -1,8 +1,8 @@
-# 📱 SMS Integration with Infobip - TherapEase
+# 📱 SMS Integration with Vonage - TherapEase
 
 ## Overview
 
-TherapEase now includes comprehensive SMS notification capabilities powered by Infobip's SMS API. This integration allows the system to send automated SMS notifications for appointments, assessments, progress updates, and system alerts.
+TherapEase now includes SMS notification capabilities powered by Vonage's SMS API. This integration allows the system to send automated SMS reminders for appointments only.
 
 ## 🚀 Features
 
@@ -16,10 +16,6 @@ TherapEase now includes comprehensive SMS notification capabilities powered by I
 
 ### Core SMS Capabilities
 - **Appointment Reminders**: Automated SMS reminders for upcoming appointments
-- **Assessment Notifications**: SMS alerts for due assessments
-- **Progress Updates**: SMS notifications for progress milestones
-- **Daily Notes Alerts**: SMS when new daily notes are available
-- **System Alerts**: Critical system notifications via SMS
 - **Delivery Tracking**: Real-time SMS delivery status monitoring
 - **Account Management**: SMS balance and usage tracking
 
@@ -39,17 +35,18 @@ Add the following variables to your `.env` file:
 ```bash
 # SMS Configuration
 SMS_ENABLED=true
-INFOBIP_API_KEY=your_infobip_api_key_here
-INFOBIP_BASE_URL=https://api.infobip.com
-INFOBIP_SENDER_ID=TherapEase
+VONAGE_API_KEY=your_vonage_api_key_here
+VONAGE_API_SECRET=your_vonage_api_secret_here
+VONAGE_BASE_URL=https://api.nexmo.com
+VONAGE_FROM_NUMBER=TherapEase
 API_BASE_URL=http://localhost:3000
 ```
 
-### Infobip Account Setup
+### Vonage Account Setup
 
-1. **Create Infobip Account**: Sign up at [infobip.com](https://www.infobip.com)
-2. **Get API Key**: Generate your API key from the Infobip dashboard
-3. **Configure Sender ID**: Set up your sender ID (e.g., "TherapEase")
+1. **Create Vonage Account**: Sign up at [vonage.com](https://www.vonage.com)
+2. **Get API Credentials**: Generate your API key and secret from the Vonage dashboard
+3. **Configure From Number**: Set up your sender number or name (e.g., "TherapEase")
 4. **Add Webhook URL**: Configure delivery status webhook: `https://yourdomain.com/api/notifications/sms/delivery-status`
 
 ## 📊 Database Schema Updates
@@ -139,49 +136,37 @@ const notificationId = await notificationController.createNotification(
 
 ## 📱 SMS Templates
 
-### Pre-built Templates
+### Appointment Reminder Template
 
-1. **Appointment Reminder**
-   ```
-   Hi {name}! Reminder: You have a {type} appointment on {date} at {time}. TherapEase Team
-   ```
+The SMS service includes a single template for appointment reminders:
 
-2. **Assessment Due**
-   ```
-   Hi {name}! Assessment "{title}" for {patientName} is due on {date}. Please complete it soon. TherapEase Team
-   ```
+```
+Hi {name}! Reminder: You have a {type} appointment with {therapistName} on {date} at {time}. TherapEase Team
+```
 
-3. **Progress Update**
-   ```
-   Hi {name}! Progress update: {area} area shows {status}. Check your TherapEase dashboard for details. TherapEase Team
-   ```
-
-4. **Daily Notes Notification**
-   ```
-   Hi {name}! New daily notes from your session on {date} are now available. Check your TherapEase dashboard. TherapEase Team
-   ```
+**Template Variables:**
+- `{name}` - Recipient's name
+- `{type}` - Type of appointment (e.g., "therapy", "assessment")
+- `{therapistName}` - Name of the assigned therapist
+- `{date}` - Appointment date
+- `{time}` - Appointment time
 
 ## 🔄 Webhook Integration
 
 ### Delivery Status Webhook
 
-Infobip will send delivery status updates to your webhook URL:
+Vonage will send delivery status updates to your webhook URL:
 
 ```javascript
 // Webhook payload example
 {
-  "results": [
-    {
-      "messageId": "12345678-1234-1234-1234-123456789012",
-      "status": {
-        "groupId": 3,
-        "groupName": "DELIVERED",
-        "id": 5,
-        "name": "DELIVERED_TO_HANDSET",
-        "description": "Message delivered to handset"
-      }
-    }
-  ]
+  "message_uuid": "12345678-1234-1234-1234-123456789012",
+  "to": "1234567890",
+  "from": "TherapEase",
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "status": "delivered",
+  "error-code": "0",
+  "error-code-label": "Success"
 }
 ```
 

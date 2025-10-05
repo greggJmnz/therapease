@@ -2,18 +2,19 @@ const axios = require('axios');
 const { validatePhilippineNumber } = require('../utils/phoneValidation');
 
 /**
- * Infobip SMS Service for TherapEase
- * Handles SMS notifications through Infobip API
+ * Vonage SMS Service for TherapEase
+ * Handles appointment reminder SMS notifications through Vonage API
  */
 class SMSService {
   constructor() {
-    this.apiKey = process.env.INFOBIP_API_KEY;
-    this.baseUrl = process.env.INFOBIP_BASE_URL || 'https://api.infobip.com';
-    this.senderId = process.env.INFOBIP_SENDER_ID || 'TherapEase';
-    this.enabled = process.env.SMS_ENABLED === 'true' && !!this.apiKey;
+    this.apiKey = process.env.VONAGE_API_KEY;
+    this.apiSecret = process.env.VONAGE_API_SECRET;
+    this.baseUrl = process.env.VONAGE_BASE_URL || 'https://api.nexmo.com';
+    this.fromNumber = process.env.VONAGE_FROM_NUMBER || 'TherapEase';
+    this.enabled = process.env.SMS_ENABLED === 'true' && !!this.apiKey && !!this.apiSecret;
     
     if (!this.enabled) {
-      console.warn('SMS Service disabled: Missing INFOBIP_API_KEY or SMS_ENABLED=false');
+      console.warn('SMS Service disabled: Missing VONAGE_API_KEY, VONAGE_API_SECRET or SMS_ENABLED=false');
     }
   }
 
@@ -47,22 +48,21 @@ class SMSService {
       }
 
       const payload = {
-        messages: [
-          {
-            from: this.senderId,
-            to: formattedNumber,
-            text: message,
-            ...options
-          }
-        ]
+        from: this.fromNumber,
+        to: formattedNumber,
+        text: message,
+        ...options
       };
 
       const response = await axios.post(
-        `${this.baseUrl}/sms/2/text/advanced`,
+        `${this.baseUrl}/v0.1/messages`,
         payload,
         {
+          auth: {
+            username: this.apiKey,
+            password: this.apiSecret
+          },
           headers: {
-            'Authorization': `App ${this.apiKey}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
@@ -70,13 +70,13 @@ class SMSService {
         }
       );
 
-      if (response.data.messages && response.data.messages.length > 0) {
-        const messageStatus = response.data.messages[0].status;
+      if (response.data && response.data.message_uuid) {
         return {
-          success: messageStatus.groupId === 1, // 1 = PENDING_ACCEPTED
-          messageId: response.data.messages[0].messageId,
-          status: messageStatus,
-          response: response.data
+          success: true,
+          messageId: response.data.message_uuid,
+          status: 'accepted',
+          to: formattedNumber,
+          message: message
         };
       }
 
@@ -86,7 +86,9 @@ class SMSService {
       console.error('SMS send error:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.requestError?.serviceException?.text || error.message
+        error: error.response?.data?.detail || error.message,
+        to: formattedNumber,
+        message: message
       };
     }
   }
@@ -99,63 +101,11 @@ class SMSService {
    * @returns {Promise<Object>} - API response
    */
   async sendAppointmentReminder(appointment, recipientPhone, recipientName) {
-    const message = `Hi ${recipientName}! Reminder: You have a ${appointment.type} appointment on ${appointment.appointmentDate} at ${appointment.startTime}. TherapEase Team`;
+    const message = `Hi ${recipientName}! Reminder: You have a ${appointment.type} appointment with ${appointment.therapistName} on ${appointment.appointmentDate} at ${appointment.startTime}. TherapEase Team`;
     
     return await this.sendSMS(recipientPhone, message, {
       notifyUrl: `${process.env.API_BASE_URL}/api/notifications/sms/delivery-status`
     });
-  }
-
-  /**
-   * Send assessment due SMS
-   * @param {Object} assessment - Assessment details
-   * @param {string} recipientPhone - Recipient phone number
-   * @param {string} recipientName - Recipient name
-   * @returns {Promise<Object>} - API response
-   */
-  async sendAssessmentDue(assessment, recipientPhone, recipientName) {
-    const message = `Hi ${recipientName}! Assessment "${assessment.title}" for ${assessment.patientName} is due on ${assessment.scheduledDate}. Please complete it soon. TherapEase Team`;
-    
-    return await this.sendSMS(recipientPhone, message);
-  }
-
-  /**
-   * Send progress update SMS
-   * @param {Object} progress - Progress details
-   * @param {string} recipientPhone - Recipient phone number
-   * @param {string} recipientName - Recipient name
-   * @returns {Promise<Object>} - API response
-   */
-  async sendProgressUpdate(progress, recipientPhone, recipientName) {
-    const message = `Hi ${recipientName}! Progress update: ${progress.area} area shows ${progress.status}. Check your TherapEase dashboard for details. TherapEase Team`;
-    
-    return await this.sendSMS(recipientPhone, message);
-  }
-
-  /**
-   * Send daily notes notification SMS
-   * @param {Object} note - Daily note details
-   * @param {string} recipientPhone - Recipient phone number
-   * @param {string} recipientName - Recipient name
-   * @returns {Promise<Object>} - API response
-   */
-  async sendDailyNotesNotification(note, recipientPhone, recipientName) {
-    const message = `Hi ${recipientName}! New daily notes from your session on ${note.sessionDate} are now available. Check your TherapEase dashboard. TherapEase Team`;
-    
-    return await this.sendSMS(recipientPhone, message);
-  }
-
-  /**
-   * Send system alert SMS
-   * @param {string} message - Alert message
-   * @param {string} recipientPhone - Recipient phone number
-   * @param {string} recipientName - Recipient name
-   * @returns {Promise<Object>} - API response
-   */
-  async sendSystemAlert(message, recipientPhone, recipientName) {
-    const fullMessage = `Hi ${recipientName}! System Alert: ${message} - TherapEase Team`;
-    
-    return await this.sendSMS(recipientPhone, fullMessage);
   }
 
   /**
@@ -230,10 +180,13 @@ class SMSService {
 
     try {
       const response = await axios.get(
-        `${this.baseUrl}/sms/1/reports?messageId=${messageId}`,
+        `${this.baseUrl}/v0.1/messages/${messageId}`,
         {
+          auth: {
+            username: this.apiKey,
+            password: this.apiSecret
+          },
           headers: {
-            'Authorization': `App ${this.apiKey}`,
             'Accept': 'application/json'
           }
         }
@@ -241,7 +194,7 @@ class SMSService {
 
       return {
         success: true,
-        status: response.data.results[0]?.status || 'unknown',
+        status: response.data.status || 'unknown',
         data: response.data
       };
 
@@ -249,7 +202,7 @@ class SMSService {
       console.error('SMS delivery status error:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.requestError?.serviceException?.text || error.message
+        error: error.response?.data?.detail || error.message
       };
     }
   }
@@ -265,10 +218,13 @@ class SMSService {
 
     try {
       const response = await axios.get(
-        `${this.baseUrl}/account/1/balance`,
+        `${this.baseUrl}/account/balance`,
         {
+          auth: {
+            username: this.apiKey,
+            password: this.apiSecret
+          },
           headers: {
-            'Authorization': `App ${this.apiKey}`,
             'Accept': 'application/json'
           }
         }
@@ -276,15 +232,15 @@ class SMSService {
 
       return {
         success: true,
-        balance: response.data.balance,
-        currency: response.data.currency
+        balance: response.data.value,
+        currency: response.data.currency || 'EUR'
       };
 
     } catch (error) {
       console.error('SMS balance error:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.requestError?.serviceException?.text || error.message
+        error: error.response?.data?.detail || error.message
       };
     }
   }

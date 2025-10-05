@@ -109,7 +109,7 @@ All phone numbers are in proper Philippine mobile format:
 - **Format**: +639XXXXXXXXX
 - **Carriers**: Globe, Smart, DITO
 - **Validation**: All numbers are valid and properly formatted
-- **SMS Ready**: Compatible with Infobip SMS service
+- **SMS Ready**: Compatible with Vonage SMS service
 
 ## 🏥 Medical Information
 
@@ -188,7 +188,7 @@ The database now contains:
 - ✅ Realistic medical and professional information
 - ✅ Proper foreign key relationships
 - ✅ Sample data for testing all features
-- ✅ SMS-ready phone numbers for Infobip integration
+- ✅ SMS-ready phone numbers for Vonage integration
 
 ---
 
