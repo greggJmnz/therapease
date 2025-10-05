@@ -583,29 +583,32 @@ const testSMSService = async (req, res) => {
 // Handle SMS delivery status webhook
 const handleSMSDeliveryStatus = async (req, res) => {
   try {
-    const { results } = req.body;
+    const { message_uuid, status, error_code, error_code_label } = req.body;
 
-    if (!results || !Array.isArray(results)) {
+    if (!message_uuid) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid delivery status data'
+        error: 'Invalid delivery status data - missing message_uuid'
       });
     }
 
-    // Process each delivery status update
-    for (const result of results) {
-      const { messageId, status } = result;
-      
-      if (messageId && status) {
-        // Update notification with delivery status
-        await runQuery(
-          'UPDATE notifications SET smsStatus = ? WHERE smsMessageId = ?',
-          [status.statusName, messageId]
-        );
-        
-        console.log(`SMS delivery status updated: ${messageId} - ${status.statusName}`);
-      }
+    // Map Vonage status to our internal status
+    let mappedStatus = 'unknown';
+    if (status === 'delivered') {
+      mappedStatus = 'delivered';
+    } else if (status === 'failed' || error_code !== '0') {
+      mappedStatus = 'failed';
+    } else if (status === 'accepted') {
+      mappedStatus = 'sent';
     }
+
+    // Update notification with delivery status
+    await runQuery(
+      'UPDATE notifications SET smsStatus = ? WHERE smsMessageId = ?',
+      [mappedStatus, message_uuid]
+    );
+    
+    console.log(`SMS delivery status updated: ${message_uuid} - ${mappedStatus}`);
 
     res.json({ success: true, message: 'Delivery status updated' });
 

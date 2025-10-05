@@ -21,7 +21,7 @@ A comprehensive, scalable platform designed specifically for **Pediatric Occupat
 
 ### 📱 Advanced Communication
 - **Push Notifications**: Real-time browser notifications with VAPID integration
-- **SMS Integration**: Automated SMS reminders via Infobip API (Philippine number support)
+- **SMS Integration**: Automated appointment reminder SMS via Vonage API (Philippine number support)
 - **WebSocket Support**: Live updates and real-time communication
 - **Email Notifications**: Comprehensive email notification system
 
@@ -77,7 +77,7 @@ therapease/
 - **Helmet.js** - Security headers
 
 ### Communication & Notifications
-- **Infobip SMS API** - SMS notifications with Philippine number support
+- **Vonage SMS API** - Appointment reminder SMS with Philippine number support
 - **Web Push API** - Browser push notifications
 - **WebSocket** - Real-time updates
 - **VAPID** - Push notification authentication
@@ -94,7 +94,7 @@ therapease/
 - **Node.js 18+** - JavaScript runtime
 - **MySQL 8.0+** - Database server
 - **OpenAI API Key** - For AI-powered features
-- **Infobip Account** - For SMS notifications (optional)
+- **Vonage Account** - For SMS notifications (optional)
 - **Git** - Version control
 - **Modern Browser** - For push notifications support
 
@@ -169,9 +169,10 @@ REACT_APP_VAPID_PUBLIC_KEY=your_vapid_public_key
 
 # SMS Integration (Optional)
 SMS_ENABLED=true
-INFOBIP_API_KEY=your_infobip_api_key
-INFOBIP_BASE_URL=https://api.infobip.com
-INFOBIP_SENDER_ID=TherapEase
+VONAGE_API_KEY=your_vonage_api_key
+VONAGE_API_SECRET=your_vonage_api_secret
+VONAGE_BASE_URL=https://api.nexmo.com
+VONAGE_FROM_NUMBER=TherapEase
 API_BASE_URL=http://localhost:3000
 ```
 
@@ -228,10 +229,10 @@ Comprehensive API documentation is available in `docs/API-spec.md` including:
 
 ### SMS Integration
 - **Philippine Number Support**: Full support for Philippine mobile numbers
-- **Infobip Integration**: Professional SMS delivery service
-- **Automated Reminders**: Appointment and assessment reminders
+- **Vonage Integration**: Professional SMS delivery service
+- **Appointment Reminders**: Automated SMS reminders for upcoming appointments
 - **Delivery Tracking**: Real-time SMS delivery status monitoring
-- **Template System**: Pre-built message templates
+- **Single Template**: Pre-built appointment reminder message template with therapist name
 
 ### WebSocket Support
 - **Real-time Updates**: Live appointment and progress updates

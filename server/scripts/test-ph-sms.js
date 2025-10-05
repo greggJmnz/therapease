@@ -2,7 +2,7 @@
 
 /**
  * Philippine SMS Testing Script for TherapEase
- * Tests Infobip SMS service with Philippine phone numbers
+ * Tests Vonage SMS service with Philippine phone numbers
  */
 
 require('dotenv').config();

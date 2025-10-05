@@ -27,7 +27,7 @@ router.post('/analyze-session', [
 
     const analysis = await gptService.analyzeSessionNotes(patientData, sessionNotes, {
       assessmentType,
-      maxTokens: 1500,
+      maxTokens: 2500,
       temperature: 0.7,
     });
 
@@ -74,7 +74,7 @@ router.post('/progress-summary', [
     const { patientData, progressData } = req.body;
 
     const summary = await gptService.generateProgressSummary(patientData, progressData, {
-      maxTokens: 1200,
+      maxTokens: 2500,
       temperature: 0.6,
     });
 
@@ -122,7 +122,7 @@ router.post('/home-exercise-plan', [
     const { patientData, currentAbilities, goals } = req.body;
 
     const exercisePlan = await gptService.generateHomeExercisePlan(patientData, currentAbilities, goals, {
-      maxTokens: 1800,
+      maxTokens: 2500,
       temperature: 0.8,
     });
 
@@ -169,7 +169,7 @@ router.post('/parent-summary', [
     const { patientData, sessionSummary } = req.body;
 
     const parentSummary = await gptService.generateParentSummary(patientData, sessionSummary, {
-      maxTokens: 1000,
+      maxTokens: 2500,
       temperature: 0.7,
     });
 
@@ -198,10 +198,11 @@ router.post('/parent-summary', [
   }
 });
 
-// Analyze assessment data
+// Analyze assessment data with enhanced OT prompt engineering
 router.post('/analyze-assessment', [
   body('patientData').isObject().withMessage('Patient data is required'),
   body('assessmentData').isObject().withMessage('Assessment data is required'),
+  body('assessmentType').optional().isString().withMessage('Assessment type must be a string'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -213,20 +214,25 @@ router.post('/analyze-assessment', [
       });
     }
 
-    const { patientData, assessmentData } = req.body;
+    const { patientData, assessmentData, assessmentType = 'combined' } = req.body;
 
-    const analysis = await gptService.analyzeAssessmentData(patientData, assessmentData, {
-      maxTokens: 2500,
-      temperature: 0.6,
-    });
+    // Add assessment type to assessment data
+    const enhancedAssessmentData = { ...assessmentData, assessmentType };
+
+        const analysis = await gptService.analyzeAssessmentData(patientData, enhancedAssessmentData, {
+          model: 'gpt-4o', // Using GPT-4o for reliable AI insights
+          maxTokens: 2500,
+          temperature: 0.6,
+        });
 
     if (analysis.success) {
       res.json({
         success: true,
         data: {
-          analysis: analysis.content,
+          insights: analysis.content,
           usage: analysis.usage,
           model: analysis.model,
+          assessmentType: assessmentType,
         },
       });
     } else {
@@ -241,6 +247,7 @@ router.post('/analyze-assessment', [
     res.status(500).json({
       success: false,
       message: 'Internal server error during assessment analysis',
+      error: error.message,
     });
   }
 });

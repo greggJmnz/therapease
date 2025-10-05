@@ -1,40 +1,76 @@
 const { openai } = require('../../server/config/openai');
 const otpfFrameworkPrompt = require('../prompts/otpfFramework');
 const otpfPromptEngineer = require('./otpfPromptEngineer');
+const otPromptTemplates = require('../prompts/otPromptTemplates');
 
 class GPTService {
   constructor() {
-    this.model = 'gpt-4';
-    this.maxTokens = 1500;
+    this.model = 'gpt-4o'; // Using GPT-4o as it works better than GPT-5
+    this.maxTokens = 2500;
     this.temperature = 0.7;
   }
 
   async generateResponse(prompt, options = {}) {
     try {
-      const response = await openai.chat.completions.create({
-        model: options.model || this.model,
-        messages: [
-          {
-            role: 'system',
-            content: otpfFrameworkPrompt
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: options.maxTokens || this.maxTokens,
-        temperature: options.temperature || this.temperature,
-        top_p: options.topP || 1,
-        frequency_penalty: options.frequencyPenalty || 0,
-        presence_penalty: options.presencePenalty || 0
+      // Prepare messages array
+      const messages = [];
+      
+      // Add system prompt (use custom system prompt if provided, otherwise use default OTPF)
+      if (options.systemPrompt) {
+        messages.push({
+          role: 'system',
+          content: options.systemPrompt
+        });
+      } else {
+        messages.push({
+          role: 'system',
+          content: otpfFrameworkPrompt
+        });
+      }
+      
+      // Add user prompt
+      messages.push({
+        role: 'user',
+        content: prompt
       });
+
+      // Use max_completion_tokens for GPT-5, max_tokens for other models
+      const model = options.model || this.model;
+      const isGPT5 = model.includes('gpt-5');
+      
+      const response = await openai.chat.completions.create({
+        model: model,
+        messages: messages,
+        ...(isGPT5 ? 
+          { max_completion_tokens: options.maxTokens || this.maxTokens } : 
+          { max_tokens: options.maxTokens || this.maxTokens }
+        ),
+        // GPT-5 only supports default temperature (1), other models support custom values
+        ...(isGPT5 ? {} : {
+          temperature: options.temperature || this.temperature,
+          top_p: options.topP || 1,
+          frequency_penalty: options.frequencyPenalty || 0,
+          presence_penalty: options.presencePenalty || 0
+        })
+      });
+
+      // Handle different response formats for different models
+      let content = '';
+      if (response.choices && response.choices[0]) {
+        content = response.choices[0].message?.content || '';
+        
+        // For GPT-5, check if there's reasoning content or other fields
+        if (!content && response.choices[0].message?.reasoning) {
+          content = response.choices[0].message.reasoning;
+        }
+      }
 
       return {
         success: true,
-        content: response.choices[0].message.content,
+        content: content,
         usage: response.usage,
-        model: response.model
+        model: response.model,
+        rawResponse: response // Include full response for debugging
       };
     } catch (error) {
       console.error('GPT API Error:', error);
@@ -68,63 +104,74 @@ class GPTService {
     return await this.generateResponse(prompt, options);
   }
 
-  async analyzeAssessmentData(patientData, assessmentData, options = {}) {
+  // Method to select appropriate prompt template based on assessment type
+  selectPromptTemplate(assessmentType, patientData, assessmentData) {
     const { interviewQuestions, observations } = assessmentData;
     
-    const prompt = `
-    As an expert Occupational Therapist, analyze the following assessment data and provide comprehensive insights:
+    switch (assessmentType) {
+      case 'interview-only':
+        return otPromptTemplates.getInterviewAnalysisPrompt(patientData, interviewQuestions);
+      
+      case 'observation-only':
+        return otPromptTemplates.getObservationAnalysisPrompt(patientData, observations);
+      
+      case 'sensory-processing':
+        return otPromptTemplates.getSensoryProcessingPrompt(patientData, assessmentData);
+      
+      case 'motor-skills':
+        return otPromptTemplates.getMotorSkillsPrompt(patientData, assessmentData);
+      
+      case 'therapist-friendly':
+        return otPromptTemplates.getTherapistFriendlyPrompt(patientData, assessmentData);
+      
+      case 'combined':
+      default:
+        return otPromptTemplates.getCombinedAssessmentPrompt(patientData, interviewQuestions, observations);
+    }
+  }
 
-    PATIENT INFORMATION:
-    - Name: ${patientData.firstName} ${patientData.lastName}
-    - Age: ${patientData.age || 'Not specified'}
-    - Diagnosis: ${patientData.diagnosis || 'Not specified'}
-    - Therapy Goals: ${patientData.therapyGoals || 'Not specified'}
-
-    ASSESSMENT DATA:
+  async analyzeAssessmentData(patientData, assessmentData, options = {}) {
+    const { interviewQuestions, observations, assessmentType = 'combined' } = assessmentData;
     
-    Interview Questions and Responses:
-    ${interviewQuestions.map((q, index) => `${index + 1}. Question: ${q.question}\n   Response: ${q.answer || 'Not provided'}`).join('\n')}
+    // Select appropriate prompt template based on assessment type
+    const prompt = this.selectPromptTemplate(assessmentType, patientData, assessmentData);
     
-    Clinical Observations:
-    ${observations || 'No observations recorded'}
+    // Add system prompt for enhanced OT context
+    const systemPrompt = otPromptTemplates.getSystemPrompt();
+    
+    // Use enhanced prompt with system context
+    const enhancedOptions = {
+      ...options,
+      systemPrompt: systemPrompt
+    };
 
-    Please provide a comprehensive analysis including:
+    return await this.generateResponse(prompt, enhancedOptions);
+  }
 
-    1. **Assessment Summary**:
-       - Key findings from the interview responses
-       - Notable observations and their clinical significance
-       - Overall assessment of the patient's current status
+  // Specialized OT Assessment Methods
+  async analyzeInterviewData(patientData, interviewQuestions, options = {}) {
+    const assessmentData = { interviewQuestions, assessmentType: 'interview-only' };
+    return await this.analyzeAssessmentData(patientData, assessmentData, options);
+  }
 
-    2. **Functional Analysis**:
-       - Strengths identified during assessment
-       - Areas of concern or difficulty
-       - Functional abilities demonstrated
+  async analyzeObservationData(patientData, observations, options = {}) {
+    const assessmentData = { observations, assessmentType: 'observation-only' };
+    return await this.analyzeAssessmentData(patientData, assessmentData, options);
+  }
 
-    3. **Clinical Insights**:
-       - Patterns or trends in responses
-       - Behavioral observations and their implications
-       - Any red flags or areas requiring immediate attention
+  async analyzeSensoryProcessing(patientData, assessmentData, options = {}) {
+    const enhancedData = { ...assessmentData, assessmentType: 'sensory-processing' };
+    return await this.analyzeAssessmentData(patientData, enhancedData, options);
+  }
 
-    4. **Treatment Recommendations**:
-       - Specific intervention strategies
-       - Goal setting suggestions
-       - Home program recommendations
-       - Frequency and duration of therapy sessions
+  async analyzeMotorSkills(patientData, assessmentData, options = {}) {
+    const enhancedData = { ...assessmentData, assessmentType: 'motor-skills' };
+    return await this.analyzeAssessmentData(patientData, enhancedData, options);
+  }
 
-    5. **Progress Monitoring**:
-       - Measurable outcomes to track
-       - Assessment tools for ongoing evaluation
-       - Timeline for re-assessment
-
-    6. **Parent/Guardian Guidance**:
-       - Key points to communicate
-       - Home activities and modifications
-       - Signs of progress to watch for
-
-    Please provide your analysis in a clear, professional manner suitable for healthcare documentation. Focus on practical, actionable insights that will help improve patient outcomes.
-    `;
-
-    return await this.generateResponse(prompt, options);
+  async generateTherapistFriendlyInsights(patientData, assessmentData, options = {}) {
+    const enhancedData = { ...assessmentData, assessmentType: 'therapist-friendly' };
+    return await this.analyzeAssessmentData(patientData, enhancedData, options);
   }
 
   // OTPF Prompt Engineering Methods

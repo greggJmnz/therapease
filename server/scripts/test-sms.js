@@ -2,7 +2,7 @@
 
 /**
  * SMS Integration Test Script for TherapEase
- * Tests Infobip SMS service integration
+ * Tests Vonage SMS service integration
  */
 
 require('dotenv').config();
