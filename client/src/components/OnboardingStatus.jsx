@@ -132,3 +132,4 @@ const OnboardingStatus = ({ onboardingStatus, isCompact = false }) => {
 export default OnboardingStatus;
 
 
+

@@ -1897,10 +1897,26 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
 
     try {
       setLoading(true);
-      const response = await adminAPI.assignTherapistToPatient({
-        patientId: patient.patient?.id,
-        therapistId: selectedTherapist
-      });
+      
+      // Check if patient already has a therapist
+      const hasExistingTherapist = patient.patient?.therapistId;
+      
+      let response;
+      if (hasExistingTherapist) {
+        // If patient already has a therapist, add as additional therapist with primary type
+        response = await adminAPI.addTherapistToPatient({
+          patientId: patient.patient?.id,
+          therapistId: selectedTherapist,
+          assignmentType: 'primary',
+          notes: 'Primary therapist assignment'
+        });
+      } else {
+        // If no existing therapist, use the standard assignment
+        response = await adminAPI.assignTherapistToPatient({
+          patientId: patient.patient?.id,
+          therapistId: selectedTherapist
+        });
+      }
 
       if (response.data.success) {
         toast.success('Therapist assigned successfully');
@@ -1927,6 +1943,19 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
 
       if (response.data.success) {
         toast.success(`${therapistName} has been unassigned successfully`);
+        
+        // Refresh the assigned therapists list
+        const refreshResponse = await adminAPI.getPatientTherapists(patient.patient?.id);
+        if (refreshResponse.data.success) {
+          setAssignedTherapists(refreshResponse.data.data.therapists || []);
+        }
+        
+        // Refresh the available therapists list
+        const availableResponse = await adminAPI.getAvailableTherapists(patient.patient?.id);
+        if (availableResponse.data.success) {
+          setTherapists(availableResponse.data.data.therapists || []);
+        }
+        
         onAssignmentSuccess();
       } else {
         toast.error(response.data.error || 'Failed to unassign therapist');
