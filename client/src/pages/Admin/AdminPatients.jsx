@@ -31,11 +31,31 @@ const AdminPatients = () => {
   const [editingPatient, setEditingPatient] = useState(null);
   const [showReportsModal, setShowReportsModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [showAddTherapistModal, setShowAddTherapistModal] = useState(false);
   const [reportsPatient, setReportsPatient] = useState(null);
   const [schedulePatient, setSchedulePatient] = useState(null);
+  const [assignmentPatient, setAssignmentPatient] = useState(null);
+  const [addTherapistPatient, setAddTherapistPatient] = useState(null);
   const [activeTab, setActiveTab] = useState('personal');
   const [actionDropdowns, setActionDropdowns] = useState({});
+  const [patientTherapists, setPatientTherapists] = useState({});
   const dropdownRefs = useRef({});
+
+  // Fetch patient therapists
+  const fetchPatientTherapists = async (patientId) => {
+    try {
+      const response = await adminAPI.getPatientTherapists(patientId);
+      if (response.data.success) {
+        setPatientTherapists(prev => ({
+          ...prev,
+          [patientId]: response.data.data.therapists || []
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching patient therapists:', error);
+    }
+  };
 
   // Fetch patients data from API
   const { data: patientsData, isLoading, error, refetch } = useQuery(
@@ -52,6 +72,18 @@ const AdminPatients = () => {
       }
     }
   );
+
+  // Load patient therapists when patients data is available
+  useEffect(() => {
+    if (patientsData?.data?.data?.users) {
+      const patients = patientsData.data.data.users.filter(user => user.role === 'patient');
+      patients.forEach(patient => {
+        if (patient.patient?.id) {
+          fetchPatientTherapists(patient.patient.id);
+        }
+      });
+    }
+  }, [patientsData]);
 
   // Close all dropdowns
   const closeAllDropdowns = () => {
@@ -143,6 +175,8 @@ const AdminPatients = () => {
         zipCode: patient.zipCode || 'N/A',
         diagnosis: patient.diagnosis || 'N/A',
         goals: patient.goals || 'N/A',
+        therapistId: patient.patient?.therapistId || null,
+        therapistName: patient.therapistName || 'Not assigned',
         status: patient.status || patient.patient?.status || 'active', // Use user status, fallback to patient status
         createdAt: patient.createdAt,
         updatedAt: patient.updatedAt,
@@ -277,8 +311,12 @@ const AdminPatients = () => {
     setEditingPatient(null);
     setShowReportsModal(false);
     setShowScheduleModal(false);
+    setShowAssignmentModal(false);
+    setShowAddTherapistModal(false);
     setReportsPatient(null);
     setSchedulePatient(null);
+    setAssignmentPatient(null);
+    setAddTherapistPatient(null);
   };
 
   const handleViewReports = (patient) => {
@@ -290,6 +328,18 @@ const AdminPatients = () => {
   const handleScheduleSession = (patient) => {
     setSchedulePatient(patient);
     setShowScheduleModal(true);
+    setSelectedPatient(null);
+  };
+
+  const handleAssignTherapist = (patient) => {
+    setAssignmentPatient(patient);
+    setShowAssignmentModal(true);
+    setSelectedPatient(null);
+  };
+
+  const handleAddTherapist = (patient) => {
+    setAddTherapistPatient(patient);
+    setShowAddTherapistModal(true);
     setSelectedPatient(null);
   };
 
@@ -315,6 +365,7 @@ const AdminPatients = () => {
   };
 
   return (
+    <>
     <div className="admin-dashboard">
       {/* Header */}
       <div className="welcome-section">
@@ -448,9 +499,9 @@ const AdminPatients = () => {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contact
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Diagnosis
-                  </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Therapists
+                </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
@@ -488,9 +539,41 @@ const AdminPatients = () => {
                         {patient.phone || 'N/A'}
                   </div>
                 </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{patient.diagnosis || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">{patient.goals || 'No goals set'}</div>
+                    <td className="px-6 py-4">
+                      {(() => {
+                        const patientId = patient.patient?.id;
+                        const therapists = patientTherapists[patientId] || [];
+                        if (therapists.length === 0) {
+                          return (
+                            <div>
+                              <div className="text-sm text-gray-900">Not assigned</div>
+                              <div className="text-sm text-gray-500">No therapists</div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="space-y-1">
+                            {therapists.slice(0, 2).map((therapist, index) => (
+                              <div key={therapist.id} className="flex items-center gap-2">
+                                <div className="text-sm text-gray-900">{therapist.name}</div>
+                                <span className={`px-2 py-1 text-xs rounded-full ${
+                                  therapist.assignmentType === 'primary' ? 'bg-blue-100 text-blue-800' :
+                                  therapist.assignmentType === 'secondary' ? 'bg-gray-100 text-gray-800' :
+                                  therapist.assignmentType === 'collaborative' ? 'bg-green-100 text-green-800' :
+                                  'bg-purple-100 text-purple-800'
+                                }`}>
+                                  {therapist.assignmentType}
+                                </span>
+                              </div>
+                            ))}
+                            {therapists.length > 2 && (
+                              <div className="text-xs text-gray-500">
+                                +{therapists.length - 2} more
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -545,6 +628,28 @@ const AdminPatients = () => {
                                  >
                                    <Edit size={16} />
                                    Edit Patient
+                                 </button>
+                                 <button 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     handleAssignTherapist(patient);
+                                     closeAllDropdowns();
+                                   }}
+                                   className="dropdown-item"
+                                 >
+                                   <UserCheck size={16} />
+                                   Assign Therapist
+                                 </button>
+                                 <button 
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     handleAddTherapist(patient);
+                                     closeAllDropdowns();
+                                   }}
+                                   className="dropdown-item"
+                                 >
+                                   <Users size={16} />
+                                   Add Therapist
                                  </button>
                                  <button 
                                    onClick={(e) => {
@@ -1035,7 +1140,103 @@ const AdminPatients = () => {
             </div>
           </div>
         )}
+
     </div>
+
+    {/* Therapist Assignment Modal - Outside main container for proper positioning */}
+    {showAssignmentModal && assignmentPatient && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Assign Therapist</h2>
+                <p className="text-blue-100 mt-1">
+                  Assign a therapist to {assignmentPatient.firstName} {assignmentPatient.lastName}
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="text-white hover:text-blue-200 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+          {/* Modal Content */}
+          <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
+            <TherapistAssignmentContent
+              patient={assignmentPatient}
+              onAssignmentSuccess={() => {
+                closeModal();
+                refetch();
+                toast.success('Therapist assigned successfully');
+              }}
+            />
+          </div>
+          {/* Modal Footer */}
+          <div className="p-6 bg-gray-50 border-t border-gray-200">
+            <div className="flex justify-end">
+              <button
+                onClick={closeModal}
+                className="px-6 py-3 text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add Therapist Modal */}
+    {showAddTherapistModal && addTherapistPatient && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Add Additional Therapist</h2>
+                <p className="text-green-100 mt-1">
+                  Add another therapist to {addTherapistPatient.firstName} {addTherapistPatient.lastName}
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="text-white hover:text-green-200 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+          {/* Modal Content */}
+          <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
+            <AddTherapistContent
+              patient={addTherapistPatient}
+              onAssignmentSuccess={() => {
+                closeModal();
+                refetch();
+                toast.success('Additional therapist added successfully');
+              }}
+            />
+          </div>
+          {/* Modal Footer */}
+          <div className="p-6 bg-gray-50 border-t border-gray-200">
+            <div className="flex justify-end">
+              <button
+                onClick={closeModal}
+                className="px-6 py-3 text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
@@ -1630,6 +1831,511 @@ const SessionSchedulingContent = ({ patient, onScheduleSuccess }) => {
         </button>
       </div>
     </form>
+  );
+};
+
+// Therapist Assignment Content Component
+const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
+  const [therapists, setTherapists] = useState([]);
+  const [assignedTherapists, setAssignedTherapists] = useState([]);
+  const [selectedTherapist, setSelectedTherapist] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [therapistsLoading, setTherapistsLoading] = useState(true);
+  const [assignedLoading, setAssignedLoading] = useState(true);
+
+  // Fetch assigned therapists
+  React.useEffect(() => {
+    const fetchAssignedTherapists = async () => {
+      try {
+        setAssignedLoading(true);
+        const response = await adminAPI.getPatientTherapists(patient.patient?.id);
+        
+        if (response.data.success) {
+          setAssignedTherapists(response.data.data.therapists || []);
+        } else {
+          console.error('Failed to load assigned therapists:', response.data.error);
+        }
+      } catch (error) {
+        console.error('Error fetching assigned therapists:', error);
+      } finally {
+        setAssignedLoading(false);
+      }
+    };
+
+    fetchAssignedTherapists();
+  }, [patient.patient?.id]);
+
+  // Fetch available therapists
+  React.useEffect(() => {
+    const fetchTherapists = async () => {
+      try {
+        setTherapistsLoading(true);
+        const response = await adminAPI.getAvailableTherapists(patient.patient?.id);
+        console.log('Available therapists:', response.data);
+        
+        if (response.data.success) {
+          setTherapists(response.data.data.therapists || []);
+        } else {
+          toast.error('Failed to load available therapists');
+        }
+      } catch (error) {
+        console.error('Error fetching therapists:', error);
+        toast.error('Failed to load available therapists');
+      } finally {
+        setTherapistsLoading(false);
+      }
+    };
+
+    fetchTherapists();
+  }, [patient.id]);
+
+  const handleAssign = async () => {
+    if (!selectedTherapist) {
+      toast.error('Please select a therapist');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await adminAPI.assignTherapistToPatient({
+        patientId: patient.patient?.id,
+        therapistId: selectedTherapist
+      });
+
+      if (response.data.success) {
+        toast.success('Therapist assigned successfully');
+        onAssignmentSuccess();
+      } else {
+        toast.error(response.data.error || 'Failed to assign therapist');
+      }
+    } catch (error) {
+      console.error('Error assigning therapist:', error);
+      toast.error('Failed to assign therapist');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnassign = async (therapistId, therapistName) => {
+    if (!window.confirm(`Are you sure you want to unassign ${therapistName} from this patient?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await adminAPI.removeTherapistFromPatient(patient.patient?.id, therapistId, 'Admin requested removal');
+
+      if (response.data.success) {
+        toast.success(`${therapistName} has been unassigned successfully`);
+        onAssignmentSuccess();
+      } else {
+        toast.error(response.data.error || 'Failed to unassign therapist');
+      }
+    } catch (error) {
+      console.error('Error unassigning therapist:', error);
+      toast.error('Failed to unassign therapist');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (therapistsLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading available therapists...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Patient Info */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Patient Information</h3>
+        <div className="flex items-center gap-4">
+          <InitialsAvatar 
+            name={`${patient.firstName} ${patient.lastName}`} 
+            size="lg" 
+          />
+          <div>
+            <p className="text-gray-900 font-medium">{patient.firstName} {patient.lastName}</p>
+            <p className="text-sm text-gray-600">{patient.email}</p>
+            <p className="text-sm text-gray-500">Diagnosis: {patient.diagnosis || 'Not specified'}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Currently Assigned Therapists */}
+      {assignedTherapists.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Currently Assigned Therapists
+          </label>
+          
+          {assignedLoading ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-sm text-gray-600">Loading assigned therapists...</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {assignedTherapists.map((therapist) => (
+                <div
+                  key={therapist.id}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-medium text-sm">
+                        {therapist.name.split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{therapist.name}</div>
+                      <div className="text-xs text-gray-500">{therapist.specialization}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          therapist.assignmentType === 'primary' ? 'bg-blue-100 text-blue-800' :
+                          therapist.assignmentType === 'secondary' ? 'bg-gray-100 text-gray-800' :
+                          therapist.assignmentType === 'collaborative' ? 'bg-green-100 text-green-800' :
+                          'bg-purple-100 text-purple-800'
+                        }`}>
+                          {therapist.assignmentType}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          Assigned: {new Date(therapist.assignedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleUnassign(therapist.therapistId, therapist.name)}
+                    disabled={loading}
+                    className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Unassign
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Therapist Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Select Available Therapist *
+        </label>
+        
+        {therapists.length === 0 ? (
+          <div className="text-center py-8 bg-yellow-50 rounded-lg border border-yellow-200">
+            <UserCheck className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-yellow-800 mb-2">No Available Therapists</h3>
+            <p className="text-yellow-600">
+              All therapists are currently at capacity or not accepting new patients.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {therapists.map((therapist) => (
+              <div
+                key={therapist.id}
+                className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                  selectedTherapist === therapist.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setSelectedTherapist(therapist.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="radio"
+                      name="therapist"
+                      value={therapist.id}
+                      checked={selectedTherapist === therapist.id}
+                      onChange={() => setSelectedTherapist(therapist.id)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <InitialsAvatar 
+                      name={therapist.name} 
+                      size="md" 
+                    />
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900">{therapist.name}</h4>
+                      <p className="text-sm text-gray-600">{therapist.specialization}</p>
+                      <p className="text-sm text-gray-500">
+                        {therapist.yearsOfExperience} years experience • {therapist.availableSlots} slots available
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">
+                      {therapist.currentPatientCount}/{therapist.maxPatients} patients
+                    </div>
+                    <div className="text-xs text-green-600 font-medium">
+                      Available
+                    </div>
+                  </div>
+                </div>
+                
+                {therapist.availability && (
+                  <div className="mt-3 ml-8">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Availability:</span> {therapist.availability}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Assignment Button */}
+      {therapists.length > 0 && (
+        <div className="flex justify-end pt-4">
+          <button
+            onClick={handleAssign}
+            disabled={loading || !selectedTherapist}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Assigning...
+              </>
+            ) : (
+              <>
+                <UserCheck className="h-4 w-4" />
+                Assign Therapist
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Add Therapist Content Component
+const AddTherapistContent = ({ patient, onAssignmentSuccess }) => {
+  const [therapists, setTherapists] = useState([]);
+  const [selectedTherapist, setSelectedTherapist] = useState(null);
+  const [assignmentType, setAssignmentType] = useState('secondary');
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [therapistsLoading, setTherapistsLoading] = useState(true);
+
+
+  // Fetch available therapists
+  React.useEffect(() => {
+    const fetchTherapists = async () => {
+      try {
+        setTherapistsLoading(true);
+        const response = await adminAPI.getAvailableTherapists(patient.patient?.id);
+        console.log('Available therapists:', response.data);
+        
+        if (response.data.success) {
+          setTherapists(response.data.data.therapists || []);
+        } else {
+          toast.error('Failed to load available therapists');
+        }
+      } catch (error) {
+        console.error('Error fetching therapists:', error);
+        toast.error('Failed to load available therapists');
+      } finally {
+        setTherapistsLoading(false);
+      }
+    };
+
+    fetchTherapists();
+  }, [patient.patient?.id]);
+
+  const handleAddTherapist = async () => {
+    if (!selectedTherapist) {
+      toast.error('Please select a therapist');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await adminAPI.addTherapistToPatient({
+        patientId: patient.patient?.id,
+        therapistId: selectedTherapist,
+        assignmentType,
+        notes
+      });
+
+      if (response.data.success) {
+        toast.success('Additional therapist added successfully');
+        onAssignmentSuccess();
+      } else {
+        toast.error(response.data.error || 'Failed to add therapist');
+      }
+    } catch (error) {
+      console.error('Error adding therapist:', error);
+      toast.error('Failed to add therapist');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (therapistsLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading available therapists...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Patient Info */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Patient Information</h3>
+        <div className="flex items-center gap-4">
+          <InitialsAvatar 
+            name={`${patient.firstName} ${patient.lastName}`} 
+            size="lg" 
+          />
+          <div>
+            <p className="text-gray-900 font-medium">{patient.firstName} {patient.lastName}</p>
+            <p className="text-sm text-gray-600">{patient.email}</p>
+            <p className="text-sm text-gray-500">Current Therapist: {patient.therapistName || 'Not assigned'}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Assignment Type Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Assignment Type *
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+            <input
+              type="radio"
+              name="assignmentType"
+              value="secondary"
+              checked={assignmentType === 'secondary'}
+              onChange={(e) => setAssignmentType(e.target.value)}
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+            />
+            <div className="ml-3">
+              <div className="text-sm font-medium text-gray-900">Secondary</div>
+              <div className="text-sm text-gray-500">Supporting therapist</div>
+            </div>
+          </label>
+          <label className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+            <input
+              type="radio"
+              name="assignmentType"
+              value="collaborative"
+              checked={assignmentType === 'collaborative'}
+              onChange={(e) => setAssignmentType(e.target.value)}
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+            />
+            <div className="ml-3">
+              <div className="text-sm font-medium text-gray-900">Collaborative</div>
+              <div className="text-sm text-gray-500">Equal partnership</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      {/* Therapist Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Select Additional Therapist *
+        </label>
+        
+        {therapists.length === 0 ? (
+          <div className="text-center py-8 bg-yellow-50 rounded-lg border border-yellow-200">
+            <UserCheck className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-yellow-800 mb-2">No Available Therapists</h3>
+            <p className="text-yellow-600">
+              All therapists are currently at capacity or not accepting new patients.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {therapists.map((therapist) => (
+              <label key={therapist.id} className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="therapist"
+                  value={therapist.id}
+                  checked={selectedTherapist === therapist.id}
+                  onChange={(e) => setSelectedTherapist(parseInt(e.target.value))}
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                />
+                <div className="ml-4 flex-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{therapist.name}</div>
+                      <div className="text-sm text-gray-500">{therapist.specialization}</div>
+                      <div className="text-xs text-gray-400">
+                        {therapist.yearsOfExperience} years experience • {therapist.availableSlots} slots available
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-green-600">
+                        {therapist.currentPatientCount}/{therapist.maxPatients} patients
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Notes */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Assignment Notes (Optional)
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          placeholder="Add any notes about this assignment..."
+        />
+      </div>
+
+      {/* Action Buttons */}
+      {therapists.length > 0 && (
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={handleAddTherapist}
+            disabled={loading || !selectedTherapist}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Adding...
+              </>
+            ) : (
+              <>
+                <Users className="h-4 w-4" />
+                Add Therapist
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 

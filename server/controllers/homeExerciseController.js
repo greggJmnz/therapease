@@ -85,6 +85,23 @@ const getPatientExercises = async (req, res) => {
       return res.status(400).json({ error: 'Patient ID is required' });
     }
 
+    // First, check if the provided ID is a user ID or patient ID
+    // If it's a user ID, look up the corresponding patient ID
+    let actualPatientId = patientId;
+    
+    // Check if the ID exists in the patients table
+    const patientCheck = await getRow('SELECT id FROM patients WHERE id = ?', [patientId]);
+    
+    if (!patientCheck) {
+      // If not found in patients table, try to find by userId
+      const userPatientCheck = await getRow('SELECT id FROM patients WHERE userId = ?', [patientId]);
+      if (userPatientCheck) {
+        actualPatientId = userPatientCheck.id;
+      } else {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+    }
+
     const query = `
       SELECT 
         he.*,
@@ -100,7 +117,7 @@ const getPatientExercises = async (req, res) => {
       ORDER BY he.assignedDate DESC, he.createdAt DESC
     `;
 
-    const exercises = await runQuery(query, [patientId]);
+    const exercises = await runQuery(query, [actualPatientId]);
 
     res.json({
       success: true,
@@ -306,6 +323,23 @@ const submitProof = async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Check if the provided patientId is a user ID or patient ID
+    // If it's a user ID, look up the corresponding patient ID
+    let actualPatientId = patientId;
+    
+    // Check if the ID exists in the patients table
+    const patientCheck = await getRow('SELECT id FROM patients WHERE id = ?', [patientId]);
+    
+    if (!patientCheck) {
+      // If not found in patients table, try to find by userId
+      const userPatientCheck = await getRow('SELECT id FROM patients WHERE userId = ?', [patientId]);
+      if (userPatientCheck) {
+        actualPatientId = userPatientCheck.id;
+      } else {
+        return res.status(404).json({ error: 'Patient not found' });
+      }
+    }
+
     let filePath = null;
     let fileName = null;
     let fileSize = null;
@@ -327,7 +361,7 @@ const submitProof = async (req, res) => {
 
     const result = await runQuery(query, [
       exerciseId,
-      patientId,
+      actualPatientId,
       therapistId,
       submissionType,
       content || null,
@@ -394,9 +428,24 @@ const getExerciseProofs = async (req, res) => {
 
     const proofs = await runQuery(query, [exerciseId]);
 
+    // Convert file paths to proper URLs
+    const proofsWithUrls = proofs.map(proof => {
+      if (proof.filePath) {
+        // Check if it's a data URL
+        if (proof.filePath.startsWith('data:')) {
+          proof.fileUrl = proof.filePath;
+        } else {
+          // Convert local file path to HTTP URL
+          const fileName = proof.filePath.split('/').pop();
+          proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+        }
+      }
+      return proof;
+    });
+
     res.json({
       success: true,
-      data: proofs
+      data: proofsWithUrls
     });
   } catch (error) {
     console.error('Error fetching exercise proofs:', error);
@@ -494,9 +543,24 @@ const getTherapistProofs = async (req, res) => {
 
     const proofs = await runQuery(query, [therapistId]);
 
+    // Convert file paths to proper URLs
+    const proofsWithUrls = proofs.map(proof => {
+      if (proof.filePath) {
+        // Check if it's a data URL
+        if (proof.filePath.startsWith('data:')) {
+          proof.fileUrl = proof.filePath;
+        } else {
+          // Convert local file path to HTTP URL
+          const fileName = proof.filePath.split('/').pop();
+          proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+        }
+      }
+      return proof;
+    });
+
     res.json({
       success: true,
-      data: proofs
+      data: proofsWithUrls
     });
   } catch (error) {
     console.error('Error fetching therapist proofs:', error);
@@ -526,9 +590,24 @@ const getPatientProofs = async (req, res) => {
 
     const proofs = await runQuery(query, [patientId]);
 
+    // Convert file paths to proper URLs
+    const proofsWithUrls = proofs.map(proof => {
+      if (proof.filePath) {
+        // Check if it's a data URL
+        if (proof.filePath.startsWith('data:')) {
+          proof.fileUrl = proof.filePath;
+        } else {
+          // Convert local file path to HTTP URL
+          const fileName = proof.filePath.split('/').pop();
+          proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+        }
+      }
+      return proof;
+    });
+
     res.json({
       success: true,
-      data: proofs
+      data: proofsWithUrls
     });
   } catch (error) {
     console.error('Error fetching patient proofs:', error);

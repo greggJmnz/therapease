@@ -94,8 +94,8 @@ const Notifications = () => {
         return (
           <button
             onClick={() => {
-              // Navigate to assessments page
-              window.location.href = '/patient/assessments';
+              // Navigate to progress page instead
+              window.location.href = '/patient/progress';
               handleMarkAsRead(notification.id);
             }}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"

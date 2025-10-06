@@ -4,6 +4,10 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import InitialsAvatar from '../components/InitialsAvatar';
 import { useNotificationStats } from '../hooks/useNotifications';
+import OnboardingStatus from '../components/OnboardingStatus';
+import { useQuery, useQueryClient } from 'react-query';
+import { patientAPI } from '../services/api';
+import { useNavigationState } from '../hooks/useNavigationState';
 import {
   Calendar,
   FileText,
@@ -27,11 +31,62 @@ const PatientLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const profileDropdownRef = useRef(null);
   const { stats: notificationStats } = useNotificationStats();
+  const { startNavigation, completeNavigation, canNavigate } = useNavigationState();
+  const queryClient = useQueryClient();
+
+  // Check onboarding status
+  const { data: onboardingStatus, isLoading: onboardingLoading, refetch: refetchOnboardingStatus } = useQuery(
+    'patientOnboardingStatus',
+    async () => {
+      const response = await patientAPI.getOnboardingStatus();
+      return response.data; // Extract just the data part
+    },
+    {
+      enabled: user?.role === 'patient',
+      refetchOnWindowFocus: true,
+      staleTime: 0, // Always fetch fresh data
+      cacheTime: 0, // Don't cache the data
+    }
+  );
+
+  // Invalidate onboarding status when user changes
+  useEffect(() => {
+    if (user?.id) {
+      queryClient.invalidateQueries('patientOnboardingStatus');
+      // Also manually refetch to ensure fresh data
+      refetchOnboardingStatus();
+    }
+  }, [user?.id, queryClient, refetchOnboardingStatus]);
+
+
+  // Handle navigation based on onboarding status
+  useEffect(() => {
+    if (onboardingLoading || isRedirecting || !onboardingStatus?.data) return;
+
+    const isComplete = onboardingStatus.data.isComplete === true || onboardingStatus.data.isComplete === 1;
+    const currentPath = location.pathname;
+
+    // If onboarding is complete and user is on onboarding page, redirect to dashboard
+    if (isComplete && currentPath === '/patient/onboarding') {
+      setIsRedirecting(true);
+      navigate('/patient/dashboard');
+      // Reset redirecting state after a short delay
+      setTimeout(() => setIsRedirecting(false), 1000);
+    }
+    // If onboarding is not complete and user is on dashboard, redirect to onboarding
+    else if (!isComplete && currentPath === '/patient/dashboard') {
+      setIsRedirecting(true);
+      navigate('/patient/onboarding');
+      // Reset redirecting state after a short delay
+      setTimeout(() => setIsRedirecting(false), 1000);
+    }
+  }, [onboardingStatus, location.pathname, navigate, isRedirecting, onboardingLoading]);
 
   // Check screen size on mount and resize
   useEffect(() => {
@@ -87,12 +142,6 @@ const PatientLayout = () => {
       href: '/patient/exercises', 
       icon: Dumbbell,
       description: 'Exercise routines'
-    },
-    { 
-      name: 'Assessments', 
-      href: '/patient/assessments', 
-      icon: Target,
-      description: 'Complete assessments'
     },
     { 
       name: 'Notifications', 
@@ -375,6 +424,12 @@ const PatientLayout = () => {
         </div>
         
         <div className="page-content">
+          {/* Show onboarding status if not complete and not on onboarding page */}
+          {onboardingStatus?.data && !onboardingStatus.data.isComplete && location.pathname !== '/patient/onboarding' && (
+            <div className="px-6 pt-4">
+              <OnboardingStatus onboardingStatus={onboardingStatus.data} isCompact={true} />
+            </div>
+          )}
           <Outlet />
         </div>
       </main>

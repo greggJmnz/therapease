@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
 
 const initDatabase = async () => {
   let connection;

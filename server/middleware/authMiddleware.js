@@ -39,12 +39,15 @@ const authenticateToken = (req, res, next) => {
       }
 
       // Add user info to request
+      // JWT token contains 'userId' field, so use that consistently
+      const userId = decoded.userId || decoded.id;
       req.user = {
-        id: decoded.id || decoded.userId,
-        userId: decoded.id || decoded.userId,
+        id: userId,
+        userId: userId,
         email: decoded.email,
         role: decoded.role
       };
+
 
       next();
     });
@@ -141,7 +144,7 @@ const authorizeResourceOwner = (resourceType, resourceIdField = 'id') => {
               'SELECT therapistId FROM patients WHERE id = ?',
               [resourceId]
             );
-            isOwner = patient && patient.therapistId === req.user.userId;
+            isOwner = patient && patient.therapistId === req.user.id;
           }
           break;
 
@@ -152,7 +155,7 @@ const authorizeResourceOwner = (resourceType, resourceIdField = 'id') => {
               'SELECT therapistId FROM assessments WHERE id = ?',
               [resourceId]
             );
-            isOwner = assessment && assessment.therapistId === req.user.userId;
+            isOwner = assessment && assessment.therapistId === req.user.id;
           }
           break;
 
@@ -163,7 +166,7 @@ const authorizeResourceOwner = (resourceType, resourceIdField = 'id') => {
               'SELECT therapistId FROM daily_notes WHERE id = ?',
               [resourceId]
             );
-            isOwner = dailyNote && dailyNote.therapistId === req.user.userId;
+            isOwner = dailyNote && dailyNote.therapistId === req.user.id;
           }
           break;
 
@@ -174,7 +177,7 @@ const authorizeResourceOwner = (resourceType, resourceIdField = 'id') => {
               SELECT pt.id FROM progress_tracking pt
               JOIN patients p ON pt.patientId = p.id
               WHERE pt.id = ? AND p.therapistId = ?
-            `, [resourceId, req.user.userId]);
+            `, [resourceId, req.user.id]);
             isOwner = !!progress;
           }
           break;
@@ -186,7 +189,7 @@ const authorizeResourceOwner = (resourceType, resourceIdField = 'id') => {
               'SELECT therapistId FROM appointments WHERE id = ?',
               [resourceId]
             );
-            isOwner = appointment && appointment.therapistId === req.user.userId;
+            isOwner = appointment && appointment.therapistId === req.user.id;
           }
           break;
 
@@ -249,7 +252,7 @@ const canAccessPatient = async (req, res, next) => {
         [patientId]
       );
       
-      if (!patient || patient.therapistId !== req.user.userId) {
+      if (!patient || patient.therapistId !== req.user.id) {
         return res.status(403).json({
           success: false,
           error: 'Access denied. You can only access your assigned patients.'
@@ -262,7 +265,7 @@ const canAccessPatient = async (req, res, next) => {
         [patientId]
       );
       
-      if (!patient || patient.userId !== req.user.userId) {
+      if (!patient || patient.userId !== req.user.id) {
         return res.status(403).json({
           success: false,
           error: 'Access denied. You can only access your own data.'

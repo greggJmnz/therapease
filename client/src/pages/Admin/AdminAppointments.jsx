@@ -104,7 +104,14 @@ const AdminAppointments = () => {
   const allAppointments = useMemo(() => {
     const rawAppointments = appointmentsData?.data?.data?.appointments || [];
     
-    return rawAppointments.map(appointment => {
+    return rawAppointments
+      .filter(appointment => {
+        // Only show appointments from October 10, 2025
+        const appointmentDate = new Date(appointment.appointmentDate || new Date());
+        const targetDate = new Date('2025-10-10');
+        return appointmentDate.toDateString() === targetDate.toDateString();
+      })
+      .map(appointment => {
       const appointmentDate = new Date(appointment.appointmentDate || new Date());
       const appointmentTime = appointment.appointmentTime || '09:00';
       
@@ -682,7 +689,6 @@ const AdminAppointments = () => {
               >
                 <option value="all">All Types</option>
                 <option value="session">Therapy Session</option>
-                <option value="Regular Session">Regular Session</option>
                 <option value="consultation">Consultation</option>
                 <option value="assessment">Assessment</option>
                 <option value="follow-up">Follow-up</option>
@@ -1145,7 +1151,6 @@ const AdminAppointments = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="session">Therapy Session</option>
-                    <option value="Regular Session">Regular Session</option>
                     <option value="consultation">Consultation</option>
                     <option value="assessment">Assessment</option>
                     <option value="follow-up">Follow-up</option>

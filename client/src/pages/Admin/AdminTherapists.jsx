@@ -34,7 +34,9 @@ const AdminTherapists = () => {
   const [selectedTherapist, setSelectedTherapist] = useState(null);
   const [editingTherapist, setEditingTherapist] = useState(null);
   const [showGenerateAccountModal, setShowGenerateAccountModal] = useState(false);
+  const [showCapacityModal, setShowCapacityModal] = useState(false);
   const [generatedCredentials, setGeneratedCredentials] = useState(null);
+  const [capacityTherapist, setCapacityTherapist] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [activeDropdown, setActiveDropdown] = useState(null); // Track which dropdown is open
@@ -73,6 +75,9 @@ const AdminTherapists = () => {
       availability: therapist.therapist?.availability || 'Not specified',
       status: therapist.status || 'active',
       patientsCount: therapist.patientCount || 0, // Count of assigned patients
+      maxPatients: therapist.therapist?.maxPatients || 20, // Maximum patients capacity
+      isAcceptingPatients: therapist.therapist?.isAcceptingPatients !== false, // Default to true
+      availableSlots: (therapist.therapist?.maxPatients || 20) - (therapist.patientCount || 0),
       address: therapist.address || 'Not provided',
       city: therapist.city || 'Not provided',
       state: therapist.state || 'Not provided',
@@ -131,6 +136,19 @@ const AdminTherapists = () => {
     console.log('Edit therapist clicked:', therapist);
     setEditingTherapist({ ...therapist });
     setSelectedTherapist(null);
+  };
+
+  const handleManageCapacity = (therapist) => {
+    setCapacityTherapist(therapist);
+    setShowCapacityModal(true);
+  };
+
+  const closeModal = () => {
+    setSelectedTherapist(null);
+    setEditingTherapist(null);
+    setShowGenerateAccountModal(false);
+    setShowCapacityModal(false);
+    setCapacityTherapist(null);
   };
 
   const handleSave = async () => {
@@ -293,6 +311,7 @@ const AdminTherapists = () => {
   };
 
   return (
+    <>
     <div className="admin-dashboard" onClick={(e) => {
       if (!e.target.closest('.dropdown-menu') && !e.target.closest('.dropdown-trigger')) {
         closeDropdown();
@@ -410,7 +429,19 @@ const AdminTherapists = () => {
                 </div>
                 <div className="detail-item">
                   <span className="label">Patients:</span>
-                  <span>{therapist.patientsCount}</span>
+                  <span>{therapist.patientsCount}/{therapist.maxPatients}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Available Slots:</span>
+                  <span className={therapist.availableSlots > 0 ? 'text-green-600' : 'text-red-600'}>
+                    {therapist.availableSlots}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <span className="label">Accepting:</span>
+                  <span className={therapist.isAcceptingPatients ? 'text-green-600' : 'text-red-600'}>
+                    {therapist.isAcceptingPatients ? 'Yes' : 'No'}
+                  </span>
                 </div>
               </div>
 
@@ -422,6 +453,10 @@ const AdminTherapists = () => {
                 <button className="therapist-action-btn" onClick={() => handleEdit(therapist)}>
                   <Edit size={16} />
                   Edit
+                </button>
+                <button className="therapist-action-btn" onClick={() => handleManageCapacity(therapist)}>
+                  <Users size={16} />
+                  Capacity
                 </button>
                 {therapist.status === 'pending' && (
                   <button className="therapist-action-btn approve" onClick={() => handleApprove(therapist.id)}>
@@ -454,6 +489,9 @@ const AdminTherapists = () => {
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Patients
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Capacity
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -496,6 +534,19 @@ const AdminTherapists = () => {
                       <div className="flex items-center text-sm text-gray-900">
                         <Users className="h-4 w-4 text-gray-400 mr-2" />
                         {therapist.patientsCount || 0}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        <div className="flex items-center justify-between">
+                          <span>{therapist.patientsCount}/{therapist.maxPatients}</span>
+                          <span className={`text-xs ${therapist.availableSlots > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {therapist.availableSlots} available
+                          </span>
+                        </div>
+                        <div className={`text-xs ${therapist.isAcceptingPatients ? 'text-green-600' : 'text-red-600'}`}>
+                          {therapist.isAcceptingPatients ? 'Accepting patients' : 'Not accepting'}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -548,6 +599,17 @@ const AdminTherapists = () => {
                             >
                               <Edit size={16} />
                               Edit
+                            </button>
+                            <button 
+                              className="dropdown-item" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleManageCapacity(therapist);
+                                closeDropdownWithDelay();
+                              }}
+                            >
+                              <Users size={16} />
+                              Manage Capacity
                             </button>
                             {therapist.status === 'pending' && (
                               <button 
@@ -1122,7 +1184,206 @@ const AdminTherapists = () => {
           </div>
         </div>
       )}
+
     </div>
+
+    {/* Capacity Management Modal - Outside main container for proper positioning */}
+    {showCapacityModal && capacityTherapist && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Manage Therapist Capacity</h2>
+                <p className="text-green-100 mt-1">
+                  Set patient capacity limits for {capacityTherapist.name}
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="text-white hover:text-green-200 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Content */}
+          <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
+            <TherapistCapacityContent 
+              therapist={capacityTherapist} 
+              onCapacityUpdate={() => {
+                closeModal();
+                refetch();
+                toast.success('Therapist capacity updated successfully');
+              }}
+            />
+          </div>
+
+          {/* Modal Footer */}
+          <div className="p-6 bg-gray-50 border-t border-gray-200">
+            <div className="flex justify-end">
+              <button
+                onClick={closeModal}
+                className="px-6 py-3 text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
+  );
+};
+
+// Therapist Capacity Management Content Component
+const TherapistCapacityContent = ({ therapist, onCapacityUpdate }) => {
+  const [formData, setFormData] = useState({
+    maxPatients: therapist.maxPatients || 20,
+    isAcceptingPatients: therapist.isAcceptingPatients !== false
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (formData.maxPatients < therapist.patientsCount) {
+      toast.error(`Cannot set max patients to ${formData.maxPatients}. Therapist currently has ${therapist.patientsCount} patients assigned.`);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await adminAPI.updateTherapistAvailability(therapist.id, {
+        maxPatients: parseInt(formData.maxPatients),
+        isAcceptingPatients: formData.isAcceptingPatients
+      });
+
+      if (response.data.success) {
+        toast.success('Therapist capacity updated successfully');
+        onCapacityUpdate();
+      } else {
+        toast.error(response.data.error || 'Failed to update therapist capacity');
+      }
+    } catch (error) {
+      console.error('Error updating therapist capacity:', error);
+      toast.error('Failed to update therapist capacity');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Therapist Info */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Therapist Information</h3>
+        <div className="flex items-center gap-4">
+          <InitialsAvatar 
+            name={therapist.name} 
+            size="lg" 
+          />
+          <div>
+            <p className="text-gray-900 font-medium">{therapist.name}</p>
+            <p className="text-sm text-gray-600">{therapist.specialization}</p>
+            <p className="text-sm text-gray-500">Currently has {therapist.patientsCount} patients assigned</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Capacity Settings */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Maximum Patients *
+          </label>
+          <input
+            type="number"
+            min={therapist.patientsCount}
+            max={100}
+            value={formData.maxPatients}
+            onChange={(e) => handleInputChange('maxPatients', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            required
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            Minimum: {therapist.patientsCount} (current patient count)
+          </p>
+        </div>
+
+        <div>
+          <label className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              checked={formData.isAcceptingPatients}
+              onChange={(e) => handleInputChange('isAcceptingPatients', e.target.checked)}
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Accepting new patients
+            </span>
+          </label>
+          <p className="text-sm text-gray-500 mt-1">
+            When unchecked, this therapist will not appear in available therapists for new patient assignments
+          </p>
+        </div>
+      </div>
+
+      {/* Current Status */}
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h4 className="text-sm font-medium text-blue-900 mb-2">Current Status</h4>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-blue-700">Current Patients:</span>
+            <span className="ml-2 font-medium">{therapist.patientsCount}</span>
+          </div>
+          <div>
+            <span className="text-blue-700">Available Slots:</span>
+            <span className={`ml-2 font-medium ${therapist.availableSlots > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {therapist.availableSlots}
+            </span>
+          </div>
+          <div>
+            <span className="text-blue-700">Max Capacity:</span>
+            <span className="ml-2 font-medium">{therapist.maxPatients}</span>
+          </div>
+          <div>
+            <span className="text-blue-700">Accepting Patients:</span>
+            <span className={`ml-2 font-medium ${therapist.isAcceptingPatients ? 'text-green-600' : 'text-red-600'}`}>
+              {therapist.isAcceptingPatients ? 'Yes' : 'No'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Submit Button */}
+      <div className="flex justify-end pt-4">
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Updating...
+            </>
+          ) : (
+            <>
+              <Users className="h-4 w-4" />
+              Update Capacity
+            </>
+          )}
+        </button>
+      </div>
+    </form>
   );
 };
 

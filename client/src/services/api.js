@@ -69,6 +69,11 @@ export const adminAPI = {
   },
   getPatients: () => api.get(`/test/admin/patients?_t=${Date.now()}`),
   getTherapists: () => api.get(`/test/admin/therapists?_t=${Date.now()}`),
+  getAvailableTherapists: (patientId) => api.get(`/test/admin/therapists/available?patientId=${patientId}&_t=${Date.now()}`),
+  updateTherapistAvailability: (therapistId, data) => api.put(`/test/admin/therapists/${therapistId}/availability`, data),
+  addTherapistToPatient: (data) => api.post('/test/admin/patients/add-therapist', data),
+  removeTherapistFromPatient: (patientId, therapistId, reason) => api.delete(`/test/admin/patients/${patientId}/therapists/${therapistId}`, { data: { reason } }),
+  getPatientTherapists: (patientId) => api.get(`/test/admin/patients/${patientId}/therapists?_t=${Date.now()}`),
   getAppointments: () => api.get(`/test/admin/appointments?_t=${Date.now()}`),
   getReports: () => api.get(`/test/admin/reports?_t=${Date.now()}`),
   getNotifications: () => api.get(`/test/admin/notifications?_t=${Date.now()}`),
@@ -97,6 +102,10 @@ export const adminAPI = {
   sendPasswordResetLink: (id) => api.post(`/admin/users/${id}/send-reset-link`),
   createAppointment: (appointmentData) => api.post('/admin/appointments', appointmentData),
   updateAppointment: (id, appointmentData) => api.put(`/test/admin/appointments/${id}`, appointmentData),
+  
+  // Therapist assignment
+  assignTherapistToPatient: (data) => api.post('/test/admin/patients/assign-therapist', data),
+  unassignTherapistFromPatient: (patientId) => api.delete(`/test/admin/patients/${patientId}/unassign-therapist`),
   deleteAppointment: (id) => api.delete(`/test/admin/appointments/${id}`),
   
   // Patient-specific data
@@ -179,33 +188,32 @@ export const therapistAPI = {
 
 // Patient API endpoints
 export const patientAPI = {
-  getDashboard: () => api.get(`/test/patient/dashboard?_t=${Date.now()}`),
+  getDashboard: () => api.get(`/patient/dashboard?_t=${Date.now()}`),
   getProgress: () => api.get(`/patient/progress?_t=${Date.now()}`),
-  getAppointments: () => api.get(`/test/patient/appointments?_t=${Date.now()}`).then(response => response.data),
+  getAppointments: () => api.get(`/patient/appointments?_t=${Date.now()}`).then(response => response.data),
   bookAppointment: (appointmentData) => api.post('/patient/appointments', appointmentData),
   cancelAppointment: (id, reason) => api.put(`/patient/appointments/${id}/cancel`, { reason }),
   postponeAppointment: (id, newDate, newTime, reason) => api.put(`/patient/appointments/${id}/postpone`, { newDate, newTime, reason }),
   rescheduleAppointment: (id, data) => api.put(`/patient/appointments/${id}/reschedule`, data),
-  getDailyNotes: () => api.get(`/test/patient/daily-notes?_t=${Date.now()}`),
+  getDailyNotes: () => api.get(`/patient/daily-notes?_t=${Date.now()}`),
   cleanupDailyNotes: () => api.post('/patient/daily-notes/cleanup'),
   addNoteComment: (noteId, comment) => api.post(`/patient/daily-notes/${noteId}/comments`, { comment }),
   editNoteComment: (noteId, commentId, comment) => api.put(`/patient/daily-notes/${noteId}/comments/${commentId}`, { comment }),
   deleteNoteComment: (noteId, commentId) => api.delete(`/patient/daily-notes/${noteId}/comments/${commentId}`),
   getSessions: () => api.get(`/patient/sessions?_t=${Date.now()}`),
-  getAssessments: () => api.get(`/test/patient/assessments?_t=${Date.now()}`),
   getNotifications: () => api.get(`/notifications?_t=${Date.now()}`),
-  getSettings: () => api.get(`/test/patient/settings?_t=${Date.now()}`),
-  getHomeExercises: () => api.get(`/patient/exercises?_t=${Date.now()}`),
+  getSettings: () => api.get(`/patient/settings?_t=${Date.now()}`),
+  getHomeExercises: (patientId) => api.get(`/home-exercises/patient/exercises?patientId=${patientId}&_t=${Date.now()}`),
   getHomeExercisesNew: (patientId) => api.get(`/home-exercises/patient/exercises?patientId=${patientId}&_t=${Date.now()}`),
   submitHomeExerciseProof: (exerciseId, formData) => api.post(`/home-exercises/patient/exercises/${exerciseId}/proof`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   getHomeExerciseProofs: (patientId) => api.get(`/home-exercises/patient/proofs?patientId=${patientId}&_t=${Date.now()}`),
   getExerciseProofs: (exerciseId) => api.get(`/home-exercises/patient/exercises/${exerciseId}/proofs?_t=${Date.now()}`),
-  getTreatmentPlan: () => api.get(`/treatment-plans/patient/current?_t=${Date.now()}`),
+      getTreatmentPlan: () => api.get(`/treatment-plans/patient/current?_t=${Date.now()}`),
   
   // Profile management
-  getProfile: () => api.get(`/test/patient/profile?_t=${Date.now()}`),
+  getProfile: () => api.get(`/patient/profile?_t=${Date.now()}`),
   updateProfile: (profileData) => api.put('/patient/profile', profileData),
   changePassword: (passwordData) => api.post('/patient/change-password', passwordData),
   uploadProfileImage: (formData) => api.post('/patient/upload-profile-image', formData, {
@@ -214,6 +222,12 @@ export const patientAPI = {
   
   // Settings management
   updateSettings: (settingsData) => api.put('/patient/settings', settingsData),
+  
+  // Onboarding management
+  getOnboardingStatus: () => api.get('/patient/onboarding/status'),
+  updateOnboardingData: (onboardingData) => api.put('/patient/onboarding', onboardingData),
+  completeOnboarding: (onboardingData) => api.post('/patient/onboarding/complete', onboardingData),
+  getOnboardingProgress: () => api.get('/patient/onboarding/progress'),
 };
 
 // AI API endpoints

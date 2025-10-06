@@ -1,4 +1,4 @@
-const { runQuery, getRow, getAll } = require('../config/database');
+const { runQuery, getRow, getAll, getConnection } = require('../config/database');
 const { hashPassword, verifyPassword, validatePasswordComplexity } = require('../utils/password');
 const { encryptField, decryptField } = require('../utils/encryption');
 const jwt = require('jsonwebtoken');
@@ -120,7 +120,7 @@ const login = async (req, res) => {
         user: { 
           ...userWithoutPassword, 
           ...roleData,
-          id: user.role === 'patient' ? roleData.id : user.id  // Use patient ID for patients, user ID for others
+          id: user.id  // Always use user ID for consistency
         },
         token
       }
@@ -210,6 +210,18 @@ const register = async (req, res) => {
       });
     }
 
+    // Validate phone format if provided (Philippine mobile format: 09XXXXXXXXX)
+    if (phone) {
+      const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+      const phonePattern = /^(09\d{9}|\+639\d{9})$/;
+      if (!phonePattern.test(cleanPhone)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Phone number must be in format 09XXXXXXXXX or +639XXXXXXXXX'
+        });
+      }
+    }
+
     // Hash the password
     const hashedPassword = await hashPassword(password);
 
@@ -220,8 +232,8 @@ const register = async (req, res) => {
     try {
       // Create user
       const createUserSql = `
-        INSERT INTO users (email, password, role, firstName, lastName, phone, dateOfBirth, gender, address, city, state, zipCode, termsAccepted, acceptedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO users (email, password, role, firstName, lastName, phone, dateOfBirth, gender, address, city, state, zipCode, termsAccepted, hipaaAcknowledged, acceptedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const userParams = [
@@ -238,7 +250,8 @@ const register = async (req, res) => {
         state || null,
         zipCode || null,
         termsAccepted,
-        acceptedAt || new Date().toISOString()
+        hipaaAcknowledged || false,
+        acceptedAt ? new Date(acceptedAt).toISOString().slice(0, 19).replace('T', ' ') : new Date().toISOString().slice(0, 19).replace('T', ' ')
       ];
 
       const userResult = await connection.execute(createUserSql, userParams);

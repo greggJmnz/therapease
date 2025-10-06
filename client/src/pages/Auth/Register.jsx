@@ -40,14 +40,20 @@ const Register = () => {
         ...data,
         role: 'patient',
         termsAccepted: true,
+        hipaaAcknowledged: true,
         acceptedAt: new Date().toISOString()
       });
 
       if (result.success) {
-        toast.success('Registration successful! Please log in.');
-        navigate('/auth/login');
+        toast.success('Registration successful! Please complete your profile setup.');
+        navigate('/patient/onboarding');
       } else {
         toast.error(result.message || 'Registration failed');
+        if (result.details && Array.isArray(result.details)) {
+          result.details.forEach(detail => {
+            toast.error(detail);
+          });
+        }
       }
     } catch (error) {
       toast.error('Network error. Please try again.');
@@ -192,8 +198,8 @@ const Register = () => {
                 {...register('phone', {
                   required: 'Phone number is required',
                   pattern: {
-                    value: /^[\+]?[1-9][\d]{0,15}$/,
-                    message: 'Invalid phone number',
+                    value: /^(09\d{9}|\+639\d{9})$/,
+                    message: 'Phone number must be in format 09XXXXXXXXX or +639XXXXXXXXX',
                   },
                 })}
               />
@@ -224,8 +230,8 @@ const Register = () => {
                       message: 'Password must be at least 8 characters',
                     },
                     pattern: {
-                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                      message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/,
+                      message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
                     },
                   })}
                 />
@@ -240,6 +246,9 @@ const Register = () => {
                     <Eye className="h-5 w-5" />
                   )}
                 </button>
+                <div className="mt-1 text-xs text-gray-500">
+                  Password must contain: uppercase letter, lowercase letter, number, and special character
+                </div>
               </div>
 
               {/* Confirm Password */}

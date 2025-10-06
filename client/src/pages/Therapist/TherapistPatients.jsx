@@ -88,7 +88,7 @@ const TherapistPatients = () => {
       age: calculateAge(patient.dateOfBirth),
       gender: patient.gender || 'Not specified',
       status: patient.status || 'active',
-      progress: 75, // TODO: Calculate from progress tracking data
+      progress: parseFloat(patient.progress?.overallProgress || 0),
       lastSession: 'No recent session', // TODO: Get from session data
       nextSession: 'No upcoming session', // TODO: Get from appointment data
       diagnosis: patient.diagnosis || 'Not specified',
@@ -99,11 +99,19 @@ const TherapistPatients = () => {
       city: patient.city || '',
       state: patient.state || '',
       zipCode: patient.zipCode || '',
-        goals: formatGoals(patient.goals),
-        medicalHistory: patient.medicalHistory || 'No medical history provided',
-        emergencyContact: patient.emergencyContact || 'Not provided',
-        createdAt: patient.createdAt,
-        updatedAt: patient.updatedAt
+      goals: formatGoals(patient.goals),
+      medicalHistory: patient.medicalHistory || 'No medical history provided',
+      emergencyContact: patient.emergencyContact || 'Not provided',
+      createdAt: patient.createdAt,
+      updatedAt: patient.updatedAt,
+      // Include full progress data
+      progressData: patient.progress || {
+        overallProgress: 0,
+        sessionsCompleted: 0,
+        goalsAchieved: 0,
+        activeTreatmentPlans: 0,
+        assessmentsCompleted: 0
+      }
     };
   });
 
@@ -275,7 +283,7 @@ const TherapistPatients = () => {
                 <p className="text-sm text-gray-600">Last session: {patient.lastSession}</p>
               </div>
               <div className="text-right">
-                <div className="text-sm font-medium text-gray-900">{patient.progress}%</div>
+                <div className="text-sm font-medium text-gray-900">{patient.progressData?.overallProgress || '0.0'}%</div>
                 <div className="text-xs text-gray-500">Progress</div>
               </div>
             </div>
@@ -345,6 +353,33 @@ const TherapistPatients = () => {
                   <p className="text-sm font-medium text-gray-700 mb-1">Diagnosis</p>
                   <p className="text-sm text-gray-600 line-clamp-2">{patient.diagnosis}</p>
                 </div>
+
+                {/* Therapist Assignments */}
+                {patient.therapistAssignments && patient.therapistAssignments.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Therapist Team</p>
+                    <div className="space-y-1">
+                      {patient.therapistAssignments.slice(0, 2).map((assignment, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div className="text-sm text-gray-900">{assignment.therapistName}</div>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            assignment.assignmentType === 'primary' ? 'bg-blue-100 text-blue-800' :
+                            assignment.assignmentType === 'secondary' ? 'bg-gray-100 text-gray-800' :
+                            assignment.assignmentType === 'collaborative' ? 'bg-green-100 text-green-800' :
+                            'bg-purple-100 text-purple-800'
+                          }`}>
+                            {assignment.assignmentType}
+                          </span>
+                        </div>
+                      ))}
+                      {patient.therapistAssignments.length > 2 && (
+                        <div className="text-xs text-gray-500">
+                          +{patient.therapistAssignments.length - 2} more therapist{patient.therapistAssignments.length - 2 > 1 ? 's' : ''}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <p className="text-sm font-medium text-gray-700 mb-2">Progress</p>
@@ -352,10 +387,10 @@ const TherapistPatients = () => {
                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                        style={{ width: `${patient.progress}%` }}
+                        style={{ width: `${patient.progressData?.overallProgress || 0}%` }}
                       ></div>
                     </div>
-                    <span className="text-sm font-medium text-gray-900 min-w-[3rem]">{patient.progress}%</span>
+                    <span className="text-sm font-medium text-gray-900 min-w-[3rem]">{patient.progressData?.overallProgress || '0.0'}%</span>
                   </div>
                 </div>
 
@@ -652,18 +687,44 @@ const TherapistPatients = () => {
                     </div>
                     Progress Tracking
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="text-center bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="text-2xl font-bold text-gray-900">{selectedPatient.progress}%</div>
+                      <div className="text-2xl font-bold text-gray-900">{selectedPatient.progressData?.overallProgress || '0.0'}%</div>
                       <div className="text-sm text-gray-500 uppercase tracking-wide">Overall Progress</div>
                     </div>
                     <div className="text-center bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="text-2xl font-bold text-gray-900">0</div>
+                      <div className="text-2xl font-bold text-gray-900">{selectedPatient.progressData?.sessionsCompleted || 0}</div>
                       <div className="text-sm text-gray-500 uppercase tracking-wide">Sessions Completed</div>
                     </div>
                     <div className="text-center bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="text-2xl font-bold text-gray-900">0</div>
+                      <div className="text-2xl font-bold text-gray-900">{selectedPatient.progressData?.goalsAchieved || 0}</div>
                       <div className="text-sm text-gray-500 uppercase tracking-wide">Goals Achieved</div>
+                    </div>
+                    <div className="text-center bg-white rounded-lg p-4 border border-gray-200">
+                      <div className="text-2xl font-bold text-gray-900">{selectedPatient.progressData?.assessmentsCompleted || 0}</div>
+                      <div className="text-sm text-gray-500 uppercase tracking-wide">Assessments Done</div>
+                    </div>
+                  </div>
+                  
+                  {/* Additional Progress Information */}
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Active Treatment Plans</h4>
+                      <div className="text-2xl font-bold text-blue-600">{selectedPatient.progressData?.activeTreatmentPlans || 0}</div>
+                      <div className="text-xs text-gray-500">Currently in progress</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Progress Status</h4>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${
+                          parseFloat(selectedPatient.progressData?.overallProgress || 0) >= 80 ? 'bg-green-500' :
+                          parseFloat(selectedPatient.progressData?.overallProgress || 0) >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}></div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {parseFloat(selectedPatient.progressData?.overallProgress || 0) >= 80 ? 'Excellent' :
+                           parseFloat(selectedPatient.progressData?.overallProgress || 0) >= 50 ? 'Good' : 'Needs Attention'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

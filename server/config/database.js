@@ -106,6 +106,8 @@ const createTables = async () => {
         education TEXT,
         certifications TEXT,
         availability TEXT,
+        maxPatients INT DEFAULT 20,
+        isAcceptingPatients BOOLEAN DEFAULT TRUE,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE

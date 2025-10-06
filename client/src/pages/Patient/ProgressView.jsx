@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery } from 'react-query';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from 'react-query';
 import { 
   Target, 
   Calendar, 
@@ -19,6 +19,12 @@ import InitialsAvatar from '../../components/InitialsAvatar';
 const ProgressView = () => {
   const [expandedObjectives, setExpandedObjectives] = useState({});
   const [expandedPlans, setExpandedPlans] = useState(new Set());
+  const queryClient = useQueryClient();
+
+  // Clear any cached data when component mounts
+  useEffect(() => {
+    queryClient.invalidateQueries('patient-treatment-plan');
+  }, [queryClient]);
 
   // Fetch treatment plan
   const { data: treatmentPlanData, isLoading, error } = useQuery(

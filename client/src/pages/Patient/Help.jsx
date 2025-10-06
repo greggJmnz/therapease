@@ -27,7 +27,7 @@ const PatientHelp = () => {
     },
     {
       question: "How do I track my progress?",
-      answer: "Use the 'Progress Tracking' feature to monitor your improvement over time. You can view charts, complete assessments, and see your therapy journey."
+      answer: "Use the 'Progress Tracking' feature to monitor your improvement over time. You can view charts and see your therapy journey."
     },
     {
       question: "Can I reschedule my session?",

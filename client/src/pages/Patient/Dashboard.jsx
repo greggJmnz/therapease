@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useNavigationState } from '../../hooks/useNavigationState';
 import {
   Calendar,
   FileText,
@@ -25,6 +26,11 @@ import { patientAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const PatientDashboard = () => {
+  const navigate = useNavigate();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const { startNavigation, completeNavigation, canNavigate } = useNavigationState();
+
+  // Note: Onboarding status check and navigation is now handled in PatientLayout
 
   // Fetch dashboard data from API
   const { data: dashboardData, isLoading, error } = useQuery(
@@ -49,7 +55,6 @@ const PatientDashboard = () => {
     if (!dashboardData?.data?.data) {
       return {
         totalAppointments: 0,
-        completedAssessments: 0,
         progressEntries: 0,
         dailyNotesCount: 0,
         patientName: 'Patient',
@@ -58,7 +63,6 @@ const PatientDashboard = () => {
         therapistExperience: 0,
         upcomingAppointments: [],
         recentProgress: [],
-        recentAssessments: [],
         diagnosis: 'No diagnosis available',
         patient: {
           goals: 'Your therapy goals will be set during your first session with your therapist.'
@@ -71,7 +75,6 @@ const PatientDashboard = () => {
     
     return {
       totalAppointments: data.upcomingAppointments?.length || 0,
-      completedAssessments: data.recentAssessments?.filter(a => a && a.status === 'completed')?.length || 0,
       progressEntries: data.recentProgress?.length || 0,
       dailyNotesCount: data.dailyNotesCount || 0,
       patientName: data.patient?.firstName || 'Patient',
@@ -80,7 +83,6 @@ const PatientDashboard = () => {
       therapistExperience: data.therapist?.yearsOfExperience || 0,
       upcomingAppointments: Array.isArray(data.upcomingAppointments) ? data.upcomingAppointments : [],
       recentProgress: Array.isArray(data.recentProgress) ? data.recentProgress : [],
-      recentAssessments: Array.isArray(data.recentAssessments) ? data.recentAssessments : [],
       diagnosis: data.patient?.diagnosis || 'No diagnosis available',
       patient: data.patient || {}
     };
@@ -88,6 +90,20 @@ const PatientDashboard = () => {
 
   // Get recent notifications
   const recentNotifications = notifications?.slice(0, 3) || [];
+
+  // Show loading state while fetching dashboard data
+  if (isLoading) {
+    return (
+      <div className="patient-dashboard">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Error state
   if (error) {
@@ -106,18 +122,6 @@ const PatientDashboard = () => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="patient-dashboard">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading your dashboard data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="patient-dashboard">
@@ -158,19 +162,6 @@ const PatientDashboard = () => {
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon assessments">
-            <Target size={20} />
-          </div>
-          <div className="stat-content">
-            <h3>Assessments</h3>
-            <p className="stat-number">{dashboardStats.completedAssessments}</p>
-            <span className="stat-change positive">
-              <Award size={12} />
-              Completed
-            </span>
-          </div>
-        </div>
 
         <div className="stat-card">
           <div className="stat-icon progress">
@@ -256,7 +247,7 @@ const PatientDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Upcoming Sessions</h3>
-                  <p className="text-xs text-gray-600">Your scheduled therapy sessions and assessments</p>
+                  <p className="text-xs text-gray-600">Your scheduled therapy sessions</p>
                 </div>
                 <Link
                   to="/patient/appointments"

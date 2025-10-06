@@ -611,38 +611,25 @@ const HomeExercisesNew = () => {
                               </div>
                               
                               {/* Display image */}
-                              {proof.submissionType === 'image' && proof.filePath && (
-                                <div className="mt-2">
-                                  {(() => {
-                                    const fileName = proof.filePath.split('/').pop();
-                                    const imageUrl = `http://localhost:5000/uploads/exercise-proofs/${fileName}`;
-                                    console.log('Proof filePath:', proof.filePath);
-                                    console.log('Extracted fileName:', fileName);
-                                    console.log('Image URL:', imageUrl);
-                                    return (
-                                      <img 
-                                        src={imageUrl}
-                                        alt="Submitted proof"
-                                        className="max-w-full h-auto max-h-64 rounded-lg border"
-                                        onError={(e) => {
-                                          console.error('Image load error:', e.target.src);
-                                          e.target.style.display = 'none';
-                                          e.target.nextSibling.style.display = 'block';
-                                        }}
-                                        onLoad={() => {
-                                          console.log('Image loaded successfully:', imageUrl);
-                                        }}
-                                      />
-                                    );
-                                  })()}
-                                  <div className="hidden text-sm text-red-500">
-                                    Failed to load image: {proof.filePath}
-                                  </div>
+                              {proof.submissionType === 'image' && proof.fileUrl && (
+<div className="mt-2">
+                                  <img 
+                                    src={`http://localhost:5000${proof.fileUrl}`}
+                                    alt="Submitted proof"
+                                    className="max-w-full h-auto max-h-64 rounded-lg border"
+                                    onError={(e) => {
+                                      console.error('Image load error for:', e.target.src);
+                                      e.target.style.display = 'none';
+                                    }}
+                                    onLoad={(e) => {
+                                      console.log('Image loaded successfully:', e.target.src);
+                                    }}
+                                  />
                                 </div>
                               )}
                               
                               {/* Display video */}
-                              {proof.submissionType === 'video' && proof.filePath && (
+                              {proof.submissionType === 'video' && proof.fileUrl && (
                                 <div className="mt-2">
                                   <video 
                                     controls 
@@ -653,7 +640,7 @@ const HomeExercisesNew = () => {
                                     }}
                                   >
                                     <source 
-                                      src={`http://localhost:5000/uploads/exercise-proofs/${proof.filePath.split('/').pop()}`}
+                                      src={`http://localhost:5000${proof.fileUrl}`}
                                       type={proof.mimeType || 'video/mp4'}
                                     />
                                     Your browser does not support the video tag.
@@ -665,10 +652,10 @@ const HomeExercisesNew = () => {
                               )}
                               
                               {/* Display file download link for other file types */}
-                              {proof.submissionType === 'file' && proof.filePath && (
+                              {proof.submissionType === 'file' && proof.fileUrl && (
                                 <div className="mt-2">
                                   <a 
-                                    href={`http://localhost:5000/uploads/exercise-proofs/${proof.filePath.split('/').pop()}`}
+                                    href={`http://localhost:5000${proof.fileUrl}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm"

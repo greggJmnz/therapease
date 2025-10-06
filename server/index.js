@@ -34,19 +34,7 @@ const homeExerciseRoutes = require('./routes/homeExerciseRoutes');
 
 // Security Middleware
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
-      scriptSrc: ["'self'", "https://cdn.tailwindcss.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
+  contentSecurityPolicy: false, // Temporarily disable CSP to test image loading
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
@@ -131,7 +119,7 @@ app.get('/api/test/patient-treatment-plan', async (req, res) => {
   try {
     const { getPatientTreatmentPlan } = require('./controllers/treatmentPlanController');
     const mockReq = {
-      user: { id: 49 }, // Alexandra Santos user ID
+      user: { id: 119 }, // Alexandra Santos user ID (correct user ID)
       query: {}
     };
     
@@ -213,13 +201,69 @@ app.get('/api/test/treatment-plan/:id', async (req, res) => {
   }
 });
 
+// Test endpoint for patient home exercises (bypasses authentication)
+app.get('/api/test/patient/home-exercises', async (req, res) => {
+  try {
+    const { getPatientExercises } = require('./controllers/homeExerciseController');
+    const mockReq = {
+      query: { patientId: 49 } // Alexandra Santos patient ID
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await getPatientExercises(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
+// Test endpoint for patient exercise proofs (bypasses authentication)
+app.get('/api/test/patient/exercise-proofs', async (req, res) => {
+  try {
+    const { getPatientProofs } = require('./controllers/homeExerciseController');
+    const mockReq = {
+      query: { patientId: 49 } // Alexandra Santos patient ID
+    };
+    
+    const mockRes = {
+      json: (data) => {
+        res.json(data);
+      },
+      status: (code) => ({
+        json: (data) => {
+          res.status(code).json(data);
+        }
+      })
+    };
+    
+    await getPatientProofs(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Test endpoint error: ' + error.message
+    });
+  }
+});
+
 // Test endpoint for creating treatment plans
 app.post('/api/test/treatment-plans', async (req, res) => {
   try {
     const { createTreatmentPlan } = require('./controllers/treatmentPlanController');
     const mockReq = {
       body: req.body,
-      user: { id: 62, role: 'therapist' }
+      user: { id: 114, role: 'therapist' }
     };
     
     const mockRes = {
@@ -350,7 +394,7 @@ app.post('/api/test/treatment-plans/:treatmentPlanId/main-objectives', async (re
     const mockReq = {
       params: req.params,
       body: req.body,
-      user: { id: 62, role: 'therapist' }
+      user: { id: 114, role: 'therapist' }
     };
     
     const mockRes = {
@@ -371,7 +415,7 @@ app.put('/api/test/main-objectives/:id', async (req, res) => {
     const mockReq = {
       params: req.params,
       body: req.body,
-      user: { id: 62, role: 'therapist' }
+      user: { id: 114, role: 'therapist' }
     };
     
     const mockRes = {
@@ -391,7 +435,7 @@ app.delete('/api/test/main-objectives/:id', async (req, res) => {
     const { deleteMainObjective } = require('./controllers/treatmentPlanController');
     const mockReq = {
       params: req.params,
-      user: { id: 62, role: 'therapist' }
+      user: { id: 114, role: 'therapist' }
     };
     
     const mockRes = {
@@ -413,7 +457,7 @@ app.post('/api/test/main-objectives/:mainObjectiveId/specific-objectives', async
     const mockReq = {
       params: req.params,
       body: req.body,
-      user: { id: 62, role: 'therapist' }
+      user: { id: 114, role: 'therapist' }
     };
     
     const mockRes = {
@@ -434,7 +478,7 @@ app.put('/api/test/specific-objectives/:id', async (req, res) => {
     const mockReq = {
       params: req.params,
       body: req.body,
-      user: { id: 62, role: 'therapist' }
+      user: { id: 114, role: 'therapist' }
     };
     
     const mockRes = {
@@ -454,7 +498,7 @@ app.delete('/api/test/specific-objectives/:id', async (req, res) => {
     const { deleteSpecificObjective } = require('./controllers/treatmentPlanController');
     const mockReq = {
       params: req.params,
-      user: { id: 62, role: 'therapist' }
+      user: { id: 114, role: 'therapist' }
     };
     
     const mockRes = {
@@ -474,7 +518,7 @@ app.get('/api/test/admin/dashboard', async (req, res) => {
   try {
     const { getDashboard } = require('./controllers/adminController');
     const mockReq = {
-      user: { id: 61, role: 'admin' }
+      user: { id: 31, role: 'admin' }
     };
     
     const mockRes = {
@@ -503,7 +547,7 @@ app.get('/api/test/admin/patients', async (req, res) => {
     const { getUsers } = require('./controllers/adminController');
     const mockReq = {
       query: { role: 'patient' },
-      user: { id: 61, role: 'admin' }
+      user: { id: 31, role: 'admin' }
     };
     
     const mockRes = {
@@ -531,7 +575,7 @@ app.get('/api/test/admin/therapists', async (req, res) => {
   try {
     const { getTherapists } = require('./controllers/adminController');
     const mockReq = {
-      user: { id: 61, role: 'admin' }
+      user: { id: 31, role: 'admin' }
     };
     
     const mockRes = {
@@ -559,7 +603,7 @@ app.get('/api/test/admin/notifications', async (req, res) => {
   try {
     const { getNotifications } = require('./controllers/adminController');
     const mockReq = {
-      user: { id: 61, role: 'admin' }
+      user: { id: 31, role: 'admin' }
     };
     
     const mockRes = {
@@ -616,7 +660,7 @@ app.get('/public-website', (req, res) => {
 app.get('/api/test/admin/dashboard', async (req, res) => {
   try {
     const { getDashboard } = require('./controllers/adminController');
-    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockReq = { user: { id: 31, role: 'admin' } };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -630,7 +674,7 @@ app.get('/api/test/admin/dashboard', async (req, res) => {
 app.get('/api/test/admin/patients', async (req, res) => {
   try {
     const { getPatients } = require('./controllers/adminController');
-    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockReq = { user: { id: 31, role: 'admin' } };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -644,7 +688,7 @@ app.get('/api/test/admin/patients', async (req, res) => {
 app.get('/api/test/admin/therapists', async (req, res) => {
   try {
     const { getTherapists } = require('./controllers/adminController');
-    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockReq = { user: { id: 31, role: 'admin' } };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -655,10 +699,108 @@ app.get('/api/test/admin/therapists', async (req, res) => {
   }
 });
 
+app.get('/api/test/admin/therapists/available', async (req, res) => {
+  try {
+    const { getAvailableTherapists } = require('./controllers/adminController');
+    const mockReq = { user: { id: 31, role: 'admin' }, query: req.query };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getAvailableTherapists(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.put('/api/test/admin/therapists/:therapistId/availability', async (req, res) => {
+  try {
+    const { updateTherapistAvailability } = require('./controllers/adminController');
+    const mockReq = { user: { id: 31, role: 'admin' }, params: req.params, body: req.body };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await updateTherapistAvailability(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/test/admin/patients/assign-therapist', async (req, res) => {
+  try {
+    const { assignTherapistToPatient } = require('./controllers/adminController');
+    const mockReq = { user: { id: 31, role: 'admin' }, body: req.body };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await assignTherapistToPatient(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/test/admin/patients/:patientId/unassign-therapist', async (req, res) => {
+  try {
+    const { unassignTherapistFromPatient } = require('./controllers/adminController');
+    const mockReq = { user: { id: 31, role: 'admin' }, params: req.params };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await unassignTherapistFromPatient(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/test/admin/patients/add-therapist', async (req, res) => {
+  try {
+    const { addTherapistToPatient } = require('./controllers/adminController');
+    const mockReq = { user: { id: 31, role: 'admin' }, body: req.body };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await addTherapistToPatient(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/test/admin/patients/:patientId/therapists/:therapistId', async (req, res) => {
+  try {
+    const { removeTherapistFromPatient } = require('./controllers/adminController');
+    const mockReq = { user: { id: 31, role: 'admin' }, params: req.params, body: req.body };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await removeTherapistFromPatient(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/test/admin/patients/:patientId/therapists', async (req, res) => {
+  try {
+    const { getPatientTherapists } = require('./controllers/adminController');
+    const mockReq = { user: { id: 31, role: 'admin' }, params: req.params };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getPatientTherapists(mockReq, mockRes);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.get('/api/test/admin/appointments', async (req, res) => {
   try {
     const { getAppointments } = require('./controllers/adminController');
-    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockReq = { user: { id: 31, role: 'admin' } };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -672,7 +814,7 @@ app.get('/api/test/admin/appointments', async (req, res) => {
 app.get('/api/test/admin/notifications', async (req, res) => {
   try {
     const { getNotifications } = require('./controllers/adminController');
-    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockReq = { user: { id: 31, role: 'admin' } };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -686,7 +828,7 @@ app.get('/api/test/admin/notifications', async (req, res) => {
 app.get('/api/test/admin/users', async (req, res) => {
   try {
     const { getAllUsers } = require('./controllers/adminController');
-    const mockReq = { user: { id: 61, role: 'admin' }, query: req.query };
+    const mockReq = { user: { id: 31, role: 'admin' }, query: req.query };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -700,7 +842,7 @@ app.get('/api/test/admin/users', async (req, res) => {
 app.get('/api/test/admin/reports', async (req, res) => {
   try {
     const { getReports } = require('./controllers/adminController');
-    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockReq = { user: { id: 31, role: 'admin' } };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -714,7 +856,7 @@ app.get('/api/test/admin/reports', async (req, res) => {
 app.get('/api/test/admin/settings', async (req, res) => {
   try {
     const { getSettings } = require('./controllers/settingsController');
-    const mockReq = { user: { id: 61, role: 'admin' } };
+    const mockReq = { user: { id: 31, role: 'admin' } };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -729,7 +871,7 @@ app.get('/api/test/admin/settings', async (req, res) => {
 app.put('/api/test/admin/users/:id', async (req, res) => {
   try {
     const { updateUser } = require('./controllers/adminController');
-    const mockReq = { user: { id: 61, role: 'admin' }, params: req.params, body: req.body };
+    const mockReq = { user: { id: 31, role: 'admin' }, params: req.params, body: req.body };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -743,7 +885,7 @@ app.put('/api/test/admin/users/:id', async (req, res) => {
 app.delete('/api/test/admin/users/:id', async (req, res) => {
   try {
     const { deleteUser } = require('./controllers/adminController');
-    const mockReq = { user: { id: 61, role: 'admin' }, params: req.params };
+    const mockReq = { user: { id: 31, role: 'admin' }, params: req.params };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -758,7 +900,7 @@ app.put('/api/test/admin/users/:id/status', async (req, res) => {
   try {
     const { updateUserStatus } = require('./controllers/adminController');
     const mockReq = { 
-      user: { id: 61, role: 'admin' }, 
+      user: { id: 31, role: 'admin' }, 
       params: { userId: req.params.id }, 
       body: req.body 
     };
@@ -777,7 +919,7 @@ app.put('/api/test/admin/appointments/:id', async (req, res) => {
   try {
     const { updateAppointment } = require('./controllers/adminController');
     const mockReq = { 
-      user: { id: 61, role: 'admin' }, 
+      user: { id: 31, role: 'admin' }, 
       params: req.params, 
       body: req.body 
     };
@@ -795,7 +937,7 @@ app.delete('/api/test/admin/appointments/:id', async (req, res) => {
   try {
     const { deleteAppointment } = require('./controllers/adminController');
     const mockReq = { 
-      user: { id: 61, role: 'admin' }, 
+      user: { id: 31, role: 'admin' }, 
       params: req.params
     };
     const mockRes = {
@@ -812,7 +954,7 @@ app.post('/api/test/admin/appointments', async (req, res) => {
   try {
     const { createAppointment } = require('./controllers/adminController');
     const mockReq = { 
-      user: { id: 61, role: 'admin' }, 
+      user: { id: 31, role: 'admin' }, 
       body: req.body
     };
     const mockRes = {
@@ -829,7 +971,7 @@ app.post('/api/test/admin/appointments', async (req, res) => {
 app.get('/api/test/patient/dashboard', async (req, res) => {
   try {
     const { getDashboard } = require('./controllers/patientController');
-    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockReq = { user: { userId: 119, role: 'patient' } }; // Use actual patient user ID
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -843,7 +985,7 @@ app.get('/api/test/patient/dashboard', async (req, res) => {
 app.get('/api/test/patient/appointments', async (req, res) => {
   try {
     const { getAppointments } = require('./controllers/patientController');
-    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockReq = { user: { userId: 119, role: 'patient' } }; // Use actual patient user ID
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -857,7 +999,7 @@ app.get('/api/test/patient/appointments', async (req, res) => {
 app.get('/api/test/patient/profile', async (req, res) => {
   try {
     const { getProfile } = require('./controllers/patientController');
-    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockReq = { user: { userId: 119, role: 'patient' } }; // Use actual patient user ID
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -874,7 +1016,7 @@ app.put('/api/test/patient/appointments/:id/postpone', async (req, res) => {
     const { postponeAppointment } = require('./controllers/patientController');
     const appointmentId = parseInt(req.params.id);
     const mockReq = { 
-      user: { userId: 67, role: 'patient' },
+      user: { userId: 119, role: 'patient' }, // Use actual patient user ID
       params: { id: appointmentId },
       body: req.body
     };
@@ -894,7 +1036,7 @@ app.put('/api/test/patient/appointments/:id/cancel', async (req, res) => {
     const { cancelAppointment } = require('./controllers/patientController');
     const appointmentId = parseInt(req.params.id);
     const mockReq = { 
-      user: { userId: 67, role: 'patient' },
+      user: { userId: 119, role: 'patient' }, // Use actual patient user ID
       params: { id: appointmentId },
       body: req.body
     };
@@ -911,7 +1053,7 @@ app.put('/api/test/patient/appointments/:id/cancel', async (req, res) => {
 app.get('/api/test/patient/daily-notes', async (req, res) => {
   try {
     const { getDailyNotes } = require('./controllers/patientController');
-    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockReq = { user: { userId: 119, role: 'patient' } }; // Use actual patient user ID
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -925,7 +1067,7 @@ app.get('/api/test/patient/daily-notes', async (req, res) => {
 app.get('/api/test/patient/assessments', async (req, res) => {
   try {
     const { getAssessments } = require('./controllers/patientController');
-    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockReq = { user: { userId: 119, role: 'patient' } }; // Use actual patient user ID
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -939,7 +1081,7 @@ app.get('/api/test/patient/assessments', async (req, res) => {
 app.get('/api/test/patient/settings', async (req, res) => {
   try {
     const { getSettings } = require('./controllers/patientController');
-    const mockReq = { user: { userId: 67, role: 'patient' } };
+    const mockReq = { user: { userId: 119, role: 'patient' } }; // Use actual patient user ID
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -970,11 +1112,21 @@ app.get('/api/test/therapist/dashboard', async (req, res) => {
 app.get('/api/test/therapist/patients', async (req, res) => {
   try {
     const { getPatients } = require('./controllers/patientController');
+    const { decryptSensitiveFields } = require('./utils/encryption');
+    
     // Allow testing with different therapist IDs via query parameter
     const therapistId = req.query.therapistId ? parseInt(req.query.therapistId) : 62;
     const mockReq = { user: { id: therapistId, role: 'therapist' } };
     const mockRes = {
-      json: (data) => res.json(data),
+      json: (data) => {
+        // Manually decrypt sensitive fields for test endpoint
+        if (data && data.success && data.data && data.data.patients) {
+          data.data.patients = data.data.patients.map(patient => 
+            decryptSensitiveFields(patient, ['emergencyContact', 'insuranceInfo'])
+          );
+        }
+        res.json(data);
+      },
       status: (code) => ({ json: (data) => res.status(code).json(data) })
     };
     await getPatients(mockReq, mockRes);
@@ -988,7 +1140,7 @@ app.get('/api/test/therapist/appointments', async (req, res) => {
   try {
     const { getSchedule } = require('./controllers/appointmentController');
     const mockReq = { 
-      user: { id: 62, role: 'therapist' },
+      user: { id: 114, role: 'therapist' },
       query: req.query || {}
     };
     const mockRes = {
@@ -1047,7 +1199,7 @@ app.get('/api/test/therapist/daily-notes', async (req, res) => {
   try {
     const { getDailyNotes } = require('./controllers/dailyNotesController');
     const mockReq = { 
-      user: { id: 62, role: 'therapist' },
+      user: { id: 114, role: 'therapist' }, // Use Aleli Ong's ID (114) instead of non-existent 62
       query: req.query || {}
     };
     const mockRes = {
@@ -1065,7 +1217,7 @@ app.get('/api/test/therapist/progress-tracking', async (req, res) => {
   try {
     const { getProgressTracking } = require('./controllers/progressTrackingController');
     const mockReq = { 
-      user: { id: 62, role: 'therapist' },
+      user: { id: 114, role: 'therapist' },
       query: req.query || {}
     };
     const mockRes = {
@@ -1082,7 +1234,7 @@ app.get('/api/test/therapist/progress-tracking', async (req, res) => {
 app.get('/api/test/therapist/settings', async (req, res) => {
   try {
     const { getSettings } = require('./controllers/settingsController');
-    const mockReq = { user: { id: 62, role: 'therapist' } };
+    const mockReq = { user: { id: 114, role: 'therapist' } };
     const mockRes = {
       json: (data) => res.json(data),
       status: (code) => ({ json: (data) => res.status(code).json(data) })
@@ -1150,6 +1302,26 @@ app.get('/api/test/therapist/notifications', async (req, res) => {
   }
 });
 
+// Patient notifications test endpoint
+app.get('/api/test/patient/notifications', async (req, res) => {
+  try {
+    const { getNotifications } = require('./controllers/notificationController');
+    const patientId = req.query.patientId ? parseInt(req.query.patientId) : 37; // Default to Alexandra Santos
+    const mockReq = { 
+      user: { id: patientId, role: 'patient' }, 
+      query: req.query || {} 
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await getNotifications(mockReq, mockRes);
+  } catch (error) {
+    console.error('Patient notifications test endpoint error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
 // Therapist notification operations test endpoints
 app.delete('/api/test/therapist/notifications/:id', async (req, res) => {
   try {
@@ -1194,7 +1366,7 @@ app.delete('/api/test/admin/notifications/:id', async (req, res) => {
   try {
     const { deleteNotification } = require('./controllers/notificationController');
     const mockReq = { 
-      user: { id: 61, role: 'admin' },
+      user: { id: 31, role: 'admin' },
       params: req.params
     };
     const mockRes = {
@@ -1212,7 +1384,7 @@ app.patch('/api/test/admin/notifications/:id/read', async (req, res) => {
   try {
     const { markAsRead } = require('./controllers/notificationController');
     const mockReq = { 
-      user: { id: 61, role: 'admin' },
+      user: { id: 31, role: 'admin' },
       params: req.params
     };
     const mockRes = {
@@ -1230,7 +1402,7 @@ app.patch('/api/test/admin/notifications/read-all', async (req, res) => {
   try {
     const { markAllAsRead } = require('./controllers/notificationController');
     const mockReq = { 
-      user: { id: 61, role: 'admin' }
+      user: { id: 31, role: 'admin' }
     };
     const mockRes = {
       json: (data) => res.json(data),
@@ -1240,6 +1412,53 @@ app.patch('/api/test/admin/notifications/read-all', async (req, res) => {
   } catch (error) {
     console.error('Admin mark all as read test endpoint error:', error);
     res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Test endpoint for AI features (bypasses authentication)
+app.post('/api/test/ai/analyze-assessment', async (req, res) => {
+  try {
+    const gptService = require('../ai/services/gptService');
+    const { patientData, assessmentData, assessmentType = 'combined' } = req.body;
+    
+    // Ensure proper data structure for the AI service
+    const enhancedAssessmentData = {
+      ...assessmentData,
+      assessmentType,
+      interviewQuestions: assessmentData.interviewQuestions || [],
+      observations: assessmentData.observations || assessmentData.observations || "No specific observations provided"
+    };
+    
+    const analysis = await gptService.analyzeAssessmentData(patientData, enhancedAssessmentData, {
+      model: 'gpt-4o',
+      maxTokens: 2500,
+      temperature: 0.6,
+    });
+
+    if (analysis.success) {
+      res.json({
+        success: true,
+        data: {
+          insights: analysis.content,
+          usage: analysis.usage,
+          model: analysis.model,
+          assessmentType: assessmentType,
+        },
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to analyze assessment',
+        error: analysis.error,
+      });
+    }
+  } catch (error) {
+    console.error('AI test endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during assessment analysis',
+      error: error.message,
+    });
   }
 });
 

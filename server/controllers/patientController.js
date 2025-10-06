@@ -1,4 +1,4 @@
-const { runQuery, getRow, getAll } = require('../config/database');
+const { runQuery, getRow, getAll, getConnection } = require('../config/database');
 const { decryptSensitiveFields } = require('../utils/encryption');
 const websocketService = require('../services/websocketService');
 
@@ -30,17 +30,53 @@ const getPatients = async (req, res) => {
         u.address,
         u.city,
         u.state,
-        u.zipCode
+        u.zipCode,
+        -- Progress tracking data
+        (SELECT COUNT(*) FROM sessions s WHERE s.patientId = p.id AND s.status = 'completed') as sessionsCompleted,
+        (SELECT COUNT(*) FROM specific_objectives so 
+         JOIN main_objectives mo ON so.mainObjectiveId = mo.id 
+         JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id 
+         WHERE tp.patientId = p.id AND so.isCompleted = 1) as goalsAchieved,
+        (SELECT AVG(tp.overallProgress) FROM treatment_plans tp WHERE tp.patientId = p.id AND tp.status = 'active') as overallProgress,
+        (SELECT COUNT(*) FROM treatment_plans tp WHERE tp.patientId = p.id AND tp.status = 'active') as activeTreatmentPlans,
+        (SELECT COUNT(*) FROM assessments a WHERE a.patientId = p.id AND a.status = 'completed') as assessmentsCompleted
       FROM patients p
       JOIN users u ON p.userId = u.id
-      WHERE p.therapistId = ?
+      WHERE p.therapistId = ? OR p.id IN (
+        SELECT pta.patientId 
+        FROM patient_therapist_assignments pta 
+        WHERE pta.therapistId = ? AND pta.status = 'active'
+      )
       ORDER BY u.firstName, u.lastName
     `;
 
-    const patients = await getAll(sql, [therapistId]);
+    const patients = await getAll(sql, [therapistId, therapistId]);
+
+    // Get assignment details for each patient
+    const patientsWithAssignments = await Promise.all(patients.map(async (patient) => {
+      const assignmentSql = `
+        SELECT 
+          pta.assignmentType,
+          pta.assignedAt,
+          pta.status as assignmentStatus,
+          CONCAT(u.firstName, ' ', u.lastName) as therapistName,
+          u.id as therapistUserId
+        FROM patient_therapist_assignments pta
+        JOIN users u ON pta.therapistId = u.id
+        WHERE pta.patientId = ? AND pta.status = 'active'
+        ORDER BY pta.assignmentType, pta.assignedAt
+      `;
+      
+      const assignments = await getAll(assignmentSql, [patient.id]);
+      
+      return {
+        ...patient,
+        therapistAssignments: assignments
+      };
+    }));
 
     // Format patient data
-    const formattedPatients = patients.map(patient => ({
+    const formattedPatients = patientsWithAssignments.map(patient => ({
       id: patient.id,
       firstName: patient.firstName,
       lastName: patient.lastName,
@@ -59,7 +95,17 @@ const getPatients = async (req, res) => {
       emergencyContact: patient.emergencyContact,
       insuranceInfo: patient.insuranceInfo,
       createdAt: patient.createdAt,
-      updatedAt: patient.updatedAt
+      updatedAt: patient.updatedAt,
+      // Progress tracking data
+      progress: {
+        overallProgress: parseFloat(patient.overallProgress || 0).toFixed(1),
+        sessionsCompleted: patient.sessionsCompleted || 0,
+        goalsAchieved: patient.goalsAchieved || 0,
+        activeTreatmentPlans: patient.activeTreatmentPlans || 0,
+        assessmentsCompleted: patient.assessmentsCompleted || 0
+      },
+      // Therapist assignments
+      therapistAssignments: patient.therapistAssignments || []
     }));
 
     res.json({
@@ -562,7 +608,7 @@ const deletePatient = async (req, res) => {
 // Get patient dashboard
 const getDashboard = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient data
     const patient = await getRow(`
@@ -667,7 +713,7 @@ const getDashboard = async (req, res) => {
 // Get patient progress
 const getProgress = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
@@ -697,7 +743,7 @@ const getProgress = async (req, res) => {
 // Get patient appointments
 const getAppointments = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
@@ -744,7 +790,7 @@ const cancelAppointment = async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
@@ -836,7 +882,7 @@ const postponeAppointment = async (req, res) => {
   try {
     const { id } = req.params;
     const { newDate, newTime, reason } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
@@ -971,7 +1017,7 @@ const rescheduleAppointment = async (req, res) => {
   try {
     const { id } = req.params;
     const { appointmentDate, startTime, endTime } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
@@ -1012,7 +1058,7 @@ const rescheduleAppointment = async (req, res) => {
 // Get patient daily notes
 const getDailyNotes = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID and assigned therapist
     const patient = await getRow('SELECT id, therapistId FROM patients WHERE userId = ?', [userId]);
@@ -1125,7 +1171,7 @@ const addNoteComment = async (req, res) => {
     
     const { id } = req.params;
     const { comment } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     console.log('Processing comment for note:', id, 'by user:', userId);
     
@@ -1206,7 +1252,7 @@ const editNoteComment = async (req, res) => {
   try {
     const { id, commentId } = req.params;
     const { comment } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
@@ -1270,7 +1316,7 @@ const editNoteComment = async (req, res) => {
 const deleteNoteComment = async (req, res) => {
   try {
     const { id, commentId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
@@ -1331,7 +1377,7 @@ const deleteNoteComment = async (req, res) => {
 // Get patient sessions (same as appointments for now)
 const getSessions = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
@@ -1382,7 +1428,7 @@ const getSessions = async (req, res) => {
 // Get patient assessments
 const getAssessments = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
@@ -1412,7 +1458,7 @@ const getAssessments = async (req, res) => {
 // Get home exercises
 const getHomeExercises = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
@@ -1445,7 +1491,7 @@ const getHomeExercises = async (req, res) => {
 // Get patient notifications
 const getNotifications = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get notifications
     const notifications = await getAll(`
@@ -1469,7 +1515,7 @@ const getNotifications = async (req, res) => {
 // Get patient settings
 const getSettings = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     
     // Get user settings
     const user = await getRow(`
@@ -1492,7 +1538,7 @@ const getSettings = async (req, res) => {
 // Book new appointment
 const bookAppointment = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { date, time, duration, type, reason, notes } = req.body;
 
     // Validate required fields
@@ -1584,7 +1630,7 @@ const bookAppointment = async (req, res) => {
 // Get patient profile for patient portal
 const getProfile = async (req, res) => {
   try {
-    const userId = req.user.userId || req.user.id;
+    const userId = req.user.id;
 
     const sql = `
       SELECT 
@@ -1658,6 +1704,488 @@ const getProfile = async (req, res) => {
   }
 };
 
+// Get onboarding status
+const getOnboardingStatus = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user and patient data
+    const userSql = `
+      SELECT 
+        u.id,
+        u.email,
+        u.firstName,
+        u.lastName,
+        u.phone,
+        u.dateOfBirth,
+        u.gender,
+        u.address,
+        u.city,
+        u.state,
+        u.zipCode,
+        u.termsAccepted,
+        u.hipaaAcknowledged,
+        u.acceptedAt,
+        u.createdAt,
+        u.onboardingCompleted
+      FROM users u
+      WHERE u.id = ?
+    `;
+
+    const patientSql = `
+      SELECT 
+        p.id,
+        p.diagnosis,
+        p.medicalHistory,
+        p.goals,
+        p.emergencyContact,
+        p.insuranceInfo,
+        p.therapistId,
+        t.firstName as therapistFirstName,
+        t.lastName as therapistLastName,
+        t.email as therapistEmail,
+        p.createdAt
+      FROM patients p
+      LEFT JOIN users t ON p.therapistId = t.id
+      WHERE p.userId = ?
+    `;
+
+    const user = await getRow(userSql, [userId]);
+    const patient = await getRow(patientSql, [userId]);
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Calculate individual step completion for progress tracking
+    const requiredFields = [
+      'firstName', 'lastName', 'phone', 'dateOfBirth', 'gender', 
+      'address', 'city', 'state', 'zipCode'
+    ];
+
+    const personalInfoComplete = requiredFields.every(field => user[field] !== null && user[field] !== '');
+    const medicalInfoComplete = patient && patient.diagnosis && patient.goals;
+    const complianceComplete = user.termsAccepted && user.hipaaAcknowledged;
+    
+    // Check if onboarding is completed from database OR if patient has existing data
+    // This handles existing patients who were created before the onboarding system
+    const hasExistingPatientData = !!(patient && (patient.diagnosis || patient.goals || patient.medicalHistory));
+    const isOnboardingComplete = !!(user.onboardingCompleted === 1 || user.onboardingCompleted === true || hasExistingPatientData);
+    const shouldShowPersonalInfo = isOnboardingComplete || personalInfoComplete;
+    
+    const sanitizedUser = {
+      id: user.id,
+      email: user.email,
+      firstName: shouldShowPersonalInfo ? user.firstName : null,
+      lastName: shouldShowPersonalInfo ? user.lastName : null,
+      phone: shouldShowPersonalInfo ? user.phone : null,
+      dateOfBirth: shouldShowPersonalInfo ? user.dateOfBirth : null,
+      gender: shouldShowPersonalInfo ? user.gender : null,
+      address: shouldShowPersonalInfo ? user.address : null,
+      city: shouldShowPersonalInfo ? user.city : null,
+      state: shouldShowPersonalInfo ? user.state : null,
+      zipCode: shouldShowPersonalInfo ? user.zipCode : null,
+      termsAccepted: user.termsAccepted,
+      hipaaAcknowledged: user.hipaaAcknowledged,
+      acceptedAt: user.acceptedAt,
+      createdAt: user.createdAt
+    };
+
+    // Create sanitized patient data for onboarding form
+    // Show medical data if medical info is complete OR if patient has existing data
+    const shouldShowMedicalInfo = medicalInfoComplete || hasExistingPatientData;
+    const sanitizedPatient = patient ? {
+      id: patient.id,
+      diagnosis: shouldShowMedicalInfo ? patient.diagnosis : null,
+      medicalHistory: shouldShowMedicalInfo ? patient.medicalHistory : null,
+      goals: shouldShowMedicalInfo ? patient.goals : null,
+      emergencyContact: shouldShowMedicalInfo ? patient.emergencyContact : null,
+      insuranceInfo: shouldShowMedicalInfo ? patient.insuranceInfo : null,
+      therapistId: patient.therapistId,
+      therapist: patient.therapistId ? {
+        id: patient.therapistId,
+        firstName: patient.therapistFirstName,
+        lastName: patient.therapistLastName,
+        email: patient.therapistEmail
+      } : null,
+      createdAt: patient.createdAt
+    } : null;
+
+    const onboardingStatus = {
+      isComplete: isOnboardingComplete,
+      steps: {
+        personalInfo: {
+          completed: personalInfoComplete,
+          required: requiredFields,
+          completedFields: requiredFields.filter(field => user[field] !== null && user[field] !== '')
+        },
+        medicalInfo: {
+          completed: medicalInfoComplete,
+          hasDiagnosis: patient && patient.diagnosis,
+          hasGoals: patient && patient.goals
+        },
+        compliance: {
+          completed: complianceComplete,
+          termsAccepted: user.termsAccepted,
+          hipaaAcknowledged: user.hipaaAcknowledged,
+          acceptedAt: user.acceptedAt
+        }
+      },
+      user: sanitizedUser,
+      patient: sanitizedPatient
+    };
+
+    res.json({
+      success: true,
+      data: onboardingStatus
+    });
+
+  } catch (error) {
+    console.error('Get onboarding status error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get onboarding status' });
+  }
+};
+
+// Get onboarding progress
+const getOnboardingProgress = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const sql = `
+      SELECT 
+        u.firstName,
+        u.lastName,
+        u.phone,
+        u.dateOfBirth,
+        u.gender,
+        u.address,
+        u.city,
+        u.state,
+        u.zipCode,
+        u.termsAccepted,
+        u.hipaaAcknowledged,
+        p.diagnosis,
+        p.goals,
+        p.medicalHistory,
+        p.emergencyContact,
+        p.insuranceInfo
+      FROM users u
+      LEFT JOIN patients p ON u.id = p.userId
+      WHERE u.id = ?
+    `;
+
+    const data = await getRow(sql, [userId]);
+
+    if (!data) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Calculate progress percentage
+    const totalSteps = 4;
+    let completedSteps = 0;
+
+    // Step 1: Personal Information
+    const personalFields = ['firstName', 'lastName', 'phone', 'dateOfBirth', 'gender', 'address', 'city', 'state', 'zipCode'];
+    const personalComplete = personalFields.every(field => data[field] !== null && data[field] !== '');
+    if (personalComplete) completedSteps++;
+
+    // Step 2: Medical Information
+    const medicalComplete = data.diagnosis && data.goals;
+    if (medicalComplete) completedSteps++;
+
+    // Step 3: Compliance
+    const complianceComplete = data.termsAccepted && data.hipaaAcknowledged;
+    if (complianceComplete) completedSteps++;
+
+    // Step 4: Final setup (always complete if we reach this point)
+    if (completedSteps >= 3) completedSteps++;
+
+    const progressPercentage = Math.round((completedSteps / totalSteps) * 100);
+
+    // Create sanitized data for onboarding form
+    // Return actual data if the respective step is complete, otherwise return null values
+    // Also handle existing patients who have data but incomplete onboarding status
+    const hasExistingPatientData = !!(data.diagnosis || data.goals || data.medicalHistory);
+    const isOnboardingComplete = !!(completedSteps === totalSteps || hasExistingPatientData);
+    const shouldShowPersonalInfo = personalComplete || hasExistingPatientData;
+    const shouldShowMedicalInfo = medicalComplete || hasExistingPatientData;
+    
+    const sanitizedData = {
+      firstName: shouldShowPersonalInfo ? data.firstName : null,
+      lastName: shouldShowPersonalInfo ? data.lastName : null,
+      phone: shouldShowPersonalInfo ? data.phone : null,
+      dateOfBirth: shouldShowPersonalInfo ? data.dateOfBirth : null,
+      gender: shouldShowPersonalInfo ? data.gender : null,
+      address: shouldShowPersonalInfo ? data.address : null,
+      city: shouldShowPersonalInfo ? data.city : null,
+      state: shouldShowPersonalInfo ? data.state : null,
+      zipCode: shouldShowPersonalInfo ? data.zipCode : null,
+      termsAccepted: data.termsAccepted,
+      hipaaAcknowledged: data.hipaaAcknowledged,
+      diagnosis: shouldShowMedicalInfo ? data.diagnosis : null,
+      goals: shouldShowMedicalInfo ? data.goals : null,
+      medicalHistory: shouldShowMedicalInfo ? data.medicalHistory : null,
+      emergencyContact: shouldShowMedicalInfo ? data.emergencyContact : null,
+      insuranceInfo: shouldShowMedicalInfo ? data.insuranceInfo : null
+    };
+
+    res.json({
+      success: true,
+      data: {
+        progressPercentage,
+        completedSteps,
+        totalSteps,
+        currentStep: Math.min(completedSteps + 1, totalSteps),
+        isComplete: isOnboardingComplete,
+        data: sanitizedData
+      }
+    });
+
+  } catch (error) {
+    console.error('Get onboarding progress error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get onboarding progress' });
+  }
+};
+
+// Update onboarding data
+const updateOnboardingData = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const updateData = req.body;
+
+    // Start transaction
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Update user table
+      const userFields = [
+        'firstName', 'lastName', 'phone', 'dateOfBirth', 'gender',
+        'address', 'city', 'state', 'zipCode'
+      ];
+
+      const userUpdates = [];
+      const userValues = [];
+
+      userFields.forEach(field => {
+        if (updateData[field] !== undefined) {
+          userUpdates.push(`${field} = ?`);
+          userValues.push(updateData[field]);
+        }
+      });
+
+      if (userUpdates.length > 0) {
+        userValues.push(userId);
+        const userSql = `UPDATE users SET ${userUpdates.join(', ')}, updatedAt = NOW() WHERE id = ?`;
+        await connection.execute(userSql, userValues);
+      }
+
+      // Update patient table
+      const patientFields = [
+        'diagnosis', 'medicalHistory', 'goals', 'emergencyContact', 'insuranceInfo'
+      ];
+
+      const patientUpdates = [];
+      const patientValues = [];
+
+      patientFields.forEach(field => {
+        if (updateData[field] !== undefined) {
+          patientUpdates.push(`${field} = ?`);
+          patientValues.push(updateData[field]);
+        }
+      });
+
+      if (patientUpdates.length > 0) {
+        patientValues.push(userId);
+        const patientSql = `UPDATE patients SET ${patientUpdates.join(', ')}, updatedAt = NOW() WHERE userId = ?`;
+        await connection.execute(patientSql, patientValues);
+      }
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'Onboarding data updated successfully'
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Update onboarding data error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update onboarding data' });
+  }
+};
+
+// Complete onboarding
+const completeOnboarding = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const onboardingData = req.body;
+    
+    // Debug: Log the received data
+    console.log('Complete onboarding - received data:', JSON.stringify(onboardingData, null, 2));
+    console.log('Complete onboarding - userId:', userId);
+    console.log('Complete onboarding - req.user:', req.user);
+    console.log('Complete onboarding - req.body:', JSON.stringify(req.body, null, 2));
+    console.log('Complete onboarding - req.body type:', typeof req.body);
+    console.log('Complete onboarding - req.body keys:', Object.keys(req.body || {}));
+
+    // Validate userId
+    if (!userId) {
+      console.error('Complete onboarding - userId is undefined or null');
+      return res.status(400).json({ success: false, error: 'User ID is required' });
+    }
+
+    // Start transaction
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Update user table with all data
+      const userSql = `
+        UPDATE users SET 
+          firstName = ?, lastName = ?, phone = ?, dateOfBirth = ?, gender = ?,
+          address = ?, city = ?, state = ?, zipCode = ?,
+          termsAccepted = ?, hipaaAcknowledged = ?, acceptedAt = ?,
+          onboardingCompleted = true, onboardingCompletedAt = NOW(),
+          updatedAt = NOW()
+        WHERE id = ?
+      `;
+
+      const userParams = [
+        onboardingData.firstName || null,
+        onboardingData.lastName || null,
+        onboardingData.phone || null,
+        onboardingData.dateOfBirth || null,
+        onboardingData.gender || null,
+        onboardingData.address || null,
+        onboardingData.city || null,
+        onboardingData.state || null,
+        onboardingData.zipCode || null,
+        onboardingData.termsAccepted !== undefined ? onboardingData.termsAccepted : true,
+        onboardingData.hipaaAcknowledged !== undefined ? onboardingData.hipaaAcknowledged : true,
+        onboardingData.acceptedAt ? new Date(onboardingData.acceptedAt).toISOString().slice(0, 19).replace('T', ' ') : new Date().toISOString().slice(0, 19).replace('T', ' '),
+        userId
+      ];
+
+      // Ensure no undefined values
+      const sanitizedUserParams = userParams.map(param => param === undefined ? null : param);
+
+      // Debug: Log the userParams and check for undefined values
+      console.log('Complete onboarding - userParams:', userParams);
+      console.log('Complete onboarding - userParams length:', userParams.length);
+      
+      // Check each parameter for undefined
+      userParams.forEach((param, index) => {
+        if (param === undefined) {
+          console.error(`Parameter at index ${index} is undefined:`, param);
+        }
+      });
+
+      try {
+        await connection.execute(userSql, sanitizedUserParams);
+        console.log('✅ User table updated successfully');
+      } catch (error) {
+        console.error('❌ User table update failed:', error.message);
+        throw error;
+      }
+
+      // Update patient table
+      const patientSql = `
+        UPDATE patients SET 
+          diagnosis = ?, medicalHistory = ?, goals = ?, 
+          emergencyContact = ?, insuranceInfo = ?, updatedAt = NOW()
+        WHERE userId = ?
+      `;
+
+      const patientParams = [
+        onboardingData.diagnosis || null,
+        onboardingData.medicalHistory || null,
+        onboardingData.goals || null,
+        onboardingData.emergencyContact || null,
+        onboardingData.insuranceInfo || null,
+        userId
+      ];
+
+      // Ensure no undefined values
+      const sanitizedPatientParams = patientParams.map(param => param === undefined ? null : param);
+
+      try {
+        await connection.execute(patientSql, sanitizedPatientParams);
+        console.log('✅ Patient table updated successfully');
+      } catch (error) {
+        console.error('❌ Patient table update failed:', error.message);
+        throw error;
+      }
+
+      // Log compliance action
+      const auditSql = `
+        INSERT INTO compliance_audit_log (userId, action, newValue, ipAddress, userAgent, timestamp)
+        VALUES (?, 'terms_accepted', TRUE, ?, ?, NOW())
+      `;
+
+      const auditParams = [
+        userId,
+        req.ip || req.connection?.remoteAddress || '127.0.0.1',
+        req.get('User-Agent') || 'unknown'
+      ];
+
+      // Ensure no undefined values
+      const sanitizedAuditParams = auditParams.map(param => param === undefined ? null : param);
+
+      try {
+        await connection.execute(auditSql, sanitizedAuditParams);
+        console.log('✅ Compliance audit logged successfully');
+      } catch (error) {
+        console.error('❌ Compliance audit failed:', error.message);
+        throw error;
+      }
+
+      await connection.commit();
+
+      // Send welcome notification
+      const notificationSql = `
+        INSERT INTO notifications (userId, type, title, message, createdAt)
+        VALUES (?, 'system', 'Welcome to TherapEase!', 'Your account setup is complete. Your therapist will contact you soon to schedule your first session.', NOW())
+      `;
+
+      await runQuery(notificationSql, [userId]);
+
+      res.json({
+        success: true,
+        message: 'Onboarding completed successfully',
+        data: {
+          onboardingCompleted: true,
+          onboardingCompletedAt: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Complete onboarding error:', error);
+    console.error('Complete onboarding error details:', {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage,
+      sql: error.sql
+    });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to complete onboarding',
+      details: error.message 
+    });
+  }
+};
+
 module.exports = {
   getPatients,
   getPatientById,
@@ -1682,6 +2210,11 @@ module.exports = {
   getAssessments,
   getHomeExercises,
   getNotifications,
-  getSettings
+  getSettings,
+  // Onboarding methods
+  getOnboardingStatus,
+  getOnboardingProgress,
+  updateOnboardingData,
+  completeOnboarding
 };
 

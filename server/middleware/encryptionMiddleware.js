@@ -8,7 +8,7 @@ const {
 // Define sensitive fields that need encryption
 const SENSITIVE_FIELDS = {
   users: ['email', 'phone', 'address'],
-  patients: ['diagnosis', 'medicalHistory', 'emergencyContact', 'insuranceInfo'],
+  patients: ['emergencyContact', 'insuranceInfo'], // Removed diagnosis and medicalHistory - these should be readable
   therapists: ['licenseNumber', 'education', 'certifications'],
   assessments: ['summary', 'recommendations', 'aiInsights'],
   daily_notes: ['activities', 'observations', 'progress', 'challenges', 'nextSteps'],
@@ -23,7 +23,6 @@ const encryptRequestData = (req, res, next) => {
       
       if (tableName && SENSITIVE_FIELDS[tableName]) {
         req.body = encryptSensitiveFields(req.body, SENSITIVE_FIELDS[tableName]);
-        console.log(`🔐 Encrypted sensitive fields for ${tableName}`);
       }
     }
     
@@ -47,7 +46,6 @@ const decryptResponseData = (req, res, next) => {
     res.json = function(data) {
       if (data && typeof data === 'object') {
         const tableName = getTableNameFromRoute(req.route?.path || req.path);
-        console.log(`🔍 Decryption middleware - Path: ${req.path}, Table: ${tableName}`);
         
         if (tableName && SENSITIVE_FIELDS[tableName]) {
           if (Array.isArray(data)) {
@@ -65,7 +63,6 @@ const decryptResponseData = (req, res, next) => {
             data = decryptSensitiveFields(data, SENSITIVE_FIELDS[tableName]);
           }
           
-          console.log(`🔓 Decrypted sensitive fields for ${tableName}`);
         }
       }
       
@@ -85,19 +82,23 @@ const decryptResponseData = (req, res, next) => {
 
 // Helper function to determine table name from route
 const getTableNameFromRoute = (path) => {
-  const routeMap = {
-    '/api/auth/register': 'users',
-    '/api/auth/login': 'users',
-    '/api/admin/patients': 'patients',
-    '/api/admin/therapists': 'therapists',
-    '/api/therapist/patients': 'patients',
-    '/api/therapist/assessments': 'assessments',
-    '/api/therapist/daily-notes': 'daily_notes',
-    '/api/therapist/appointments': 'appointments',
-    '/api/patient/assessments': 'assessments',
-    '/api/patient/daily-notes': 'daily_notes',
-    '/api/patient/appointments': 'appointments'
-  };
+    const routeMap = {
+      '/api/auth/register': 'users',
+      '/api/auth/login': 'users',
+      '/api/admin/patients': 'patients',
+      '/api/admin/therapists': 'therapists',
+      '/api/therapist/patients': 'patients',
+      '/api/therapist/assessments': 'assessments',
+      '/api/therapist/daily-notes': 'daily_notes',
+      '/api/therapist/appointments': 'appointments',
+      '/api/patient/assessments': 'assessments',
+      '/api/patient/daily-notes': 'daily_notes',
+      '/api/patient/appointments': 'appointments',
+      '/api/patient/onboarding/status': null, // Don't decrypt onboarding status
+      '/api/patient/onboarding/progress': null, // Don't decrypt onboarding progress
+      '/api/patient/dashboard': null, // Don't decrypt dashboard
+      '/api/patient/profile': 'patients' // Decrypt patient profile
+    };
   
   // Find matching route
   for (const [route, table] of Object.entries(routeMap)) {
@@ -154,7 +155,6 @@ const logEncryptionOperation = (operation, tableName, fieldName, success) => {
     userAgent: 'TherapEase-System'
   };
   
-  console.log(`🔐 Encryption Log: ${JSON.stringify(logEntry)}`);
   
   // In production, you might want to send this to a logging service
   // or store it in a secure audit log database

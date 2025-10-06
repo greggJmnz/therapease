@@ -238,12 +238,16 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    // Validate phone format if provided
-    if (updateData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(updateData.phone.replace(/[\s\-\(\)]/g, ''))) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid phone number format'
-      });
+    // Validate phone format if provided (Philippine mobile format: 09XXXXXXXXX)
+    if (updateData.phone) {
+      const cleanPhone = updateData.phone.replace(/[\s\-\(\)]/g, '');
+      const phonePattern = /^(09\d{9}|\+639\d{9})$/;
+      if (!phonePattern.test(cleanPhone)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Phone number must be in format 09XXXXXXXXX or +639XXXXXXXXX'
+        });
+      }
     }
 
     // Check if email is already taken by another user

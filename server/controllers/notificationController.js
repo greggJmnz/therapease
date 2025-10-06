@@ -79,10 +79,17 @@ const getNotifications = async (req, res) => {
         n.message,
         n.type,
         n.isRead,
+        n.priority,
         n.createdAt
       FROM notifications n
       ${whereClause}
-      ORDER BY n.createdAt DESC
+      ORDER BY 
+        CASE n.priority 
+          WHEN 'high' THEN 1 
+          WHEN 'medium' THEN 2 
+          WHEN 'low' THEN 3 
+        END,
+        n.createdAt DESC
       LIMIT ? OFFSET ?
     `;
 
@@ -288,12 +295,13 @@ const deleteAllNotifications = async (req, res) => {
 // Create notification (for system use)
 const createNotification = async (userId, title, message, type = 'system', options = {}) => {
   try {
+    const priority = options.priority || 'medium';
     const insertSql = `
-      INSERT INTO notifications (userId, title, message, type, relatedId)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO notifications (userId, title, message, type, relatedId, priority)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
 
-    const result = await runQuery(insertSql, [userId, title, message, type, options.relatedId || null]);
+    const result = await runQuery(insertSql, [userId, title, message, type, options.relatedId || null, priority]);
     const notificationId = result.insertId;
 
     // Send SMS if requested and user has phone number

@@ -1751,12 +1751,11 @@ RECOMMENDATIONS FOR INTERVENTION:
         therapyGoals: patient.therapyGoals || 'Not specified'
       };
 
-      // Call the AI API
-      const response = await fetch('/api/ai/analyze-assessment', {
+      // Call the AI API (using test endpoint for development)
+      const response = await fetch('/api/test/ai/analyze-assessment', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           patientData,

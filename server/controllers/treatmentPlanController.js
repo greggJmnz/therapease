@@ -722,10 +722,11 @@ const getPatientTreatmentPlan = async (req, res) => {
       ORDER BY tp.createdAt DESC
     `, [patientId]);
 
+    // Return empty array instead of 404 for patients with no treatment plans
     if (!treatmentPlans || treatmentPlans.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'No active treatment plans found'
+      return res.json({
+        success: true,
+        data: []
       });
     }
 

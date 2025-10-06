@@ -18,9 +18,16 @@ router.get('/patients', adminController.getUsers);
 router.get('/patients/:patientId/assessments', adminController.getPatientAssessments);
 router.get('/patients/:patientId/sessions', adminController.getPatientSessions);
 router.get('/patients/:patientId/progress', adminController.getPatientProgress);
+router.post('/patients/assign-therapist', adminController.assignTherapistToPatient);
+router.delete('/patients/:patientId/unassign-therapist', adminController.unassignTherapistFromPatient);
+router.post('/patients/add-therapist', adminController.addTherapistToPatient);
+router.delete('/patients/:patientId/therapists/:therapistId', adminController.removeTherapistFromPatient);
+router.get('/patients/:patientId/therapists', adminController.getPatientTherapists);
 
 // Therapist management
 router.get('/therapists', adminController.getTherapists);
+router.get('/therapists/available', adminController.getAvailableTherapists);
+router.put('/therapists/:therapistId/availability', adminController.updateTherapistAvailability);
 
 // Appointment management
 router.get('/appointments', adminController.getAppointments);

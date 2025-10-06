@@ -219,11 +219,13 @@ const getUsers = async (req, res) => {
         t.education,
         t.certifications,
         t.availability,
+        p.id as patientId,
         p.diagnosis,
         p.medicalHistory,
         p.goals,
         p.status as patientStatus,
         p.therapistId,
+        (SELECT CONCAT(u2.firstName, ' ', u2.lastName) FROM users u2 WHERE u2.id = p.therapistId) as therapistName,
         (SELECT COUNT(*) FROM patients pt WHERE pt.therapistId = t.userId) as patientCount
       FROM users u
       LEFT JOIN therapists t ON u.id = t.userId
@@ -269,12 +271,14 @@ const getUsers = async (req, res) => {
         formattedUser.patientCount = user.patientCount || 0;
       } else if (user.role === 'patient') {
         formattedUser.patient = {
+          id: user.patientId,
           diagnosis: user.diagnosis,
           medicalHistory: user.medicalHistory,
           goals: user.goals,
           status: user.patientStatus,
           therapistId: user.therapistId
         };
+        formattedUser.therapistName = user.therapistName;
       }
 
       return formattedUser;
@@ -1211,6 +1215,8 @@ const getTherapists = async (req, res) => {
         t.certifications,
         t.availability,
         t.status as therapistStatus,
+        t.maxPatients,
+        t.isAcceptingPatients,
         (SELECT COUNT(*) FROM patients p WHERE p.therapistId = t.userId) as patientCount
       FROM users u
       LEFT JOIN therapists t ON u.id = t.userId
@@ -1244,7 +1250,9 @@ const getTherapists = async (req, res) => {
         education: therapist.education,
         certifications: therapist.certifications,
         availability: therapist.availability,
-        status: therapist.therapistStatus || 'active' // Include therapist-specific status
+        status: therapist.therapistStatus || 'active', // Include therapist-specific status
+        maxPatients: therapist.maxPatients || 20,
+        isAcceptingPatients: therapist.isAcceptingPatients !== false
       },
       patientCount: therapist.patientCount || 0
     }));
@@ -1550,6 +1558,423 @@ const updateUserStatus = async (req, res) => {
   }
 };
 
+// Get available therapists for patient assignment
+const getAvailableTherapists = async (req, res) => {
+  try {
+    const { patientId } = req.query;
+
+    // Get therapists with their current patient count and capacity
+    const sql = `
+      SELECT 
+        u.id,
+        u.firstName,
+        u.lastName,
+        u.email,
+        u.phone,
+        t.id as therapistId,
+        t.licenseNumber,
+        t.specialization,
+        t.yearsOfExperience,
+        t.availability,
+        t.maxPatients,
+        t.isAcceptingPatients,
+        (SELECT COUNT(*) FROM patients p WHERE p.therapistId = u.id) as currentPatientCount
+      FROM users u
+      JOIN therapists t ON u.id = t.userId
+      WHERE u.role = 'therapist' 
+        AND u.status = 'active'
+        AND t.isAcceptingPatients = TRUE
+      ORDER BY currentPatientCount ASC, u.firstName ASC
+    `;
+
+    const therapists = await getAll(sql);
+
+    // Filter therapists who have available slots
+    const availableTherapists = therapists.filter(therapist => {
+      const currentCount = therapist.currentPatientCount || 0;
+      const maxPatients = therapist.maxPatients || 20;
+      return currentCount < maxPatients;
+    });
+
+    // If patientId is provided, exclude therapists already assigned to this patient
+    let filteredTherapists = availableTherapists;
+    if (patientId) {
+      const assignedTherapistIds = await getAll(
+        'SELECT DISTINCT therapistId FROM patient_therapist_assignments WHERE patientId = ? AND status = "active"',
+        [parseInt(patientId)]
+      );
+      const assignedIds = assignedTherapistIds.map(assignment => assignment.therapistId);
+      filteredTherapists = availableTherapists.filter(therapist => !assignedIds.includes(therapist.id));
+    }
+
+    // Format response
+    const formattedTherapists = filteredTherapists.map(therapist => ({
+      id: therapist.id,
+      therapistId: therapist.therapistId,
+      name: `${therapist.firstName} ${therapist.lastName}`,
+      email: therapist.email,
+      phone: therapist.phone,
+      specialization: therapist.specialization,
+      yearsOfExperience: therapist.yearsOfExperience,
+      availability: therapist.availability,
+      currentPatientCount: therapist.currentPatientCount,
+      maxPatients: therapist.maxPatients,
+      availableSlots: therapist.maxPatients - therapist.currentPatientCount,
+      isAvailable: therapist.currentPatientCount < therapist.maxPatients
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        therapists: formattedTherapists,
+        total: formattedTherapists.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Get available therapists error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch available therapists' });
+  }
+};
+
+// Assign therapist to patient
+const assignTherapistToPatient = async (req, res) => {
+  try {
+    const { patientId, therapistId } = req.body;
+
+    // Validate required fields
+    if (!patientId || !therapistId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: patientId, therapistId'
+      });
+    }
+
+    // Check if patient exists
+    const patientSql = `
+      SELECT p.id, p.userId, p.therapistId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM patients p
+      JOIN users u ON p.userId = u.id
+      WHERE p.userId = ?
+    `;
+    
+    const patient = await getRow(patientSql, [parseInt(patientId)]);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient not found'
+      });
+    }
+
+    // Check if therapist exists and is available
+    const therapistSql = `
+      SELECT 
+        t.id, 
+        t.userId, 
+        t.maxPatients, 
+        t.isAcceptingPatients,
+        CONCAT(u.firstName, ' ', u.lastName) as therapistName,
+        (SELECT COUNT(*) FROM patients p WHERE p.therapistId = t.userId) as currentPatientCount
+      FROM therapists t
+      JOIN users u ON t.userId = u.id
+      WHERE t.userId = ?
+    `;
+    
+    const therapist = await getRow(therapistSql, [parseInt(therapistId)]);
+    if (!therapist) {
+      return res.status(404).json({
+        success: false,
+        error: 'Therapist not found'
+      });
+    }
+
+    // Check if therapist is accepting new patients
+    if (!therapist.isAcceptingPatients) {
+      return res.status(400).json({
+        success: false,
+        error: 'Therapist is not currently accepting new patients'
+      });
+    }
+
+    // Check if therapist has available slots
+    const currentCount = therapist.currentPatientCount || 0;
+    const maxPatients = therapist.maxPatients || 20;
+    
+    if (currentCount >= maxPatients) {
+      return res.status(400).json({
+        success: false,
+        error: `Therapist has reached maximum patient capacity (${maxPatients} patients)`
+      });
+    }
+
+    // Check if patient already has a therapist assigned
+    if (patient.therapistId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Patient already has a therapist assigned'
+      });
+    }
+
+    // Start transaction
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Assign therapist to patient
+      await connection.execute(
+        'UPDATE patients SET therapistId = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?',
+        [parseInt(therapistId), parseInt(patientId)]
+      );
+
+      // Create notifications
+      const notificationController = require('./notificationController');
+      
+      // Notify therapist
+      await notificationController.createNotification(
+        parseInt(therapistId),
+        'New Patient Assigned',
+        `You have been assigned a new patient: ${patient.patientName}`,
+        'patient_assignment',
+        { patientId: patient.id, therapistId: parseInt(therapistId) }
+      );
+
+      // Create priority notification for assessment scheduling
+      await notificationController.createNotification(
+        parseInt(therapistId),
+        'Priority: Schedule Initial Assessment',
+        `Please schedule an initial assessment for your new patient: ${patient.patientName}. This is a priority task.`,
+        'assessment_priority',
+        { patientId: patient.id, therapistId: parseInt(therapistId), priority: 'high' }
+      );
+
+      // Notify patient
+      await notificationController.createNotification(
+        parseInt(patientId),
+        'Therapist Assigned',
+        `You have been assigned to therapist: ${therapist.therapistName}`,
+        'therapist_assignment',
+        { patientId: patient.id, therapistId: parseInt(therapistId) }
+      );
+
+      // Notify admin users
+      const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
+      for (const admin of adminUsers) {
+        await notificationController.createNotification(
+          admin.id,
+          'Patient-Therapist Assignment',
+          `Patient ${patient.patientName} has been assigned to therapist ${therapist.therapistName}`,
+          'admin_notification',
+          { patientId: patient.id, therapistId: parseInt(therapistId) }
+        );
+      }
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'Therapist assigned to patient successfully',
+        data: {
+          patientId: patient.id,
+          patientName: patient.patientName,
+          therapistId: parseInt(therapistId),
+          therapistName: therapist.therapistName,
+          currentPatientCount: currentCount + 1,
+          maxPatients: maxPatients
+        }
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Assign therapist to patient error:', error);
+    res.status(500).json({ success: false, error: 'Failed to assign therapist to patient' });
+  }
+};
+
+// Unassign therapist from patient
+const unassignTherapistFromPatient = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    // Check if patient exists and has a therapist
+    const patientSql = `
+      SELECT p.id, p.userId, p.therapistId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM patients p
+      JOIN users u ON p.userId = u.id
+      WHERE p.userId = ?
+    `;
+    
+    const patient = await getRow(patientSql, [parseInt(patientId)]);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient not found'
+      });
+    }
+
+    if (!patient.therapistId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Patient does not have a therapist assigned'
+      });
+    }
+
+    // Get therapist details for notification
+    const therapistSql = `
+      SELECT CONCAT(u.firstName, ' ', u.lastName) as therapistName
+      FROM users u
+      WHERE u.id = ?
+    `;
+    
+    const therapist = await getRow(therapistSql, [patient.therapistId]);
+
+    // Start transaction
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Unassign therapist from patient
+      await connection.execute(
+        'UPDATE patients SET therapistId = NULL, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?',
+        [parseInt(patientId)]
+      );
+
+      // Create notifications
+      const notificationController = require('./notificationController');
+      
+      // Notify therapist
+      await notificationController.createNotification(
+        patient.therapistId,
+        'Patient Unassigned',
+        `Patient ${patient.patientName} has been unassigned from you`,
+        'patient_unassignment',
+        { patientId: patient.id, therapistId: patient.therapistId }
+      );
+
+      // Notify patient
+      await notificationController.createNotification(
+        parseInt(patientId),
+        'Therapist Unassigned',
+        `You have been unassigned from your therapist`,
+        'therapist_unassignment',
+        { patientId: patient.id, therapistId: patient.therapistId }
+      );
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'Therapist unassigned from patient successfully',
+        data: {
+          patientId: patient.id,
+          patientName: patient.patientName,
+          therapistId: patient.therapistId,
+          therapistName: therapist?.therapistName || 'Unknown'
+        }
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Unassign therapist from patient error:', error);
+    res.status(500).json({ success: false, error: 'Failed to unassign therapist from patient' });
+  }
+};
+
+// Update therapist capacity and availability
+const updateTherapistAvailability = async (req, res) => {
+  try {
+    const { therapistId } = req.params;
+    const { maxPatients, isAcceptingPatients } = req.body;
+
+    // Check if therapist exists
+    const therapistSql = `
+      SELECT t.id, t.userId, CONCAT(u.firstName, ' ', u.lastName) as therapistName
+      FROM therapists t
+      JOIN users u ON t.userId = u.id
+      WHERE t.userId = ?
+    `;
+    
+    const therapist = await getRow(therapistSql, [parseInt(therapistId)]);
+    if (!therapist) {
+      return res.status(404).json({
+        success: false,
+        error: 'Therapist not found'
+      });
+    }
+
+    // Validate maxPatients if provided
+    if (maxPatients !== undefined) {
+      const currentPatientCount = await getRow(
+        'SELECT COUNT(*) as count FROM patients WHERE therapistId = ?',
+        [parseInt(therapistId)]
+      );
+      
+      if (maxPatients < currentPatientCount.count) {
+        return res.status(400).json({
+          success: false,
+          error: `Cannot set max patients to ${maxPatients}. Therapist currently has ${currentPatientCount.count} patients assigned.`
+        });
+      }
+    }
+
+    // Build update query
+    const updateFields = [];
+    const updateParams = [];
+
+    if (maxPatients !== undefined) {
+      updateFields.push('maxPatients = ?');
+      updateParams.push(parseInt(maxPatients));
+    }
+
+    if (isAcceptingPatients !== undefined) {
+      updateFields.push('isAcceptingPatients = ?');
+      updateParams.push(Boolean(isAcceptingPatients));
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No valid fields to update'
+      });
+    }
+
+    updateFields.push('updatedAt = CURRENT_TIMESTAMP');
+    updateParams.push(parseInt(therapistId));
+
+    // Update therapist
+    await runQuery(
+      `UPDATE therapists SET ${updateFields.join(', ')} WHERE userId = ?`,
+      updateParams
+    );
+
+    res.json({
+      success: true,
+      message: 'Therapist availability updated successfully',
+      data: {
+        therapistId: parseInt(therapistId),
+        therapistName: therapist.therapistName,
+        maxPatients: maxPatients,
+        isAcceptingPatients: isAcceptingPatients
+      }
+    });
+
+  } catch (error) {
+    console.error('Update therapist availability error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update therapist availability' });
+  }
+};
+
 // Update appointment (admin)
 const updateAppointment = async (req, res) => {
   try {
@@ -1797,6 +2222,316 @@ const getReports = async (req, res) => {
   }
 };
 
+// Add additional therapist to patient
+const addTherapistToPatient = async (req, res) => {
+  try {
+    const { patientId, therapistId, assignmentType = 'secondary', notes = '' } = req.body;
+    const assignedBy = req.user.id;
+
+    if (!patientId || !therapistId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: patientId, therapistId'
+      });
+    }
+
+    // Check if patient exists
+    const patientSql = `SELECT p.id, p.userId, CONCAT(u.firstName, ' ', u.lastName) as patientName FROM patients p JOIN users u ON p.userId = u.id WHERE p.id = ?`;
+    const patient = await getRow(patientSql, [parseInt(patientId)]);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient not found'
+      });
+    }
+
+    // Check if therapist exists and is available
+    const therapistSql = `SELECT t.userId, t.maxPatients, t.isAcceptingPatients, CONCAT(u.firstName, ' ', u.lastName) as therapistName, (SELECT COUNT(*) FROM patient_therapist_assignments pta WHERE pta.therapistId = t.userId AND pta.status = 'active') as currentPatientCount FROM therapists t JOIN users u ON t.userId = u.id WHERE t.userId = ?`;
+    const therapist = await getRow(therapistSql, [parseInt(therapistId)]);
+    if (!therapist) {
+      return res.status(404).json({
+        success: false,
+        error: 'Therapist not found'
+      });
+    }
+
+    if (!therapist.isAcceptingPatients) {
+      return res.status(400).json({
+        success: false,
+        error: 'Therapist is not currently accepting new patients'
+      });
+    }
+
+    const currentCount = therapist.currentPatientCount || 0;
+    const maxPatients = therapist.maxPatients || 20;
+    if (currentCount >= maxPatients) {
+      return res.status(400).json({
+        success: false,
+        error: `Therapist has reached maximum patient capacity (${maxPatients} patients)`
+      });
+    }
+
+    // Check if assignment already exists
+    const existingAssignment = await getRow(
+      'SELECT id FROM patient_therapist_assignments WHERE patientId = ? AND therapistId = ? AND status = "active"',
+      [parseInt(patientId), parseInt(therapistId)]
+    );
+
+    if (existingAssignment) {
+      return res.status(400).json({
+        success: false,
+        error: 'Therapist is already assigned to this patient'
+      });
+    }
+
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Create new assignment
+      await connection.execute(
+        'INSERT INTO patient_therapist_assignments (patientId, therapistId, assignmentType, assignedBy, notes, status) VALUES (?, ?, ?, ?, ?, "active")',
+        [parseInt(patientId), parseInt(therapistId), assignmentType, assignedBy, notes]
+      );
+
+      // Create notifications
+      const notificationController = require('./notificationController');
+      
+      // Notify new therapist
+      await notificationController.createNotification(
+        parseInt(therapistId),
+        'New Patient Assignment',
+        `You have been assigned as ${assignmentType} therapist to patient: ${patient.patientName}`,
+        'patient_assignment',
+        { patientId: parseInt(patientId), therapistId: parseInt(therapistId) }
+      );
+
+      // Notify patient
+      await notificationController.createNotification(
+        patient.userId,
+        'Additional Therapist Assigned',
+        `A new ${assignmentType} therapist has been assigned to you: ${therapist.therapistName}`,
+        'therapist_assignment',
+        { patientId: parseInt(patientId), therapistId: parseInt(therapistId) }
+      );
+
+      // Notify existing therapists
+      const existingTherapists = await getAll(
+        'SELECT DISTINCT therapistId FROM patient_therapist_assignments WHERE patientId = ? AND therapistId != ? AND status = "active"',
+        [parseInt(patientId), parseInt(therapistId)]
+      );
+
+      for (const existingTherapist of existingTherapists) {
+        await notificationController.createNotification(
+          existingTherapist.therapistId,
+          'Additional Therapist Added',
+          `A new ${assignmentType} therapist has been added to your shared patient: ${patient.patientName}`,
+          'therapist_collaboration',
+          { patientId: parseInt(patientId), therapistId: parseInt(therapistId) }
+        );
+      }
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'Additional therapist assigned to patient successfully',
+        data: {
+          patientId: parseInt(patientId),
+          patientName: patient.patientName,
+          therapistId: parseInt(therapistId),
+          therapistName: therapist.therapistName,
+          assignmentType,
+          currentPatientCount: currentCount + 1,
+          maxPatients
+        }
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Add therapist to patient error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to assign additional therapist to patient'
+    });
+  }
+};
+
+// Remove therapist from patient
+const removeTherapistFromPatient = async (req, res) => {
+  try {
+    const { patientId, therapistId } = req.params;
+    const { reason = 'No reason provided' } = req.body;
+
+    if (!patientId || !therapistId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: patientId, therapistId'
+      });
+    }
+
+    // Check if assignment exists
+    const assignmentSql = `
+      SELECT pta.id, pta.assignmentType, pta.patientId, pta.therapistId,
+             CONCAT(u1.firstName, ' ', u1.lastName) as patientName,
+             CONCAT(u2.firstName, ' ', u2.lastName) as therapistName
+      FROM patient_therapist_assignments pta
+      JOIN patients p ON pta.patientId = p.id
+      JOIN users u1 ON p.userId = u1.id
+      JOIN users u2 ON pta.therapistId = u2.id
+      WHERE pta.patientId = ? AND pta.therapistId = ? AND pta.status = 'active'
+    `;
+    const assignment = await getRow(assignmentSql, [parseInt(patientId), parseInt(therapistId)]);
+
+    if (!assignment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Therapist assignment not found'
+      });
+    }
+
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Update assignment status to inactive
+      await connection.execute(
+        'UPDATE patient_therapist_assignments SET status = "inactive", notes = CONCAT(COALESCE(notes, ""), " | Removed: ", ?), updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+        [reason, assignment.id]
+      );
+
+      // Create notifications
+      const notificationController = require('./notificationController');
+      
+      // Notify removed therapist
+      await notificationController.createNotification(
+        parseInt(therapistId),
+        'Patient Assignment Removed',
+        `You have been removed as ${assignment.assignmentType} therapist from patient: ${assignment.patientName}. Reason: ${reason}`,
+        'assignment_removed',
+        { patientId: parseInt(patientId), therapistId: parseInt(therapistId) }
+      );
+
+      // Notify patient
+      const patient = await getRow('SELECT userId FROM patients WHERE id = ?', [parseInt(patientId)]);
+      if (patient) {
+        await notificationController.createNotification(
+          patient.userId,
+          'Therapist Removed',
+          `Your ${assignment.assignmentType} therapist ${assignment.therapistName} has been removed. Reason: ${reason}`,
+          'therapist_removed',
+          { patientId: parseInt(patientId), therapistId: parseInt(therapistId) }
+        );
+      }
+
+      // Notify remaining therapists
+      const remainingTherapists = await getAll(
+        'SELECT DISTINCT therapistId FROM patient_therapist_assignments WHERE patientId = ? AND therapistId != ? AND status = "active"',
+        [parseInt(patientId), parseInt(therapistId)]
+      );
+
+      for (const remainingTherapist of remainingTherapists) {
+        await notificationController.createNotification(
+          remainingTherapist.therapistId,
+          'Therapist Removed from Shared Patient',
+          `Therapist ${assignment.therapistName} has been removed from your shared patient: ${assignment.patientName}`,
+          'therapist_collaboration',
+          { patientId: parseInt(patientId), therapistId: parseInt(therapistId) }
+        );
+      }
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'Therapist removed from patient successfully',
+        data: {
+          patientId: parseInt(patientId),
+          patientName: assignment.patientName,
+          therapistId: parseInt(therapistId),
+          therapistName: assignment.therapistName,
+          assignmentType: assignment.assignmentType
+        }
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Remove therapist from patient error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to remove therapist from patient'
+    });
+  }
+};
+
+// Get patient's assigned therapists
+const getPatientTherapists = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const sql = `
+      SELECT 
+        pta.id,
+        pta.assignmentType,
+        pta.assignedAt,
+        pta.status,
+        pta.notes,
+        u.id as therapistId,
+        u.firstName,
+        u.lastName,
+        u.email,
+        t.specialization,
+        t.yearsOfExperience,
+        CONCAT(u.firstName, ' ', u.lastName) as therapistName
+      FROM patient_therapist_assignments pta
+      JOIN users u ON pta.therapistId = u.id
+      LEFT JOIN therapists t ON u.id = t.userId
+      WHERE pta.patientId = ? AND pta.status = 'active'
+      ORDER BY pta.assignmentType, pta.assignedAt
+    `;
+
+    const therapists = await getAll(sql, [parseInt(patientId)]);
+
+    res.json({
+      success: true,
+      data: {
+        therapists: therapists.map(therapist => ({
+          id: therapist.id,
+          therapistId: therapist.therapistId,
+          name: therapist.therapistName,
+          email: therapist.email,
+          specialization: therapist.specialization,
+          yearsOfExperience: therapist.yearsOfExperience,
+          assignmentType: therapist.assignmentType,
+          assignedAt: therapist.assignedAt,
+          status: therapist.status,
+          notes: therapist.notes
+        })),
+        total: therapists.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Get patient therapists error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch patient therapists'
+    });
+  }
+};
+
 module.exports = {
   getDashboard,
   getUsers,
@@ -1817,5 +2552,12 @@ module.exports = {
   getTherapists,
   resetUserPassword,
   sendPasswordResetLink,
-  updateUserStatus
+  updateUserStatus,
+  getAvailableTherapists,
+  assignTherapistToPatient,
+  unassignTherapistFromPatient,
+  updateTherapistAvailability,
+  addTherapistToPatient,
+  removeTherapistFromPatient,
+  getPatientTherapists
 };

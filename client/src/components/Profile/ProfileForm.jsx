@@ -155,8 +155,12 @@ const ProfileForm = ({ userRole, apiService }) => {
       newErrors.email = 'Invalid email format';
     }
 
-    if (formData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ''))) {
-      newErrors.phone = 'Invalid phone number format';
+    if (formData.phone) {
+      const cleanPhone = formData.phone.replace(/[\s\-\(\)]/g, '');
+      const phonePattern = /^(09\d{9}|\+639\d{9})$/;
+      if (!phonePattern.test(cleanPhone)) {
+        newErrors.phone = 'Phone number must be in format 09XXXXXXXXX or +639XXXXXXXXX';
+      }
     }
 
     if (userRole === 'therapist') {

@@ -38,10 +38,10 @@ import TherapistProfile from './pages/Therapist/Profile';
 
 
 import PatientDashboard from './pages/Patient/Dashboard';
+import PatientOnboarding from './pages/Patient/PatientOnboarding';
 import PatientProgressView from './pages/Patient/ProgressView';
 import PatientAppointments from './pages/Patient/Appointments';
 import PatientDailyNotes from './pages/Patient/DailyNotes';
-import PatientAssessments from './pages/Patient/Assessments';
 import PatientNotifications from './pages/Patient/Notifications';
 import PatientSettings from './pages/Patient/Settings';
 import PatientHomeExercises from './pages/Patient/HomeExercises';
@@ -152,10 +152,10 @@ function App() {
               }>
                 <Route index element={<Navigate to="/patient/dashboard" replace />} />
                 <Route path="dashboard" element={<PatientDashboard />} />
+                <Route path="onboarding" element={<PatientOnboarding />} />
                 <Route path="progress" element={<PatientProgressView />} />
                 <Route path="appointments" element={<PatientAppointments />} />
                 <Route path="daily-notes" element={<PatientDailyNotes />} />
-                <Route path="assessments" element={<PatientAssessments />} />
                 <Route path="notifications" element={<PatientNotifications />} />
                 <Route path="settings" element={<PatientSettings />} />
                 <Route path="exercises" element={<PatientHomeExercisesNew />} />

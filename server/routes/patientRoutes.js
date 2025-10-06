@@ -57,4 +57,10 @@ router.post('/upload-profile-image', upload.single('profileImage'), profileContr
 router.get('/settings', settingsController.getSettings);
 router.put('/settings', settingsController.updateSettings);
 
+// Onboarding management
+router.get('/onboarding/status', patientController.getOnboardingStatus);
+router.get('/onboarding/progress', patientController.getOnboardingProgress);
+router.put('/onboarding', patientController.updateOnboardingData);
+router.post('/onboarding/complete', patientController.completeOnboarding);
+
 module.exports = router;

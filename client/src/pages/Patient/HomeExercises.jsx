@@ -2,17 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { Target, Calendar, Clock, CheckCircle, Play, Pause, RotateCcw, TrendingUp, Award, Timer } from 'lucide-react';
 import { useQuery } from 'react-query';
 import { patientAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const HomeExercises = () => {
+  const { user } = useAuth();
   const [activeExercise, setActiveExercise] = useState(null);
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
+  // Get patient ID from user data
+  const patientId = user?.id;
+
   // Fetch home exercises data from API
   const { data: exercisesData, isLoading, error } = useQuery(
     'patientExercises',
-    patientAPI.getExercises,
+    () => patientAPI.getHomeExercises(patientId),
     {
+      enabled: !!patientId,
       onError: (error) => {
         console.error('Error fetching exercises:', error);
       }

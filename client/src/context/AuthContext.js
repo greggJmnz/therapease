@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from 'react-query';
 import { authAPI } from '../services/api';
 import websocketService from '../services/websocketService';
 
@@ -19,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -60,6 +62,14 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
+  // Clear cache when user changes
+  useEffect(() => {
+    if (user) {
+      // Clear cache when a new user logs in
+      clearCache();
+    }
+  }, [user?.id]);
+
   const login = async (email, password) => {
     console.log('AuthContext: login called with:', { email, password });
     try {
@@ -80,9 +90,21 @@ export const AuthProvider = ({ children }) => {
           role: data.data.user.role,
           phone: data.data.user.phone,
           dateOfBirth: data.data.user.dateOfBirth,
+          onboardingCompleted: data.data.user.onboardingCompleted || false,
         };
 
         console.log('AuthContext: setting user data:', userData);
+        
+        // Clear any cached data from previous users
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
+            localStorage.removeItem(key);
+          }
+        });
+        
+        // Clear React Query cache
+        queryClient.clear();
+        
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('userRole', data.data.user.role);
@@ -132,7 +154,13 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Registration error:', error);
       if (error.response) {
-        return { success: false, message: error.response.data?.message || 'Registration failed' };
+        const errorMessage = error.response.data?.error || error.response.data?.message || 'Registration failed';
+        const errorDetails = error.response.data?.details;
+        return { 
+          success: false, 
+          message: errorMessage,
+          details: errorDetails
+        };
       } else if (error.request) {
         return { success: false, message: 'Network error. Please check your connection.' };
       } else {
@@ -150,6 +178,16 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('userId');
     
+    // Clear all localStorage items that might contain cached data
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Clear React Query cache
+    queryClient.clear();
+    
     setUser(null);
     setToken(null);
     setIsAuthenticated(false);
@@ -161,6 +199,18 @@ export const AuthProvider = ({ children }) => {
     const updatedUser = { ...user, ...updatedData };
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
+  const clearCache = () => {
+    // Clear React Query cache
+    queryClient.clear();
+    
+    // Clear localStorage cache
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
+        localStorage.removeItem(key);
+      }
+    });
   };
 
   const changePassword = async (currentPassword, newPassword) => {
@@ -233,6 +283,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateUser,
+    clearCache,
     changePassword,
     forgotPassword,
     resetPassword,
