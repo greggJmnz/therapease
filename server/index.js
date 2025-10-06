@@ -1322,6 +1322,48 @@ app.get('/api/test/patient/notifications', async (req, res) => {
   }
 });
 
+// Test onboarding completion with admin notifications
+app.post('/api/test/patient/onboarding/complete', async (req, res) => {
+  try {
+    const { completeOnboarding } = require('./controllers/patientController');
+    const patientId = req.body.patientId ? parseInt(req.body.patientId) : 37; // Default to Alexandra Santos
+    const mockReq = { 
+      user: { id: patientId, role: 'patient' }, 
+      body: req.body || {},
+      ip: req.ip || '127.0.0.1',
+      connection: { remoteAddress: req.ip || '127.0.0.1' },
+      get: (header) => req.get(header)
+    };
+    const mockRes = {
+      json: (data) => res.json(data),
+      status: (code) => ({ json: (data) => res.status(code).json(data) })
+    };
+    await completeOnboarding(mockReq, mockRes);
+  } catch (error) {
+    console.error('Test onboarding completion error:', error);
+    res.status(500).json({ success: false, error: `Test endpoint error: ${error.message}` });
+  }
+});
+
+// Test endpoint to update notification priority
+app.put('/api/test/admin/notifications/:id/priority', async (req, res) => {
+  try {
+    const { runQuery } = require('./config/database');
+    const notificationId = req.params.id;
+    const { priority } = req.body;
+    
+    await runQuery(
+      'UPDATE notifications SET priority = ? WHERE id = ?',
+      [priority, notificationId]
+    );
+    
+    res.json({ success: true, message: `Notification ${notificationId} priority updated to ${priority}` });
+  } catch (error) {
+    console.error('Update notification priority error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Therapist notification operations test endpoints
 app.delete('/api/test/therapist/notifications/:id', async (req, res) => {
   try {

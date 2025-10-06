@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bell,
   Eye,
@@ -28,9 +28,34 @@ const AdminNotifications = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  // Update current time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format Philippine time
+  const formatPhilippineTime = (date) => {
+    return date.toLocaleString('en-US', {
+      timeZone: 'Asia/Manila',
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  };
 
   // Fetch notifications using admin API
   const {
@@ -54,11 +79,13 @@ const AdminNotifications = () => {
     type: notification.type,
     title: notification.title,
     message: notification.message,
-    priority: notification.priority || 'medium',
+    priority: notification.priority || 'medium', // Use actual priority from backend
     isRead: notification.read === 1 || notification.isRead === true,
     user: notification.user,
     createdAt: notification.createdAt,
     updatedAt: notification.updatedAt,
+    date: notification.date,
+    time: notification.time,
     timeAgo: notification.timeAgo || 'Just now'
   })) || [];
 
@@ -75,7 +102,8 @@ const AdminNotifications = () => {
   const markAsReadMutation = useMutation(
     (notificationId) => adminAPI.markNotificationAsRead(notificationId),
     {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log('Successfully marked notification as read:', data);
         queryClient.invalidateQueries('adminNotifications');
       },
       onError: (error) => {
@@ -88,7 +116,8 @@ const AdminNotifications = () => {
   const markAllAsReadMutation = useMutation(
     () => adminAPI.markAllNotificationsAsRead(),
     {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log('Successfully marked all notifications as read:', data);
         queryClient.invalidateQueries('adminNotifications');
       },
       onError: (error) => {
@@ -101,7 +130,8 @@ const AdminNotifications = () => {
   const deleteNotificationMutation = useMutation(
     (notificationId) => adminAPI.deleteNotification(notificationId),
     {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log('Successfully deleted notification:', data);
         queryClient.invalidateQueries('adminNotifications');
       },
       onError: (error) => {
@@ -112,10 +142,12 @@ const AdminNotifications = () => {
 
   // Actions
   const markAsRead = (notificationId) => {
+    console.log('Marking notification as read:', notificationId);
     markAsReadMutation.mutate(notificationId);
   };
 
   const markAllAsRead = () => {
+    console.log('Marking all notifications as read');
     markAllAsReadMutation.mutate();
   };
 
@@ -144,14 +176,9 @@ const AdminNotifications = () => {
       }
     }
 
-    // Priority filter (since priority column doesn't exist, we'll use type as priority)
+    // Priority filter - use actual priority from backend
     if (filterPriority !== 'all') {
-      const typePriority = {
-        'high': ['appointment', 'system'],
-        'medium': ['assessment', 'progress'],
-        'low': ['patient', 'exercise', 'note']
-      };
-      if (!typePriority[filterPriority]?.includes(notification.type)) {
+      if (notification.priority !== filterPriority) {
         return false;
       }
     }
@@ -182,26 +209,25 @@ const AdminNotifications = () => {
     }
   };
 
-  const getPriorityColor = (type) => {
-    const typePriority = {
-      'appointment': 'border-red-500',
-      'system': 'border-red-500',
-      'assessment': 'border-yellow-500',
-      'progress': 'border-yellow-500',
-      'patient': 'border-green-500',
-      'exercise': 'border-green-500',
-      'note': 'border-green-500'
+  const getPriorityColor = (priority) => {
+    const priorityColors = {
+      'high': 'border-red-500',
+      'medium': 'border-yellow-500',
+      'low': 'border-green-500'
     };
-    return typePriority[type] || 'border-gray-500';
+    return priorityColors[priority] || 'border-gray-500';
   };
 
   const handleClearAllNotifications = () => {
+    console.log('Clear all notifications clicked');
     setShowClearConfirm(true);
   };
 
   const confirmClearAll = async () => {
+    console.log('Confirming clear all notifications');
     try {
       for (const notification of notifications) {
+        console.log('Deleting notification:', notification.id);
         await deleteNotification(notification.id);
       }
       setShowClearConfirm(false);
@@ -254,10 +280,10 @@ const AdminNotifications = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">High Priority</p>
-              <p className="text-2xl font-bold text-yellow-600 mt-1">{notifications.filter(n => ['appointment', 'system'].includes(n.type)).length}</p>
+              <p className="text-2xl font-bold text-red-600 mt-1">{notifications.filter(n => n.priority === 'high').length}</p>
             </div>
-            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-yellow-600" />
+            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-6 h-6 text-red-600" />
             </div>
           </div>
         </div>
@@ -285,14 +311,30 @@ const AdminNotifications = () => {
           <h3 className="text-lg font-bold text-gray-900">Recent Notifications</h3>
           <div className="flex items-center gap-2">
             <button
-              onClick={markAllAsRead}
-              className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 text-sm"
+              onClick={() => {
+                console.log('Overview Mark All Read button clicked');
+                markAllAsRead();
+              }}
+              disabled={markAllAsReadMutation.isLoading}
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <CheckCircle className="w-4 h-4" />
-              Mark All as Read
+              {markAllAsReadMutation.isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Marking All...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Mark All as Read
+                </>
+              )}
             </button>
             <button
-              onClick={handleClearAllNotifications}
+              onClick={() => {
+                console.log('Overview Clear All button clicked');
+                handleClearAllNotifications();
+              }}
               className="text-red-600 hover:text-red-700 font-medium flex items-center gap-1 text-sm"
             >
               <Trash2 className="w-4 h-4" />
@@ -306,12 +348,12 @@ const AdminNotifications = () => {
             return (
               <div key={notification.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
                 <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${
-                  ['appointment', 'system'].includes(notification.type) ? 'bg-red-100' :
-                  ['assessment', 'progress'].includes(notification.type) ? 'bg-yellow-100' : 'bg-green-100'
+                  notification.priority === 'high' ? 'bg-red-100' :
+                  notification.priority === 'medium' ? 'bg-yellow-100' : 'bg-green-100'
                 }`}>
                   <TypeIcon className={`w-4 h-4 ${
-                    ['appointment', 'system'].includes(notification.type) ? 'text-red-600' :
-                    ['assessment', 'progress'].includes(notification.type) ? 'text-yellow-600' : 'text-green-600'
+                    notification.priority === 'high' ? 'text-red-600' :
+                    notification.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
                   }`} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -327,7 +369,7 @@ const AdminNotifications = () => {
                   <div className="flex items-center gap-3 text-xs text-gray-500">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {notification.timeAgo || 'Just now'}
+                      {notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now')}
                     </span>
                     <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 capitalize">
                       {notification.type}
@@ -409,18 +451,47 @@ const AdminNotifications = () => {
           {/* Action Buttons */}
           <div className="flex gap-2">
             <button
-              onClick={markAllAsRead}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium text-sm shadow-sm hover:shadow-md whitespace-nowrap"
+              onClick={() => {
+                console.log('Mark All Read button clicked');
+                markAllAsRead();
+              }}
+              disabled={markAllAsReadMutation.isLoading}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium text-sm shadow-sm hover:shadow-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <CheckCircle size={16} />
-              Mark All Read
+              {markAllAsReadMutation.isLoading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Marking All...
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={16} />
+                  Mark All Read
+                </>
+              )}
             </button>
             <button
-              onClick={handleClearAllNotifications}
+              onClick={() => {
+                console.log('Clear All button clicked');
+                handleClearAllNotifications();
+              }}
               className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center gap-2 font-medium text-sm shadow-sm hover:shadow-md whitespace-nowrap"
             >
               <Trash2 size={16} />
               Clear All
+            </button>
+            <button
+              onClick={() => {
+                console.log('Test API button clicked');
+                adminAPI.getNotifications().then(response => {
+                  console.log('API test response:', response);
+                }).catch(error => {
+                  console.error('API test error:', error);
+                });
+              }}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center gap-2 font-medium text-sm shadow-sm hover:shadow-md whitespace-nowrap"
+            >
+              Test API
             </button>
           </div>
         </div>
@@ -446,16 +517,16 @@ const AdminNotifications = () => {
                   !notification.isRead ? 'ring-1 ring-blue-500 ring-opacity-20' : ''
                 }`}
               >
-                <div className={`p-3 border-l-3 ${getPriorityColor(notification.type)}`}>
+                <div className={`p-3 border-l-3 ${getPriorityColor(notification.priority)}`}>
                   <div className="flex items-center gap-3">
                     {/* Icon Section */}
                     <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${
-                      ['appointment', 'system'].includes(notification.type) ? 'bg-red-100' :
-                      ['assessment', 'progress'].includes(notification.type) ? 'bg-yellow-100' : 'bg-green-100'
+                      notification.priority === 'high' ? 'bg-red-100' :
+                      notification.priority === 'medium' ? 'bg-yellow-100' : 'bg-green-100'
                     }`}>
                       <TypeIcon className={`w-4 h-4 ${
-                        ['appointment', 'system'].includes(notification.type) ? 'text-red-600' :
-                        ['assessment', 'progress'].includes(notification.type) ? 'text-yellow-600' : 'text-green-600'
+                        notification.priority === 'high' ? 'text-red-600' :
+                        notification.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
                       }`} />
                     </div>
 
@@ -471,11 +542,10 @@ const AdminNotifications = () => {
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                            ['appointment', 'system'].includes(notification.type) ? 'bg-red-100 text-red-700' :
-                            ['assessment', 'progress'].includes(notification.type) ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
+                            notification.priority === 'high' ? 'bg-red-100 text-red-700' :
+                            notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
                           }`}>
-                            {['appointment', 'system'].includes(notification.type) ? 'high' :
-                             ['assessment', 'progress'].includes(notification.type) ? 'medium' : 'low'}
+                            {notification.priority}
                           </span>
                           <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 capitalize">
                             {notification.type}
@@ -491,7 +561,7 @@ const AdminNotifications = () => {
                         <div className="flex items-center gap-3 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {notification.timeAgo || 'Just now'}
+                            {notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now')}
                           </span>
                         </div>
 
@@ -505,13 +575,25 @@ const AdminNotifications = () => {
                             View
                           </button>
                           
-                          {!notification.isRead && (
+                          {!notification.isRead && !markAsReadMutation.isLoading && (
                             <button
-                              onClick={() => markAsRead(notification.id)}
+                              onClick={() => {
+                                console.log('Individual Read button clicked for notification:', notification.id);
+                                markAsRead(notification.id);
+                              }}
                               className="bg-green-600 text-white py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 hover:bg-green-700 transition-colors"
                             >
                               <CheckCircle className="w-3 h-3" />
                               Read
+                            </button>
+                          )}
+                          {markAsReadMutation.isLoading && (
+                            <button
+                              disabled
+                              className="bg-gray-400 text-white py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 cursor-not-allowed"
+                            >
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Marking...
                             </button>
                           )}
                           
@@ -592,10 +674,20 @@ const AdminNotifications = () => {
     <div className="admin-notifications p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">System Notifications</h1>
-        <p className="text-base text-gray-600">
-          Stay updated with important system alerts, appointments, and administrative updates
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">System Notifications</h1>
+            <p className="text-base text-gray-600">
+              Stay updated with important system alerts, appointments, and administrative updates
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-gray-500 mb-1">Current Time (Philippines)</div>
+            <div className="text-lg font-mono font-semibold text-gray-900">
+              {formatPhilippineTime(currentTime)}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tab Navigation */}
@@ -643,12 +735,12 @@ const AdminNotifications = () => {
                     const TypeIcon = getTypeIcon(selectedNotification.type);
                     return (
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        ['appointment', 'system'].includes(selectedNotification.type) ? 'bg-red-100' :
-                        ['assessment', 'progress'].includes(selectedNotification.type) ? 'bg-yellow-100' : 'bg-green-100'
+                        selectedNotification.priority === 'high' ? 'bg-red-100' :
+                        selectedNotification.priority === 'medium' ? 'bg-yellow-100' : 'bg-green-100'
                       }`}>
                         <TypeIcon className={`w-6 h-6 ${
-                          ['appointment', 'system'].includes(selectedNotification.type) ? 'text-red-600' :
-                          ['assessment', 'progress'].includes(selectedNotification.type) ? 'text-yellow-600' : 'text-green-600'
+                          selectedNotification.priority === 'high' ? 'text-red-600' :
+                          selectedNotification.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
                         }`} />
             </div>
                     );
@@ -691,16 +783,15 @@ const AdminNotifications = () => {
           </div>
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-2">Created</h4>
-                    <p className="text-gray-600">{selectedNotification.timeAgo || 'Just now'}</p>
+                    <p className="text-gray-600">{selectedNotification.date && selectedNotification.time ? `${selectedNotification.date} at ${selectedNotification.time}` : (selectedNotification.timeAgo || 'Just now')}</p>
             </div>
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-2">Priority</h4>
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      ['appointment', 'system'].includes(selectedNotification.type) ? 'bg-red-100 text-red-800' :
-                      ['assessment', 'progress'].includes(selectedNotification.type) ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                      selectedNotification.priority === 'high' ? 'bg-red-100 text-red-800' :
+                      selectedNotification.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
                     }`}>
-                      {['appointment', 'system'].includes(selectedNotification.type) ? 'High' :
-                       ['assessment', 'progress'].includes(selectedNotification.type) ? 'Medium' : 'Low'}
+                      {selectedNotification.priority?.charAt(0).toUpperCase() + selectedNotification.priority?.slice(1)}
                 </span>
               </div>
             </div>
@@ -716,7 +807,7 @@ const AdminNotifications = () => {
                     View Appointment
                   </button>
                 )}
-                {!selectedNotification.isRead && (
+                {!selectedNotification.isRead && !markAsReadMutation.isLoading && (
                   <button
                     onClick={() => {
                       markAsRead(selectedNotification.id);
@@ -726,6 +817,15 @@ const AdminNotifications = () => {
                   >
                     <CheckCircle className="w-5 h-5" />
                     Mark as Read
+                  </button>
+                )}
+                {markAsReadMutation.isLoading && (
+                  <button
+                    disabled
+                    className="bg-gray-400 text-white px-6 py-3 rounded-xl flex items-center gap-2 font-semibold cursor-not-allowed"
+                  >
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Marking as Read...
                   </button>
                 )}
                 <button 

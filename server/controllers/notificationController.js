@@ -20,7 +20,7 @@ const getTimeAgo = (date) => {
   } else if (diffInDays < 7) {
     return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
   } else {
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-US');
   }
 };
 
@@ -99,16 +99,19 @@ const getNotifications = async (req, res) => {
     // Format notification data with date and time
     const formattedNotifications = notifications.map(notification => {
       const createdAt = new Date(notification.createdAt);
+      // Display UTC time directly without timezone conversion
       const date = createdAt.toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'UTC'
       });
       const time = createdAt.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
+        timeZone: 'UTC'
       });
       
       return {

@@ -17,11 +17,12 @@ import {
   CheckCircle,
   Clock,
   Calendar,
-  BarChart3
+  BarChart3,
+  AlertTriangle
 } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import toast from 'react-hot-toast';
-import InitialsAvatar from '../../components/InitialsAvatar';
+import Avatar from '../../components/Avatar';
 import './AdminPatients.css';
 
 const AdminPatients = () => {
@@ -518,8 +519,9 @@ const AdminPatients = () => {
                   <tr key={patient.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <InitialsAvatar 
+                        <Avatar 
                           name={`${patient.firstName} ${patient.lastName}`} 
+                          profileImage={patient.profileImage}
                           size="md" 
                         />
                         <div className="ml-4">
@@ -703,8 +705,9 @@ const AdminPatients = () => {
                    {/* Header Section */}
                    <div className="patient-header">
                      <div className="avatar-container">
-                       <InitialsAvatar 
+                       <Avatar 
                          name={`${selectedPatient.firstName} ${selectedPatient.lastName}`} 
+                         profileImage={selectedPatient.profileImage}
                          size="3xl" 
                          className="patient-avatar"
                        />
@@ -1985,8 +1988,9 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
       <div className="bg-gray-50 p-4 rounded-lg">
         <h3 className="text-lg font-medium text-gray-900 mb-2">Patient Information</h3>
         <div className="flex items-center gap-4">
-          <InitialsAvatar 
+          <Avatar 
             name={`${patient.firstName} ${patient.lastName}`} 
+            profileImage={patient.profileImage}
             size="lg" 
           />
           <div>
@@ -2090,8 +2094,9 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
                       onChange={() => setSelectedTherapist(therapist.id)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                     />
-                    <InitialsAvatar 
+                    <Avatar 
                       name={therapist.name} 
+                      profileImage={therapist.profileImage}
                       size="md" 
                     />
                     <div>
@@ -2159,7 +2164,26 @@ const AddTherapistContent = ({ patient, onAssignmentSuccess }) => {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [therapistsLoading, setTherapistsLoading] = useState(true);
+  const [hasPrimaryTherapist, setHasPrimaryTherapist] = useState(false);
 
+  // Check if patient has a primary therapist
+  React.useEffect(() => {
+    const checkPrimaryTherapist = async () => {
+      try {
+        const response = await adminAPI.getPatientTherapists(patient.patient?.id);
+        if (response.data.success) {
+          const hasPrimary = response.data.data.therapists.some(t => t.assignmentType === 'primary');
+          setHasPrimaryTherapist(hasPrimary);
+        }
+      } catch (error) {
+        console.error('Error checking primary therapist:', error);
+      }
+    };
+
+    if (patient.patient?.id) {
+      checkPrimaryTherapist();
+    }
+  }, [patient.patient?.id]);
 
   // Fetch available therapists
   React.useEffect(() => {
@@ -2231,8 +2255,9 @@ const AddTherapistContent = ({ patient, onAssignmentSuccess }) => {
       <div className="bg-gray-50 p-4 rounded-lg">
         <h3 className="text-lg font-medium text-gray-900 mb-2">Patient Information</h3>
         <div className="flex items-center gap-4">
-          <InitialsAvatar 
+          <Avatar 
             name={`${patient.firstName} ${patient.lastName}`} 
+            profileImage={patient.profileImage}
             size="lg" 
           />
           <div>
@@ -2242,6 +2267,21 @@ const AddTherapistContent = ({ patient, onAssignmentSuccess }) => {
           </div>
         </div>
       </div>
+
+      {/* Primary Therapist Warning */}
+      {hasPrimaryTherapist && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
+            <div>
+              <h4 className="text-sm font-medium text-yellow-800">Primary Therapist Already Assigned</h4>
+              <p className="text-sm text-yellow-700 mt-1">
+                This patient already has a primary therapist. You can only assign additional therapists as secondary or collaborative.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Assignment Type Selection */}
       <div>

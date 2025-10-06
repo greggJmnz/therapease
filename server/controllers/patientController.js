@@ -2146,13 +2146,34 @@ const completeOnboarding = async (req, res) => {
 
       await connection.commit();
 
-      // Send welcome notification
+      // Send welcome notification to user
       const notificationSql = `
         INSERT INTO notifications (userId, type, title, message, createdAt)
         VALUES (?, 'system', 'Welcome to TherapEase!', 'Your account setup is complete. Your therapist will contact you soon to schedule your first session.', NOW())
       `;
 
       await runQuery(notificationSql, [userId]);
+
+      // Get user details for admin notification
+      const userDetails = await getRow(`
+        SELECT firstName, lastName, email, role 
+        FROM users 
+        WHERE id = ?
+      `, [userId]);
+
+      // Notify all admins about new user completion
+      const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
+      
+      for (const admin of adminUsers) {
+        const adminNotificationSql = `
+          INSERT INTO notifications (userId, type, title, message, priority, createdAt)
+          VALUES (?, 'admin_notification', 'New User Onboarding Complete', ?, 'high', NOW())
+        `;
+        
+        const adminMessage = `New ${userDetails.role} user ${userDetails.firstName} ${userDetails.lastName} (${userDetails.email}) has completed their onboarding process and is ready for therapist assignment.`;
+        
+        await runQuery(adminNotificationSql, [admin.id, adminMessage]);
+      }
 
       res.json({
         success: true,

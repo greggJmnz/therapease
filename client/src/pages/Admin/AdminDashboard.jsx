@@ -126,6 +126,17 @@ const AdminDashboard = () => {
     }
   );
 
+  // Fetch appointments data from API
+  const { data: appointmentsData, isLoading: appointmentsLoading, error: appointmentsError } = useQuery(
+    'adminAppointments',
+    adminAPI.getAppointments,
+    {
+      onError: (error) => {
+        console.error('Error fetching appointments data:', error);
+      }
+    }
+  );
+
   // Extract data from API responses
   const correctStats = dashboardData?.data?.data?.stats || dashboardData?.data?.stats || {};
   
@@ -149,10 +160,10 @@ const AdminDashboard = () => {
       dateOfBirth: patient.dateOfBirth,
       age: patient.dateOfBirth ? 
         new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear() + ' years old' : 'N/A',
-      therapist: 'Unassigned', // This would need to be fetched from patient-therapist assignments
+      therapist: patient.therapistName || 'Unassigned',
       status: patient.patient?.status || 'active',
       lastSession: patient.updatedAt ? new Date(patient.updatedAt).toLocaleDateString() : 'N/A',
-      progress: 0, // This would need to be calculated from progress entries
+      progress: patient.patient?.progress || 0,
     }));
 
   const therapists = (therapistsData?.data?.data?.users || [])
@@ -164,7 +175,7 @@ const AdminDashboard = () => {
       licenseNumber: therapist.therapist?.licenseNumber || 'N/A',
       experience: therapist.therapist?.yearsOfExperience ? `${therapist.therapist.yearsOfExperience} years` : 'N/A',
       status: 'active',
-      patientsCount: 0, // This would need to be calculated from patient assignments
+      patientsCount: therapist.patientCount || 0,
     }));
 
   // Extract notifications from API response and map to expected format
@@ -178,8 +189,10 @@ const AdminDashboard = () => {
     type: notification.type,
     title: notification.title,
     message: notification.message,
-    time: new Date(notification.createdAt).toLocaleString(),
-    priority: notification.type === 'system' ? 'high' : notification.type === 'appointment' ? 'medium' : 'low',
+    date: notification.date,
+    time: notification.time,
+    timeAgo: notification.timeAgo,
+    priority: notification.priority || 'medium',
     read: notification.read
   }));
   
@@ -275,7 +288,7 @@ const AdminDashboard = () => {
 
 
   // Loading state
-  if (dashboardLoading || patientsLoading || therapistsLoading) {
+  if (dashboardLoading || patientsLoading || therapistsLoading || appointmentsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -287,7 +300,7 @@ const AdminDashboard = () => {
   }
 
   // Error state
-  if (dashboardError || patientsError || therapistsError) {
+  if (dashboardError || patientsError || therapistsError || appointmentsError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -298,98 +311,49 @@ const AdminDashboard = () => {
     );
   }
 
-  const calendarEvents = [
-    {
-      title: 'Aleli Ong - OT Session',
-      start: '2025-01-23T07:00:00',
-      end: '2025-01-23T08:00:00',
-      priority: 'high',
-      type: 'session',
-      extendedProps: { 
-        type: 'session', 
-        therapist: 'Aleli Ong', 
-        patient: 'Alex Santos',
-        room: 'Room 101'
-      }
-    },
-    {
-      title: 'Rex Fernandez - Assessment',
-      start: '2025-01-23T10:00:00',
-      end: '2025-01-23T11:30:00',
-      priority: 'medium',
-      type: 'assessment',
-      extendedProps: { 
-        type: 'assessment', 
-        therapist: 'Rex Fernandez', 
-        patient: 'Maria Cruz',
-        room: 'Room 102'
-      }
-    },
-    {
-      title: 'Rose Angeles - Consultation',
-      start: '2025-01-23T14:00:00',
-      end: '2025-01-23T15:00:00',
-      priority: 'low',
-      type: 'consultation',
-      extendedProps: { 
-        type: 'consultation', 
-        therapist: 'Rose Angeles', 
-        patient: 'Juan Dela Cruz',
-        room: 'Room 103'
-      }
-    },
-    {
-      title: 'Team Meeting',
-      start: '2025-01-24T09:00:00',
-      end: '2025-01-24T10:00:00',
-      priority: 'high',
-      type: 'meeting',
-      extendedProps: { 
-        type: 'meeting', 
-        therapist: 'All Staff', 
-        patient: 'N/A',
-        room: 'Conference Room'
-      }
-    },
-    {
-      title: 'New Patient Intake',
-      start: '2025-01-25T11:00:00',
-      end: '2025-01-25T12:00:00',
-      priority: 'medium',
-      type: 'intake',
-      extendedProps: { 
-        type: 'intake', 
-        therapist: 'Aleli Ong', 
-        patient: 'New Patient',
-        room: 'Room 101'
-      }
-    }
-  ];
+  // Generate calendar events from real appointment data
+  const calendarEvents = (appointmentsData?.data?.appointments || [])
+    .filter(appointment => {
+      // Only show upcoming appointments (next 30 days)
+      const appointmentDate = new Date(appointment.appointmentDate);
+      const today = new Date();
+      const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+      return appointmentDate >= today && appointmentDate <= thirtyDaysFromNow;
+    })
+    .map(appointment => {
+      const appointmentDate = new Date(appointment.appointmentDate);
+      const startTime = new Date(`${appointmentDate.toISOString().split('T')[0]}T${appointment.appointmentTime}`);
+      const endTime = new Date(`${appointmentDate.toISOString().split('T')[0]}T${appointment.endTime}`);
+      
+      return {
+        title: `${appointment.therapistName} - ${appointment.patientName}`,
+        start: startTime.toISOString(),
+        end: endTime.toISOString(),
+        priority: appointment.status === 'confirmed' ? 'high' : appointment.status === 'scheduled' ? 'medium' : 'low',
+        type: appointment.type,
+        extendedProps: { 
+          type: appointment.type, 
+          therapist: appointment.therapistName, 
+          patient: appointment.patientName,
+          room: appointment.room || 'Room TBD',
+          status: appointment.status,
+          duration: appointment.duration
+        }
+      };
+    });
 
-  const appointments = [
-    {
-      id: 1,
-      patientName: 'Alex Santos',
-      therapistName: 'Aleli Ong',
-      date: '2025-01-23',
-      time: '07:00 AM',
-      duration: '1 hour',
-      type: 'OT Session',
-      status: 'confirmed',
-      location: 'Room 101'
-    },
-    {
-      id: 2,
-      patientName: 'Maria Cruz',
-      therapistName: 'Rex Fernandez',
-      date: '2025-01-23',
-      time: '10:00 AM',
-      duration: '1.5 hours',
-      type: 'Assessment',
-      status: 'pending',
-      location: 'Room 102'
-    }
-  ];
+  // Extract appointments from API response
+  const appointments = (appointmentsData?.data?.appointments || []).map(appointment => ({
+    id: appointment.id,
+    patientName: appointment.patientName,
+    therapistName: appointment.therapistName,
+    date: new Date(appointment.appointmentDate).toLocaleDateString(),
+    time: appointment.appointmentTime,
+    duration: `${appointment.duration} minutes`,
+    type: appointment.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    status: appointment.status,
+    location: appointment.room || 'Room TBD'
+  }));
 
   const filteredPatients = patients.filter(patient => {
     const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -456,7 +420,13 @@ const AdminDashboard = () => {
           </div>
           <div className="stat-content">
             <h3>Today's Sessions</h3>
-            <p className="stat-number">{dashboardStats.totalAppointments || 0}</p>
+            <p className="stat-number">
+              {appointmentsData?.data?.appointments?.filter(appointment => {
+                const appointmentDate = new Date(appointment.appointmentDate);
+                const today = new Date();
+                return appointmentDate.toDateString() === today.toDateString();
+              }).length || 0}
+            </p>
             <span className="stat-change neutral">
               <Clock size={16} />
               Scheduled
@@ -481,7 +451,7 @@ const AdminDashboard = () => {
               </div>
               <div className="activity-content">
                 <p className="activity-title">{notification.title}</p>
-                <span className="activity-time">{notification.time}</span>
+                <span className="activity-time">{notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now')}</span>
               </div>
               {!notification.read && <div className="unread-dot"></div>}
             </div>
@@ -795,7 +765,7 @@ const AdminDashboard = () => {
               <h4>{notification.title}</h4>
               <p>{notification.message}</p>
               <div className="notification-meta">
-                <span className="time">{notification.time}</span>
+                <span className="time">{notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now')}</span>
                 <span className={`priority-badge ${notification.priority}`}>
                   {notification.priority}
                 </span>
@@ -987,19 +957,30 @@ const AdminDashboard = () => {
                     <div className="info-grid">
                       <div className="info-item">
                         <label>Diagnosis</label>
-                        <div className="info-value">Developmental Delay</div>
+                        <div className="info-value">{selectedPatient.diagnosis || 'Not specified'}</div>
                       </div>
                       <div className="info-item">
                         <label>Medical History</label>
-                        <div className="info-value">No significant medical history</div>
+                        <div className="info-value">{selectedPatient.medicalHistory || 'No medical history provided'}</div>
                       </div>
                       <div className="info-item">
                         <label>Treatment Plan</label>
-                        <div className="info-value">Occupational Therapy - Weekly Sessions</div>
+                        <div className="info-value">{selectedPatient.treatmentPlan || 'Treatment plan not specified'}</div>
                       </div>
                       <div className="info-item">
                         <label>Next Appointment</label>
-                        <div className="info-value">Scheduled for next week</div>
+                        <div className="info-value">
+                          {appointmentsData?.data?.appointments?.find(appointment => 
+                            appointment.patientName === selectedPatient.name && 
+                            new Date(appointment.appointmentDate) > new Date()
+                          )?.appointmentDate ? 
+                            new Date(appointmentsData.data.appointments.find(appointment => 
+                              appointment.patientName === selectedPatient.name && 
+                              new Date(appointment.appointmentDate) > new Date()
+                            ).appointmentDate).toLocaleDateString() : 
+                            'No upcoming appointments'
+                          }
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1016,12 +997,23 @@ const AdminDashboard = () => {
                         <div className="stat-label">Overall Progress</div>
                       </div>
                       <div className="stat-card">
-                        <div className="stat-value">12</div>
+                        <div className="stat-value">
+                          {appointmentsData?.data?.appointments?.filter(appointment => 
+                            appointment.patientName === selectedPatient.name && 
+                            appointment.status === 'completed'
+                          ).length || 0}
+                        </div>
                         <div className="stat-label">Sessions Completed</div>
                       </div>
                       <div className="stat-card">
-                        <div className="stat-value">4</div>
-                        <div className="stat-label">Goals Achieved</div>
+                        <div className="stat-value">
+                          {appointmentsData?.data?.appointments?.filter(appointment => 
+                            appointment.patientName === selectedPatient.name && 
+                            appointment.status === 'completed' &&
+                            appointment.type === 'progress_review'
+                          ).length || 0}
+                        </div>
+                        <div className="stat-label">Progress Reviews</div>
                       </div>
                     </div>
                   </div>

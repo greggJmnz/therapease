@@ -17,7 +17,7 @@ const getTimeAgo = (date) => {
   } else if (diffInDays < 7) {
     return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
   } else {
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-US');
   }
 };
 
@@ -210,6 +210,7 @@ const getUsers = async (req, res) => {
         u.state,
         u.zipCode,
         u.country,
+        u.profileImage,
         u.status,
         u.createdAt,
         u.updatedAt,
@@ -253,6 +254,7 @@ const getUsers = async (req, res) => {
         city: user.city,
         state: user.state,
         zipCode: user.zipCode,
+        profileImage: user.profileImage,
         status: user.status,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
@@ -739,6 +741,7 @@ const getAppointments = async (req, res) => {
         a.duration,
         a.type,
         a.status,
+        a.reason,
         a.notes,
         a.createdAt,
         a.updatedAt,
@@ -767,6 +770,7 @@ const getAppointments = async (req, res) => {
       duration: appointment.duration,
       type: appointment.type,
       status: appointment.status,
+      reason: appointment.reason || 'No reason provided',
       room: 'Room TBD', // Default room since it's not in the table
       notes: appointment.notes,
       patientName: `${appointment.patientFirstName || ''} ${appointment.patientLastName || ''}`.trim(),
@@ -808,9 +812,10 @@ const createAppointment = async (req, res) => {
       type,
       notes
     } = req.body;
+    
 
     // Validate required fields
-    if (!therapistId || !patientId || !date || !time || !duration || !reason || !type) {
+    if (!therapistId || !patientId || !date || !time || !duration || !reason || !reason.trim() || !type) {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: therapistId, patientId, date, time, duration, reason, type'
@@ -884,8 +889,8 @@ const createAppointment = async (req, res) => {
     const insertSql = `
       INSERT INTO appointments (
         patientId, therapistId, appointmentDate, startTime, endTime, 
-        duration, type, status, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        duration, type, status, reason, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const insertParams = [
@@ -897,6 +902,7 @@ const createAppointment = async (req, res) => {
       parseInt(duration),
       type,
       'scheduled',
+      reason, // Include reason field
       notes || null
     ];
 
@@ -1001,12 +1007,13 @@ const getNotifications = async (req, res) => {
         n.title,
         n.message,
         n.isRead,
+        n.priority,
         n.createdAt,
         u.firstName,
         u.lastName
       FROM notifications n
       LEFT JOIN users u ON n.userId = u.id
-      WHERE n.userId = ? OR n.type IN ('system', 'admin', 'user_management', 'reports') OR n.title LIKE '%admin%' OR n.title LIKE '%system%'
+      WHERE n.userId = ? AND n.type = 'admin_notification'
       ORDER BY n.createdAt DESC
     `;
 
@@ -1016,16 +1023,19 @@ const getNotifications = async (req, res) => {
     // Format notification data
     const formattedNotifications = notifications.map(notification => {
       const createdAt = new Date(notification.createdAt);
+      // Display UTC time directly without timezone conversion
       const date = createdAt.toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'UTC'
       });
       const time = createdAt.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
+        timeZone: 'UTC'
       });
       
       return {
@@ -1033,7 +1043,7 @@ const getNotifications = async (req, res) => {
         type: notification.type,
         title: notification.title,
         message: notification.message,
-        priority: 'medium', // Default priority since it's not in the table
+        priority: notification.priority || 'medium', // Use actual priority from database
         read: notification.isRead === 1,
         user: notification.firstName ? `${notification.firstName} ${notification.lastName}` : null,
         createdAt: notification.createdAt,
@@ -1571,6 +1581,7 @@ const getAvailableTherapists = async (req, res) => {
         u.lastName,
         u.email,
         u.phone,
+        u.profileImage,
         t.id as therapistId,
         t.licenseNumber,
         t.specialization,
@@ -1614,6 +1625,7 @@ const getAvailableTherapists = async (req, res) => {
       name: `${therapist.firstName} ${therapist.lastName}`,
       email: therapist.email,
       phone: therapist.phone,
+      profileImage: therapist.profileImage,
       specialization: therapist.specialization,
       yearsOfExperience: therapist.yearsOfExperience,
       availability: therapist.availability,
@@ -1712,6 +1724,19 @@ const assignTherapistToPatient = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Patient already has a therapist assigned'
+      });
+    }
+
+    // Check if patient already has a primary therapist assignment
+    const existingPrimaryAssignment = await getRow(
+      'SELECT pta.id, CONCAT(u.firstName, " ", u.lastName) as therapistName FROM patient_therapist_assignments pta JOIN users u ON pta.therapistId = u.id WHERE pta.patientId = ? AND pta.assignmentType = "primary" AND pta.status = "active"',
+      [patient.id]
+    );
+
+    if (existingPrimaryAssignment) {
+      return res.status(400).json({
+        success: false,
+        error: `Patient already has a primary therapist (${existingPrimaryAssignment.therapistName}). Only one primary therapist is allowed per patient.`
       });
     }
 
@@ -2271,6 +2296,21 @@ const addTherapistToPatient = async (req, res) => {
       });
     }
 
+    // Check if patient already has a primary therapist (only if trying to assign as primary)
+    if (assignmentType === 'primary') {
+      const existingPrimaryTherapist = await getRow(
+        'SELECT pta.id, CONCAT(u.firstName, " ", u.lastName) as therapistName FROM patient_therapist_assignments pta JOIN users u ON pta.therapistId = u.id WHERE pta.patientId = ? AND pta.assignmentType = "primary" AND pta.status = "active"',
+        [parseInt(patientId)]
+      );
+
+      if (existingPrimaryTherapist) {
+        return res.status(400).json({
+          success: false,
+          error: `Patient already has a primary therapist (${existingPrimaryTherapist.therapistName}). Only one primary therapist is allowed per patient.`
+        });
+      }
+    }
+
     // Check if assignment already exists
     const existingAssignment = await getRow(
       'SELECT id FROM patient_therapist_assignments WHERE patientId = ? AND therapistId = ? AND status = "active"',
@@ -2400,10 +2440,11 @@ const removeTherapistFromPatient = async (req, res) => {
     await connection.beginTransaction();
 
     try {
-      // Update assignment status to inactive
+      // Delete the assignment record entirely instead of marking as inactive
+      // This avoids unique constraint issues
       await connection.execute(
-        'UPDATE patient_therapist_assignments SET status = "inactive", notes = CONCAT(COALESCE(notes, ""), " | Removed: ", ?), updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
-        [reason, assignment.id]
+        'DELETE FROM patient_therapist_assignments WHERE id = ?',
+        [assignment.id]
       );
 
       // Create notifications

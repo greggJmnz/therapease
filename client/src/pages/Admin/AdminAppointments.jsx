@@ -106,10 +106,11 @@ const AdminAppointments = () => {
     
     return rawAppointments
       .filter(appointment => {
-        // Only show appointments from October 10, 2025
+        // Show appointments from the last 90 days and future appointments
         const appointmentDate = new Date(appointment.appointmentDate || new Date());
-        const targetDate = new Date('2025-10-10');
-        return appointmentDate.toDateString() === targetDate.toDateString();
+        const today = new Date();
+        const ninetyDaysAgo = new Date(today.getTime() - (90 * 24 * 60 * 60 * 1000));
+        return appointmentDate >= ninetyDaysAgo;
       })
       .map(appointment => {
       const appointmentDate = new Date(appointment.appointmentDate || new Date());
@@ -376,7 +377,7 @@ const AdminAppointments = () => {
     if (!newAppointment.time) {
       errors.time = 'Please select a time';
     }
-    if (!newAppointment.reason.trim()) {
+    if (!newAppointment.reason || !newAppointment.reason.trim()) {
       errors.reason = 'Please provide a reason for the appointment';
     }
     
@@ -386,6 +387,16 @@ const AdminAppointments = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Double-check reason field before validation
+    if (!newAppointment.reason || !newAppointment.reason.trim()) {
+      setFormErrors(prev => ({
+        ...prev,
+        reason: 'Please provide a reason for the appointment'
+      }));
+      toast.error('Please provide a reason for the appointment');
+      return;
+    }
     
     if (!validateForm()) {
       toast.error('Please fill in all required fields');
@@ -403,6 +414,12 @@ const AdminAppointments = () => {
         patientName: selectedPatient?.name || 'Unknown',
         status: 'scheduled'
       };
+
+      // Ensure reason is not empty
+      if (!appointmentData.reason || !appointmentData.reason.trim()) {
+        toast.error('Please provide a reason for the appointment');
+        return;
+      }
 
       // Call the actual API
       const response = await adminAPI.createAppointment(appointmentData);
