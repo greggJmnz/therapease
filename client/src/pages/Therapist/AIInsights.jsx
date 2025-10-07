@@ -11,6 +11,7 @@ const AIInsights = () => {
   const [insights, setInsights] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [assessmentHistory, setAssessmentHistory] = useState([]);
+  const [generatedPDFs, setGeneratedPDFs] = useState([]);
   
   // New state for interview questions and observations
   const [interviewQuestions, setInterviewQuestions] = useState([
@@ -74,6 +75,18 @@ const AIInsights = () => {
   useEffect(() => {
     loadTemplates();
   }, []);
+
+  // Load generated PDFs history on component mount
+  useEffect(() => {
+    loadGeneratedPDFs();
+  }, []);
+
+  // Load generated PDFs when patient changes
+  useEffect(() => {
+    if (selectedPatient) {
+      loadPatientPDFs();
+    }
+  }, [selectedPatient]);
 
   // Load saved assessment data when patient changes
   useEffect(() => {
@@ -341,7 +354,7 @@ RECOMMENDATIONS FOR INTERVENTION:
     // Reset text color
     pdf.setTextColor(0, 0, 0);
     
-    return yPosition + 8; // Reduced spacing after headers
+    return yPosition + 6; // Reduced to 2 lines spacing after headers (6pt = ~2 lines at 9pt font)
   };
 
   const addSubsectionHeader = (pdf, title, yPosition, margin) => {
@@ -381,17 +394,21 @@ RECOMMENDATIONS FOR INTERVENTION:
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(40, 40, 40); // Dark gray for better readability
     
-    // Split text into lines with proper justification
-    const lines = pdf.splitTextToSize(cleanText, maxWidth);
+    // Improved text splitting with better word wrapping
+    const lines = pdf.splitTextToSize(cleanText, maxWidth - 5); // Add small buffer to prevent edge truncation
     
-    // Add each line with compact spacing
+    // Add each line with compact spacing and better text handling
     lines.forEach((line, index) => {
       // Check if we need a new page before adding content
       yPosition = checkPageBreak(pdf, yPosition, margin);
       
-      // Add justified text with compact formatting
-      pdf.text(line, margin, yPosition, { align: 'justify' });
-      yPosition += 3.5; // Reduced line spacing for compact layout
+      // Ensure line fits within page width and handle long words
+      const trimmedLine = line.trim();
+      if (trimmedLine.length > 0) {
+        // Use left alignment for better readability and to prevent truncation
+        pdf.text(trimmedLine, margin, yPosition, { align: 'left' });
+        yPosition += 3.5; // Reduced line spacing for compact layout
+      }
     });
     
     // Reset text color
@@ -424,16 +441,21 @@ RECOMMENDATIONS FOR INTERVENTION:
         .trim();
       
       const bulletText = `• ${cleanItem}`;
-      const lines = pdf.splitTextToSize(bulletText, maxWidth);
+      // Improved text splitting with better word wrapping and buffer to prevent truncation
+      const lines = pdf.splitTextToSize(bulletText, maxWidth - 5);
       
-      // Add each line with compact spacing and justification
+      // Add each line with compact spacing and better text handling
       lines.forEach((line, lineIndex) => {
         // Check if we need a new page before adding content
         yPosition = checkPageBreak(pdf, yPosition, margin);
         
-        // Add justified text with compact formatting
-        pdf.text(line, margin, yPosition, { align: 'justify' });
-        yPosition += 3.5; // Reduced line spacing for compact layout
+        // Ensure line fits within page width and handle long words
+        const trimmedLine = line.trim();
+        if (trimmedLine.length > 0) {
+          // Use left alignment for better readability and to prevent truncation
+          pdf.text(trimmedLine, margin, yPosition, { align: 'left' });
+          yPosition += 3.5; // Reduced line spacing for compact layout
+        }
       });
       
       yPosition += 3; // Minimal space between bullet items
@@ -469,12 +491,61 @@ RECOMMENDATIONS FOR INTERVENTION:
     }
   };
 
-  const checkPageBreak = (pdf, yPosition, margin) => {
+  const addAIDisclaimer = (pdf, yPosition, margin, contentWidth) => {
+    // Check if we need a new page for the disclaimer
+    yPosition = checkPageBreak(pdf, yPosition + 30, margin);
+    
+    // Add disclaimer section header
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(5, 150, 105); // Green color for header
+    pdf.text('IMPORTANT DISCLAIMER', margin, yPosition);
+    yPosition += 8;
+    
+    // Add underline
+    pdf.setDrawColor(5, 150, 105);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, yPosition, margin + 80, yPosition);
+    yPosition += 10;
+    
+    // Disclaimer text
+    const disclaimerText = `The AI-generated insights contained in this report are intended for informational and decision-support purposes only. These insights should NOT be used directly for patient treatment without proper clinical evaluation and professional judgment.
+
+The AI insights can be used to:
+• Support clinical decision-making processes
+• Assist in creating initial evaluation documentation
+• Provide suggestions for treatment plan development
+• Offer additional perspectives for consideration
+
+IMPORTANT: These AI-generated insights provide a basis for decision-making; however, the final assessment and treatment plan must depend on the therapist's professional judgment, clinical expertise, and comprehensive patient evaluation.
+
+The therapist retains full responsibility for all clinical decisions and patient care.`;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    
+    // Split disclaimer text into lines with proper wrapping
+    const lines = pdf.splitTextToSize(disclaimerText, contentWidth - 10);
+    lines.forEach(line => {
+      const trimmedLine = line.trim();
+      if (trimmedLine.length > 0) {
+        pdf.text(trimmedLine, margin, yPosition, { align: 'left' });
+        yPosition += 3.5;
+      }
+    });
+    
+    yPosition += 10; // Extra space after disclaimer
+    
+    return yPosition;
+  };
+
+  const checkPageBreak = (pdf, yPosition, margin, requiredSpace = 15) => {
     const pageHeight = pdf.internal.pageSize.getHeight();
-    // Minimal page break margin for maximum space utilization
-    if (yPosition > pageHeight - 20) {
+    // Improved page break logic with better space management
+    if (yPosition + requiredSpace > pageHeight - 25) {
       pdf.addPage();
-      return 35; // Start new page with minimal margin
+      return 30; // Start new page with minimal margin
     }
     return yPosition;
   };
@@ -489,8 +560,8 @@ RECOMMENDATIONS FOR INTERVENTION:
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 5; // Minimal margin for maximum space
-      const contentWidth = pageWidth - (margin * 2);
+      const margin = 10; // Increased margin to prevent text cutoff
+      const contentWidth = pageWidth - (margin * 2) - 10; // Additional buffer to prevent truncation
       
       // Page 1: Header and Patient Information
       let yPosition = addPageHeader(pdf, 'AI Assessment Report', `Assessment Date: ${assessment.date || 'N/A'}`);
@@ -528,8 +599,11 @@ RECOMMENDATIONS FOR INTERVENTION:
           // Add each line with compact spacing and justification
           lines.forEach((line, lineIndex) => {
             yPosition = checkPageBreak(pdf, yPosition, margin);
-            pdf.text(line, margin + 35, yPosition, { align: 'justify' });
+          const trimmedLine = line.trim();
+          if (trimmedLine.length > 0) {
+            pdf.text(trimmedLine, margin + 35, yPosition, { align: 'left' });
             yPosition += 3.5; // Reduced line spacing
+          }
           });
           
           // Reset text color
@@ -546,21 +620,24 @@ RECOMMENDATIONS FOR INTERVENTION:
       yPosition = addSectionHeader(pdf, '2. ASSESSMENT SUMMARY', yPosition, margin);
       
       const summaryText = assessment.summary ? String(assessment.summary) : 'No summary available';
-      yPosition = addContent(pdf, summaryText, yPosition, margin, contentWidth - 10);
+      yPosition = addContent(pdf, summaryText, yPosition, margin, contentWidth - 15);
       
       // 3. AI-IDENTIFIED AREAS OF CONCERN
       if (assessment.details && assessment.details.areas && assessment.details.areas.length > 0) {
         yPosition = checkPageBreak(pdf, yPosition, margin);
         yPosition = addSectionHeader(pdf, '3. AI-IDENTIFIED AREAS OF CONCERN', yPosition, margin);
-        yPosition = addBulletList(pdf, assessment.details.areas, yPosition, margin + 10, contentWidth - 20);
+        yPosition = addBulletList(pdf, assessment.details.areas, yPosition, margin + 10, contentWidth - 30);
       }
       
       // 4. AI-GENERATED RECOMMENDATIONS
       if (assessment.details && assessment.details.recommendations && assessment.details.recommendations.length > 0) {
         yPosition = checkPageBreak(pdf, yPosition, margin);
         yPosition = addSectionHeader(pdf, '4. AI-GENERATED RECOMMENDATIONS', yPosition, margin);
-        yPosition = addBulletList(pdf, assessment.details.recommendations, yPosition, margin + 10, contentWidth - 20);
+        yPosition = addBulletList(pdf, assessment.details.recommendations, yPosition, margin + 10, contentWidth - 30);
       }
+      
+      // Add AI Disclaimer
+      yPosition = addAIDisclaimer(pdf, yPosition, margin, contentWidth);
       
       // Add page numbers
       const totalPages = pdf.internal.getNumberOfPages();
@@ -693,13 +770,13 @@ RECOMMENDATIONS FOR INTERVENTION:
   const formatStructuredSectionForPDF = (pdf, section, yPosition, margin, contentWidth) => {
     if (!section) return yPosition;
 
-    // Add main heading with professional styling
-    yPosition = checkPageBreak(pdf, yPosition + 20, margin);
+    // Add main heading with professional styling and reduced spacing
+    yPosition = checkPageBreak(pdf, yPosition + 15, margin);
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(5, 150, 105); // Professional green
     pdf.text(section.title, margin, yPosition);
-    yPosition += 8;
+    yPosition += 6; // Reduced spacing after heading
     
     // Add underline
     pdf.setDrawColor(5, 150, 105);
@@ -745,16 +822,36 @@ RECOMMENDATIONS FOR INTERVENTION:
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`• ${item.text}`, margin + 10, yPosition);
-        return yPosition + 4;
+        
+        // Improved text splitting for bullet points
+        const bulletText = `• ${item.text}`;
+        const bulletLines = pdf.splitTextToSize(bulletText, contentWidth - 15);
+        bulletLines.forEach(line => {
+          const trimmedLine = line.trim();
+          if (trimmedLine.length > 0) {
+            pdf.text(trimmedLine, margin + 10, yPosition, { align: 'left' });
+            yPosition += 3.5;
+          }
+        });
+        return yPosition + 2;
 
       case 'numbered_item':
         yPosition = checkPageBreak(pdf, yPosition + 6, margin);
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`• ${item.text}`, margin + 10, yPosition);
-        return yPosition + 4;
+        
+        // Improved text splitting for numbered items
+        const numberedText = `• ${item.text}`;
+        const numberedLines = pdf.splitTextToSize(numberedText, contentWidth - 15);
+        numberedLines.forEach(line => {
+          const trimmedLine = line.trim();
+          if (trimmedLine.length > 0) {
+            pdf.text(trimmedLine, margin + 10, yPosition, { align: 'left' });
+            yPosition += 3.5;
+          }
+        });
+        return yPosition + 2;
 
       case 'paragraph':
         yPosition = checkPageBreak(pdf, yPosition + 8, margin);
@@ -762,10 +859,15 @@ RECOMMENDATIONS FOR INTERVENTION:
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(0, 0, 0);
         
-        const textLines = pdf.splitTextToSize(item.text, contentWidth - 15);
+        // Improved text splitting with better word wrapping
+        const textLines = pdf.splitTextToSize(item.text, contentWidth - 20);
         textLines.forEach(line => {
           yPosition = checkPageBreak(pdf, yPosition + 4, margin);
-          pdf.text(line, margin + 8, yPosition);
+          const trimmedLine = line.trim();
+          if (trimmedLine.length > 0) {
+            pdf.text(trimmedLine, margin + 8, yPosition, { align: 'left' });
+            yPosition += 3.5;
+          }
         });
         return yPosition + 2;
 
@@ -775,8 +877,17 @@ RECOMMENDATIONS FOR INTERVENTION:
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(0, 0, 0);
-        pdf.text(item.text || '', margin + 8, yPosition);
-        return yPosition + 4;
+        
+        // Improved text splitting for fallback
+        const fallbackLines = pdf.splitTextToSize(item.text || '', contentWidth - 20);
+        fallbackLines.forEach(line => {
+          const trimmedLine = line.trim();
+          if (trimmedLine.length > 0) {
+            pdf.text(trimmedLine, margin + 8, yPosition, { align: 'left' });
+            yPosition += 3.5;
+          }
+        });
+        return yPosition + 2;
     }
   };
 
@@ -808,19 +919,19 @@ RECOMMENDATIONS FOR INTERVENTION:
 
       // Helper function to add section header
       const addSectionHeader = (text, fontSize = 16) => {
-        checkPageBreak(25);
+        checkPageBreak(20);
         pdf.setFontSize(fontSize);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(5, 150, 105);
         pdf.text(text, margin, yPosition);
         pdf.setTextColor(0, 0, 0);
-        yPosition += 8;
+        yPosition += 6;
         
         // Add underline
         pdf.setDrawColor(5, 150, 105);
         pdf.setLineWidth(0.8);
         pdf.line(margin, yPosition, margin + 120, yPosition);
-        yPosition += 15;
+        yPosition += 6; // Reduced to 2 lines spacing after headers
       };
 
       // Helper function to add content with proper formatting
@@ -832,9 +943,16 @@ RECOMMENDATIONS FOR INTERVENTION:
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(0, 0, 0);
         
-        const lines = pdf.splitTextToSize(text, contentWidth - indent);
-        pdf.text(lines, margin + indent, yPosition);
-        yPosition += (lines.length * (fontSize * 0.4)) + 8;
+        // Improved text splitting with better word wrapping
+        const lines = pdf.splitTextToSize(text, contentWidth - indent - 5);
+        lines.forEach((line, index) => {
+          const trimmedLine = line.trim();
+          if (trimmedLine.length > 0) {
+            pdf.text(trimmedLine, margin + indent, yPosition, { align: 'left' });
+            yPosition += (fontSize * 0.4) + 1;
+          }
+        });
+        yPosition += 4;
       };
 
       // Helper function to add bullet list
@@ -846,10 +964,20 @@ RECOMMENDATIONS FOR INTERVENTION:
           pdf.setFontSize(fontSize);
           pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(0, 0, 0);
-          pdf.text(`• ${item}`, margin + indent, yPosition);
-          yPosition += 6;
+          
+          // Improved text splitting for bullet items
+          const bulletText = `• ${item}`;
+          const lines = pdf.splitTextToSize(bulletText, contentWidth - indent - 5);
+          lines.forEach((line, lineIndex) => {
+            const trimmedLine = line.trim();
+            if (trimmedLine.length > 0) {
+              pdf.text(trimmedLine, margin + indent, yPosition, { align: 'left' });
+              yPosition += 4;
+            }
+          });
+          yPosition += 2;
         });
-        yPosition += 5;
+        yPosition += 3;
       };
       
       // Header with improved styling
@@ -889,9 +1017,16 @@ RECOMMENDATIONS FOR INTERVENTION:
           pdf.text(info.label, margin, yPosition);
           
           pdf.setFont('helvetica', 'normal');
-          const valueLines = pdf.splitTextToSize(info.value, 100);
-          pdf.text(valueLines, margin + 50, yPosition);
-          yPosition += (valueLines.length * 5) + 8;
+          // Improved text splitting for patient information
+          const valueLines = pdf.splitTextToSize(info.value, 95);
+          valueLines.forEach(line => {
+            const trimmedLine = line.trim();
+            if (trimmedLine.length > 0) {
+              pdf.text(trimmedLine, margin + 50, yPosition, { align: 'left' });
+              yPosition += 4;
+            }
+          });
+          yPosition += 4;
         });
       }
       
@@ -914,6 +1049,52 @@ RECOMMENDATIONS FOR INTERVENTION:
         addSectionHeader('AI-GENERATED RECOMMENDATIONS', 18);
         addBulletList(assessment.details.recommendations, 12, 10);
       }
+      
+      // Add AI Disclaimer (needs local helper function since this uses local checkPageBreak)
+      checkPageBreak(30);
+      
+      // Add disclaimer section header
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(5, 150, 105); // Green color for header
+      pdf.text('IMPORTANT DISCLAIMER', margin, yPosition);
+      yPosition += 8;
+      
+      // Add underline
+      pdf.setDrawColor(5, 150, 105);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, yPosition, margin + 80, yPosition);
+      yPosition += 10;
+      
+      // Disclaimer text
+      const disclaimerText = `The AI-generated insights contained in this report are intended for informational and decision-support purposes only. These insights should NOT be used directly for patient treatment without proper clinical evaluation and professional judgment.
+
+The AI insights can be used to:
+• Support clinical decision-making processes
+• Assist in creating initial evaluation documentation
+• Provide suggestions for treatment plan development
+• Offer additional perspectives for consideration
+
+IMPORTANT: These AI-generated insights provide a basis for decision-making; however, the final assessment and treatment plan must depend on the therapist's professional judgment, clinical expertise, and comprehensive patient evaluation.
+
+The therapist retains full responsibility for all clinical decisions and patient care.`;
+      
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0, 0, 0);
+      
+      // Split disclaimer text into lines with proper wrapping
+      const disclaimerLines = pdf.splitTextToSize(disclaimerText, contentWidth - 10);
+      disclaimerLines.forEach(line => {
+        checkPageBreak(5);
+        const trimmedLine = line.trim();
+        if (trimmedLine.length > 0) {
+          pdf.text(trimmedLine, margin, yPosition);
+          yPosition += 3.5;
+        }
+      });
+      
+      yPosition += 10; // Extra space after disclaimer
       
       // Footer with better styling
       const footerY = pageHeight - 20;
@@ -965,8 +1146,8 @@ RECOMMENDATIONS FOR INTERVENTION:
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 5; // Minimal margin for maximum space
-      const contentWidth = pageWidth - (margin * 2);
+      const margin = 10; // Increased margin to prevent text cutoff
+      const contentWidth = pageWidth - (margin * 2) - 10; // Additional buffer to prevent truncation
 
       // Page 1: Header and Patient Information
       let yPosition = addPageHeader(pdf, 'Current AI Insights Report', `Generated: ${new Date().toLocaleDateString()}`);
@@ -996,11 +1177,14 @@ RECOMMENDATIONS FOR INTERVENTION:
         pdf.setTextColor(40, 40, 40); // Dark gray for values
         const lines = pdf.splitTextToSize(value, contentWidth - 40);
         
-        // Add each line with compact spacing and justification
+        // Add each line with compact spacing and better text handling
         lines.forEach((line, lineIndex) => {
           yPosition = checkPageBreak(pdf, yPosition, margin);
-          pdf.text(line, margin + 35, yPosition, { align: 'justify' });
-          yPosition += 3.5; // Reduced line spacing
+          const trimmedLine = line.trim();
+          if (trimmedLine.length > 0) {
+            pdf.text(trimmedLine, margin + 35, yPosition, { align: 'left' });
+            yPosition += 3.5; // Reduced line spacing
+          }
         });
         
         // Reset text color
@@ -1049,6 +1233,9 @@ RECOMMENDATIONS FOR INTERVENTION:
         yPosition += 10; // Space between insights
       });
 
+      // Add AI Disclaimer
+      yPosition = addAIDisclaimer(pdf, yPosition, margin, contentWidth);
+
       // Add page numbers
       const totalPages = pdf.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
@@ -1063,6 +1250,12 @@ RECOMMENDATIONS FOR INTERVENTION:
 
       console.log('Saving PDF with filename:', filename);
       pdf.save(filename);
+
+      // Save to history
+      savePDFToHistory({
+        filename: filename,
+        type: 'AI Insights'
+      });
 
       console.log('PDF saved successfully');
       toast.success('AI Insights PDF downloaded successfully!');
@@ -1117,19 +1310,19 @@ RECOMMENDATIONS FOR INTERVENTION:
 
       // Helper function to add section header
       const addSectionHeader = (text, fontSize = 16) => {
-        checkPageBreak(25);
+        checkPageBreak(20);
         pdf.setFontSize(fontSize);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(5, 150, 105);
         pdf.text(text, margin, yPosition);
         pdf.setTextColor(0, 0, 0);
-        yPosition += 8;
+        yPosition += 6;
         
         // Add underline
         pdf.setDrawColor(5, 150, 105);
         pdf.setLineWidth(0.8);
         pdf.line(margin, yPosition, margin + 120, yPosition);
-        yPosition += 15;
+        yPosition += 6; // Reduced to 2 lines spacing after headers
       };
 
       // Helper function to add subsection header
@@ -1139,7 +1332,7 @@ RECOMMENDATIONS FOR INTERVENTION:
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(0, 0, 0);
         pdf.text(text, margin, yPosition);
-        yPosition += 8;
+        yPosition += 6;
       };
 
       // Helper function to add content with proper formatting
@@ -1151,9 +1344,16 @@ RECOMMENDATIONS FOR INTERVENTION:
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(0, 0, 0);
         
-        const lines = pdf.splitTextToSize(text, contentWidth - indent);
-        pdf.text(lines, margin + indent, yPosition);
-        yPosition += (lines.length * (fontSize * 0.4)) + 8;
+        // Improved text splitting with better word wrapping
+        const lines = pdf.splitTextToSize(text, contentWidth - indent - 5);
+        lines.forEach((line, index) => {
+          const trimmedLine = line.trim();
+          if (trimmedLine.length > 0) {
+            pdf.text(trimmedLine, margin + indent, yPosition, { align: 'left' });
+            yPosition += (fontSize * 0.4) + 1;
+          }
+        });
+        yPosition += 4;
       };
 
       // Helper function to add bullet list
@@ -1165,10 +1365,20 @@ RECOMMENDATIONS FOR INTERVENTION:
           pdf.setFontSize(fontSize);
           pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(0, 0, 0);
-          pdf.text(`• ${item}`, margin + indent, yPosition);
-          yPosition += 6;
+          
+          // Improved text splitting for bullet items
+          const bulletText = `• ${item}`;
+          const lines = pdf.splitTextToSize(bulletText, contentWidth - indent - 5);
+          lines.forEach((line, lineIndex) => {
+            const trimmedLine = line.trim();
+            if (trimmedLine.length > 0) {
+              pdf.text(trimmedLine, margin + indent, yPosition, { align: 'left' });
+              yPosition += 4;
+            }
+          });
+          yPosition += 2;
         });
-        yPosition += 5;
+        yPosition += 3;
       };
       
       // Header with improved styling
@@ -1335,7 +1545,7 @@ RECOMMENDATIONS FOR INTERVENTION:
         if (!section) return;
 
         // Add main heading with professional styling
-        checkPageBreak(25);
+        checkPageBreak(20);
         addMainHeading(section.title);
         
         // Add main section content
@@ -1360,7 +1570,7 @@ RECOMMENDATIONS FOR INTERVENTION:
         }
 
         // Add spacing after section
-        yPosition += 15;
+        yPosition += 6; // Reduced to 2 lines spacing after headers
       };
 
       // Add main heading with consistent styling
@@ -1375,7 +1585,7 @@ RECOMMENDATIONS FOR INTERVENTION:
         pdf.setDrawColor(5, 150, 105);
         pdf.setLineWidth(0.8);
         pdf.line(margin, yPosition, margin + 120, yPosition);
-        yPosition += 15;
+        yPosition += 6; // Reduced to 2 lines spacing after headers
       };
 
       // Add subsection heading with consistent styling
@@ -1384,7 +1594,7 @@ RECOMMENDATIONS FOR INTERVENTION:
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(0, 0, 0);
         pdf.text(title, margin + 5, yPosition);
-        yPosition += 8;
+        yPosition += 6;
       };
 
       // Format individual content items
@@ -1397,8 +1607,18 @@ RECOMMENDATIONS FOR INTERVENTION:
             pdf.setFontSize(11);
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(0, 0, 0);
-            pdf.text(`• ${item.text}`, margin + 15, yPosition);
-            yPosition += 6;
+            
+            // Improved text splitting for bullet points
+            const bulletText = `• ${item.text}`;
+            const bulletLines = pdf.splitTextToSize(bulletText, contentWidth - 20);
+            bulletLines.forEach(line => {
+              const trimmedLine = line.trim();
+              if (trimmedLine.length > 0) {
+                pdf.text(trimmedLine, margin + 15, yPosition, { align: 'left' });
+                yPosition += 4;
+              }
+            });
+            yPosition += 2;
             break;
 
           case 'numbered_item':
@@ -1406,8 +1626,18 @@ RECOMMENDATIONS FOR INTERVENTION:
             pdf.setFontSize(11);
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(0, 0, 0);
-            pdf.text(`• ${item.text}`, margin + 15, yPosition);
-            yPosition += 6;
+            
+            // Improved text splitting for numbered items
+            const numberedText = `• ${item.text}`;
+            const numberedLines = pdf.splitTextToSize(numberedText, contentWidth - 20);
+            numberedLines.forEach(line => {
+              const trimmedLine = line.trim();
+              if (trimmedLine.length > 0) {
+                pdf.text(trimmedLine, margin + 15, yPosition, { align: 'left' });
+                yPosition += 4;
+              }
+            });
+            yPosition += 2;
             break;
 
           case 'paragraph':
@@ -1416,12 +1646,16 @@ RECOMMENDATIONS FOR INTERVENTION:
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(0, 0, 0);
             
-            const textLines = pdf.splitTextToSize(item.text, contentWidth - 20);
+            // Improved text splitting with better word wrapping
+            const textLines = pdf.splitTextToSize(item.text, contentWidth - 25);
             textLines.forEach(line => {
-              pdf.text(line, margin + 10, yPosition);
-              yPosition += 5;
+              const trimmedLine = line.trim();
+              if (trimmedLine.length > 0) {
+                pdf.text(trimmedLine, margin + 10, yPosition, { align: 'left' });
+                yPosition += 4;
+              }
             });
-            yPosition += 3;
+            yPosition += 2;
             break;
 
           default:
@@ -1483,9 +1717,15 @@ RECOMMENDATIONS FOR INTERVENTION:
             // Value
             if (value && value.trim()) {
               pdf.setFont('helvetica', 'normal');
-              const valueLines = pdf.splitTextToSize(value.trim(), contentWidth - 20);
-              pdf.text(valueLines, margin + 15, yPosition);
-              yPosition += (valueLines.length * 5) + 2;
+              const valueLines = pdf.splitTextToSize(value.trim(), contentWidth - 25);
+              valueLines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (trimmedLine.length > 0) {
+                  pdf.text(trimmedLine, margin + 15, yPosition, { align: 'left' });
+                  yPosition += 4;
+                }
+              });
+              yPosition += 2;
             } else {
               yPosition += 6;
             }
@@ -1496,14 +1736,21 @@ RECOMMENDATIONS FOR INTERVENTION:
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(0, 0, 0);
             
-            const textLines = pdf.splitTextToSize(trimmedLine, contentWidth - 10);
-            pdf.text(textLines, margin + 5, yPosition);
-            yPosition += (textLines.length * 5) + 4;
+            // Improved text splitting with better word wrapping
+            const textLines = pdf.splitTextToSize(trimmedLine, contentWidth - 15);
+            textLines.forEach(line => {
+              const trimmedLine = line.trim();
+              if (trimmedLine.length > 0) {
+                pdf.text(trimmedLine, margin + 5, yPosition, { align: 'left' });
+                yPosition += 4;
+              }
+            });
+            yPosition += 2;
           }
         });
         
         // Add spacing after section
-        yPosition += 8;
+        yPosition += 6;
       };
 
       // AI Insights Section with improved formatting
@@ -1521,7 +1768,7 @@ RECOMMENDATIONS FOR INTERVENTION:
         pdf.setTextColor(100, 100, 100);
         pdf.text(`Confidence Level: ${Math.round((insight.confidence || 0.8) * 100)}%`, margin, yPosition);
         pdf.setTextColor(0, 0, 0);
-        yPosition += 8;
+        yPosition += 6;
         
         // Enhanced insight content transformation and formatting
         if (insight.content) {
@@ -1537,8 +1784,54 @@ RECOMMENDATIONS FOR INTERVENTION:
           addBulletList(insight.recommendations, 11, 10);
         }
         
-        yPosition += 15; // Space between insights
+        yPosition += 6; // Reduced to 2 lines spacing after headers // Space between insights
       });
+      
+      // Add AI Disclaimer (needs local helper function since this uses local checkPageBreak)
+      checkPageBreak(30);
+      
+      // Add disclaimer section header
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(5, 150, 105); // Green color for header
+      pdf.text('IMPORTANT DISCLAIMER', margin, yPosition);
+      yPosition += 8;
+      
+      // Add underline
+      pdf.setDrawColor(5, 150, 105);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, yPosition, margin + 80, yPosition);
+      yPosition += 10;
+      
+      // Disclaimer text
+      const disclaimerText = `The AI-generated insights contained in this report are intended for informational and decision-support purposes only. These insights should NOT be used directly for patient treatment without proper clinical evaluation and professional judgment.
+
+The AI insights can be used to:
+• Support clinical decision-making processes
+• Assist in creating initial evaluation documentation
+• Provide suggestions for treatment plan development
+• Offer additional perspectives for consideration
+
+IMPORTANT: These AI-generated insights provide a basis for decision-making; however, the final assessment and treatment plan must depend on the therapist's professional judgment, clinical expertise, and comprehensive patient evaluation.
+
+The therapist retains full responsibility for all clinical decisions and patient care.`;
+      
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0, 0, 0);
+      
+      // Split disclaimer text into lines with proper wrapping
+      const disclaimerLines = pdf.splitTextToSize(disclaimerText, contentWidth - 10);
+      disclaimerLines.forEach(line => {
+        checkPageBreak(5);
+        const trimmedLine = line.trim();
+        if (trimmedLine.length > 0) {
+          pdf.text(trimmedLine, margin, yPosition);
+          yPosition += 3.5;
+        }
+      });
+      
+      yPosition += 10; // Extra space after disclaimer
       
       // Footer with better styling
       const footerY = pageHeight - 20;
@@ -1557,6 +1850,12 @@ RECOMMENDATIONS FOR INTERVENTION:
       
       // Save the PDF
       pdf.save(filename);
+      
+      // Save to history
+      savePDFToHistory({
+        filename: filename,
+        type: 'AI Insights'
+      });
       
       console.log('PDF saved successfully');
       toast.success('AI Insights PDF downloaded successfully!');
@@ -1712,6 +2011,101 @@ RECOMMENDATIONS FOR INTERVENTION:
     return Math.min(baseScore + insightBonus, 100);
   };
 
+  // Load all generated PDFs from localStorage
+  const loadGeneratedPDFs = () => {
+    try {
+      const savedPDFs = localStorage.getItem('generatedPDFs');
+      if (savedPDFs) {
+        const parsedPDFs = JSON.parse(savedPDFs);
+        // Ensure all PDFs have proper structure
+        const validPDFs = parsedPDFs.filter(pdf => 
+          pdf && 
+          pdf.id && 
+          pdf.patientId && 
+          pdf.filename && 
+          pdf.generatedAt
+        ).map(pdf => ({
+          ...pdf,
+          assessmentData: {
+            questions: pdf.assessmentData?.questions || [],
+            observations: pdf.assessmentData?.observations || ''
+          },
+          model: pdf.model || 'gpt-4',
+          score: pdf.score || 0,
+          usage: pdf.usage || null
+        }));
+        setGeneratedPDFs(validPDFs);
+      }
+    } catch (error) {
+      console.error('Error loading generated PDFs:', error);
+      // Clear corrupted data
+      localStorage.removeItem('generatedPDFs');
+      setGeneratedPDFs([]);
+    }
+  };
+
+  // Load PDFs for specific patient
+  const loadPatientPDFs = () => {
+    if (!selectedPatient) return;
+    
+    const patientPDFs = generatedPDFs
+      .filter(pdf => pdf && pdf.patientId === selectedPatient)
+      .map(pdf => ({
+        ...pdf,
+        assessmentData: {
+          questions: pdf.assessmentData?.questions || [],
+          observations: pdf.assessmentData?.observations || ''
+        },
+        model: pdf.model || 'gpt-4',
+        score: pdf.score || 0,
+        usage: pdf.usage || null
+      }));
+    setAssessmentHistory(patientPDFs);
+  };
+
+  // Save generated PDF to history
+  const savePDFToHistory = (pdfData) => {
+    const newPDF = {
+      id: Date.now(),
+      patientId: selectedPatient,
+      patientName: patients.find(p => p.id === parseInt(selectedPatient))?.name || 'Unknown Patient',
+      filename: pdfData.filename,
+      type: pdfData.type || 'AI Insights',
+      generatedAt: new Date().toISOString(),
+      insights: insights.length > 0 ? insights : [],
+      assessmentData: {
+        questions: interviewQuestions ? interviewQuestions.filter(q => q.question.trim() !== '') : [],
+        observations: observations ? observations.trim() : ''
+      },
+      // Additional metadata
+      model: pdfData.model || 'gpt-4',
+      score: pdfData.score || 0,
+      usage: pdfData.usage || null
+    };
+
+    const updatedPDFs = [...generatedPDFs, newPDF];
+    setGeneratedPDFs(updatedPDFs);
+    
+    try {
+      localStorage.setItem('generatedPDFs', JSON.stringify(updatedPDFs));
+      loadPatientPDFs(); // Refresh patient-specific PDFs
+    } catch (error) {
+      console.error('Error saving PDF to history:', error);
+    }
+  };
+
+  // Download PDF from history
+  const downloadPDFFromHistory = (pdfRecord) => {
+    // For now, we'll regenerate the PDF since we don't store the actual file
+    // In a real implementation, you might store the PDF blob or have a server endpoint
+    if (pdfRecord.type === 'AI Insights') {
+      generateWellStructuredCurrentAssessmentPDF();
+    } else {
+      // Handle other PDF types if needed
+      toast.info('PDF regeneration not available for this type');
+    }
+  };
+
   const generateInsights = async () => {
     if (!selectedPatient) {
       toast.error('Please select a patient first');
@@ -1779,18 +2173,16 @@ RECOMMENDATIONS FOR INTERVENTION:
         setInsights(newInsights);
         toast.success('AI insights generated successfully using GPT-5!');
         
-        // Add to assessment history
-        const newAssessment = {
-          id: Date.now(),
-          date: new Date().toLocaleDateString(),
-          type: 'AI Assessment (GPT-5)',
-          score: calculateAssessmentScore(newInsights),
-          insights: newInsights,
+        // Save to PDF history (this will also update the assessment history display)
+        const pdfData = {
+          filename: `${patient.name.replace(/\s+/g, '_')}_AI_Insights_${new Date().toISOString().split('T')[0].replace(/-/g, '_')}.pdf`,
+          type: 'AI Insights',
           model: result.data.model || 'gpt-5',
+          score: calculateAssessmentScore(newInsights),
           usage: result.data.usage
         };
         
-        setAssessmentHistory(prev => [newAssessment, ...prev]);
+        savePDFToHistory(pdfData);
         
       } else {
         throw new Error(result.message || 'Failed to generate insights');
@@ -2179,63 +2571,15 @@ RECOMMENDATIONS FOR INTERVENTION:
         </div>
       </div>
 
-      {/* Insights List */}
-      {selectedPatient && insights.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-medium text-gray-900">Generated Insights</h2>
-          {insights.map((insight) => (
-            <div
-              key={insight.id}
-              className={`border rounded-lg p-6 ${getInsightColor(insight.type)}`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0 mr-4">
-                    {getInsightIcon(insight.type)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {insight.title}
-                      </h3>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getConfidenceColor(insight.confidence)}`}>
-                        {Math.round(insight.confidence * 100)}% Confidence
-                      </span>
-                    </div>
-                    
-                    <p className="text-gray-700 mb-4">{insight.content}</p>
-                    
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Recommendations:</h4>
-                      <ul className="space-y-1">
-                        {insight.recommendations.map((rec, index) => (
-                          <li key={index} className="flex items-start">
-                            <div className="flex-shrink-0 h-2 w-2 rounded-full bg-green-400 mt-2 mr-2"></div>
-                            <span className="text-sm text-gray-600">{rec}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    <div className="flex items-center text-xs text-gray-500">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Generated {new Date(insight.timestamp).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
-      {/* No Insights Message */}
+      {/* Assessment Ready Message */}
       {insights.length === 0 && !isGenerating && selectedPatient && (
         <div className="text-center py-12">
           <Brain className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No insights yet</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to generate AI insights</h3>
           <p className="text-sm text-gray-500 mb-6">
-            Create an assessment with interview questions and observations, then generate AI-powered insights.
+            Create an assessment with interview questions and observations, then generate AI-powered insights. 
+            Generated insights will be available for download as PDF reports.
           </p>
         </div>
       )}
@@ -2245,7 +2589,49 @@ RECOMMENDATIONS FOR INTERVENTION:
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">AI Assessment History</h2>
           <p className="text-sm text-gray-600 mb-4">Previously generated AI assessments and insights for this patient</p>
-          <div className="space-y-3">
+          
+          {assessmentHistory && assessmentHistory.length > 0 ? (
+            <div className="space-y-3">
+              {assessmentHistory.map((pdfRecord) => (
+                pdfRecord && (
+                <div key={pdfRecord.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-green-600" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                          {pdfRecord.filename}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {pdfRecord.type} • Generated {new Date(pdfRecord.generatedAt).toLocaleDateString()}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {pdfRecord.assessmentData?.questions?.length || 0} questions • {pdfRecord.assessmentData?.observations?.length || 0} characters observations
+                          {pdfRecord.model && ` • ${pdfRecord.model.toUpperCase()}`}
+                          {pdfRecord.score && ` • Score: ${pdfRecord.score}%`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => downloadPDFFromHistory(pdfRecord)}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        title="Download PDF"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                )
+              ))}
+            </div>
+          ) : (
             <div className="text-center py-8">
               <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No AI assessments yet</h3>
@@ -2253,7 +2639,7 @@ RECOMMENDATIONS FOR INTERVENTION:
                 Generate AI insights to create assessment history for this patient.
               </p>
             </div>
-          </div>
+          )}
         </div>
       )}
 

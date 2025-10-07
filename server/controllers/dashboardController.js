@@ -46,6 +46,18 @@ const getDashboard = async (req, res) => {
     const appointmentCountResult = await getAll(appointmentCountSql, [therapistId]);
     const appointmentStats = appointmentCountResult[0] || { total: 0, scheduled: 0, confirmed: 0, completed: 0, cancelled: 0 };
 
+    // Get upcoming appointments count (not completed or past)
+    const upcomingAppointmentsCountSql = `
+      SELECT COUNT(*) as upcomingCount
+      FROM appointments a
+      WHERE a.therapistId = ? 
+      AND a.appointmentDate >= CURDATE()
+      AND a.status IN ('scheduled', 'confirmed')
+    `;
+
+    const upcomingAppointmentsCountResult = await getAll(upcomingAppointmentsCountSql, [therapistId]);
+    const upcomingAppointmentsCount = upcomingAppointmentsCountResult[0]?.upcomingCount || 0;
+
     // Get daily notes count (only notes created by this therapist)
     const dailyNotesCountSql = `
       SELECT COUNT(*) as total
@@ -214,6 +226,7 @@ const getDashboard = async (req, res) => {
           totalPatients,
           totalAssessments: assessmentStats.total,
           totalAppointments: appointmentStats.total,
+          upcomingAppointments: upcomingAppointmentsCount,
           todayNotes,
           totalProgressEntries
         },

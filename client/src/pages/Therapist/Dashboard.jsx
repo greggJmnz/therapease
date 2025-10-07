@@ -55,7 +55,7 @@ const TherapistDashboard = () => {
     totalPatients: overview.totalPatients || 0,
     todayAppointments: appointments.scheduled || 0, // Using scheduled appointments as today's sessions
     pendingNotes: overview.todayNotes || 0, // Using todayNotes from API
-    totalAssessments: assessments.total || 0,
+    upcomingAppointments: overview.upcomingAppointments || 0, // Upcoming appointments (not completed or past)
   };
 
   // Extract recent data from API
@@ -181,15 +181,15 @@ const TherapistDashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon assessments">
-            <Target size={20} />
+          <div className="stat-icon appointments">
+            <Calendar size={20} />
           </div>
           <div className="stat-content">
-            <h3>Total Assessments</h3>
-            <p className="stat-number">{stats.totalAssessments}</p>
+            <h3>Total Appointments</h3>
+            <p className="stat-number">{stats.upcomingAppointments}</p>
             <span className="stat-change positive">
               <TrendingUp size={12} />
-              Completed
+              Upcoming
             </span>
           </div>
         </div>
@@ -240,52 +240,6 @@ const TherapistDashboard = () => {
         </div>
       </div>
 
-      {/* Assessment Statistics */}
-      {assessments && Object.keys(assessments).length > 0 && (
-        <div className="mt-8 bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Assessment Statistics</h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-blue-600">Total Assessments</p>
-                    <p className="text-2xl font-bold text-blue-900">{assessments.total || 0}</p>
-                  </div>
-                  <FileText className="h-8 w-8 text-blue-600" />
-                </div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-green-600">Completed</p>
-                    <p className="text-2xl font-bold text-green-900">{assessments.completed || 0}</p>
-                  </div>
-                  <TrendingUp className="h-8 w-8 text-green-600" />
-                </div>
-              </div>
-              <div className="bg-yellow-50 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-yellow-600">In Progress</p>
-                    <p className="text-2xl font-bold text-yellow-900">{assessments.inProgress || 0}</p>
-                  </div>
-                  <Clock className="h-8 w-8 text-yellow-600" />
-                </div>
-              </div>
-              <div className="bg-purple-50 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-purple-600">Completion Rate</p>
-                    <p className="text-2xl font-bold text-purple-900">{assessments.completionRate || 0}%</p>
-                  </div>
-                  <TrendingUp className="h-8 w-8 text-purple-600" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Recent Assessments */}
       {recentAssessments && recentAssessments.length > 0 && (
@@ -486,28 +440,6 @@ const TherapistDashboard = () => {
         </div>
       )}
 
-      {/* Session Statistics */}
-      {progress.avgSessionDuration > 0 && (
-        <div className="mt-8 bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Session Statistics</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{progress.avgSessionDuration} min</div>
-                <div className="text-sm text-gray-500">Average Session Duration</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{overview.totalProgressEntries}</div>
-                <div className="text-sm text-gray-500">Total Progress Entries</div>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">{assessments.completionRate || 0}%</div>
-                <div className="text-sm text-gray-500">Assessment Completion Rate</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Alerts */}
       {stats.pendingNotes > 0 && (

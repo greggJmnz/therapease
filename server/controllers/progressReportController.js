@@ -37,8 +37,8 @@ const uploadProgressReport = async (req, res) => {
       SELECT p.id 
       FROM patients p 
       LEFT JOIN patient_therapist_assignments pta ON p.id = pta.patientId
-      WHERE p.id = ? AND (p.therapistId = ? OR pta.therapistId = ?)
-    `, [patientId, therapistUserId, therapistId]);
+      WHERE p.id = ? AND (p.therapistId = ? OR p.therapistId = ? OR pta.therapistId = ?)
+    `, [patientId, therapistUserId, therapistId, therapistId]);
     
     if (!patientCheck) {
       return res.status(403).json({ 
@@ -71,6 +71,51 @@ const uploadProgressReport = async (req, res) => {
       fileSize,
       mimeType
     ]);
+    
+    // Get patient and therapist information for notification
+    const patientInfo = await getRow(`
+      SELECT u.id as userId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM patients p
+      JOIN users u ON p.userId = u.id
+      WHERE p.id = ?
+    `, [patientId]);
+    
+    const therapistInfo = await getRow(`
+      SELECT CONCAT(u.firstName, ' ', u.lastName) as therapistName
+      FROM therapists t
+      JOIN users u ON t.userId = u.id
+      WHERE t.id = ?
+    `, [therapistId]);
+    
+    // Create notification for patient
+    try {
+      if (patientInfo) {
+        const notificationTitle = 'New Progress Report Available';
+        const notificationMessage = `Your therapist ${therapistInfo?.therapistName || 'Dr. Smith'} has uploaded a new progress report: "${title}". You can view and download it from your progress tracking section.`;
+        
+        // Create notification directly
+        const notificationSql = `
+          INSERT INTO notifications (userId, title, message, type, relatedId, priority)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `;
+        
+        const notificationResult = await runQuery(notificationSql, [
+          patientInfo.userId,
+          notificationTitle,
+          notificationMessage,
+          'progress_report',
+          result.insertId,
+          'high'
+        ]);
+        
+        console.log('✅ Notification created for patient with ID:', notificationResult.insertId);
+      } else {
+        console.log('⚠️ No patient info found for patientId:', patientId);
+      }
+    } catch (notificationError) {
+      console.error('❌ Error creating notification:', notificationError);
+      // Don't fail the upload if notification creation fails
+    }
     
     res.json({
       success: true,
@@ -113,8 +158,8 @@ const getProgressReports = async (req, res) => {
       SELECT p.id 
       FROM patients p 
       LEFT JOIN patient_therapist_assignments pta ON p.id = pta.patientId
-      WHERE p.id = ? AND (p.therapistId = ? OR pta.therapistId = ?)
-    `, [patientId, therapistUserId, therapistId]);
+      WHERE p.id = ? AND (p.therapistId = ? OR p.therapistId = ? OR pta.therapistId = ?)
+    `, [patientId, therapistUserId, therapistId, therapistId]);
     
     if (!patientCheck) {
       return res.status(403).json({ 

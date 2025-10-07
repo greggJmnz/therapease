@@ -237,6 +237,7 @@ class NotificationService {
       'appointment': 'high',
       'assessment': 'high',
       'emergency': 'high',
+      'progress_report': 'high',
       'patient': 'medium',
       'progress': 'medium',
       'note': 'medium',
@@ -252,6 +253,7 @@ class NotificationService {
     const iconMap = {
       'appointment': 'Calendar',
       'assessment': 'FileText',
+      'progress_report': 'FileText',
       'patient': 'User',
       'progress': 'Target',
       'note': 'MessageSquare',
@@ -268,6 +270,7 @@ class NotificationService {
     const actionMap = {
       'appointment': 'View Appointment',
       'assessment': 'View Assessment',
+      'progress_report': 'View Progress Report',
       'patient': 'View Patient',
       'progress': 'View Progress',
       'note': 'View Note',
@@ -284,6 +287,7 @@ class NotificationService {
     const urlMap = {
       'appointment': '/appointments',
       'assessment': '/assessments',
+      'progress_report': '/progress',
       'patient': '/patients',
       'progress': '/progress',
       'note': '/daily-notes',
