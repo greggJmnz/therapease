@@ -1239,3 +1239,166 @@
     opacity: 1;
   }
 }
+
+/* Password Reset Result Modal Styles */
+.success-message {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  background: #d1fae5;
+  border: 1px solid #10b981;
+}
+
+.success-message strong {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #065f46;
+  margin: 0 0 0.5rem 0;
+  display: block;
+}
+
+.success-message p {
+  font-size: 0.875rem;
+  color: #047857;
+  margin: 0;
+}
+
+.password-info {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  min-width: 140px;
+}
+
+.info-item span {
+  color: #1f2937;
+  font-size: 0.875rem;
+  text-align: right;
+  max-width: 60%;
+  word-break: break-word;
+}
+
+.password-item {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.password-item label {
+  min-width: auto;
+  margin-bottom: 0.5rem;
+}
+
+.password-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.temp-password {
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  background: #f3f4f6;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  flex: 1;
+  letter-spacing: 0.05em;
+}
+
+.copy-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.copy-btn:hover {
+  background: #2563eb;
+}
+
+.warning-message {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+}
+
+.warning-message strong {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #92400e;
+  margin: 0 0 0.5rem 0;
+  display: block;
+}
+
+.warning-message p {
+  font-size: 0.875rem;
+  color: #b45309;
+  margin: 0;
+}
+
+/* Responsive adjustments for password reset modal */
+@media (max-width: 768px) {
+  .password-display {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .copy-btn {
+    width: 100%;
+  }
+  
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .info-item label {
+    min-width: auto;
+  }
+  
+  .info-item span {
+    max-width: 100%;
+    text-align: left;
+  }
+}

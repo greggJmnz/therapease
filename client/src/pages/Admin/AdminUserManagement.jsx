@@ -33,6 +33,7 @@ const AdminUserManagement = () => {
   const [passwordResetType, setPasswordResetType] = useState('reset'); // 'reset' or 'sendLink'
   const [selectedUser, setSelectedUser] = useState(null);
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+  const [passwordResetResult, setPasswordResetResult] = useState(null);
   const dropdownRefs = useRef({});
 
   // Fetch all users
@@ -154,7 +155,6 @@ const AdminUserManagement = () => {
   // Reset password mutation
   const resetPasswordMutation = useMutation(
     ({ userId, type }) => {
-      console.log('🔑 resetPasswordMutation called with:', { userId, type });
       if (type === 'reset') {
         return adminAPI.resetUserPassword(userId);
       } else {
@@ -163,9 +163,27 @@ const AdminUserManagement = () => {
     },
     {
       onSuccess: (data, variables) => {
-        console.log('✅ resetPasswordMutation success:', data);
         setShowPasswordReset(false);
         setActionDropdowns({});
+        
+        // Store the password reset result if it contains a temporary password
+        // Axios wraps the response in a 'data' property, so we need data.data
+        const responseData = data?.data;
+        
+        // Check if responseData has a nested data property
+        const nestedData = responseData?.data;
+        
+        // Try both possible structures
+        const finalData = nestedData || responseData;
+        
+        if (variables.type === 'reset' && finalData?.tempPassword) {
+          setPasswordResetResult({
+            userEmail: finalData.email,
+            tempPassword: finalData.tempPassword,
+            userId: finalData.userId
+          });
+        }
+        
         const action = variables.type === 'reset' ? 'reset' : 'reset link sent';
         setNotification({
           show: true,
@@ -757,6 +775,79 @@ const AdminUserManagement = () => {
                 disabled={resetPasswordMutation.isLoading}
               >
                 {resetPasswordMutation.isLoading ? 'Processing...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Reset Result Modal */}
+      {passwordResetResult && (
+        <div className="modal-overlay" onClick={() => setPasswordResetResult(null)}>
+          <div className="modal-content user-detail-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Password Reset Successful</h2>
+              <button
+                className="close-btn"
+                onClick={() => setPasswordResetResult(null)}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="success-message">
+                <CheckCircle className="w-8 h-8 text-green-500" />
+                <div>
+                  <strong>Password Reset Complete</strong>
+                  <p>The user's password has been successfully reset.</p>
+                </div>
+              </div>
+              
+              <div className="password-info">
+                <div className="info-item">
+                  <label>User Email:</label>
+                  <span>{passwordResetResult.userEmail}</span>
+                </div>
+                <div className="info-item">
+                  <label>User ID:</label>
+                  <span>{passwordResetResult.userId}</span>
+                </div>
+                <div className="info-item password-item">
+                  <label>New Temporary Password:</label>
+                  <div className="password-display">
+                    <code className="temp-password">{passwordResetResult.tempPassword}</code>
+                    <button
+                      className="copy-btn"
+                      onClick={() => {
+                        navigator.clipboard.writeText(passwordResetResult.tempPassword);
+                        setNotification({
+                          show: true,
+                          message: 'Password copied to clipboard!',
+                          type: 'success'
+                        });
+                        setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 2000);
+                      }}
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="warning-message">
+                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                <div>
+                  <strong>Important:</strong>
+                  <p>Please provide this temporary password to the user securely. They should change it on their first login.</p>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="user-btn-primary"
+                onClick={() => setPasswordResetResult(null)}
+              >
+                Close
               </button>
             </div>
           </div>

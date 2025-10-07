@@ -434,6 +434,20 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        <div className="stat-card">
+          <div className="stat-icon appointments">
+            <Calendar size={24} />
+          </div>
+          <div className="stat-content">
+            <h3>Total Appointments</h3>
+            <p className="stat-number">{dashboardStats.totalAppointments || 0}</p>
+            <span className="stat-change positive">
+              <TrendingUp size={16} />
+              All time
+            </span>
+          </div>
+        </div>
+
       </div>
 
       {/* Recent Activity Section */}
