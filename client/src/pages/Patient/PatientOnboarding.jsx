@@ -57,8 +57,8 @@ const PatientOnboarding = () => {
   const steps = [
     {
       id: 1,
-      title: 'Personal Information',
-      description: 'Complete your basic profile details',
+      title: 'Patient Information',
+      description: 'Complete the patient\'s basic profile details',
       icon: User,
       color: 'blue'
     },
@@ -263,6 +263,31 @@ const PatientOnboarding = () => {
         </div>
       </div>
 
+      {/* Occupational Therapy Referral Form Requirement Notice */}
+      <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-6 w-6 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-amber-900 mb-2">
+                Important: Occupational Therapy Referral Form Required
+              </h3>
+              <p className="text-amber-800 text-sm">
+                To be eligible for assessment and to become a patient at TherapEase, you must have or present your 
+                <strong> Occupational Therapy Referral Form</strong> from a qualified healthcare provider. 
+                This form is required to ensure proper medical oversight and to provide you with the most appropriate 
+                occupational therapy services.
+              </p>
+              <p className="text-amber-800 text-sm mt-2">
+                Please ensure you have this referral form available before proceeding with the onboarding process.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Progress Steps */}
         <div className="mb-8">
@@ -329,8 +354,27 @@ const PersonalInfoStep = ({ register, errors, watch, onNext, onSave, getValues }
         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <User size={32} className="text-blue-600" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Personal Information</h2>
-        <p className="text-gray-600">Let's start with your basic information</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Patient Information</h2>
+        <p className="text-gray-600">Please provide the patient's basic information (not parent/guardian information)</p>
+      </div>
+
+      {/* Important Notice for Patient Information */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            <AlertTriangle className="h-5 w-5 text-blue-600" />
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-blue-900 mb-1">
+              Important: Patient Information Only
+            </h4>
+            <p className="text-blue-800 text-sm">
+              Please enter the <strong>patient's information</strong> in all fields below. If you are a parent or guardian 
+              filling out this form for a child, please enter the child's details, not your own. This ensures accurate 
+              medical records and proper care coordination.
+            </p>
+          </div>
+        </div>
       </div>
 
       <form className="space-y-6">

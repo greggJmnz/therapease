@@ -60,7 +60,6 @@ const TherapistLayout = () => {
   // Invalidate onboarding status when user changes
   useEffect(() => {
     if (user?.id) {
-      console.log('TherapistLayout: Invalidating onboarding queries for user', user.id);
       queryClient.invalidateQueries(['therapistOnboardingStatus', user.id]);
       // Also manually refetch to ensure fresh data
       refetchOnboardingStatus();
@@ -69,36 +68,17 @@ const TherapistLayout = () => {
 
   // Handle navigation based on onboarding status
   useEffect(() => {
-    console.log('TherapistLayout: Onboarding status check', {
-      onboardingLoading,
-      isRedirecting,
-      onboardingStatus,
-      user: user?.id,
-      currentPath: location.pathname
-    });
 
     if (onboardingLoading || isRedirecting || !onboardingStatus?.data) {
-      console.log('TherapistLayout: Skipping navigation check', {
-        onboardingLoading,
-        isRedirecting,
-        hasOnboardingData: !!onboardingStatus?.data
-      });
       return;
     }
 
     const isComplete = onboardingStatus.data.isComplete === true || onboardingStatus.data.isComplete === 1;
     const currentPath = location.pathname;
 
-    console.log('TherapistLayout: Navigation decision', {
-      isComplete,
-      currentPath,
-      shouldRedirectToOnboarding: !isComplete && currentPath === '/therapist/dashboard',
-      shouldRedirectToDashboard: isComplete && currentPath === '/therapist/onboarding'
-    });
 
     // If onboarding is complete and user is on onboarding page, redirect to dashboard
     if (isComplete && currentPath === '/therapist/onboarding') {
-      console.log('TherapistLayout: Redirecting to dashboard');
       setIsRedirecting(true);
       navigate('/therapist/dashboard');
       // Reset redirecting state after a short delay
@@ -106,7 +86,6 @@ const TherapistLayout = () => {
     }
     // If onboarding is not complete and user is on dashboard, redirect to onboarding
     else if (!isComplete && currentPath === '/therapist/dashboard') {
-      console.log('TherapistLayout: Redirecting to onboarding');
       setIsRedirecting(true);
       navigate('/therapist/onboarding');
       // Reset redirecting state after a short delay

@@ -17,7 +17,11 @@ import {
   Save,
   X,
   Trash2,
-  Target
+  Target,
+  Upload,
+  Download,
+  File,
+  FolderOpen
 } from 'lucide-react';
 import { therapistAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -37,6 +41,14 @@ const ProgressTracking = () => {
   const [editingMainObjective, setEditingMainObjective] = useState(null);
   const [editingSpecificObjective, setEditingSpecificObjective] = useState(null);
   const [editingTreatmentPlan, setEditingTreatmentPlan] = useState(null);
+  
+  // Progress Report states
+  const [showUploadReport, setShowUploadReport] = useState(false);
+  const [uploadForm, setUploadForm] = useState({
+    title: '',
+    description: '',
+    file: null
+  });
   
   // Form states
   const [planForm, setPlanForm] = useState({
@@ -97,7 +109,7 @@ const ProgressTracking = () => {
       setPatientsLoading(true);
       setPatientsError(null);
       try {
-        const response = await therapistAPI.getPatients(user.id);
+        const response = await therapistAPI.getPatients();
         if (response.data?.data?.patients) {
           setPatients(response.data.data.patients);
         }
@@ -131,6 +143,26 @@ const ProgressTracking = () => {
 
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [treatmentPlansList, setTreatmentPlansList] = useState([]);
+
+  // Track selectedPatient state changes
+  useEffect(() => {
+    // Patient selection changed
+  }, [selectedPatient]);
+
+  // Fetch progress reports for selected patient
+  const { data: progressReportsData, refetch: refetchReports } = useQuery(
+    ['progress-reports', selectedPatient?.id],
+    () => therapistAPI.getProgressReports(selectedPatient?.id),
+    {
+      enabled: !!selectedPatient,
+      onSuccess: (response) => {
+        // Progress reports loaded successfully
+      },
+      onError: (error) => {
+        console.error('Progress Reports API Error:', error);
+      }
+    }
+  );
 
   // Fetch selected treatment plan details
   const { data: planDetails } = useQuery(
@@ -193,6 +225,30 @@ const ProgressTracking = () => {
       }
     }
   );
+
+  // Upload progress report mutation
+  const uploadReportMutation = useMutation(therapistAPI.uploadProgressReport, {
+    onSuccess: () => {
+      toast.success('Progress report uploaded successfully!');
+      setShowUploadReport(false);
+      setUploadForm({ title: '', description: '', file: null });
+      refetchReports();
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error || 'Failed to upload progress report');
+    }
+  });
+
+  // Delete progress report mutation
+  const deleteReportMutation = useMutation(therapistAPI.deleteProgressReport, {
+    onSuccess: () => {
+      toast.success('Progress report deleted successfully!');
+      refetchReports();
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error || 'Failed to delete progress report');
+    }
+  });
 
   const updateSpecificObjectiveMutation = useMutation(
     ({ id, data }) => therapistAPI.updateSpecificObjective(id, data),
@@ -302,6 +358,63 @@ const ProgressTracking = () => {
       return;
     }
     createPlanMutation.mutate(planForm);
+  };
+
+  // Progress Report handlers
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file type
+      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Please select a PDF or document file');
+        return;
+      }
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('File size must be less than 10MB');
+        return;
+      }
+      setUploadForm(prev => ({ ...prev, file }));
+    }
+  };
+
+  const handleUploadReport = () => {
+    if (!uploadForm.title || !uploadForm.file) {
+      toast.error('Please fill in the title and select a file');
+      return;
+    }
+    
+    const formData = new FormData();
+    formData.append('patientId', selectedPatient.id);
+    formData.append('title', uploadForm.title);
+    formData.append('description', uploadForm.description);
+    formData.append('file', uploadForm.file);
+    
+    uploadReportMutation.mutate(formData);
+  };
+
+  const handleDownloadReport = async (reportId, fileName) => {
+    try {
+      const response = await therapistAPI.downloadProgressReport(reportId);
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error('Failed to download report');
+    }
+  };
+
+  const handleDeleteReport = (reportId, reportTitle) => {
+    if (window.confirm(`Are you sure you want to delete the progress report "${reportTitle}"? This action cannot be undone.`)) {
+      deleteReportMutation.mutate(reportId);
+    }
   };
 
   const handleCreateMainObjective = () => {
@@ -665,6 +778,7 @@ const ProgressTracking = () => {
               {[
                 { id: 'overview', name: 'Overview', icon: BarChart3 },
                 { id: 'treatment-plans', name: 'Treatment Plans', icon: FileText },
+                { id: 'progress-reports', name: 'Progress Reports', icon: FolderOpen },
                 { id: 'charts', name: 'Progress Charts', icon: TrendingUp }
               ].map((tab) => (
                 <button
@@ -1210,6 +1324,171 @@ const ProgressTracking = () => {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'progress-reports' && (
+            <div className="space-y-6">
+              {/* Upload Section */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Upload className="h-5 w-5 text-blue-600" />
+                    Upload Progress Report
+                  </h3>
+                  <button
+                    onClick={() => setShowUploadReport(!showUploadReport)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {showUploadReport ? 'Cancel' : 'Upload Report'}
+                  </button>
+                </div>
+
+                {showUploadReport && (
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Report Title *
+                        </label>
+                        <input
+                          type="text"
+                          value={uploadForm.title}
+                          onChange={(e) => setUploadForm(prev => ({ ...prev, title: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter report title"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Description
+                        </label>
+                        <textarea
+                          value={uploadForm.description}
+                          onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter report description (optional)"
+                          rows={3}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Select File *
+                        </label>
+                        <input
+                          type="file"
+                          onChange={handleFileChange}
+                          accept=".pdf,.doc,.docx,.txt"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Supported formats: PDF, DOC, DOCX, TXT (Max 10MB)
+                        </p>
+                      </div>
+                      {uploadForm.file && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            <File className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm text-blue-800">{uploadForm.file.name}</span>
+                            <span className="text-xs text-blue-600">
+                              ({(uploadForm.file.size / 1024 / 1024).toFixed(2)} MB)
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleUploadReport}
+                          disabled={uploadReportMutation.isLoading}
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {uploadReportMutation.isLoading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4" />
+                              Upload Report
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUploadReport(false);
+                            setUploadForm({ title: '', description: '', file: null });
+                          }}
+                          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Reports List */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5 text-blue-600" />
+                    Progress Reports
+                  </h3>
+                </div>
+                <div className="p-6">
+                  {progressReportsData?.data?.data?.reports?.length > 0 ? (
+                    <div className="space-y-4">
+                      {progressReportsData.data.data.reports.map((report) => (
+                        <div key={report.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{report.title}</h4>
+                              {report.description && (
+                                <p className="text-sm text-gray-600 mt-1">{report.description}</p>
+                              )}
+                              <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                <span className="flex items-center gap-1">
+                                  <File className="h-3 w-3" />
+                                  {report.originalFileName}
+                                </span>
+                                <span>{(report.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+                                <span>Uploaded by {report.therapistName}</span>
+                                <span>{new Date(report.uploadedAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleDownloadReport(report.id, report.originalFileName)}
+                                className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 flex items-center gap-1"
+                              >
+                                <Download className="h-3 w-3" />
+                                Download
+                              </button>
+                              <button
+                                onClick={() => handleDeleteReport(report.id, report.title)}
+                                disabled={deleteReportMutation.isLoading}
+                                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 disabled:opacity-50 flex items-center gap-1"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <FolderOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Progress Reports</h3>
+                      <p className="text-gray-600">No progress reports have been uploaded for this patient yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

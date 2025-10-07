@@ -117,7 +117,7 @@ export const adminAPI = {
 // Therapist API endpoints
 export const therapistAPI = {
   getDashboard: (therapistId) => api.get(`/test/therapist/dashboard?therapistId=${therapistId}&_t=${Date.now()}`),
-  getPatients: (therapistId) => api.get(`/test/therapist/patients?therapistId=${therapistId}&_t=${Date.now()}`),
+  getPatients: () => api.get(`/therapist/patients?_t=${Date.now()}`),
   getSchedule: () => api.get(`/therapist/schedule?_t=${Date.now()}`),
   createAppointment: (appointmentData) => api.post('/therapist/schedule', appointmentData),
   updateAppointment: (id, appointmentData) => api.put(`/therapist/schedule/${id}`, appointmentData),
@@ -174,6 +174,14 @@ export const therapistAPI = {
   updateProgressEntry: (id, progressData) => api.put(`/therapist/progress-tracking/${id}`, progressData),
   deleteProgressEntry: (id) => api.delete(`/therapist/progress-tracking/${id}`),
   
+  // Progress Reports
+  uploadProgressReport: (formData) => api.post('/progress-reports/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getProgressReports: (patientId) => api.get(`/progress-reports/patient/${patientId}?_t=${Date.now()}`),
+  downloadProgressReport: (reportId) => api.get(`/progress-reports/download/${reportId}`, { responseType: 'blob' }),
+  deleteProgressReport: (reportId) => api.delete(`/progress-reports/${reportId}`),
+  
   // Treatment Plan management
   getTreatmentPlans: (params = {}) => api.get('/treatment-plans', { params }),
   getTreatmentPlan: (id) => api.get(`/treatment-plans/${id}`),
@@ -217,6 +225,10 @@ export const patientAPI = {
   getHomeExerciseProofs: (patientId) => api.get(`/home-exercises/patient/proofs?patientId=${patientId}&_t=${Date.now()}`),
   getExerciseProofs: (exerciseId) => api.get(`/home-exercises/patient/exercises/${exerciseId}/proofs?_t=${Date.now()}`),
       getTreatmentPlan: () => api.get(`/treatment-plans/patient/current?_t=${Date.now()}`),
+  
+  // Progress Reports
+  getMyProgressReports: () => api.get(`/progress-reports/my-reports?_t=${Date.now()}`),
+  downloadProgressReport: (reportId) => api.get(`/progress-reports/download/${reportId}`, { responseType: 'blob' }),
   
   // Profile management
   getProfile: () => api.get(`/patient/profile?_t=${Date.now()}`),

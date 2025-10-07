@@ -11,7 +11,10 @@ import {
   ChevronUp,
   Clock,
   User,
-  BarChart3
+  BarChart3,
+  Download,
+  File,
+  FolderOpen
 } from 'lucide-react';
 import { patientAPI } from '../../services/api';
 import InitialsAvatar from '../../components/InitialsAvatar';
@@ -35,6 +38,20 @@ const ProgressView = () => {
         console.error('Error fetching treatment plan:', error);
       },
       refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+    }
+  );
+
+  // Fetch progress reports
+  const { data: progressReportsData, isLoading: reportsLoading } = useQuery(
+    'patient-progress-reports',
+    () => patientAPI.getMyProgressReports(),
+    {
+      onSuccess: (response) => {
+        // Patient progress reports loaded successfully
+      },
+      onError: (error) => {
+        console.error('Error fetching progress reports:', error);
+      },
     }
   );
 
@@ -74,6 +91,24 @@ const ProgressView = () => {
     ) : (
       <Circle size={20} className="text-gray-400" />
     );
+  };
+
+  // Download progress report handler
+  const handleDownloadReport = async (reportId, fileName) => {
+    try {
+      const response = await patientAPI.downloadProgressReport(reportId);
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download report:', error);
+    }
   };
 
   if (isLoading) {
@@ -498,6 +533,60 @@ const ProgressView = () => {
               <div className="text-sm font-medium text-purple-800">Active Plans</div>
         </div>
       </div>
+        </div>
+
+        {/* Progress Reports Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Progress Reports</h2>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-6">
+              {reportsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading progress reports...</p>
+                </div>
+              ) : progressReportsData?.data?.data?.reports?.length > 0 ? (
+                <div className="space-y-4">
+                  {progressReportsData.data.data.reports.map((report) => (
+                    <div key={report.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{report.title}</h4>
+                          {report.description && (
+                            <p className="text-sm text-gray-600 mt-1">{report.description}</p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <File className="h-3 w-3" />
+                              {report.originalFileName}
+                            </span>
+                            <span>{(report.fileSize / 1024 / 1024).toFixed(2)} MB</span>
+                            <span>Uploaded by {report.therapistName}</span>
+                            <span>{new Date(report.uploadedAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDownloadReport(report.id, report.originalFileName)}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+                          >
+                            <Download className="h-4 w-4" />
+                            Download
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FolderOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Progress Reports</h3>
+                  <p className="text-gray-600">Your therapist hasn't uploaded any progress reports yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
       </div>

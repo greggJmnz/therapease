@@ -441,9 +441,6 @@ const addNoteComment = async (req, res) => {
     const { comment } = req.body;
     const therapistId = req.user.id;
     
-    console.log('Add therapist comment called with:', { id, comment, therapistId });
-    console.log('Request body:', req.body);
-    console.log('User from JWT:', req.user);
     
     // Validate comment
     if (!comment || typeof comment !== 'string' || comment.trim().length === 0) {
@@ -484,7 +481,6 @@ const addNoteComment = async (req, res) => {
       [JSON.stringify(updatedComments), id]
     );
 
-    console.log('Therapist comment stored in database:', updatedComments);
 
     // Get updated note with patient info for broadcasting
     const updatedNote = await getRow(`

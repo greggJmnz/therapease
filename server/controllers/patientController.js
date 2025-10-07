@@ -1195,7 +1195,6 @@ const addNoteComment = async (req, res) => {
       timestamp: new Date().toISOString()
     };
 
-    console.log('Created comment:', newComment);
 
     // Store the comment in the database
     // For now, we'll store comments as JSON in a comments field
@@ -1209,7 +1208,6 @@ const addNoteComment = async (req, res) => {
       [JSON.stringify(updatedComments), id]
     );
 
-    console.log('Comment stored in database:', updatedComments);
 
     // Get updated note with therapist info for broadcasting
     const updatedNote = await getRow(`
@@ -1234,7 +1232,6 @@ const addNoteComment = async (req, res) => {
       }
     };
     
-    console.log('Sending response:', response);
     res.json(response);
 
   } catch (error) {
@@ -2021,13 +2018,6 @@ const completeOnboarding = async (req, res) => {
     const userId = req.user.id;
     const onboardingData = req.body;
     
-    // Debug: Log the received data
-    console.log('Complete onboarding - received data:', JSON.stringify(onboardingData, null, 2));
-    console.log('Complete onboarding - userId:', userId);
-    console.log('Complete onboarding - req.user:', req.user);
-    console.log('Complete onboarding - req.body:', JSON.stringify(req.body, null, 2));
-    console.log('Complete onboarding - req.body type:', typeof req.body);
-    console.log('Complete onboarding - req.body keys:', Object.keys(req.body || {}));
 
     // Validate userId
     if (!userId) {
@@ -2070,9 +2060,6 @@ const completeOnboarding = async (req, res) => {
       // Ensure no undefined values
       const sanitizedUserParams = userParams.map(param => param === undefined ? null : param);
 
-      // Debug: Log the userParams and check for undefined values
-      console.log('Complete onboarding - userParams:', userParams);
-      console.log('Complete onboarding - userParams length:', userParams.length);
       
       // Check each parameter for undefined
       userParams.forEach((param, index) => {
@@ -2083,7 +2070,6 @@ const completeOnboarding = async (req, res) => {
 
       try {
         await connection.execute(userSql, sanitizedUserParams);
-        console.log('✅ User table updated successfully');
       } catch (error) {
         console.error('❌ User table update failed:', error.message);
         throw error;
@@ -2111,7 +2097,6 @@ const completeOnboarding = async (req, res) => {
 
       try {
         await connection.execute(patientSql, sanitizedPatientParams);
-        console.log('✅ Patient table updated successfully');
       } catch (error) {
         console.error('❌ Patient table update failed:', error.message);
         throw error;
@@ -2134,7 +2119,6 @@ const completeOnboarding = async (req, res) => {
 
       try {
         await connection.execute(auditSql, sanitizedAuditParams);
-        console.log('✅ Compliance audit logged successfully');
       } catch (error) {
         console.error('❌ Compliance audit failed:', error.message);
         throw error;
