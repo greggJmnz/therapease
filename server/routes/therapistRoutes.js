@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken, authorizeTherapist } = require('../middleware/authMiddleware');
 const { decryptResponseData } = require('../middleware/encryptionMiddleware');
-// const therapistController = require('../controllers/therapistController'); // Will be implemented
+const therapistController = require('../controllers/therapistController');
 const assessmentController = require('../controllers/assessmentController');
 const patientController = require('../controllers/patientController');
 const dailyNotesController = require('../controllers/dailyNotesController');
@@ -76,10 +76,16 @@ router.delete('/notifications/:id', notificationController.deleteNotification);
 router.get('/notifications/stats', notificationController.getNotificationStats);
 
 // Profile management
-router.get('/profile', profileController.getProfile);
-router.put('/profile', profileController.updateProfile);
-router.post('/change-password', profileController.changePassword);
-router.post('/upload-profile-image', upload.single('profileImage'), profileController.uploadProfileImage);
+router.get('/profile', therapistController.getProfile);
+router.put('/profile', therapistController.updateProfile);
+router.post('/change-password', therapistController.changePassword);
+router.post('/upload-profile-image', upload.single('profileImage'), therapistController.uploadProfileImage);
+
+// Onboarding management
+router.get('/onboarding/status', therapistController.getOnboardingStatus);
+router.put('/onboarding', therapistController.updateOnboardingData);
+router.post('/onboarding/complete', therapistController.completeOnboarding);
+router.get('/onboarding/progress', therapistController.getOnboardingProgress);
 
 // Settings management
 router.get('/settings', settingsController.getSettings);

@@ -146,6 +146,12 @@ export const therapistAPI = {
   // Settings management
   updateSettings: (settingsData) => api.put('/therapist/settings', settingsData),
   
+  // Onboarding management
+  getOnboardingStatus: () => api.get('/therapist/onboarding/status'),
+  updateOnboardingData: (onboardingData) => api.put('/therapist/onboarding', onboardingData),
+  completeOnboarding: (onboardingData) => api.post('/therapist/onboarding/complete', onboardingData),
+  getOnboardingProgress: () => api.get('/therapist/onboarding/progress'),
+  
   // Create/Update operations
   createDailyNote: (noteData) => api.post('/therapist/daily-notes', noteData),
   updateDailyNote: (id, noteData) => api.put(`/therapist/daily-notes/${id}`, noteData),

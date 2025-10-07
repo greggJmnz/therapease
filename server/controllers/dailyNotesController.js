@@ -18,12 +18,9 @@ const getDailyNotes = async (req, res) => {
       
       if (columns.length === 0) {
         await runQuery(`ALTER TABLE daily_notes ADD COLUMN comments TEXT`);
-        console.log('Comments column added successfully');
       } else {
-        console.log('Comments column already exists');
       }
     } catch (error) {
-      console.log('Error checking/adding comments column:', error.message);
     }
 
     // Get therapist ID from JWT token (this is the user ID from users table)
@@ -104,7 +101,6 @@ const getDailyNotes = async (req, res) => {
       try {
         processedNote = decryptSensitiveFields(note, ['content', 'activities', 'observations', 'progress', 'challenges', 'nextSteps', 'goals']);
       } catch (error) {
-        console.log('Note decryption failed for note', note.id, '- using original data');
         // If decryption fails, use original data
         processedNote = note;
       }

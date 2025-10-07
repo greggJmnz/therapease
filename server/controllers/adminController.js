@@ -759,7 +759,6 @@ const getAppointments = async (req, res) => {
     `;
 
     const appointments = await getAll(sql);
-    console.log('Raw appointments from database:', appointments.length, 'appointments found');
 
     // Format appointment data
     const formattedAppointments = appointments.map(appointment => ({
@@ -781,7 +780,6 @@ const getAppointments = async (req, res) => {
       updatedAt: appointment.updatedAt
     }));
     
-    console.log('Formatted appointments:', formattedAppointments.length, 'appointments formatted');
 
     res.json({
       success: true,
@@ -1441,7 +1439,6 @@ const resetUserPassword = async (req, res) => {
     );
 
     // Log the password reset action
-    console.log(`Admin reset password for user ${user.email} (ID: ${userId})`);
 
     res.json({
       success: true,
@@ -1479,7 +1476,6 @@ const sendPasswordResetLink = async (req, res) => {
 
     // Store reset token in database (you might want to create a password_resets table)
     // For now, we'll just log it
-    console.log(`Password reset link for ${user.email}: /auth/reset-password?token=${resetToken}`);
 
     // In a real application, you would:
     // 1. Store the reset token in a password_resets table
@@ -1534,22 +1530,18 @@ const updateUserStatus = async (req, res) => {
 
     // If user is a patient, also update their patient status to match
     if (user.role === 'patient') {
-      console.log(`🔄 Syncing patient status for user ${userId} to ${status}`);
       const patientResult = await runQuery(
         'UPDATE patients SET status = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?',
         [status, parseInt(userId)]
       );
-      console.log(`✅ Patient status sync result:`, patientResult);
     }
 
     // If user is a therapist, also update their therapist status to match
     if (user.role === 'therapist') {
-      console.log(`🔄 Syncing therapist status for user ${userId} to ${status}`);
       const therapistResult = await runQuery(
         'UPDATE therapists SET status = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?',
         [status, parseInt(userId)]
       );
-      console.log(`✅ Therapist status sync result:`, therapistResult);
     }
 
     res.json({
@@ -2573,11 +2565,223 @@ const getPatientTherapists = async (req, res) => {
   }
 };
 
+// Create user (admin only)
+const createUser = async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      role,
+      phone,
+      dateOfBirth,
+      gender,
+      address,
+      city,
+      state,
+      zipCode,
+      // Role-specific data
+      therapist,
+      patient
+    } = req.body;
+
+    // Validate required fields
+    if (!firstName || !lastName || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: firstName, lastName, email, password, role'
+      });
+    }
+
+    // Validate role
+    const validRoles = ['admin', 'therapist', 'patient'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid role. Must be one of: admin, therapist, patient'
+      });
+    }
+
+    // Check if user with email already exists
+    const existingUser = await getRow('SELECT id FROM users WHERE email = ?', [email]);
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: 'User with this email already exists'
+      });
+    }
+
+    // Hash the password
+    const { hashPassword } = require('../utils/password');
+    const hashedPassword = await hashPassword(password);
+
+    // Start transaction
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Create user
+      const createUserSql = `
+        INSERT INTO users (email, password, role, firstName, lastName, phone, dateOfBirth, gender, address, city, state, zipCode)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      const userParams = [
+        email,
+        hashedPassword,
+        role,
+        firstName,
+        lastName,
+        phone || null,
+        dateOfBirth || null,
+        gender || null,
+        address || null,
+        city || null,
+        state || null,
+        zipCode || null
+      ];
+
+      const userResult = await connection.execute(createUserSql, userParams);
+      const userId = userResult[0].insertId;
+
+      let roleData = {};
+
+      // Create role-specific record
+      if (role === 'therapist' && therapist) {
+        const createTherapistSql = `
+          INSERT INTO therapists (userId, licenseNumber, specialization, yearsOfExperience, education, certifications, availability, maxPatients, isAcceptingPatients)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const therapistParams = [
+          userId,
+          therapist.licenseNumber || null,
+          therapist.specialization || null,
+          therapist.yearsOfExperience ? parseInt(therapist.yearsOfExperience) : null,
+          therapist.education || null,
+          therapist.certifications || null,
+          therapist.availability || null,
+          therapist.maxPatients || 20,
+          therapist.isAcceptingPatients !== undefined ? therapist.isAcceptingPatients : true
+        ];
+
+        const therapistResult = await connection.execute(createTherapistSql, therapistParams);
+        const therapistId = therapistResult[0].insertId;
+
+        // Get created therapist data
+        const getTherapistSql = `
+          SELECT 
+            t.id,
+            t.licenseNumber,
+            t.specialization,
+            t.yearsOfExperience,
+            t.education,
+            t.certifications,
+            t.availability,
+            t.maxPatients,
+            t.isAcceptingPatients
+          FROM therapists t
+          WHERE t.id = ?
+        `;
+
+        roleData = await getRow(getTherapistSql, [therapistId]);
+
+      } else if (role === 'patient' && patient) {
+        const createPatientSql = `
+          INSERT INTO patients (userId, diagnosis, medicalHistory, goals, emergencyContact, insuranceInfo)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `;
+
+        const patientParams = [
+          userId,
+          patient.diagnosis || null,
+          patient.medicalHistory || null,
+          patient.goals || null,
+          patient.emergencyContact || null,
+          patient.insuranceInfo || null
+        ];
+
+        const patientResult = await connection.execute(createPatientSql, patientParams);
+        const patientId = patientResult[0].insertId;
+
+        // Get created patient data
+        const getPatientSql = `
+          SELECT 
+            p.id,
+            p.diagnosis,
+            p.medicalHistory,
+            p.goals,
+            p.emergencyContact,
+            p.insuranceInfo
+          FROM patients p
+          WHERE p.id = ?
+        `;
+
+        roleData = await getRow(getPatientSql, [patientId]);
+      }
+
+      // Commit transaction
+      await connection.commit();
+
+      // Get created user
+      const getUserSql = `
+        SELECT 
+          u.id,
+          u.email,
+          u.role,
+          u.firstName,
+          u.lastName,
+          u.phone,
+          u.dateOfBirth,
+          u.gender,
+          u.address,
+          u.city,
+          u.state,
+          u.zipCode,
+          u.createdAt,
+          u.updatedAt
+        FROM users u
+        WHERE u.id = ?
+      `;
+
+      const newUser = await getRow(getUserSql, [userId]);
+
+      res.status(201).json({
+        success: true,
+        message: 'User created successfully',
+        data: {
+          user: { ...newUser, ...roleData },
+          password: password // Return the plain password for admin to share with user
+        }
+      });
+
+    } catch (error) {
+      // Rollback transaction on error
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Create user error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to create user',
+      details: error.message 
+    });
+  }
+};
+
 module.exports = {
   getDashboard,
   getUsers,
   getAllUsers,
   getUserById,
+  createUser,
   updateUser,
   deleteUser,
   getSystemStats,

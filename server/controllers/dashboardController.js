@@ -6,17 +6,18 @@ const getDashboard = async (req, res) => {
     // Get therapist ID from authenticated user (therapistId in patients table refers to userId)
     const therapistId = req.user.id;
 
-    // Get patient count
+    // Get patient count (including patients from patient_therapist_assignments table)
     const patientCountSql = `
-      SELECT COUNT(*) as total
+      SELECT COUNT(DISTINCT p.id) as total
       FROM patients p
-      WHERE p.therapistId = ?
+      LEFT JOIN patient_therapist_assignments pta ON p.id = pta.patientId
+      WHERE p.therapistId = ? OR (pta.therapistId = ? AND pta.status = 'active')
     `;
 
-    const patientCountResult = await getAll(patientCountSql, [therapistId]);
+    const patientCountResult = await getAll(patientCountSql, [therapistId, therapistId]);
     const totalPatients = patientCountResult[0]?.total || 0;
 
-    // Get assessment count
+    // Get assessment count (only assessments created by this therapist)
     const assessmentCountSql = `
       SELECT 
         COUNT(*) as total,
@@ -30,7 +31,7 @@ const getDashboard = async (req, res) => {
     const assessmentCountResult = await getAll(assessmentCountSql, [therapistId]);
     const assessmentStats = assessmentCountResult[0] || { total: 0, completed: 0, inProgress: 0, scheduled: 0 };
 
-    // Get appointment count
+    // Get appointment count (only appointments created by this therapist)
     const appointmentCountSql = `
       SELECT 
         COUNT(*) as total,
@@ -45,7 +46,7 @@ const getDashboard = async (req, res) => {
     const appointmentCountResult = await getAll(appointmentCountSql, [therapistId]);
     const appointmentStats = appointmentCountResult[0] || { total: 0, scheduled: 0, confirmed: 0, completed: 0, cancelled: 0 };
 
-    // Get daily notes count
+    // Get daily notes count (only notes created by this therapist)
     const dailyNotesCountSql = `
       SELECT COUNT(*) as total
       FROM daily_notes dn
@@ -55,15 +56,16 @@ const getDashboard = async (req, res) => {
     const dailyNotesCountResult = await getAll(dailyNotesCountSql, [therapistId]);
     const todayNotes = dailyNotesCountResult[0]?.total || 0;
 
-    // Get progress tracking count
+    // Get progress tracking count (progress entries for patients assigned to this therapist)
     const progressCountSql = `
-      SELECT COUNT(*) as total
+      SELECT COUNT(DISTINCT pt.id) as total
       FROM progress_tracking pt
       JOIN patients p ON pt.patientId = p.id
-      WHERE p.therapistId = ?
+      LEFT JOIN patient_therapist_assignments pta ON p.id = pta.patientId
+      WHERE p.therapistId = ? OR (pta.therapistId = ? AND pta.status = 'active')
     `;
 
-    const progressCountResult = await getAll(progressCountSql, [therapistId]);
+    const progressCountResult = await getAll(progressCountSql, [therapistId, therapistId]);
     const totalProgressEntries = progressCountResult[0]?.total || 0;
 
     // Get recent assessments

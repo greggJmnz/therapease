@@ -143,19 +143,13 @@ const ProfileForm = ({ userRole, apiService }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.firstName?.trim()) {
-      newErrors.firstName = 'First name is required';
-    }
-    if (!formData.lastName?.trim()) {
-      newErrors.lastName = 'Last name is required';
-    }
-    if (!formData.email?.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    // Only validate email format if email is provided
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
 
-    if (formData.phone) {
+    // Only validate phone format if phone is provided
+    if (formData.phone && formData.phone.trim()) {
       const cleanPhone = formData.phone.replace(/[\s\-\(\)]/g, '');
       const phonePattern = /^(09\d{9}|\+639\d{9})$/;
       if (!phonePattern.test(cleanPhone)) {
@@ -163,8 +157,9 @@ const ProfileForm = ({ userRole, apiService }) => {
       }
     }
 
+    // Only validate therapist-specific fields if they are provided
     if (userRole === 'therapist') {
-      if (formData.licenseNumber && formData.licenseNumber.length < 5) {
+      if (formData.licenseNumber && formData.licenseNumber.trim() && formData.licenseNumber.length < 5) {
         newErrors.licenseNumber = 'License number must be at least 5 characters';
       }
       if (formData.yearsOfExperience && (isNaN(formData.yearsOfExperience) || formData.yearsOfExperience < 0)) {

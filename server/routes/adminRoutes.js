@@ -35,6 +35,7 @@ router.post('/appointments', adminController.createAppointment);
 
 // User management
 router.get('/users', adminController.getAllUsers);
+router.post('/users', adminController.createUser);
 router.put('/users/:userId', adminController.updateUser);
 router.delete('/users/:userId', adminController.deleteUser);
 router.put('/users/:userId/status', adminController.updateUserStatus);

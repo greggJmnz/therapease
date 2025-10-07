@@ -4,6 +4,10 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import InitialsAvatar from '../components/InitialsAvatar';
 import { useNotificationStats } from '../hooks/useNotifications';
+import OnboardingStatus from '../components/OnboardingStatus';
+import { useQuery, useQueryClient } from 'react-query';
+import { therapistAPI } from '../services/api';
+import { useNavigationState } from '../hooks/useNavigationState';
 import {
   Users,
   Calendar,
@@ -27,11 +31,88 @@ const TherapistLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const profileDropdownRef = useRef(null);
   const { stats: notificationStats } = useNotificationStats();
+  const { startNavigation, completeNavigation, canNavigate } = useNavigationState();
+  const queryClient = useQueryClient();
+
+  // Check onboarding status
+  const { data: onboardingStatus, isLoading: onboardingLoading, refetch: refetchOnboardingStatus } = useQuery(
+    ['therapistOnboardingStatus', user?.id],
+    async () => {
+      const response = await therapistAPI.getOnboardingStatus();
+      return response.data; // Extract just the data part
+    },
+    {
+      enabled: user?.role === 'therapist' && !!user?.id,
+      refetchOnWindowFocus: true,
+      staleTime: 0, // Always fetch fresh data
+      cacheTime: 0, // Don't cache the data
+      retry: 3, // Retry failed requests
+      retryDelay: 1000, // Wait 1 second between retries
+    }
+  );
+
+  // Invalidate onboarding status when user changes
+  useEffect(() => {
+    if (user?.id) {
+      console.log('TherapistLayout: Invalidating onboarding queries for user', user.id);
+      queryClient.invalidateQueries(['therapistOnboardingStatus', user.id]);
+      // Also manually refetch to ensure fresh data
+      refetchOnboardingStatus();
+    }
+  }, [user?.id, queryClient, refetchOnboardingStatus]);
+
+  // Handle navigation based on onboarding status
+  useEffect(() => {
+    console.log('TherapistLayout: Onboarding status check', {
+      onboardingLoading,
+      isRedirecting,
+      onboardingStatus,
+      user: user?.id,
+      currentPath: location.pathname
+    });
+
+    if (onboardingLoading || isRedirecting || !onboardingStatus?.data) {
+      console.log('TherapistLayout: Skipping navigation check', {
+        onboardingLoading,
+        isRedirecting,
+        hasOnboardingData: !!onboardingStatus?.data
+      });
+      return;
+    }
+
+    const isComplete = onboardingStatus.data.isComplete === true || onboardingStatus.data.isComplete === 1;
+    const currentPath = location.pathname;
+
+    console.log('TherapistLayout: Navigation decision', {
+      isComplete,
+      currentPath,
+      shouldRedirectToOnboarding: !isComplete && currentPath === '/therapist/dashboard',
+      shouldRedirectToDashboard: isComplete && currentPath === '/therapist/onboarding'
+    });
+
+    // If onboarding is complete and user is on onboarding page, redirect to dashboard
+    if (isComplete && currentPath === '/therapist/onboarding') {
+      console.log('TherapistLayout: Redirecting to dashboard');
+      setIsRedirecting(true);
+      navigate('/therapist/dashboard');
+      // Reset redirecting state after a short delay
+      setTimeout(() => setIsRedirecting(false), 1000);
+    }
+    // If onboarding is not complete and user is on dashboard, redirect to onboarding
+    else if (!isComplete && currentPath === '/therapist/dashboard') {
+      console.log('TherapistLayout: Redirecting to onboarding');
+      setIsRedirecting(true);
+      navigate('/therapist/onboarding');
+      // Reset redirecting state after a short delay
+      setTimeout(() => setIsRedirecting(false), 1000);
+    }
+  }, [onboardingStatus, location.pathname, navigate, isRedirecting, onboardingLoading, user?.id]);
 
   // Check screen size on mount and resize
   useEffect(() => {
@@ -381,6 +462,13 @@ const TherapistLayout = () => {
         </div>
         
         <div className="page-content">
+          {/* Show onboarding status if not complete and not on onboarding page */}
+          {onboardingStatus?.data && !onboardingStatus.data.isComplete && location.pathname !== '/therapist/onboarding' && (
+            <OnboardingStatus 
+              onboardingStatus={onboardingStatus.data} 
+              userRole="therapist"
+            />
+          )}
           <Outlet />
         </div>
       </main>

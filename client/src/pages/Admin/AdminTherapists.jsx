@@ -219,8 +219,30 @@ const AdminTherapists = () => {
   const generateCredentials = async () => {
     if (newTherapist.name && newTherapist.email) {
       try {
-        // Generate a random password
-        const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        // Generate a secure password that meets complexity requirements
+        const generateSecurePassword = () => {
+          const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+          const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+          const numbers = '0123456789';
+          const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+          
+          let password = '';
+          password += uppercase[Math.floor(Math.random() * uppercase.length)];
+          password += lowercase[Math.floor(Math.random() * lowercase.length)];
+          password += numbers[Math.floor(Math.random() * numbers.length)];
+          password += special[Math.floor(Math.random() * special.length)];
+          
+          // Fill the rest with random characters
+          const allChars = uppercase + lowercase + numbers + special;
+          for (let i = 4; i < 12; i++) {
+            password += allChars[Math.floor(Math.random() * allChars.length)];
+          }
+          
+          // Shuffle the password
+          return password.split('').sort(() => Math.random() - 0.5).join('');
+        };
+        
+        const password = generateSecurePassword();
         
         // Prepare the data for the API call
         const userData = {

@@ -279,12 +279,11 @@ const TherapistNotifications = () => {
                   <p className="text-gray-700 text-xs mb-1 line-clamp-1">{notification.message}</p>
                   <div className="flex items-center gap-3 text-xs text-gray-500">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {notification.date}
-                    </span>
-                    <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {notification.time}
+                      {notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now')}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 capitalize">
+                      {notification.type}
                     </span>
                     {notification.patient && (
                       <span className="flex items-center gap-1">
@@ -450,12 +449,11 @@ const TherapistNotifications = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {notification.date}
-                          </span>
-                          <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {notification.time}
+                            {notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now')}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 capitalize">
+                            {notification.type}
                           </span>
                           {notification.patient && (
                             <span className="flex items-center gap-1">
@@ -638,17 +636,10 @@ const TherapistNotifications = () => {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Date</p>
-                        <p className="font-medium text-gray-900">{selectedNotification.date}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-gray-400" />
                       <div>
-                        <p className="text-sm text-gray-600">Time</p>
-                        <p className="font-medium text-gray-900">{selectedNotification.time}</p>
+                        <p className="text-sm text-gray-600">Created</p>
+                        <p className="font-medium text-gray-900">{selectedNotification.date && selectedNotification.time ? `${selectedNotification.date} at ${selectedNotification.time}` : (selectedNotification.timeAgo || 'Just now')}</p>
                       </div>
                     </div>
                   </div>

@@ -1,32 +1,59 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, AlertCircle, ArrowRight, User, Heart, Shield } from 'lucide-react';
+import { CheckCircle, AlertCircle, ArrowRight, User, Heart, Shield, GraduationCap } from 'lucide-react';
 
-const OnboardingStatus = ({ onboardingStatus, isCompact = false }) => {
+const OnboardingStatus = ({ onboardingStatus, isCompact = false, userRole = 'patient' }) => {
   if (!onboardingStatus || onboardingStatus.isComplete) {
     return null;
   }
 
-  const steps = [
-    {
-      id: 'personalInfo',
-      title: 'Personal Information',
-      icon: User,
-      completed: onboardingStatus.steps?.personalInfo?.completed || false
-    },
-    {
-      id: 'medicalInfo',
-      title: 'Medical Information',
-      icon: Heart,
-      completed: onboardingStatus.steps?.medicalInfo?.completed || false
-    },
-    {
-      id: 'compliance',
-      title: 'Privacy & Compliance',
-      icon: Shield,
-      completed: onboardingStatus.steps?.compliance?.completed || false
+  const getSteps = () => {
+    if (userRole === 'therapist') {
+      return [
+        {
+          id: 'personalInfo',
+          title: 'Personal Information',
+          icon: User,
+          completed: onboardingStatus.steps?.personalInfo?.completed || false
+        },
+        {
+          id: 'professionalInfo',
+          title: 'Professional Information',
+          icon: GraduationCap,
+          completed: onboardingStatus.steps?.professionalInfo?.completed || false
+        },
+        {
+          id: 'compliance',
+          title: 'Privacy & Compliance',
+          icon: Shield,
+          completed: onboardingStatus.steps?.compliance?.completed || false
+        }
+      ];
+    } else {
+      return [
+        {
+          id: 'personalInfo',
+          title: 'Personal Information',
+          icon: User,
+          completed: onboardingStatus.steps?.personalInfo?.completed || false
+        },
+        {
+          id: 'medicalInfo',
+          title: 'Medical Information',
+          icon: Heart,
+          completed: onboardingStatus.steps?.medicalInfo?.completed || false
+        },
+        {
+          id: 'compliance',
+          title: 'Privacy & Compliance',
+          icon: Shield,
+          completed: onboardingStatus.steps?.compliance?.completed || false
+        }
+      ];
     }
-  ];
+  };
+
+  const steps = getSteps();
 
   const completedSteps = steps.filter(step => step.completed).length;
   const totalSteps = steps.length;
@@ -43,7 +70,7 @@ const OnboardingStatus = ({ onboardingStatus, isCompact = false }) => {
             </span>
           </div>
           <Link
-            to="/patient/onboarding"
+            to={userRole === 'therapist' ? "/therapist/onboarding" : "/patient/onboarding"}
             className="text-sm text-yellow-700 hover:text-yellow-800 font-medium flex items-center"
           >
             Continue
@@ -68,7 +95,7 @@ const OnboardingStatus = ({ onboardingStatus, isCompact = false }) => {
           <h3 className="text-lg font-semibold text-blue-900">Complete Your Profile</h3>
         </div>
         <Link
-          to="/patient/onboarding"
+          to={userRole === 'therapist' ? "/therapist/onboarding" : "/patient/onboarding"}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
         >
           <span>Continue Setup</span>
@@ -77,7 +104,7 @@ const OnboardingStatus = ({ onboardingStatus, isCompact = false }) => {
       </div>
       
       <p className="text-blue-800 text-sm mb-4">
-        Complete your profile setup to unlock all features of your patient portal.
+        Complete your profile setup to unlock all features of your {userRole === 'therapist' ? 'therapist' : 'patient'} portal.
       </p>
 
       <div className="space-y-3">
@@ -130,6 +157,7 @@ const OnboardingStatus = ({ onboardingStatus, isCompact = false }) => {
 };
 
 export default OnboardingStatus;
+
 
 
 

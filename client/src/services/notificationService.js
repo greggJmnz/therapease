@@ -221,7 +221,10 @@ class NotificationService {
       message: notification.message,
       isRead: notification.isRead,
       createdAt: notification.createdAt,
-      priority: this.getPriorityFromType(notification.type),
+      date: notification.date,
+      time: notification.time,
+      timeAgo: notification.timeAgo,
+      priority: notification.priority || this.getPriorityFromType(notification.type),
       icon: this.getIconFromType(notification.type),
       action: this.getActionFromType(notification.type),
       actionUrl: this.getActionUrlFromType(notification.type)

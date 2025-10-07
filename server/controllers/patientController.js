@@ -1167,17 +1167,14 @@ const cleanupDailyNotes = async (req, res) => {
 // Add comment to daily note
 const addNoteComment = async (req, res) => {
   try {
-    console.log('Add note comment called with:', { params: req.params, body: req.body, user: req.user });
     
     const { id } = req.params;
     const { comment } = req.body;
     const userId = req.user.id;
     
-    console.log('Processing comment for note:', id, 'by user:', userId);
     
     // Get patient ID
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
-    console.log('Patient found:', patient);
     
     if (!patient) {
       return res.status(404).json({ success: false, error: 'Patient not found' });
@@ -1185,7 +1182,6 @@ const addNoteComment = async (req, res) => {
 
     // Verify note belongs to patient
     const note = await getRow('SELECT * FROM daily_notes WHERE id = ? AND patientId = ?', [id, patient.id]);
-    console.log('Note found:', note);
     
     if (!note) {
       return res.status(404).json({ success: false, error: 'Note not found' });

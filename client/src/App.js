@@ -25,6 +25,7 @@ import AdminProfile from './pages/Admin/AdminProfile';
 import AdminUserManagement from './pages/Admin/AdminUserManagement';
 
 import TherapistDashboard from './pages/Therapist/Dashboard';
+import TherapistOnboarding from './pages/Therapist/TherapistOnboarding';
 import TherapistDailyNotes from './pages/Therapist/DailyNotes';
 import TherapistHomeExercises from './pages/Therapist/HomeExercises';
 import TherapistAIInsights from './pages/Therapist/AIInsights';
@@ -132,6 +133,7 @@ function App() {
               }>
                 <Route index element={<Navigate to="/therapist/dashboard" replace />} />
                 <Route path="dashboard" element={<TherapistDashboard />} />
+                <Route path="onboarding" element={<TherapistOnboarding />} />
                 <Route path="patients" element={<TherapistPatients />} />
                 <Route path="schedule" element={<TherapistSchedule />} />
                 <Route path="daily-notes" element={<TherapistDailyNotes />} />

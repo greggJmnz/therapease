@@ -9,7 +9,7 @@ const getSchedule = async (req, res) => {
     const { date, startDate, endDate, status } = req.query;
     
 
-    // Build WHERE clause
+    // Build WHERE clause (only show appointments created by this therapist)
     let whereConditions = ['a.therapistId = ?'];
     let params = [therapistId];
 
@@ -28,7 +28,7 @@ const getSchedule = async (req, res) => {
 
     const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
 
-    // Get appointments with patient info
+    // Get appointments with patient info (only appointments created by this therapist)
     const sql = `
       SELECT 
         a.id,
@@ -56,7 +56,7 @@ const getSchedule = async (req, res) => {
     const appointments = await getAll(sql, params);
     
 
-    // Get sessions for the same therapist
+    // Get sessions for the same therapist (only sessions created by this therapist)
     const sessionsSql = `
       SELECT 
         s.id,
@@ -85,7 +85,6 @@ const getSchedule = async (req, res) => {
     let sessions = [];
     try {
       sessions = await getAll(sessionsSql, [therapistId]);
-      console.log('Sessions query successful, found:', sessions.length);
     } catch (error) {
       console.error('Error fetching sessions:', error);
       // Continue without sessions if there's an error

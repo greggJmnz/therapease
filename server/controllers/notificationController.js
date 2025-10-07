@@ -83,13 +83,7 @@ const getNotifications = async (req, res) => {
         n.createdAt
       FROM notifications n
       ${whereClause}
-      ORDER BY 
-        CASE n.priority 
-          WHEN 'high' THEN 1 
-          WHEN 'medium' THEN 2 
-          WHEN 'low' THEN 3 
-        END,
-        n.createdAt DESC
+      ORDER BY n.createdAt DESC
       LIMIT ? OFFSET ?
     `;
 
@@ -311,7 +305,6 @@ const createNotification = async (userId, title, message, type = 'system', optio
     if (options.sendSMS && options.phoneNumber) {
       try {
         const smsResult = await smsService.sendSMS(options.phoneNumber, message);
-        console.log('SMS sent:', smsResult);
         
         // Update notification with SMS status
         if (smsResult.success) {
@@ -619,7 +612,6 @@ const handleSMSDeliveryStatus = async (req, res) => {
       [mappedStatus, message_uuid]
     );
     
-    console.log(`SMS delivery status updated: ${message_uuid} - ${mappedStatus}`);
 
     res.json({ success: true, message: 'Delivery status updated' });
 
