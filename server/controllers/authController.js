@@ -582,7 +582,7 @@ const changePassword = async (req, res) => {
   }
 };
 
-// Forgot password (placeholder)
+// Forgot password - Send reset link via email
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -595,31 +595,73 @@ const forgotPassword = async (req, res) => {
     }
 
     // Check if user exists
-    const user = await getRow('SELECT id FROM users WHERE email = ?', [email]);
+    const user = await getRow('SELECT id, firstName, lastName FROM users WHERE email = ?', [email]);
     if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User not found'
+        error: 'No account found with this email address'
       });
     }
 
-    // In a real app, you would:
-    // 1. Generate a reset token
-    // 2. Send reset email
-    // 3. Store reset token with expiration
+    // Import email service
+    const emailService = require('../services/emailService');
+    
+    // Generate reset token
+    const resetToken = emailService.generateResetToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    res.json({
-      success: true,
-      message: 'Password reset instructions sent to your email'
-    });
+    // Start transaction
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Invalidate any existing reset tokens for this user
+      await connection.execute(
+        'UPDATE password_reset_tokens SET used = TRUE WHERE userId = ? AND used = FALSE',
+        [user.id]
+      );
+
+      // Store new reset token
+      await connection.execute(
+        'INSERT INTO password_reset_tokens (userId, token, expiresAt) VALUES (?, ?, ?)',
+        [user.id, resetToken, expiresAt]
+      );
+
+      // Send reset email
+      const emailResult = await emailService.sendPasswordResetEmail(
+        email, 
+        resetToken, 
+        user.firstName || 'User'
+      );
+
+      if (!emailResult.success) {
+        throw new Error(`Failed to send email: ${emailResult.error}`);
+      }
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'Password reset instructions have been sent to your email'
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
 
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ success: false, error: 'Failed to process forgot password request' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to process forgot password request' 
+    });
   }
 };
 
-// Reset password (placeholder)
+// Reset password with token
 const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -631,27 +673,127 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    if (newPassword.length < 8) {
+    // Validate password complexity
+    const passwordValidation = validatePasswordComplexity(newPassword);
+    if (!passwordValidation.isValid) {
       return res.status(400).json({
         success: false,
-        error: 'New password must be at least 8 characters long'
+        error: 'New password does not meet security requirements',
+        details: passwordValidation.errors
       });
     }
 
-    // In a real app, you would:
-    // 1. Verify the reset token
-    // 2. Check if token is expired
-    // 3. Update the password
-    // 4. Invalidate the token
+    // Start transaction
+    const connection = await getConnection();
+    await connection.beginTransaction();
 
-    res.json({
-      success: true,
-      message: 'Password reset successfully'
-    });
+    try {
+      // Find valid reset token
+      const resetTokenRecord = await getRow(
+        `SELECT prt.id, prt.userId, prt.expiresAt, prt.used, u.email, u.firstName 
+         FROM password_reset_tokens prt 
+         JOIN users u ON prt.userId = u.id 
+         WHERE prt.token = ? AND prt.used = FALSE AND prt.expiresAt > NOW()`,
+        [token]
+      );
+
+      if (!resetTokenRecord) {
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid or expired reset token'
+        });
+      }
+
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+
+      // Update user password
+      await connection.execute(
+        'UPDATE users SET password = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+        [hashedPassword, resetTokenRecord.userId]
+      );
+
+      // Mark token as used
+      await connection.execute(
+        'UPDATE password_reset_tokens SET used = TRUE, usedAt = CURRENT_TIMESTAMP WHERE id = ?',
+        [resetTokenRecord.id]
+      );
+
+      // Invalidate all other reset tokens for this user
+      await connection.execute(
+        'UPDATE password_reset_tokens SET used = TRUE WHERE userId = ? AND id != ? AND used = FALSE',
+        [resetTokenRecord.userId, resetTokenRecord.id]
+      );
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'Password has been reset successfully'
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
 
   } catch (error) {
     console.error('Reset password error:', error);
-    res.status(500).json({ success: false, error: 'Failed to reset password' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to reset password' 
+    });
+  }
+};
+
+// Verify reset token (for frontend validation)
+const verifyResetToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Reset token is required'
+      });
+    }
+
+    // Check if token is valid and not expired
+    const resetTokenRecord = await getRow(
+      `SELECT prt.id, prt.userId, prt.expiresAt, u.email, u.firstName, u.lastName 
+       FROM password_reset_tokens prt 
+       JOIN users u ON prt.userId = u.id 
+       WHERE prt.token = ? AND prt.used = FALSE AND prt.expiresAt > NOW()`,
+      [token]
+    );
+
+    if (!resetTokenRecord) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or expired reset token'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Reset token is valid',
+      data: {
+        email: resetTokenRecord.email,
+        firstName: resetTokenRecord.firstName,
+        lastName: resetTokenRecord.lastName,
+        expiresAt: resetTokenRecord.expiresAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Verify reset token error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to verify reset token' 
+    });
   }
 };
 
@@ -661,5 +803,6 @@ module.exports = {
   verify,
   changePassword,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  verifyResetToken
 };

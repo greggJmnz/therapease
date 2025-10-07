@@ -9,18 +9,9 @@
     "db:init": "node scripts/init-database.js",
     "db:seed": "node scripts/simple-seed.js",
     "security:setup": "node scripts/setup-security.js",
-    "security:test": "node scripts/test-ssl.js",
     "ssl:generate": "node scripts/generate-ssl.js",
     "sms:setup": "node scripts/setup-sms.js",
-    "sms:test": "node scripts/test-sms.js",
-    "sms:test-ph": "node scripts/test-ph-sms.js",
-    "vapid:generate": "node scripts/generate-vapid-keys.js",
-    "push:test": "node scripts/test-push-notifications.js",
-    "notifications:test": "node scripts/test-real-notifications.js",
-    "notifications:db-test": "node scripts/test-database-notifications.js",
-    "notifications:create": "node scripts/check-users-and-create-notifications.js",
-    "seed:sample": "node scripts/seed-sample-data.js",
-    "test:windows": "node scripts/test-windows-compatibility.js"
+    "vapid:generate": "node scripts/generate-vapid-keys.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
@@ -38,6 +29,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "mysql2": "^3.14.3",
+    "nodemailer": "^6.10.1",
     "openai": "^6.1.0",
     "web-push": "^3.6.7",
     "ws": "^8.13.0"

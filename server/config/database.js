@@ -374,6 +374,23 @@ const createTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // Password Reset Tokens table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        token VARCHAR(255) NOT NULL,
+        expiresAt TIMESTAMP NOT NULL,
+        used BOOLEAN DEFAULT FALSE,
+        usedAt TIMESTAMP NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_token (token),
+        INDEX idx_user_expires (userId, expiresAt),
+        INDEX idx_expires (expiresAt)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
     console.log('Database tables created successfully');
     
   } catch (error) {

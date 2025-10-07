@@ -1456,13 +1456,13 @@ const resetUserPassword = async (req, res) => {
   }
 };
 
-// Send password reset link to user
+// Send password reset link to user (Admin function)
 const sendPasswordResetLink = async (req, res) => {
   try {
     const { userId } = req.params;
 
     // Check if user exists
-    const user = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(userId)]);
+    const user = await getRow('SELECT id, email, firstName, lastName FROM users WHERE id = ?', [parseInt(userId)]);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -1470,28 +1470,60 @@ const sendPasswordResetLink = async (req, res) => {
       });
     }
 
+    // Import email service
+    const emailService = require('../services/emailService');
+    
     // Generate reset token
-    const resetToken = Math.random().toString(36).slice(-32);
-    const resetExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const resetToken = emailService.generateResetToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Store reset token in database (you might want to create a password_resets table)
-    // For now, we'll just log it
+    // Start transaction
+    const connection = await getConnection();
+    await connection.beginTransaction();
 
-    // In a real application, you would:
-    // 1. Store the reset token in a password_resets table
-    // 2. Send an email with the reset link
-    // 3. Use a proper email service
+    try {
+      // Invalidate any existing reset tokens for this user
+      await connection.execute(
+        'UPDATE password_reset_tokens SET used = TRUE WHERE userId = ? AND used = FALSE',
+        [user.id]
+      );
 
-    res.json({
-      success: true,
-      message: 'Password reset link sent successfully',
-      data: {
-        userId: parseInt(userId),
-        email: user.email,
-        resetToken: resetToken, // Only return this in development
-        resetLink: `/auth/reset-password?token=${resetToken}`
+      // Store new reset token
+      await connection.execute(
+        'INSERT INTO password_reset_tokens (userId, token, expiresAt) VALUES (?, ?, ?)',
+        [user.id, resetToken, expiresAt]
+      );
+
+      // Send reset email
+      const emailResult = await emailService.sendPasswordResetEmail(
+        user.email, 
+        resetToken, 
+        user.firstName || 'User'
+      );
+
+      if (!emailResult.success) {
+        throw new Error(`Failed to send email: ${emailResult.error}`);
       }
-    });
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'Password reset link sent successfully',
+        data: {
+          userId: parseInt(userId),
+          email: user.email,
+          resetToken: resetToken, // Only return this in development
+          resetLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`
+        }
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
 
   } catch (error) {
     console.error('Send password reset link error:', error);

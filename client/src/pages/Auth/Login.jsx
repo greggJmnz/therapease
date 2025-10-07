@@ -108,14 +108,11 @@ const Login = () => {
       return;
     }
 
-    console.log('Login attempt with:', { email: data.email, password: data.password });
     setIsLoading(true);
     setLoginError(''); // Clear any previous errors
     
     try {
-      console.log('Calling login function...');
       const result = await login(data.email, data.password);
-      console.log('Login result:', result);
       
       if (result.success) {
         // Clear any lockout data on successful login
@@ -124,7 +121,6 @@ const Login = () => {
         setIsLocked(false);
         
         toast.success('Login successful!');
-        console.log('Login successful, redirecting to:', result.user.role);
         
         // Redirect based on role
         switch (result.user.role) {
@@ -442,6 +438,16 @@ const Login = () => {
             >
               {isLoading ? 'Signing in...' : isLocked ? 'Account Locked' : 'Sign in'}
             </ModernButton>
+
+            {/* Forgot Password Link */}
+            <div className="text-center">
+              <Link
+                to="/auth/forgot-password"
+                className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                Forgot your password?
+              </Link>
+            </div>
 
             {/* Sign Up Link */}
             <div className="text-center pt-4 border-t border-gray-100 mt-6">

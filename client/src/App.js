@@ -52,6 +52,8 @@ import PatientHelp from './pages/Patient/Help';
 
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 
 // Components
 import RealtimeNotification from './components/RealtimeNotification';
@@ -104,6 +106,8 @@ function App() {
                 <Route index element={<Navigate to="/auth/login" replace />} />
                 <Route path="login" element={<Login />} />
                 <Route path="register" element={<Register />} />
+                <Route path="forgot-password" element={<ForgotPassword />} />
+                <Route path="reset-password" element={<ResetPassword />} />
               </Route>
 
               {/* Admin routes */}
