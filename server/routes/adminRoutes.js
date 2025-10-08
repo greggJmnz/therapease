@@ -15,6 +15,7 @@ router.get('/dashboard', adminController.getDashboard);
 
 // Patient management
 router.get('/patients', adminController.getUsers);
+router.get('/patients/with-assignments', adminController.getPatientsWithAssignments);
 router.get('/patients/:patientId/assessments', adminController.getPatientAssessments);
 router.get('/patients/:patientId/sessions', adminController.getPatientSessions);
 router.get('/patients/:patientId/progress', adminController.getPatientProgress);
@@ -32,6 +33,11 @@ router.put('/therapists/:therapistId/availability', adminController.updateTherap
 // Appointment management
 router.get('/appointments', adminController.getAppointments);
 router.post('/appointments', adminController.createAppointment);
+router.put('/appointments/:id', adminController.updateAppointment);
+router.delete('/appointments/:id', adminController.deleteAppointment);
+router.get('/appointments/pending', adminController.getPendingAppointments);
+router.post('/appointments/:appointmentId/approve', adminController.approveAppointment);
+router.post('/appointments/:appointmentId/reject', adminController.rejectAppointment);
 
 // User management
 router.get('/users', adminController.getAllUsers);
@@ -41,6 +47,7 @@ router.delete('/users/:userId', adminController.deleteUser);
 router.put('/users/:userId/status', adminController.updateUserStatus);
 router.post('/users/:userId/reset-password', adminController.resetUserPassword);
 router.post('/users/:userId/send-reset-link', adminController.sendPasswordResetLink);
+
 
 // Reports
 router.get('/reports', adminController.getSystemStats);

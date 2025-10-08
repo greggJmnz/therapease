@@ -289,8 +289,8 @@ const AdminReports = () => {
     const result = appointmentStats.map(stat => ({
       name: stat.status.charAt(0).toUpperCase() + stat.status.slice(1),
       value: stat.count,
-      color: stat.status === 'confirmed' ? '#10B981' : 
-             stat.status === 'scheduled' ? '#3B82F6' : 
+      color: stat.status === 'scheduled' ? '#10B981' : 
+             stat.status === 'pending' ? '#3B82F6' : 
              stat.status === 'cancelled' ? '#EF4444' : '#6B7280'
     }));
     

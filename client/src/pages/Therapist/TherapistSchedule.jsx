@@ -44,7 +44,7 @@ const TherapistSchedule = () => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'Invalid date';
-      return date.toLocaleDateString();
+      return date.toLocaleDateString('en-US', { timeZone: 'UTC' });
     } catch (error) {
       return 'Not available';
     }
@@ -95,7 +95,6 @@ const TherapistSchedule = () => {
     const rawAppointments = scheduleData.data.data.appointments || [];
     const rawSessions = scheduleData.data.data.sessions || [];
     
-    
     // Combine appointments and sessions
     const allEvents = [...rawAppointments, ...rawSessions];
     
@@ -128,7 +127,7 @@ const TherapistSchedule = () => {
       }
       
       
-      return {
+      const processedAppointment = {
     id: appointment.id,
     patientName: appointment.patientName || 'Unknown Patient',
         therapistName: 'Current Therapist', // Since this is therapist view
@@ -150,6 +149,8 @@ const TherapistSchedule = () => {
         isToday: dateTime.toDateString() === new Date().toDateString(),
         isPast: dateTime < new Date()
       };
+      
+      return processedAppointment;
     });
   }, [scheduleData]);
 
@@ -216,7 +217,7 @@ const TherapistSchedule = () => {
       let priority = 'medium';
       let color = 'blue';
       
-      if (appointment.status === 'confirmed' || appointment.status === 'completed') {
+      if (appointment.status === 'scheduled' || appointment.status === 'completed') {
         priority = 'high';
         color = 'green';
       } else if (appointment.status === 'cancelled') {

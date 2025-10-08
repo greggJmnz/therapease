@@ -52,7 +52,7 @@ const getDashboard = async (req, res) => {
       FROM appointments a
       WHERE a.therapistId = ? 
       AND a.appointmentDate >= CURDATE()
-      AND a.status IN ('scheduled', 'confirmed')
+      AND a.status = 'scheduled'
     `;
 
     const upcomingAppointmentsCountResult = await getAll(upcomingAppointmentsCountSql, [therapistId]);
@@ -112,7 +112,7 @@ const getDashboard = async (req, res) => {
       JOIN users u ON p.userId = u.id
       WHERE a.therapistId = ? 
       AND a.appointmentDate >= CURDATE()
-      AND a.status IN ('scheduled', 'confirmed')
+      AND a.status = 'scheduled'
       ORDER BY a.appointmentDate ASC, a.startTime ASC
       LIMIT 5
     `;

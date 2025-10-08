@@ -1,4 +1,5 @@
 const { runQuery, getRow, getAll, getConnection } = require('../config/database');
+const { decryptSensitiveFields } = require('../utils/encryption');
 
 // Helper function to calculate time ago
 const getTimeAgo = (date) => {
@@ -404,11 +405,13 @@ const getUserById = async (req, res) => {
 // Update user
 const updateUser = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { userId } = req.params;
+    const id = userId;
     const updateData = req.body;
 
     // Check if user exists
     const existingUser = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(id)]);
+    
     if (!existingUser) {
       return res.status(404).json({
         success: false,
@@ -583,7 +586,7 @@ const updateUser = async (req, res) => {
       await connection.commit();
 
       // Get updated user
-      const updatedUser = await getUserById(req, res);
+      const updatedUser = await getUserById({ params: { id: userId } }, res);
 
     } catch (error) {
       // Rollback transaction on error
@@ -741,6 +744,7 @@ const getAppointments = async (req, res) => {
         a.duration,
         a.type,
         a.status,
+        a.approvalStatus,
         a.reason,
         a.notes,
         a.createdAt,
@@ -760,15 +764,26 @@ const getAppointments = async (req, res) => {
 
     const appointments = await getAll(sql);
 
+    // Decrypt sensitive fields (notes) before formatting
+    const decryptedAppointments = appointments.map(appointment => {
+      try {
+        return decryptSensitiveFields(appointment, ['notes']);
+      } catch (error) {
+        console.error('Decryption error for appointment', appointment.id, ':', error);
+        return appointment; // Return original if decryption fails
+      }
+    });
+
     // Format appointment data
-    const formattedAppointments = appointments.map(appointment => ({
+    const formattedAppointments = decryptedAppointments.map(appointment => ({
       id: appointment.id,
       appointmentDate: appointment.appointmentDate,
       appointmentTime: appointment.startTime,
       endTime: appointment.endTime,
       duration: appointment.duration,
       type: appointment.type,
-      status: appointment.status,
+      status: appointment.approvalStatus === 'pending' ? 'pending' : appointment.status,
+      approvalStatus: appointment.approvalStatus,
       reason: appointment.reason || 'No reason provided',
       room: 'Room TBD', // Default room since it's not in the table
       notes: appointment.notes,
@@ -838,10 +853,10 @@ const createAppointment = async (req, res) => {
 
     // Validate patient exists
     const patientSql = `
-      SELECT p.id, p.userId, CONCAT(u.firstName, ' ', u.lastName) as patientName, u.phone as patientPhone
+      SELECT p.id, p.userId, p.therapistId, CONCAT(u.firstName, ' ', u.lastName) as patientName, u.phone as patientPhone
       FROM patients p
       JOIN users u ON p.userId = u.id
-      WHERE p.userId = ?
+      WHERE p.id = ?
     `;
     
     const patient = await getRow(patientSql, [parseInt(patientId)]);
@@ -849,6 +864,25 @@ const createAppointment = async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Patient not found'
+      });
+    }
+
+    // Check if therapist is assigned to this patient (primary or secondary assignment)
+    const assignmentCheckSql = `
+      SELECT pta.id, pta.assignmentType, pta.status
+      FROM patient_therapist_assignments pta
+      WHERE pta.patientId = ? AND pta.therapistId = ? AND pta.status = 'active'
+    `;
+    
+    // Check if this is the primary therapist (stored in patients.therapistId)
+    const isPrimaryTherapist = patient.therapistId === parseInt(therapistId);
+    // Check if this is a secondary/collaborative therapist
+    const secondaryAssignment = await getRow(assignmentCheckSql, [parseInt(patientId), parseInt(therapistId)]);
+    
+    if (!isPrimaryTherapist && !secondaryAssignment) {
+      return res.status(400).json({
+        success: false,
+        error: 'Therapist is not assigned to this patient'
       });
     }
 
@@ -2103,6 +2137,15 @@ const updateAppointment = async (req, res) => {
     if (updateData.status) {
       updateFields.push('status = ?');
       updateValues.push(updateData.status);
+      
+      // If status is being changed to 'scheduled', also update approval status
+      if (updateData.status === 'scheduled') {
+        updateFields.push('approvalStatus = ?');
+        updateValues.push('approved');
+        updateFields.push('approvedBy = ?');
+        updateValues.push(req.user.id);
+        updateFields.push('approvedAt = NOW()');
+      }
     }
     if (updateData.notes !== undefined) {
       updateFields.push('notes = ?');
@@ -2127,13 +2170,42 @@ const updateAppointment = async (req, res) => {
       SELECT 
         a.*,
         CONCAT(pu.firstName, ' ', pu.lastName) as patientName,
-        CONCAT(tu.firstName, ' ', tu.lastName) as therapistName
+        CONCAT(tu.firstName, ' ', tu.lastName) as therapistName,
+        p.userId as patientUserId
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
       JOIN users pu ON p.userId = pu.id
       JOIN users tu ON a.therapistId = tu.id
       WHERE a.id = ?
     `, [parseInt(id)]);
+
+    // Send notifications if status was changed to scheduled
+    if (updateData.status === 'scheduled') {
+      try {
+        const notificationController = require('./notificationController');
+        
+        // Notify patient
+        await notificationController.createNotification(
+          updatedAppointment.patientUserId,
+          'Appointment Status Updated',
+          `Your appointment on ${new Date(updatedAppointment.appointmentDate).toLocaleDateString()} at ${updatedAppointment.startTime} has been ${updateData.status}.`,
+          'appointment',
+          { relatedId: parseInt(id) }
+        );
+
+        // Notify therapist
+        await notificationController.createNotification(
+          updatedAppointment.therapistId,
+          'Appointment Status Updated',
+          `The appointment with ${updatedAppointment.patientName} on ${new Date(updatedAppointment.appointmentDate).toLocaleDateString()} at ${updatedAppointment.startTime} has been ${updateData.status}.`,
+          'appointment',
+          { relatedId: parseInt(id) }
+        );
+      } catch (notificationError) {
+        console.error('Notification creation error:', notificationError);
+        // Continue without failing the update if notifications fail
+      }
+    }
 
     res.json({
       success: true,
@@ -2148,7 +2220,7 @@ const updateAppointment = async (req, res) => {
       error: 'Failed to update appointment' 
     });
   }
-};
+}
 
 // Delete appointment (admin)
 const deleteAppointment = async (req, res) => {
@@ -2597,6 +2669,112 @@ const getPatientTherapists = async (req, res) => {
   }
 };
 
+// Get patients with their therapist assignments for admin scheduling
+const getPatientsWithAssignments = async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        p.id,
+        p.userId,
+        p.diagnosis,
+        p.medicalHistory,
+        p.goals,
+        p.therapistId as primaryTherapistId,
+        p.status,
+        p.createdAt,
+        p.updatedAt,
+        u.firstName,
+        u.lastName,
+        u.email,
+        u.phone,
+        u.dateOfBirth,
+        u.gender,
+        u.address,
+        u.city,
+        u.state,
+        u.zipCode,
+        (SELECT CONCAT(u2.firstName, ' ', u2.lastName) FROM users u2 WHERE u2.id = p.therapistId) as primaryTherapistName
+      FROM patients p
+      JOIN users u ON p.userId = u.id
+      WHERE u.role = 'patient' AND u.status = 'active'
+      ORDER BY u.firstName, u.lastName
+    `;
+
+    const patients = await getAll(sql);
+
+    // Get therapist assignments for each patient
+    const patientsWithAssignments = await Promise.all(patients.map(async (patient) => {
+      const assignmentSql = `
+        SELECT 
+          pta.id,
+          pta.assignmentType,
+          pta.assignedAt,
+          pta.status as assignmentStatus,
+          pta.notes,
+          u.id as therapistId,
+          u.firstName,
+          u.lastName,
+          u.email,
+          t.specialization,
+          t.yearsOfExperience,
+          CONCAT(u.firstName, ' ', u.lastName) as therapistName
+        FROM patient_therapist_assignments pta
+        JOIN users u ON pta.therapistId = u.id
+        LEFT JOIN therapists t ON u.id = t.userId
+        WHERE pta.patientId = ? AND pta.status = 'active'
+        ORDER BY pta.assignmentType, pta.assignedAt
+      `;
+      
+      const assignments = await getAll(assignmentSql, [patient.id]);
+      
+      return {
+        ...patient,
+        therapistAssignments: assignments
+      };
+    }));
+
+    // Format patient data
+    const formattedPatients = patientsWithAssignments.map(patient => ({
+      id: patient.id,
+      userId: patient.userId,
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      email: patient.email,
+      phone: patient.phone,
+      dateOfBirth: patient.dateOfBirth,
+      gender: patient.gender,
+      address: patient.address,
+      city: patient.city,
+      state: patient.state,
+      zipCode: patient.zipCode,
+      diagnosis: patient.diagnosis,
+      medicalHistory: patient.medicalHistory,
+      goals: patient.goals,
+      status: patient.status,
+      primaryTherapistId: patient.primaryTherapistId,
+      primaryTherapistName: patient.primaryTherapistName,
+      createdAt: patient.createdAt,
+      updatedAt: patient.updatedAt,
+      therapistAssignments: patient.therapistAssignments || []
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        patients: formattedPatients,
+        total: formattedPatients.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Get patients with assignments error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch patients with assignments'
+    });
+  }
+};
+
 // Create user (admin only)
 const createUser = async (req, res) => {
   try {
@@ -2808,6 +2986,184 @@ const createUser = async (req, res) => {
   }
 };
 
+// Approve appointment
+const approveAppointment = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const adminId = req.user.id;
+
+    // Get appointment details
+    const appointment = await getRow(`
+      SELECT a.*, p.userId as patientUserId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE a.id = ? AND a.approvalStatus = 'pending'
+    `, [appointmentId]);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Appointment not found or already processed'
+      });
+    }
+
+    // Update appointment status
+    await runQuery(`
+      UPDATE appointments 
+      SET status = 'scheduled', 
+          approvalStatus = 'approved', 
+          approvedBy = ?, 
+          approvedAt = NOW()
+      WHERE id = ?
+    `, [adminId, appointmentId]);
+
+    // Create notifications
+    const notificationController = require('./notificationController');
+    
+    // Notify patient
+    await notificationController.createNotification(
+      appointment.patientUserId,
+      'Appointment Approved',
+      `Your appointment on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.startTime} has been approved.`,
+      'appointment',
+      { relatedId: appointmentId }
+    );
+
+    // Notify therapist
+    await notificationController.createNotification(
+      appointment.therapistId,
+      'Appointment Approved',
+      `The appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.startTime} has been approved.`,
+      'appointment',
+      { relatedId: appointmentId }
+    );
+
+    res.json({
+      success: true,
+      message: 'Appointment approved successfully'
+    });
+
+  } catch (error) {
+    console.error('Approve appointment error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to approve appointment' 
+    });
+  }
+};
+
+// Reject appointment
+const rejectAppointment = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user.id;
+
+    // Get appointment details
+    const appointment = await getRow(`
+      SELECT a.*, p.userId as patientUserId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE a.id = ? AND a.approvalStatus = 'pending'
+    `, [appointmentId]);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Appointment not found or already processed'
+      });
+    }
+
+    // Update appointment status
+    await runQuery(`
+      UPDATE appointments 
+      SET status = 'cancelled', 
+          approvalStatus = 'rejected', 
+          approvedBy = ?, 
+          approvedAt = NOW(),
+          notes = CONCAT(COALESCE(notes, ''), '\nRejection reason: ', ?)
+      WHERE id = ?
+    `, [adminId, reason || 'No reason provided', appointmentId]);
+
+    // Create notifications
+    const notificationController = require('./notificationController');
+    
+    // Notify patient
+    await notificationController.createNotification(
+      appointment.patientUserId,
+      'Appointment Rejected',
+      `Your appointment request for ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.startTime} has been rejected. Reason: ${reason || 'No reason provided'}`,
+      'appointment',
+      { relatedId: appointmentId }
+    );
+
+    // Notify therapist
+    await notificationController.createNotification(
+      appointment.therapistId,
+      'Appointment Rejected',
+      `The appointment request with ${appointment.patientName} for ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.startTime} has been rejected.`,
+      'appointment',
+      { relatedId: appointmentId }
+    );
+
+    res.json({
+      success: true,
+      message: 'Appointment rejected successfully'
+    });
+
+  } catch (error) {
+    console.error('Reject appointment error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to reject appointment' 
+    });
+  }
+};
+
+// Get pending appointments for approval
+const getPendingAppointments = async (req, res) => {
+  try {
+    const appointments = await getAll(`
+      SELECT 
+        a.id,
+        a.patientId,
+        a.therapistId,
+        a.appointmentDate,
+        a.startTime,
+        a.endTime,
+        a.duration,
+        a.type,
+        a.reason,
+        a.notes,
+        a.createdAt,
+        CONCAT(pu.firstName, ' ', pu.lastName) as patientName,
+        pu.phone as patientPhone,
+        CONCAT(tu.firstName, ' ', tu.lastName) as therapistName,
+        tu.phone as therapistPhone
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users pu ON p.userId = pu.id
+      JOIN users tu ON a.therapistId = tu.id
+      WHERE a.approvalStatus = 'pending'
+      ORDER BY a.createdAt ASC
+    `);
+
+    res.json({
+      success: true,
+      data: appointments
+    });
+
+  } catch (error) {
+    console.error('Get pending appointments error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch pending appointments' 
+    });
+  }
+};
+
 module.exports = {
   getDashboard,
   getUsers,
@@ -2836,5 +3192,9 @@ module.exports = {
   updateTherapistAvailability,
   addTherapistToPatient,
   removeTherapistFromPatient,
-  getPatientTherapists
+  getPatientTherapists,
+  getPatientsWithAssignments,
+  approveAppointment,
+  rejectAppointment,
+  getPendingAppointments
 };

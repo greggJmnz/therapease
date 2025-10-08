@@ -228,7 +228,11 @@ const createTables = async () => {
         endTime TIME NOT NULL,
         duration INT NOT NULL,
         type VARCHAR(100) NOT NULL,
-        status ENUM('scheduled', 'confirmed', 'completed', 'cancelled') NOT NULL,
+        status ENUM('scheduled', 'completed', 'cancelled') NOT NULL,
+        approvalStatus ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+        approvedBy INT NULL,
+        approvedAt TIMESTAMP NULL,
+        reason TEXT,
         notes TEXT,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -236,6 +240,22 @@ const createTables = async () => {
         FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Add foreign key for approvedBy if it doesn't exist
+    try {
+      await pool.execute(`
+        ALTER TABLE appointments 
+        ADD CONSTRAINT fk_appointments_approved_by 
+        FOREIGN KEY (approvedBy) REFERENCES users(id) ON DELETE SET NULL
+      `);
+      console.log('Foreign key for approvedBy added to appointments table');
+    } catch (error) {
+      if (error.code === 'ER_DUP_KEYNAME') {
+        console.log('Foreign key for approvedBy already exists');
+      } else {
+        console.log('Error adding foreign key for approvedBy:', error.message);
+      }
+    }
 
     // Progress Tracking table
     await pool.execute(`

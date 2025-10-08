@@ -279,8 +279,8 @@ const PatientDashboard = () => {
                       </div>
                       <div className="text-right">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                          appointment.status === 'scheduled' ? 'bg-yellow-100 text-yellow-800' :
+                          appointment.status === 'scheduled' ? 'bg-green-100 text-green-800' :
+                          appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {appointment.status || 'Scheduled'}
@@ -401,7 +401,7 @@ const PatientDashboard = () => {
                     <p className="text-xs text-gray-900 font-medium">{notification.title}</p>
                     <p className="text-xs text-gray-600">{notification.message}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {notification.createdAt ? new Date(notification.createdAt).toLocaleDateString() : 'No date'}
+                      {notification.date ? `${notification.date} at ${notification.time}` : 'No date'}
                     </p>
                   </div>
                 ))

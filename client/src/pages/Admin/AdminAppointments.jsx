@@ -58,7 +58,7 @@ const AdminAppointments = () => {
   const [showEditModal, setShowEditModal] = useState(false);
 
   // Fetch appointments data from API
-  const { data: appointmentsData, isLoading, error, refetch } = useQuery(
+  const { data: appointmentsData, isLoading, error, refetch, isFetching } = useQuery(
     'adminAppointments',
       async () => {
         try {
@@ -71,7 +71,9 @@ const AdminAppointments = () => {
       },
     {
       retry: 1,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      staleTime: 30000, // 30 seconds - data is fresh for 30 seconds
+      cacheTime: 300000, // 5 minutes - keep in cache for 5 minutes
       onError: (error) => {
         console.error('React Query error:', error);
       }
@@ -89,10 +91,10 @@ const AdminAppointments = () => {
     }
   );
 
-  // Fetch patients data
+  // Fetch patients data with therapist assignments
   const { data: patientsData, isLoading: patientsLoading, error: patientsError } = useQuery(
-    'adminPatients',
-    adminAPI.getPatients,
+    'adminPatientsWithAssignments',
+    adminAPI.getPatientsWithAssignments,
     {
       onError: (error) => {
         console.error('Error fetching patients:', error);
@@ -132,7 +134,7 @@ const AdminAppointments = () => {
         duration: appointment.duration || 60,
         type: appointment.type || 'session',
     status: appointment.status || 'scheduled',
-        reason: appointment.reason || '',
+        reason: appointment.reason || 'No reason provided',
         notes: appointment.notes || '',
         createdAt: appointment.createdAt,
         updatedAt: appointment.updatedAt,
@@ -231,26 +233,40 @@ const AdminAppointments = () => {
 
   // Extract patients from API response
   const allPatients = React.useMemo(() => {
-    if (!patientsData?.data?.data?.users) {
+    if (!patientsData?.data?.data?.patients) {
       return [];
     }
     
-    const filteredPatients = patientsData.data.data.users
-      .filter(user => user.role === 'patient')
-      .map(patient => ({
-        id: patient.id,
-        name: `${patient.firstName} ${patient.lastName}`,
-        email: patient.email,
-        diagnosis: patient.patient?.diagnosis || 'N/A',
-        therapistId: patient.patient?.therapistId || null
-      }));
+    const filteredPatients = patientsData.data.data.patients.map(patient => ({
+      id: patient.id,
+      name: `${patient.firstName} ${patient.lastName}`,
+      email: patient.email,
+      diagnosis: patient.diagnosis || 'N/A',
+      primaryTherapistId: patient.primaryTherapistId || null,
+      therapistAssignments: patient.therapistAssignments || []
+    }));
     
     return filteredPatients;
   }, [patientsData]);
 
-  // Filter patients based on selected therapist
+  // Filter patients based on selected therapist (including secondary/collaborative assignments)
   const patients = newAppointment.therapistId 
-    ? allPatients.filter(patient => patient.therapistId === parseInt(newAppointment.therapistId))
+    ? allPatients.filter(patient => {
+        const selectedTherapistId = parseInt(newAppointment.therapistId);
+        
+        // Check if patient has this therapist as primary therapist
+        if (patient.primaryTherapistId === selectedTherapistId) {
+          return true;
+        }
+        
+        // Check if patient has this therapist as secondary/collaborative therapist
+        const hasSecondaryAssignment = patient.therapistAssignments.some(assignment => 
+          assignment.therapistId === selectedTherapistId && 
+          assignment.assignmentStatus === 'active'
+        );
+        
+        return hasSecondaryAssignment;
+      })
     : allPatients;
 
   // Convert appointments to calendar events with color coding
@@ -263,7 +279,7 @@ const AdminAppointments = () => {
       let priority = 'medium';
       let color = 'blue';
       
-      if (appointment.status === 'confirmed' || appointment.status === 'completed') {
+      if (appointment.status === 'scheduled' || appointment.status === 'completed') {
         priority = 'high';
         color = 'green';
       } else if (appointment.status === 'cancelled') {
@@ -599,6 +615,7 @@ const AdminAppointments = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#10b981] mx-auto mb-4"></div>
           <p className="text-gray-600">Loading appointments...</p>
+          <p className="text-sm text-gray-500 mt-2">This may take a moment on first load</p>
         </div>
       </div>
     );
@@ -627,13 +644,13 @@ const AdminAppointments = () => {
               <p className="text-gray-600 mt-1">Manage all scheduled and upcoming appointments</p>
             </div>
             <div className="flex items-center gap-3">
-        <button 
+              <button 
                 className="btn-primary"
-          onClick={() => setShowScheduleModal(true)}
-        >
+                onClick={() => setShowScheduleModal(true)}
+              >
                 <Plus size={20} />
-          Schedule Appointment
-        </button>
+                Schedule Appointment
+              </button>
             </div>
           </div>
       </div>
@@ -692,7 +709,6 @@ const AdminAppointments = () => {
               >
                 <option value="all">All Status</option>
                 <option value="scheduled">Scheduled</option>
-                <option value="confirmed">Confirmed</option>
                 <option value="pending">Pending</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
@@ -1365,9 +1381,9 @@ const AdminAppointments = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Timing</label>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <div>Created: {new Date(selectedAppointment.createdAt).toLocaleDateString()}</div>
+                        <div>Created: {new Date(selectedAppointment.createdAt).toLocaleDateString('en-US', { timeZone: 'UTC' })}</div>
                         {selectedAppointment.updatedAt && (
-                          <div>Updated: {new Date(selectedAppointment.updatedAt).toLocaleDateString()}</div>
+                          <div>Updated: {new Date(selectedAppointment.updatedAt).toLocaleDateString('en-US', { timeZone: 'UTC' })}</div>
                         )}
                         <div className={`font-medium ${
                           selectedAppointment.isToday ? 'text-blue-600' :
@@ -1513,7 +1529,6 @@ const AdminAppointments = () => {
                     required
                   >
                     <option value="scheduled">Scheduled</option>
-                    <option value="confirmed">Confirmed</option>
                     <option value="pending">Pending</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>

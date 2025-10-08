@@ -184,13 +184,38 @@ const updateProfile = async (req, res) => {
           therapistUpdateFields.push('availability = ?');
           therapistUpdateParams.push(availability);
         }
+        // Check if maxPatients column exists before trying to update it
         if (maxPatients !== undefined) {
-          therapistUpdateFields.push('maxPatients = ?');
-          therapistUpdateParams.push(maxPatients);
+          try {
+            const [columns] = await connection.execute(`
+              SELECT COLUMN_NAME 
+              FROM INFORMATION_SCHEMA.COLUMNS 
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'therapists' AND COLUMN_NAME = 'maxPatients'
+            `);
+            if (columns.length > 0) {
+              therapistUpdateFields.push('maxPatients = ?');
+              therapistUpdateParams.push(maxPatients);
+            }
+          } catch (error) {
+            console.log('maxPatients column does not exist, skipping update');
+          }
         }
+        
+        // Check if isAcceptingPatients column exists before trying to update it
         if (isAcceptingPatients !== undefined) {
-          therapistUpdateFields.push('isAcceptingPatients = ?');
-          therapistUpdateParams.push(isAcceptingPatients);
+          try {
+            const [columns] = await connection.execute(`
+              SELECT COLUMN_NAME 
+              FROM INFORMATION_SCHEMA.COLUMNS 
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'therapists' AND COLUMN_NAME = 'isAcceptingPatients'
+            `);
+            if (columns.length > 0) {
+              therapistUpdateFields.push('isAcceptingPatients = ?');
+              therapistUpdateParams.push(isAcceptingPatients);
+            }
+          } catch (error) {
+            console.log('isAcceptingPatients column does not exist, skipping update');
+          }
         }
 
         therapistUpdateFields.push('updatedAt = NOW()');
@@ -214,7 +239,6 @@ const updateProfile = async (req, res) => {
 
   } catch (error) {
     console.error('Update profile error:', error);
-    console.error('Error details:', error.message);
     console.error('Error stack:', error.stack);
     res.status(500).json({ 
       success: false, 

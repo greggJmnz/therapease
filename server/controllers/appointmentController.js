@@ -1,5 +1,6 @@
 const { runQuery, getRow, getAll } = require('../config/database');
 const websocketService = require('../services/websocketService');
+const { decryptSensitiveFields } = require('../utils/encryption');
 
 // Get therapist schedule
 const getSchedule = async (req, res) => {
@@ -9,8 +10,8 @@ const getSchedule = async (req, res) => {
     const { date, startDate, endDate, status } = req.query;
     
 
-    // Build WHERE clause (only show appointments created by this therapist)
-    let whereConditions = ['a.therapistId = ?'];
+    // Build WHERE clause (only show approved appointments for this therapist)
+    let whereConditions = ['a.therapistId = ?', 'a.approvalStatus = "approved"'];
     let params = [therapistId];
 
     if (date) {
@@ -40,6 +41,7 @@ const getSchedule = async (req, res) => {
         a.duration,
         a.type,
         a.status,
+        a.reason,
         a.notes,
         a.createdAt,
         a.updatedAt,
@@ -55,6 +57,15 @@ const getSchedule = async (req, res) => {
 
     const appointments = await getAll(sql, params);
     
+    // Decrypt sensitive fields (notes)
+    const decryptedAppointments = appointments.map(appointment => {
+      try {
+        return decryptSensitiveFields(appointment, ['notes']);
+      } catch (error) {
+        console.error('Decryption error for appointment', appointment.id, ':', error);
+        return appointment; // Return original if decryption fails
+      }
+    });
 
     // Get sessions for the same therapist (only sessions created by this therapist)
     const sessionsSql = `
@@ -120,11 +131,11 @@ const getSchedule = async (req, res) => {
     res.json({
       success: true,
       data: {
-        appointments,
+        appointments: decryptedAppointments,
         sessions,
         scheduleByDate,
         availableSlots,
-        total: appointments.length + sessions.length
+        total: decryptedAppointments.length + sessions.length
       }
     });
 
@@ -204,8 +215,8 @@ const createAppointment = async (req, res) => {
     const insertSql = `
       INSERT INTO appointments (
         patientId, therapistId, appointmentDate, startTime, endTime, 
-        duration, type, status, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        duration, type, status, reason, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const insertParams = [
@@ -217,6 +228,7 @@ const createAppointment = async (req, res) => {
       parseInt(duration),
       type,
       'scheduled',
+      null, // reason field - not provided in therapist appointment creation
       notes || null
     ];
 
@@ -593,7 +605,7 @@ const getAppointmentStats = async (req, res) => {
       FROM appointments a
       WHERE a.therapistId = ? AND a.appointmentDate >= CURDATE() 
       AND a.appointmentDate <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-      AND a.status IN ('scheduled', 'confirmed')
+      AND a.status = 'scheduled'
     `;
 
     const [upcomingResult] = await getAll(upcomingSql, [therapistId]);

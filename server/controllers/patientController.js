@@ -2,6 +2,27 @@ const { runQuery, getRow, getAll, getConnection } = require('../config/database'
 const { decryptSensitiveFields } = require('../utils/encryption');
 const websocketService = require('../services/websocketService');
 
+// Helper function to calculate time ago (same as admin controller)
+const getTimeAgo = (date) => {
+  const now = new Date();
+  const diffInMs = now - date;
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 1) {
+    return 'Just now';
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes} minute${diffInMinutes === 1 ? '' : 's'} ago`;
+  } else if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`;
+  } else if (diffInDays < 7) {
+    return `${diffInDays} day${diffInDays === 1 ? '' : 's'} ago`;
+  } else {
+    return date.toLocaleDateString('en-US');
+  }
+};
+
 // Get all patients for a therapist
 const getPatients = async (req, res) => {
   try {
@@ -642,9 +663,9 @@ const getDashboard = async (req, res) => {
       LIMIT 5
     `, [patient.id]);
 
-    // Get upcoming appointments
+    // Get upcoming appointments with approval status
     const appointments = await getAll(`
-      SELECT id, appointmentDate, startTime, endTime, type, status
+      SELECT id, appointmentDate, startTime, endTime, type, status, approvalStatus, reason
       FROM appointments
       WHERE patientId = ? AND appointmentDate >= CURDATE()
       ORDER BY appointmentDate, startTime
@@ -698,7 +719,21 @@ const getDashboard = async (req, res) => {
           yearsOfExperience: therapist.yearsOfExperience
         } : null,
         recentAssessments: assessments,
-        upcomingAppointments: appointments,
+        upcomingAppointments: appointments.map(appointment => {
+          let displayStatus = appointment.status;
+          if (appointment.approvalStatus === 'pending') {
+            displayStatus = 'pending';
+          } else if (appointment.approvalStatus === 'rejected') {
+            displayStatus = 'cancelled';
+          }
+          
+          return {
+            ...appointment,
+            status: displayStatus,
+            approvalStatus: appointment.approvalStatus,
+            reason: appointment.reason || 'No reason provided'
+          };
+        }),
         recentProgress: progress,
         dailyNotesCount: dailyNotesCount?.total || 0
       }
@@ -761,6 +796,8 @@ const getAppointments = async (req, res) => {
         a.duration, 
         a.type, 
         a.status, 
+        a.approvalStatus,
+        a.reason,
         a.notes,
         a.createdAt,
         a.updatedAt,
@@ -768,15 +805,40 @@ const getAppointments = async (req, res) => {
         COALESCE(t.specialization, 'Occupational Therapy') as therapistSpecialization
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
-      LEFT JOIN users u ON p.therapistId = u.id
+      LEFT JOIN users u ON a.therapistId = u.id
       LEFT JOIN therapists t ON u.id = t.userId
       WHERE a.patientId = ?
       ORDER BY a.appointmentDate DESC, a.startTime DESC
     `, [patient.id]);
 
+    // Decrypt sensitive fields (notes) and format status
+    const decryptedAppointments = appointments.map(appointment => {
+      try {
+        const decrypted = decryptSensitiveFields(appointment, ['notes']);
+        
+        // Show correct status based on approval status
+        let displayStatus = decrypted.status;
+        if (decrypted.approvalStatus === 'pending') {
+          displayStatus = 'pending';
+        } else if (decrypted.approvalStatus === 'rejected') {
+          displayStatus = 'cancelled';
+        }
+        
+        return {
+          ...decrypted,
+          status: displayStatus,
+          approvalStatus: decrypted.approvalStatus,
+          reason: decrypted.reason || 'No reason provided'
+        };
+      } catch (error) {
+        console.error('Decryption error for appointment', appointment.id, ':', error);
+        return appointment; // Return original if decryption fails
+      }
+    });
+
     res.json({
       success: true,
-      data: appointments
+      data: decryptedAppointments
     });
 
   } catch (error) {
@@ -1488,15 +1550,44 @@ const getNotifications = async (req, res) => {
     
     // Get notifications
     const notifications = await getAll(`
-      SELECT id, title, message, type, isRead, createdAt
+      SELECT id, title, message, type, isRead, priority, createdAt
       FROM notifications
       WHERE userId = ?
       ORDER BY createdAt DESC
     `, [userId]);
 
+    // Format notification data with date and time (same as admin and therapist)
+    const formattedNotifications = notifications.map(notification => {
+      const createdAt = new Date(notification.createdAt);
+      // Display UTC time directly without timezone conversion
+      const date = createdAt.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC'
+      });
+      const time = createdAt.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'UTC'
+      });
+      
+      return {
+        ...notification,
+        date: date,
+        time: time,
+        timeAgo: getTimeAgo(createdAt)
+      };
+    });
+
     res.json({
       success: true,
-      data: notifications
+      data: {
+        notifications: formattedNotifications,
+        total: formattedNotifications.length
+      }
     });
 
   } catch (error) {
@@ -1532,7 +1623,7 @@ const getSettings = async (req, res) => {
 const bookAppointment = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { date, time, duration, type, reason, notes } = req.body;
+    const { date, time, duration, type, reason, notes, therapistId } = req.body;
 
     // Validate required fields
     if (!date || !time || !type || !reason) {
@@ -1542,9 +1633,9 @@ const bookAppointment = async (req, res) => {
       });
     }
 
-    // Get patient profile ID and therapist ID
+    // Get patient profile ID and available therapists
     const patient = await getRow(`
-      SELECT p.id, p.therapistId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      SELECT p.id, p.therapistId as primaryTherapistId, CONCAT(u.firstName, ' ', u.lastName) as patientName
       FROM patients p
       JOIN users u ON p.userId = u.id
       WHERE p.userId = ?
@@ -1554,8 +1645,57 @@ const bookAppointment = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Patient profile not found' });
     }
 
-    if (!patient.therapistId) {
+    // Get all assigned therapists (primary + secondary)
+    const assignedTherapists = await getAll(`
+      SELECT 
+        pta.therapistId,
+        pta.assignmentType,
+        CONCAT(u.firstName, ' ', u.lastName) as therapistName,
+        u.email as therapistEmail
+      FROM patient_therapist_assignments pta
+      JOIN users u ON pta.therapistId = u.id
+      WHERE pta.patientId = ? AND pta.status = 'active'
+      UNION
+      SELECT 
+        p.therapistId,
+        'primary' as assignmentType,
+        CONCAT(u2.firstName, ' ', u2.lastName) as therapistName,
+        u2.email as therapistEmail
+      FROM patients p
+      JOIN users u2 ON p.therapistId = u2.id
+      WHERE p.id = ? AND p.therapistId IS NOT NULL
+    `, [patient.id, patient.id]);
+
+    if (assignedTherapists.length === 0) {
       return res.status(400).json({ success: false, error: 'No therapist assigned' });
+    }
+
+    // Determine which therapist to use
+    let selectedTherapistId;
+    let selectedTherapistName;
+
+    if (therapistId) {
+      // Patient specified a therapist - validate they are assigned
+      const selectedTherapist = assignedTherapists.find(t => t.therapistId == therapistId);
+      if (!selectedTherapist) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Selected therapist is not assigned to you' 
+        });
+      }
+      selectedTherapistId = therapistId;
+      selectedTherapistName = selectedTherapist.therapistName;
+    } else {
+      // No therapist specified - use primary therapist as default
+      const primaryTherapist = assignedTherapists.find(t => t.assignmentType === 'primary');
+      if (!primaryTherapist) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'No primary therapist assigned. Please specify which therapist you want to book with.' 
+        });
+      }
+      selectedTherapistId = primaryTherapist.therapistId;
+      selectedTherapistName = primaryTherapist.therapistName;
     }
 
     // Calculate end time
@@ -1563,19 +1703,20 @@ const bookAppointment = async (req, res) => {
     const endTime = new Date(startTime.getTime() + (duration || 60) * 60000);
     const endTimeStr = endTime.toTimeString().slice(0, 8);
 
-    // Insert appointment
+    // Insert appointment with pending approval status
     const insertResult = await runQuery(`
-      INSERT INTO appointments (patientId, therapistId, appointmentDate, startTime, endTime, duration, type, status, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled', ?)
+      INSERT INTO appointments (patientId, therapistId, appointmentDate, startTime, endTime, duration, type, status, approvalStatus, reason, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled', 'pending', ?, ?)
     `, [
       patient.id,
-      patient.therapistId,
+      selectedTherapistId,
       date,
       time,
       endTimeStr,
       duration || 60,
       type,
-      notes || reason
+      reason || null,
+      notes || null
     ]);
 
     const appointmentId = insertResult.insertId;
@@ -1585,28 +1726,49 @@ const bookAppointment = async (req, res) => {
       SELECT CONCAT(u.firstName, ' ', u.lastName) as therapistName, u.email as therapistEmail
       FROM users u
       WHERE u.id = ?
-    `, [patient.therapistId]);
+    `, [selectedTherapistId]);
 
-    // Create notifications
-    const notificationController = require('./notificationController');
-    
-    // Notify therapist
-    await notificationController.createNotification(
-      patient.therapistId,
-      'New Appointment Request',
-      `${patient.patientName} has requested a ${type} appointment on ${new Date(date).toLocaleDateString()} at ${time}`,
-      'appointment',
-      appointmentId
-    );
-
-    // Notify patient
-    await notificationController.createNotification(
-      userId,
-      'Appointment Scheduled',
-      `Your ${type} appointment has been scheduled for ${new Date(date).toLocaleDateString()} at ${time}`,
-      'appointment',
-      appointmentId
-    );
+    // Create notifications for the approval workflow
+    try {
+      const notificationController = require('./notificationController');
+      
+      // Notify patient - appointment request submitted
+      await notificationController.createNotification(
+        userId,
+        'Appointment Request Submitted',
+        `Your ${type} appointment request has been submitted for ${new Date(date).toLocaleDateString()} at ${time}. It is pending admin approval.`,
+        'appointment',
+        { relatedId: appointmentId }
+      );
+      
+      // Notify therapist - new appointment request (pending approval)
+      await notificationController.createNotification(
+        selectedTherapistId,
+        'New Appointment Request (Pending Approval)',
+        `${patient.patientName} has requested a ${type} appointment on ${new Date(date).toLocaleDateString()} at ${time}. This appointment is pending admin approval.`,
+        'appointment',
+        { relatedId: appointmentId }
+      );
+      
+      // Notify all admins - new appointment request requires approval
+      const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
+      for (const admin of adminUsers) {
+        try {
+          await notificationController.createNotification(
+            admin.id,
+            'New Appointment Request - Approval Required',
+            `${patient.patientName} has requested a ${type} appointment with ${therapist.therapistName} on ${new Date(date).toLocaleDateString()} at ${time}. Please review and approve.`,
+            'admin_notification',
+            { relatedId: appointmentId }
+          );
+        } catch (adminNotificationError) {
+          console.error('Admin notification error for admin', admin.id, ':', adminNotificationError);
+        }
+      }
+    } catch (notificationError) {
+      console.error('Notification creation error:', notificationError);
+      // Continue without notifications if there's an error
+    }
 
     res.status(201).json({
       success: true,
@@ -1616,6 +1778,13 @@ const bookAppointment = async (req, res) => {
 
   } catch (error) {
     console.error('Book appointment error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
     res.status(500).json({ success: false, error: 'Failed to book appointment' });
   }
 };
@@ -2187,6 +2356,61 @@ const completeOnboarding = async (req, res) => {
   }
 };
 
+// Get patient's assigned therapists
+const getPatientTherapists = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get patient profile
+    const patient = await getRow(`
+      SELECT p.id, p.therapistId as primaryTherapistId
+      FROM patients p
+      WHERE p.userId = ?
+    `, [userId]);
+
+    if (!patient) {
+      return res.status(404).json({ success: false, error: 'Patient profile not found' });
+    }
+
+    // Get all assigned therapists (primary + secondary)
+    const assignedTherapists = await getAll(`
+      SELECT 
+        pta.therapistId,
+        pta.assignmentType,
+        CONCAT(u.firstName, ' ', u.lastName) as therapistName,
+        u.email as therapistEmail,
+        t.specialization,
+        t.yearsOfExperience
+      FROM patient_therapist_assignments pta
+      JOIN users u ON pta.therapistId = u.id
+      LEFT JOIN therapists t ON pta.therapistId = t.userId
+      WHERE pta.patientId = ? AND pta.status = 'active'
+      UNION
+      SELECT 
+        p.therapistId,
+        'primary' as assignmentType,
+        CONCAT(u2.firstName, ' ', u2.lastName) as therapistName,
+        u2.email as therapistEmail,
+        t2.specialization,
+        t2.yearsOfExperience
+      FROM patients p
+      JOIN users u2 ON p.therapistId = u2.id
+      LEFT JOIN therapists t2 ON p.therapistId = t2.userId
+      WHERE p.id = ? AND p.therapistId IS NOT NULL
+      ORDER BY assignmentType, therapistName
+    `, [patient.id, patient.id]);
+
+    res.json({
+      success: true,
+      data: assignedTherapists
+    });
+
+  } catch (error) {
+    console.error('Get patient therapists error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get assigned therapists' });
+  }
+};
+
 module.exports = {
   getPatients,
   getPatientById,
@@ -2216,6 +2440,7 @@ module.exports = {
   getOnboardingStatus,
   getOnboardingProgress,
   updateOnboardingData,
-  completeOnboarding
+  completeOnboarding,
+  getPatientTherapists
 };
 

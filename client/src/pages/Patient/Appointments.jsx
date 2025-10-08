@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { 
   Calendar, 
@@ -27,6 +27,8 @@ import toast from 'react-hot-toast';
 const Appointments = () => {
   const { user } = useAuth();
   const [assignedTherapist, setAssignedTherapist] = useState(null);
+  const [availableTherapists, setAvailableTherapists] = useState([]);
+  const [selectedTherapist, setSelectedTherapist] = useState('');
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -110,7 +112,7 @@ const Appointments = () => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'Invalid date';
-      return date.toLocaleDateString();
+      return date.toLocaleDateString('en-US', { timeZone: 'UTC' });
     } catch (error) {
       return 'Not available';
     }
@@ -142,7 +144,7 @@ const Appointments = () => {
         dateTime.setHours(9, 0, 0, 0);
       }
 
-      return {
+      const processedAppointment = {
       id: appointment.id,
         date: appointmentDate.toISOString().split('T')[0],
         time: appointmentTime,
@@ -163,6 +165,8 @@ const Appointments = () => {
         isToday: dateTime.toDateString() === new Date().toDateString(),
         isPast: dateTime < new Date()
       };
+      
+      return processedAppointment;
     });
   }, [appointmentsData, assignedTherapist]);
 
@@ -221,7 +225,7 @@ const Appointments = () => {
       
       // Determine color based on status
       let color = 'blue';
-      if (appointment.status === 'confirmed' || appointment.status === 'completed') {
+      if (appointment.status === 'scheduled' || appointment.status === 'completed') {
         color = 'green';
       } else if (appointment.status === 'cancelled') {
         color = 'red';
@@ -271,6 +275,47 @@ const Appointments = () => {
     }
   );
 
+  // Fetch patient's assigned therapists
+  const { data: therapistsData, isLoading: therapistsLoading, error: therapistsError } = useQuery(
+    'patientTherapists',
+    patientAPI.getTherapists,
+    {
+      onSuccess: (response) => {
+        if (response?.data?.data && Array.isArray(response.data.data)) {
+          setAvailableTherapists(response.data.data);
+          // Set default to primary therapist if available
+          const primaryTherapist = response.data.data.find(t => t.assignmentType === 'primary');
+          if (primaryTherapist) {
+            setSelectedTherapist(primaryTherapist.therapistId.toString());
+          }
+        } else {
+          console.error('Invalid therapists data structure:', response);
+          setAvailableTherapists([]);
+        }
+      },
+      onError: (error) => {
+        console.error('Error fetching patient therapists:', error);
+        console.error('Error details:', error.response?.data);
+        console.error('Error status:', error.response?.status);
+        setAvailableTherapists([]);
+      },
+      retry: 1,
+      staleTime: 30000
+    }
+  );
+
+  // Process therapists data when it changes
+  useEffect(() => {
+    if (therapistsData?.data?.data && Array.isArray(therapistsData.data.data)) {
+      setAvailableTherapists(therapistsData.data.data);
+      // Set default to primary therapist if available
+      const primaryTherapist = therapistsData.data.data.find(t => t.assignmentType === 'primary');
+      if (primaryTherapist) {
+        setSelectedTherapist(primaryTherapist.therapistId.toString());
+      }
+    }
+  }, [therapistsData]);
+
 
   const handleBooking = async (e) => {
     e.preventDefault();
@@ -280,20 +325,40 @@ const Appointments = () => {
       return;
     }
 
-    if (!assignedTherapist) {
-      toast.error('No therapist assigned. Please contact support.');
+    if (!selectedTherapist) {
+      toast.error('Please select a therapist');
       return;
     }
 
     try {
       // Convert time to 24-hour format for API
-      const time24 = selectedTime.replace(/\s(AM|PM)/i, (match, period) => {
-        const [hours, minutes] = match.replace(/\s(AM|PM)/i, '').split(':');
-        let hour24 = parseInt(hours);
-        if (period.toUpperCase() === 'PM' && hour24 !== 12) hour24 += 12;
-        if (period.toUpperCase() === 'AM' && hour24 === 12) hour24 = 0;
-        return `${hour24.toString().padStart(2, '0')}:${minutes}:00`;
-      });
+      let time24;
+      try {
+        // Check if time already has seconds
+        if (selectedTime.includes(':') && selectedTime.split(':').length === 3) {
+          time24 = selectedTime; // Already in HH:MM:SS format
+        } else if (selectedTime.includes('AM') || selectedTime.includes('PM')) {
+          // Convert 12-hour format to 24-hour format
+          const timeMatch = selectedTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+          if (timeMatch) {
+            let [, hours, minutes, period] = timeMatch;
+            let hour24 = parseInt(hours);
+            if (period.toUpperCase() === 'PM' && hour24 !== 12) hour24 += 12;
+            if (period.toUpperCase() === 'AM' && hour24 === 12) hour24 = 0;
+            time24 = `${hour24.toString().padStart(2, '0')}:${minutes}:00`;
+          } else {
+            throw new Error('Invalid time format');
+          }
+        } else {
+          // Assume it's already in 24-hour format, just add seconds if needed
+          time24 = selectedTime.includes(':') ? selectedTime + ':00' : selectedTime;
+        }
+      } catch (error) {
+        console.error('Time conversion error:', error);
+        // Fallback: use the original time
+        time24 = selectedTime;
+      }
+
 
       const appointmentData = {
         date: selectedDate,
@@ -301,17 +366,31 @@ const Appointments = () => {
         duration: 60, // Default duration
         type: 'session',
         reason: reason,
-        notes: reason
+        notes: reason,
+        therapistId: parseInt(selectedTherapist)
       };
 
-      await patientAPI.bookAppointment(appointmentData);
+      const response = await patientAPI.bookAppointment(appointmentData);
+      
       refetchAppointments(); // Refresh appointments from API
       setShowBookingForm(false);
       resetForm();
       toast.success('Appointment booked successfully!');
     } catch (error) {
-      toast.error('Failed to book appointment');
       console.error('Booking error:', error);
+      
+      // Show specific error message
+      if (error.response?.data?.error) {
+        toast.error(`Failed to book appointment: ${error.response.data.error}`);
+      } else if (error.response?.status === 400) {
+        toast.error('Invalid appointment data. Please check all fields.');
+      } else if (error.response?.status === 401) {
+        toast.error('Authentication failed. Please log in again.');
+      } else if (error.response?.status === 500) {
+        toast.error('Server error. Please try again later.');
+      } else {
+        toast.error('Failed to book appointment. Please try again.');
+      }
     }
   };
 
@@ -319,7 +398,15 @@ const Appointments = () => {
     setSelectedDate('');
     setSelectedTime('');
     setReason('');
+    // Reset to primary therapist
+    if (Array.isArray(availableTherapists)) {
+      const primaryTherapist = availableTherapists.find(t => t.assignmentType === 'primary');
+      if (primaryTherapist) {
+        setSelectedTherapist(primaryTherapist.therapistId.toString());
+      }
+    }
   };
+
 
   // Handler functions for new functionality
   const handleViewAppointment = (appointment) => {
@@ -503,7 +590,6 @@ const Appointments = () => {
               >
                 <option value="all">All Status</option>
                 <option value="scheduled">Scheduled</option>
-                <option value="confirmed">Confirmed</option>
                 <option value="pending">Pending</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
@@ -548,22 +634,38 @@ const Appointments = () => {
                   </h3>
                   
                   <form onSubmit={handleBooking} className="space-y-4">
-                    {/* Display assigned therapist info */}
-                    {assignedTherapist && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                        <div className="flex items-center">
-                          <User className="h-5 w-5 text-blue-600 mr-2" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-900">
-                              Your Assigned Therapist
-                            </p>
-                            <p className="text-sm text-blue-700">
-                              {assignedTherapist.name} - {assignedTherapist.specialization}
-                            </p>
-                          </div>
+
+                    {/* Therapist Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Select Therapist
+                      </label>
+                      {therapistsLoading ? (
+                        <div className="mt-1 text-sm text-gray-500">Loading therapists...</div>
+                      ) : therapistsError ? (
+                        <div className="mt-1 text-sm text-red-600">
+                          Error loading therapists. Please try again.
                         </div>
-                      </div>
-                    )}
+                      ) : Array.isArray(availableTherapists) && availableTherapists.length > 0 ? (
+                        <select
+                          value={selectedTherapist}
+                          onChange={(e) => setSelectedTherapist(e.target.value)}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          required
+                        >
+                          {availableTherapists.map((therapist) => (
+                            <option key={therapist.therapistId} value={therapist.therapistId}>
+                              {therapist.therapistName} - {therapist.specialization} 
+                              {therapist.assignmentType === 'primary' ? ' (Primary)' : ' (Secondary)'}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="mt-1 text-sm text-red-600">
+                          No therapists assigned. Please contact support.
+                        </div>
+                      )}
+                    </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
@@ -760,7 +862,7 @@ const Appointments = () => {
                         >
                           <Eye size={16} />
                         </button>
-                    {(appointment.status === 'confirmed' || appointment.status === 'pending' || appointment.status === 'scheduled') && (
+                    {(appointment.status === 'scheduled' || appointment.status === 'pending') && (
                       <>
                         <button
                           onClick={() => {
@@ -971,7 +1073,7 @@ const Appointments = () => {
                   >
                     Close
                   </button>
-                  {(selectedAppointment.status === 'confirmed' || selectedAppointment.status === 'pending' || selectedAppointment.status === 'scheduled') && (
+                  {(selectedAppointment.status === 'scheduled' || selectedAppointment.status === 'pending') && (
                     <>
                       <button
                         onClick={() => {

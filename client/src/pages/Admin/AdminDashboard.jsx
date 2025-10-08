@@ -71,10 +71,9 @@ const AdminDashboard = () => {
     'adminDashboard',
     adminAPI.getDashboard,
     {
-      staleTime: 0,
-      cacheTime: 0,
-      refetchOnMount: true,
-      refetchOnWindowFocus: true,
+      staleTime: 30000, // 30 seconds
+      cacheTime: 300000, // 5 minutes
+      refetchOnWindowFocus: false,
       retry: 3,
       onError: (error) => {
         console.error('Error fetching dashboard data:', error);
@@ -109,19 +108,15 @@ const AdminDashboard = () => {
 
   // Fetch notifications data from API
   const { data: notificationsData, isLoading: notificationsLoading, error: notificationsError } = useQuery(
-    ['adminNotifications', Date.now()], // Add timestamp to force fresh fetch
+    'adminNotifications',
     adminAPI.getNotifications,
     {
-      staleTime: 0,
-      cacheTime: 0,
-      refetchOnMount: true,
-      refetchOnWindowFocus: true,
+      staleTime: 30000, // 30 seconds
+      cacheTime: 300000, // 5 minutes
+      refetchOnWindowFocus: false,
       retry: 3,
       onError: (error) => {
         console.error('Error fetching notifications:', error);
-      },
-      onSuccess: (data) => {
-        console.log('Notifications fetched successfully:', data);
       }
     }
   );
@@ -179,11 +174,6 @@ const AdminDashboard = () => {
     }));
 
   // Extract notifications from API response and map to expected format
-  console.log('AdminDashboard - notificationsData:', notificationsData);
-  console.log('AdminDashboard - notificationsLoading:', notificationsLoading);
-  console.log('AdminDashboard - notificationsError:', notificationsError);
-  console.log('AdminDashboard - notifications array:', notificationsData?.data?.notifications);
-  
   const notifications = (notificationsData?.data?.notifications || []).map(notification => ({
     id: notification.id,
     type: notification.type,
@@ -195,9 +185,6 @@ const AdminDashboard = () => {
     priority: notification.priority || 'medium',
     read: notification.read
   }));
-  
-  console.log('AdminDashboard - mapped notifications:', notifications);
-  console.log('AdminDashboard - notifications length:', notifications.length);
 
   // Generate real data for charts based on API data
   const generatePatientGrowthData = () => {
@@ -329,7 +316,7 @@ const AdminDashboard = () => {
         title: `${appointment.therapistName} - ${appointment.patientName}`,
         start: startTime.toISOString(),
         end: endTime.toISOString(),
-        priority: appointment.status === 'confirmed' ? 'high' : appointment.status === 'scheduled' ? 'medium' : 'low',
+        priority: appointment.status === 'scheduled' ? 'high' : 'medium',
         type: appointment.type,
         extendedProps: { 
           type: appointment.type, 

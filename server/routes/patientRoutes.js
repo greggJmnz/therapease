@@ -25,6 +25,9 @@ router.put('/appointments/:id/cancel', patientController.cancelAppointment);
 router.put('/appointments/:id/postpone', patientController.postponeAppointment);
 router.put('/appointments/:id/reschedule', patientController.rescheduleAppointment);
 
+// Therapists
+router.get('/therapists', patientController.getPatientTherapists);
+
 // Daily notes
 router.get('/daily-notes', patientController.getDailyNotes);
 router.post('/daily-notes/cleanup', patientController.cleanupDailyNotes);
