@@ -411,6 +411,31 @@ const createTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // Patient-Therapist Assignments table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS patient_therapist_assignments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patientId INT NOT NULL,
+        therapistId INT NOT NULL,
+        assignmentType ENUM('primary', 'secondary', 'collaborative') NOT NULL DEFAULT 'primary',
+        assignedBy INT NOT NULL,
+        notes TEXT,
+        status ENUM('active', 'inactive', 'terminated') DEFAULT 'active',
+        assignedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        terminatedAt TIMESTAMP NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (assignedBy) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_active_assignment (patientId, therapistId, status),
+        INDEX idx_patient (patientId),
+        INDEX idx_therapist (therapistId),
+        INDEX idx_assignment_type (assignmentType),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
     console.log('Database tables created successfully');
     
   } catch (error) {
@@ -419,79 +444,48 @@ const createTables = async () => {
   }
 };
 
-// Seed initial data
+// Seed initial data - SECURE ADMIN ONLY
 const seedInitialData = async () => {
   try {
-    // Check if data already exists
-    const [rows] = await pool.execute('SELECT COUNT(*) as count FROM users');
+    // Check if admin user already exists
+    const [adminRows] = await pool.execute('SELECT COUNT(*) as count FROM users WHERE role = ?', ['admin']);
     
-    if (rows[0].count === 0) {
-      console.log('Seeding initial data...');
+    if (adminRows[0].count === 0) {
+      console.log('🔐 Creating secure admin account...');
       
-      // Hash passwords for initial users
-      const adminPassword = await hashPassword('Admin123!@#');
-      const therapistPassword = await hashPassword('Therapist123!@#');
-      const patientPassword = await hashPassword('Patient123!@#');
+      // Generate secure admin credentials
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@therapease.com';
+      const adminPassword = process.env.ADMIN_PASSWORD || 'SecureAdmin2024!@#$%';
+      const hashedPassword = await hashPassword(adminPassword);
 
-      // Insert admin user
+      // Insert secure admin user
       await pool.execute(`
-        INSERT INTO users (email, password, role, firstName, lastName, phone, gender)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, ['admin@therapease.com', adminPassword, 'admin', 'Admin', 'User', '555-0001', 'other']);
+        INSERT INTO users (email, password, role, firstName, lastName, phone, gender, address, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        adminEmail, 
+        hashedPassword, 
+        'admin', 
+        'System', 
+        'Administrator', 
+        '+1-555-0000', 
+        'other',
+        'System Administration Office',
+        new Date(),
+        new Date()
+      ]);
 
-      // Insert therapist user
-      await pool.execute(`
-        INSERT INTO users (email, password, role, firstName, lastName, phone, gender)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, ['therapist@therapease.com', therapistPassword, 'therapist', 'Sarah', 'Wilson', '555-0002', 'female']);
-
-      // Insert patient users
-      await pool.execute(`
-        INSERT INTO users (email, password, role, firstName, lastName, phone, gender, dateOfBirth)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, ['emma@example.com', patientPassword, 'patient', 'Emma', 'Smith', '555-0003', 'female', '2015-03-15']);
-
-      await pool.execute(`
-        INSERT INTO users (email, password, role, firstName, lastName, phone, gender, dateOfBirth)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, ['james@example.com', patientPassword, 'patient', 'James', 'Johnson', '555-0004', 'male', '2014-07-22']);
-
-      await pool.execute(`
-        INSERT INTO users (email, password, role, firstName, lastName, phone, gender, dateOfBirth)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, ['sophia@example.com', patientPassword, 'patient', 'Sophia', 'Brown', '555-0005', 'female', '2016-11-08']);
-
-      // Get the inserted therapist ID
-      const [therapistRows] = await pool.execute('SELECT id FROM users WHERE email = ?', ['therapist@therapease.com']);
-      
-      if (therapistRows.length > 0) {
-        const therapistId = therapistRows[0].id;
-        
-        // Insert therapist record
-        await pool.execute(`
-          INSERT INTO therapists (userId, licenseNumber, specialization, yearsOfExperience, education)
-          VALUES (?, ?, ?, ?, ?)
-        `, [therapistId, 'OT12345', 'Pediatric Occupational Therapy', 8, 'Masters in Occupational Therapy']);
-
-        // Get patient IDs
-        const [patientRows] = await pool.execute('SELECT id FROM users WHERE role = ?', ['patient']);
-        
-        for (const patient of patientRows) {
-          // Insert patient records
-          await pool.execute(`
-            INSERT INTO patients (userId, diagnosis, medicalHistory, therapistId)
-            VALUES (?, ?, ?, ?)
-          `, [patient.id, 'Developmental Delay', 'No significant medical history', therapistId]);
-        }
-      }
-
-      console.log('Initial data seeded successfully');
+      console.log('✅ Secure admin account created successfully');
+      console.log('🔑 Admin credentials:');
+      console.log(`   Email: ${adminEmail}`);
+      console.log(`   Password: ${adminPassword}`);
+      console.log('⚠️  IMPORTANT: Change these credentials immediately after first login!');
     } else {
-      console.log('Database already contains data, skipping seed');
+      console.log('✅ Admin account already exists, skipping creation');
     }
     
   } catch (error) {
-    console.error('Error seeding data:', error);
+    console.error('❌ Error creating admin account:', error);
     throw error;
   }
 };

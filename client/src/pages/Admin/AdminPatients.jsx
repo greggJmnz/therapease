@@ -121,7 +121,7 @@ const AdminPatients = () => {
               // Auto-login as admin for testing
               const loginData = {
                 email: 'admin@therapease.com',
-                password: 'admin123'
+                password: 'Admin123!@#'
               };
               
               fetch('/api/auth/login', {
@@ -177,7 +177,7 @@ const AdminPatients = () => {
         diagnosis: patient.diagnosis || 'N/A',
         goals: patient.goals || 'N/A',
         therapistId: patient.patient?.therapistId || null,
-        therapistName: patient.therapistName || 'Not assigned',
+        therapistName: patient.therapistName || (patient.patient?.therapistId ? 'Assigned' : 'Not assigned'),
         status: patient.status || patient.patient?.status || 'active', // Use user status, fallback to patient status
         createdAt: patient.createdAt,
         updatedAt: patient.updatedAt,
@@ -1901,28 +1901,13 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
     try {
       setLoading(true);
       
-      // Check if patient already has a therapist
-      const hasExistingTherapist = patient.patient?.therapistId;
-      
-      let response;
-      if (hasExistingTherapist) {
-        // If patient already has a therapist, add as additional therapist with primary type
-        response = await adminAPI.addTherapistToPatient({
-          patientId: patient.patient?.id,
-          therapistId: selectedTherapist,
-          assignmentType: 'primary',
-          notes: 'Primary therapist assignment'
-        });
-      } else {
-        // If no existing therapist, use the standard assignment
-        response = await adminAPI.assignTherapistToPatient({
-          patientId: patient.patient?.id,
-          therapistId: selectedTherapist
-        });
-      }
+      // Use the standard assignment for primary therapist
+      const response = await adminAPI.assignTherapistToPatient({
+        patientId: patient.id,
+        therapistId: selectedTherapist
+      });
 
       if (response.data.success) {
-        toast.success('Therapist assigned successfully');
         onAssignmentSuccess();
       } else {
         toast.error(response.data.error || 'Failed to assign therapist');
@@ -1942,7 +1927,7 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
 
     try {
       setLoading(true);
-      const response = await adminAPI.removeTherapistFromPatient(patient.patient?.id, therapistId, 'Admin requested removal');
+      const response = await adminAPI.unassignTherapistFromPatient(patient.id);
 
       if (response.data.success) {
         toast.success(`${therapistName} has been unassigned successfully`);

@@ -30,7 +30,13 @@ const Login = () => {
     handleSubmit,
     formState: { errors },
     watch,
-  } = useForm();
+  } = useForm({
+    mode: 'onChange',
+    defaultValues: {
+      email: '',
+      password: ''
+    }
+  });
 
   // Watch form values for real-time validation
   const watchedEmail = watch('email', '');
@@ -294,18 +300,14 @@ const Login = () => {
               <div className="relative">
                 <ModernInput
                   label="Email Address"
+                  name="email"
                   type="email"
                   autoComplete="email"
                   leftIcon={Mail}
+                  register={register}
                   error={errors.email?.message}
                   success={emailValid === true ? 'Valid email address' : undefined}
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Invalid email address',
-                    },
-                  })}
+                  required
                 />
                 {/* Real-time validation indicator */}
                 {watchedEmail && (
@@ -323,18 +325,14 @@ const Login = () => {
               <div className="relative">
                 <ModernInput
                   label="Password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   leftIcon={Lock}
+                  register={register}
                   error={errors.password?.message}
                   success={passwordValid === true ? 'Password looks good' : undefined}
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: {
-                      value: 6,
-                      message: 'Password must be at least 6 characters',
-                    },
-                  })}
+                  required
                 />
                 
                 {/* Password visibility toggle with enhanced styling */}
@@ -484,7 +482,7 @@ const Login = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="text-xs text-gray-600 font-mono whitespace-nowrap">
-                  admin@therapease.com / admin123
+                  admin@therapease.com / Admin123!@#
                 </div>
                 <div className="p-1 rounded-md bg-blue-100 group-hover:bg-blue-200 transition-colors">
                   {copiedAccount === 'Admin' ? (

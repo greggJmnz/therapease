@@ -63,7 +63,7 @@ const getPatients = async (req, res) => {
         (SELECT COUNT(*) FROM assessments a WHERE a.patientId = p.id AND a.status = 'completed') as assessmentsCompleted
       FROM patients p
       JOIN users u ON p.userId = u.id
-      WHERE p.therapistId = ? OR p.id IN (
+      WHERE p.id IN (
         SELECT pta.patientId 
         FROM patient_therapist_assignments pta 
         WHERE pta.therapistId = ? AND pta.status = 'active'
@@ -71,7 +71,7 @@ const getPatients = async (req, res) => {
       ORDER BY u.firstName, u.lastName
     `;
 
-    const patients = await getAll(sql, [therapistId, therapistId]);
+    const patients = await getAll(sql, [therapistId]);
 
     // Get assignment details for each patient
     const patientsWithAssignments = await Promise.all(patients.map(async (patient) => {

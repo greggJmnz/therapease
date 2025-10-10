@@ -64,6 +64,9 @@ router.put('/settings', settingsController.updateSettings);
 
 // Notifications
 router.get('/notifications', adminController.getNotifications);
+router.patch('/notifications/:id/read', adminController.markNotificationAsRead);
+router.patch('/notifications/read-all', adminController.markAllNotificationsAsRead);
+router.delete('/notifications/:id', adminController.deleteNotification);
 
 // Settings
 router.get('/settings', adminController.getSystemStats);

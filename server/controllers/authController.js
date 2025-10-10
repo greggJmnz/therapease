@@ -35,6 +35,7 @@ const login = async (req, res) => {
         u.city,
         u.state,
         u.zipCode,
+        u.status,
         u.createdAt,
         u.updatedAt
       FROM users u
@@ -55,6 +56,14 @@ const login = async (req, res) => {
       return res.status(401).json({
         success: false,
         error: 'Invalid email or password'
+      });
+    }
+
+    // Check if user account is active
+    if (user.status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        error: 'Account is deactivated. Please contact administrator for assistance.'
       });
     }
 

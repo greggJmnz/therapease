@@ -6,15 +6,14 @@ const getDashboard = async (req, res) => {
     // Get therapist ID from authenticated user (therapistId in patients table refers to userId)
     const therapistId = req.user.id;
 
-    // Get patient count (including patients from patient_therapist_assignments table)
+    // Get patient count from patient_therapist_assignments table
     const patientCountSql = `
-      SELECT COUNT(DISTINCT p.id) as total
-      FROM patients p
-      LEFT JOIN patient_therapist_assignments pta ON p.id = pta.patientId
-      WHERE p.therapistId = ? OR (pta.therapistId = ? AND pta.status = 'active')
+      SELECT COUNT(DISTINCT pta.patientId) as total
+      FROM patient_therapist_assignments pta
+      WHERE pta.therapistId = ? AND pta.status = 'active'
     `;
 
-    const patientCountResult = await getAll(patientCountSql, [therapistId, therapistId]);
+    const patientCountResult = await getAll(patientCountSql, [therapistId]);
     const totalPatients = patientCountResult[0]?.total || 0;
 
     // Get assessment count (only assessments created by this therapist)

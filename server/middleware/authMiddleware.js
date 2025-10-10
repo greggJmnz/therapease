@@ -5,7 +5,7 @@ const { getRow } = require('../config/database');
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
@@ -18,7 +18,7 @@ const authenticateToken = (req, res, next) => {
     }
 
     // Verify token
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    jwt.verify(token, JWT_SECRET, async (err, decoded) => {
       if (err) {
         if (err.name === 'JsonWebTokenError') {
           return res.status(401).json({
@@ -38,18 +38,34 @@ const authenticateToken = (req, res, next) => {
         }
       }
 
-      // Add user info to request
-      // JWT token contains 'userId' field, so use that consistently
-      const userId = decoded.userId || decoded.id;
-      req.user = {
-        id: userId,
-        userId: userId,
-        email: decoded.email,
-        role: decoded.role
-      };
+      try {
+        // Add user info to request
+        // JWT token contains 'userId' field, so use that consistently
+        const userId = decoded.userId || decoded.id;
+        req.user = {
+          id: userId,
+          userId: userId,
+          email: decoded.email,
+          role: decoded.role
+        };
 
+        // Check if user is still active
+        const user = await getRow('SELECT status FROM users WHERE id = ?', [userId]);
+        if (!user || user.status !== 'active') {
+          return res.status(403).json({
+            success: false,
+            error: 'Account is deactivated. Please contact administrator for assistance.'
+          });
+        }
 
-      next();
+        next();
+      } catch (dbError) {
+        console.error('Database error in auth middleware:', dbError);
+        return res.status(500).json({
+          success: false,
+          error: 'Authentication failed'
+        });
+      }
     });
 
   } catch (error) {

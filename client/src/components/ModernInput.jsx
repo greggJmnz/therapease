@@ -11,6 +11,8 @@ const ModernInput = forwardRef(({
   className = '',
   variant = 'default',
   size = 'md',
+  register,
+  name,
   ...props 
 }, ref) => {
   const [hasBeenFloated, setHasBeenFloated] = useState(false);
@@ -137,7 +139,7 @@ const ModernInput = forwardRef(({
       )}
       
       <input
-        ref={ref}
+        ref={register && name ? register(name).ref : ref}
         className={cn(
           baseClasses,
           sizeClasses[size],
@@ -154,6 +156,7 @@ const ModernInput = forwardRef(({
         onMouseLeave={handleMouseLeave}
         onFocus={handleFocus}
         onBlur={handleBlur}
+        {...(register && name ? register(name) : {})}
         {...props}
       />
       

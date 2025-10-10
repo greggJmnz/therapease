@@ -525,6 +525,19 @@ const AdminAppointments = () => {
     setShowEditModal(false);
   };
 
+  const handleDeleteAppointment = async (appointmentId) => {
+    if (window.confirm('Are you sure you want to delete this appointment? This action cannot be undone.')) {
+      try {
+        await adminAPI.deleteAppointment(appointmentId);
+        toast.success('Appointment deleted successfully!');
+        refetch();
+      } catch (error) {
+        console.error('Error deleting appointment:', error);
+        toast.error('Failed to delete appointment. Please try again.');
+      }
+    }
+  };
+
   const handleEditInputChange = (field, value) => {
     setEditingAppointment(prev => ({
       ...prev,
@@ -971,13 +984,27 @@ const AdminAppointments = () => {
                       </div>
 
                       {/* Actions */}
-                      <div className="col-span-1 flex justify-center">
+                      <div className="col-span-1 flex justify-center gap-1">
                         <button
                           onClick={() => handleViewAppointment(appointment)}
                           className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="View Details"
                         >
                           <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleEditAppointment(appointment)}
+                          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          title="Edit Appointment"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAppointment(appointment.id)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete Appointment"
+                        >
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </div>

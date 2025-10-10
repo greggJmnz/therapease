@@ -1,6 +1,5 @@
 const { openai } = require('../../server/config/openai');
 const otpfFrameworkPrompt = require('../prompts/otpfFramework');
-const otpfPromptEngineer = require('./otpfPromptEngineer');
 const otPromptTemplates = require('../prompts/otPromptTemplates');
 
 class GPTService {
@@ -86,23 +85,6 @@ class GPTService {
     return await this.generateResponse(prompt, options);
   }
 
-  async generateProgressSummary(patientData, progressData, options = {}) {
-    const progressSummaryPrompt = require('../prompts/progressSummaryPrompt');
-    const prompt = progressSummaryPrompt(patientData, progressData);
-    return await this.generateResponse(prompt, options);
-  }
-
-  async generateHomeExercisePlan(patientData, currentAbilities, goals, options = {}) {
-    const homeExercisePrompt = require('../prompts/homeExercisePrompt');
-    const prompt = homeExercisePrompt(patientData, currentAbilities, goals);
-    return await this.generateResponse(prompt, options);
-  }
-
-  async generateParentSummary(patientData, sessionSummary, options = {}) {
-    const parentSummaryPrompt = require('../prompts/parentSummaryPrompt');
-    const prompt = parentSummaryPrompt(patientData, sessionSummary);
-    return await this.generateResponse(prompt, options);
-  }
 
   // Method to select appropriate prompt template based on assessment type
   selectPromptTemplate(assessmentType, patientData, assessmentData) {
@@ -174,20 +156,6 @@ class GPTService {
     return await this.analyzeAssessmentData(patientData, enhancedData, options);
   }
 
-  // OTPF Prompt Engineering Methods
-  async generateOTPFCompliantResponse(basePrompt, options = {}) {
-    const enhancedPrompt = otpfPromptEngineer.enhancePrompt(basePrompt, options);
-    return await this.generateResponse(enhancedPrompt, options);
-  }
-
-  async generatePediatricOTResponse(basePrompt, options = {}) {
-    const specializedPrompt = otpfPromptEngineer.createSpecializedPrompt(basePrompt);
-    return await this.generateResponse(specializedPrompt, options);
-  }
-
-  validateOTPFCompliance(response) {
-    return otpfPromptEngineer.validateOTPFCompliance(response);
-  }
 
   // Rate limiting and cost management
   async checkUsage() {

@@ -605,10 +605,10 @@ const updateUser = async (req, res) => {
 // Delete user
 const deleteUser = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { userId } = req.params;
 
     // Check if user exists
-    const existingUser = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(id)]);
+    const existingUser = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(userId)]);
     if (!existingUser) {
       return res.status(404).json({
         success: false,
@@ -625,7 +625,7 @@ const deleteUser = async (req, res) => {
     }
 
     // Delete user (this will cascade to delete related records due to foreign key constraints)
-    await runQuery('DELETE FROM users WHERE id = ?', [parseInt(id)]);
+    await runQuery('DELETE FROM users WHERE id = ?', [parseInt(userId)]);
 
     res.json({
       success: true,
@@ -921,8 +921,8 @@ const createAppointment = async (req, res) => {
     const insertSql = `
       INSERT INTO appointments (
         patientId, therapistId, appointmentDate, startTime, endTime, 
-        duration, type, status, reason, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        duration, type, status, approvalStatus, approvedBy, approvedAt, reason, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
     `;
 
     const insertParams = [
@@ -934,6 +934,8 @@ const createAppointment = async (req, res) => {
       parseInt(duration),
       type,
       'scheduled',
+      'approved', // Admin-created appointments are automatically approved
+      req.user.id, // Admin who created the appointment
       reason, // Include reason field
       notes || null
     ];
@@ -1016,6 +1018,7 @@ const createAppointment = async (req, res) => {
         type: type,
         status: 'scheduled',
         location: 'Room TBD',
+        reason: reason,
         notes: notes
       }
     });
@@ -1045,7 +1048,7 @@ const getNotifications = async (req, res) => {
         u.lastName
       FROM notifications n
       LEFT JOIN users u ON n.userId = u.id
-      WHERE n.userId = ? AND n.type = 'admin_notification'
+      WHERE n.userId = ?
       ORDER BY n.createdAt DESC
     `;
 
@@ -1095,9 +1098,119 @@ const getNotifications = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch notifications'
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch notifications' 
+    });
+  }
+};
+
+// Mark notification as read
+const markNotificationAsRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminUserId = req.user.id;
+
+    // Check if notification exists and belongs to admin
+    const notificationSql = `
+      SELECT id, isRead FROM notifications 
+      WHERE id = ? AND userId = ?
+    `;
+    const notification = await getRow(notificationSql, [parseInt(id), adminUserId]);
+
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        error: 'Notification not found'
+      });
+    }
+
+    if (notification.isRead === 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'Notification is already marked as read'
+      });
+    }
+
+    // Mark as read
+    await runQuery(
+      'UPDATE notifications SET isRead = 1 WHERE id = ?',
+      [parseInt(id)]
+    );
+
+    res.json({
+      success: true,
+      message: 'Notification marked as read successfully'
+    });
+
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to mark notification as read' 
+    });
+  }
+};
+
+// Mark all notifications as read
+const markAllNotificationsAsRead = async (req, res) => {
+  try {
+    const adminUserId = req.user.id;
+
+    // Mark all admin notifications as read
+    const result = await runQuery(
+      'UPDATE notifications SET isRead = 1 WHERE userId = ? AND isRead = 0',
+      [adminUserId]
+    );
+
+    res.json({
+      success: true,
+      message: 'All notifications marked as read successfully',
+      updatedCount: result.affectedRows
+    });
+
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to mark all notifications as read' 
+    });
+  }
+};
+
+// Delete notification
+const deleteNotification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminUserId = req.user.id;
+
+    // Check if notification exists and belongs to admin
+    const notificationSql = `
+      SELECT id FROM notifications 
+      WHERE id = ? AND userId = ?
+    `;
+    const notification = await getRow(notificationSql, [parseInt(id), adminUserId]);
+
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        error: 'Notification not found'
+      });
+    }
+
+    // Delete notification
+    await runQuery('DELETE FROM notifications WHERE id = ?', [parseInt(id)]);
+
+    res.json({
+      success: true,
+      message: 'Notification deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to delete notification' 
     });
   }
 };
@@ -1259,7 +1372,7 @@ const getTherapists = async (req, res) => {
         t.status as therapistStatus,
         t.maxPatients,
         t.isAcceptingPatients,
-        (SELECT COUNT(*) FROM patients p WHERE p.therapistId = t.userId) as patientCount
+        (SELECT COUNT(DISTINCT pta.patientId) FROM patient_therapist_assignments pta WHERE pta.therapistId = t.userId AND pta.status = 'active') as patientCount
       FROM users u
       LEFT JOIN therapists t ON u.id = t.userId
       WHERE u.role = 'therapist'
@@ -1647,7 +1760,7 @@ const getAvailableTherapists = async (req, res) => {
         t.availability,
         t.maxPatients,
         t.isAcceptingPatients,
-        (SELECT COUNT(*) FROM patients p WHERE p.therapistId = u.id) as currentPatientCount
+        (SELECT COUNT(DISTINCT pta.patientId) FROM patient_therapist_assignments pta WHERE pta.therapistId = u.id AND pta.status = 'active') as currentPatientCount
       FROM users u
       JOIN therapists t ON u.id = t.userId
       WHERE u.role = 'therapist' 
@@ -1712,6 +1825,7 @@ const assignTherapistToPatient = async (req, res) => {
   try {
     const { patientId, therapistId } = req.body;
 
+
     // Validate required fields
     if (!patientId || !therapistId) {
       return res.status(400).json({
@@ -1744,7 +1858,7 @@ const assignTherapistToPatient = async (req, res) => {
         t.maxPatients, 
         t.isAcceptingPatients,
         CONCAT(u.firstName, ' ', u.lastName) as therapistName,
-        (SELECT COUNT(*) FROM patients p WHERE p.therapistId = t.userId) as currentPatientCount
+        (SELECT COUNT(DISTINCT pta.patientId) FROM patient_therapist_assignments pta WHERE pta.therapistId = t.userId AND pta.status = 'active') as currentPatientCount
       FROM therapists t
       JOIN users u ON t.userId = u.id
       WHERE t.userId = ?
@@ -1803,10 +1917,16 @@ const assignTherapistToPatient = async (req, res) => {
     await connection.beginTransaction();
 
     try {
-      // Assign therapist to patient
+      // Create assignment in patient_therapist_assignments table
       await connection.execute(
-        'UPDATE patients SET therapistId = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?',
-        [parseInt(therapistId), parseInt(patientId)]
+        'INSERT INTO patient_therapist_assignments (patientId, therapistId, assignmentType, assignedBy, status) VALUES (?, ?, ?, ?, "active")',
+        [patient.id, parseInt(therapistId), 'primary', req.user.id]
+      );
+
+      // Also update the patients table for backward compatibility
+      await connection.execute(
+        'UPDATE patients SET therapistId = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+        [parseInt(therapistId), patient.id]
       );
 
       // Create notifications
@@ -1853,6 +1973,16 @@ const assignTherapistToPatient = async (req, res) => {
 
       await connection.commit();
 
+      console.log('Assignment successful!');
+      console.log('Final data:', {
+        patientId: patient.id,
+        patientName: patient.patientName,
+        therapistId: parseInt(therapistId),
+        therapistName: therapist.therapistName,
+        currentPatientCount: currentCount + 1,
+        maxPatients: maxPatients
+      });
+
       res.json({
         success: true,
         message: 'Therapist assigned to patient successfully',
@@ -1874,8 +2004,15 @@ const assignTherapistToPatient = async (req, res) => {
     }
 
   } catch (error) {
-    console.error('Assign therapist to patient error:', error);
-    res.status(500).json({ success: false, error: 'Failed to assign therapist to patient' });
+    console.error('=== ASSIGN THERAPIST TO PATIENT ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Full error object:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to assign therapist to patient',
+      details: error.message 
+    });
   }
 };
 
@@ -1883,10 +2020,10 @@ const assignTherapistToPatient = async (req, res) => {
 const unassignTherapistFromPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
-
-    // Check if patient exists and has a therapist
+    
+    // Check if patient exists
     const patientSql = `
-      SELECT p.id, p.userId, p.therapistId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      SELECT p.id, p.userId, CONCAT(u.firstName, ' ', u.lastName) as patientName
       FROM patients p
       JOIN users u ON p.userId = u.id
       WHERE p.userId = ?
@@ -1900,64 +2037,77 @@ const unassignTherapistFromPatient = async (req, res) => {
       });
     }
 
-    if (!patient.therapistId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Patient does not have a therapist assigned'
-      });
-    }
-
-    // Get therapist details for notification
-    const therapistSql = `
-      SELECT CONCAT(u.firstName, ' ', u.lastName) as therapistName
-      FROM users u
-      WHERE u.id = ?
+    // Check if patient has any active therapist assignments
+    const assignmentSql = `
+      SELECT pta.id, pta.therapistId, pta.assignmentType,
+             CONCAT(u.firstName, ' ', u.lastName) as therapistName
+      FROM patient_therapist_assignments pta
+      JOIN users u ON pta.therapistId = u.id
+      WHERE pta.patientId = ? AND pta.status = 'active'
     `;
     
-    const therapist = await getRow(therapistSql, [patient.therapistId]);
+    const assignments = await getAll(assignmentSql, [patient.id]);
+    
+    if (assignments.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Patient does not have any therapists assigned'
+      });
+    }
 
     // Start transaction
     const connection = await getConnection();
     await connection.beginTransaction();
 
     try {
-      // Unassign therapist from patient
+      // Remove all active assignments for this patient
       await connection.execute(
-        'UPDATE patients SET therapistId = NULL, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?',
-        [parseInt(patientId)]
+        'DELETE FROM patient_therapist_assignments WHERE patientId = ? AND status = "active"',
+        [patient.id]
+      );
+
+      // Also clear the old therapistId field for backward compatibility
+      await connection.execute(
+        'UPDATE patients SET therapistId = NULL, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+        [patient.id]
       );
 
       // Create notifications
       const notificationController = require('./notificationController');
       
-      // Notify therapist
-      await notificationController.createNotification(
-        patient.therapistId,
-        'Patient Unassigned',
-        `Patient ${patient.patientName} has been unassigned from you`,
-        'patient_unassignment',
-        { patientId: patient.id, therapistId: patient.therapistId }
-      );
+      // Notify each therapist
+      for (const assignment of assignments) {
+        await notificationController.createNotification(
+          assignment.therapistId,
+          'Patient Unassigned',
+          `Patient ${patient.patientName} has been unassigned from you`,
+          'patient_unassignment',
+          { patientId: patient.id, therapistId: assignment.therapistId }
+        );
+      }
 
       // Notify patient
       await notificationController.createNotification(
         parseInt(patientId),
         'Therapist Unassigned',
-        `You have been unassigned from your therapist`,
+        `You have been unassigned from your therapist(s)`,
         'therapist_unassignment',
-        { patientId: patient.id, therapistId: patient.therapistId }
+        { patientId: patient.id }
       );
 
       await connection.commit();
 
       res.json({
         success: true,
-        message: 'Therapist unassigned from patient successfully',
+        message: 'Therapist(s) unassigned from patient successfully',
         data: {
           patientId: patient.id,
           patientName: patient.patientName,
-          therapistId: patient.therapistId,
-          therapistName: therapist?.therapistName || 'Unknown'
+          unassignedTherapists: assignments.map(a => ({
+            therapistId: a.therapistId,
+            therapistName: a.therapistName,
+            assignmentType: a.assignmentType
+          }))
         }
       });
 
@@ -1999,7 +2149,7 @@ const updateTherapistAvailability = async (req, res) => {
     // Validate maxPatients if provided
     if (maxPatients !== undefined) {
       const currentPatientCount = await getRow(
-        'SELECT COUNT(*) as count FROM patients WHERE therapistId = ?',
+        'SELECT COUNT(DISTINCT patientId) as count FROM patient_therapist_assignments WHERE therapistId = ? AND status = "active"',
         [parseInt(therapistId)]
       );
       
@@ -3178,6 +3328,9 @@ module.exports = {
   updateAppointment,
   deleteAppointment,
   getNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
   getReports,
   getPatientAssessments,
   getPatientSessions,

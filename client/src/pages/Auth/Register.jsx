@@ -144,96 +144,72 @@ const Register = () => {
               <div className="grid grid-cols-2 gap-4">
                 <ModernInput
                   label="First Name"
+                  name="firstName"
                   type="text"
                   autoComplete="given-name"
                   leftIcon={User}
+                  register={register}
                   error={errors.firstName?.message}
-                  {...register('firstName', {
-                    required: 'First name is required',
-                    minLength: {
-                      value: 2,
-                      message: 'First name must be at least 2 characters',
-                    },
-                  })}
+                  required
                 />
 
                 <ModernInput
                   label="Last Name"
+                  name="lastName"
                   type="text"
                   autoComplete="family-name"
+                  register={register}
                   error={errors.lastName?.message}
-                  {...register('lastName', {
-                    required: 'Last name is required',
-                    minLength: {
-                      value: 2,
-                      message: 'Last name must be at least 2 characters',
-                    },
-                  })}
+                  required
                 />
               </div>
 
               {/* Email */}
               <ModernInput
                 label="Email Address"
+                name="email"
                 type="email"
                 autoComplete="email"
                 leftIcon={Mail}
+                register={register}
                 error={errors.email?.message}
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
-                  },
-                })}
+                required
               />
 
               {/* Phone */}
               <ModernInput
                 label="Phone Number"
+                name="phone"
                 type="tel"
                 autoComplete="tel"
                 leftIcon={Phone}
+                register={register}
                 error={errors.phone?.message}
-                {...register('phone', {
-                  required: 'Phone number is required',
-                  pattern: {
-                    value: /^(09\d{9}|\+639\d{9})$/,
-                    message: 'Phone number must be in format 09XXXXXXXXX or +639XXXXXXXXX',
-                  },
-                })}
+                required
               />
 
               {/* Date of Birth */}
               <ModernInput
                 label="Date of Birth"
+                name="dateOfBirth"
                 type="date"
                 leftIcon={Calendar}
+                register={register}
                 error={errors.dateOfBirth?.message}
-                {...register('dateOfBirth', {
-                  required: 'Date of birth is required',
-                })}
+                required
               />
 
               {/* Password */}
               <div className="relative">
                 <ModernInput
                   label="Password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   leftIcon={Lock}
+                  register={register}
                   error={errors.password?.message}
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: {
-                      value: 8,
-                      message: 'Password must be at least 8 characters',
-                    },
-                    pattern: {
-                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/,
-                      message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
-                    },
-                  })}
+                  required
                 />
                 <button
                   type="button"
@@ -255,15 +231,13 @@ const Register = () => {
               <div className="relative">
                 <ModernInput
                   label="Confirm Password"
+                  name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   leftIcon={Lock}
+                  register={register}
                   error={errors.confirmPassword?.message}
-                  {...register('confirmPassword', {
-                    required: 'Please confirm your password',
-                    validate: (value) =>
-                      value === password || 'Passwords do not match',
-                  })}
+                  required
                 />
                 <button
                   type="button"

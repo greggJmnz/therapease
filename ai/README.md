@@ -20,13 +20,10 @@ ai/
 ├── prompts/
 │   ├── otpfFramework.js          # OTPF-4 framework system message
 │   ├── assessmentPrompt.js       # Session assessment analysis
-│   ├── progressSummaryPrompt.js  # Progress summary generation
-│   ├── homeExercisePrompt.js     # Home exercise plan creation
-│   ├── parentSummaryPrompt.js    # Parent-friendly session summaries
+│   ├── otPromptTemplates.js     # OT prompt templates
 │   └── index.js                  # Prompt exports
 ├── services/
 │   ├── gptService.js             # Main AI service
-│   ├── otpfPromptEngineer.js     # OTPF prompt enhancement service
 │   └── README.md                 # This documentation
 ```
 
@@ -67,7 +64,7 @@ const options = {
   specificFocus: "Focus on handwriting and self-care activities"
 };
 
-const response = await gptService.generateOTPFCompliantResponse(basePrompt, options);
+const response = await gptService.generateResponse(basePrompt, options);
 ```
 
 ### Specialized OT Response
@@ -86,7 +83,7 @@ const response = await gptService.generateSpecializedOTResponse(
 ### OTPF Compliance Validation
 
 ```javascript
-const validation = gptService.validateOTPFCompliance(aiResponse);
+// AI response validation can be implemented as needed
 
 console.log(`Compliance Score: ${validation.score}%`);
 console.log(`Missing Keywords: ${validation.missingKeywords}`);
@@ -184,7 +181,7 @@ The AI service integrates with TherapEase frontend through:
 ```javascript
 // Test OTPF compliance
 const testResponse = "Patient showed improved ADL performance in dressing activities";
-const compliance = gptService.validateOTPFCompliance(testResponse);
+// AI response compliance can be validated as needed
 
 // Should return high compliance score for ADL and performance references
 ```
@@ -225,7 +222,7 @@ const compliance = gptService.validateOTPFCompliance(testResponse);
 
 ### Adding New Specializations
 
-1. Extend `otpfPromptEngineer.js` specializations object
+1. Extend prompt templates in `otPromptTemplates.js`
 2. Include domain focus and considerations
 3. Add validation keywords
 4. Update documentation

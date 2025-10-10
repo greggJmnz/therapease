@@ -919,13 +919,21 @@ const TherapistSchedule = () => {
                 >
                   Close
                 </button>
-                  <button
-                    onClick={() => handleEditAppointment(selectedAppointment)}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
-                  >
-                    <Edit className="h-4 w-4" />
-                  Edit Appointment
-                </button>
+                  {/* Only show edit button if appointment was not created by admin */}
+                  {!selectedAppointment.approvedBy || selectedAppointment.approvedBy === selectedAppointment.therapistId ? (
+                    <button
+                      onClick={() => handleEditAppointment(selectedAppointment)}
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit Appointment
+                    </button>
+                  ) : (
+                    <div className="px-6 py-3 bg-gray-100 text-gray-500 rounded-lg flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm">Cannot edit admin-created appointments</span>
+                    </div>
+                  )}
               </div>
             </div>
           </div>

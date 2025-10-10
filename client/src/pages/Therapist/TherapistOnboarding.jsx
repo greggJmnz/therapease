@@ -134,22 +134,28 @@ const TherapistOnboarding = () => {
   };
 
   const saveStepData = async (stepData) => {
+    console.log('🔍 saveStepData - Received stepData:', stepData);
+    console.log('🔍 saveStepData - Current onboardingData:', onboardingData);
+    
     // Update local state
     setOnboardingData(prev => ({ ...prev, ...stepData }));
     
     // Also save to server to persist data as user progresses
     try {
       const completeData = { ...onboardingData, ...stepData };
+      console.log('🔍 saveStepData - Sending completeData to server:', completeData);
       await therapistAPI.updateOnboardingData(completeData);
       
       // Refresh current user data to update account summary
       const response = await therapistAPI.getProfile();
       if (response.data.success) {
         setCurrentUserData(response.data.data);
+        console.log('🔍 saveStepData - Updated currentUserData:', response.data.data);
       }
     } catch (error) {
       console.error('Failed to save step data to server:', error);
-      // Don't show error to user as this is background saving
+      toast.error('Failed to save your information. Please try again.');
+      throw error; // Re-throw to prevent proceeding to next step
     }
   };
 
@@ -501,9 +507,15 @@ const PersonalInfoStep = ({ register, errors, watch, onNext, onSave, getValues }
 // Professional Information Step Component
 const ProfessionalInfoStep = ({ register, errors, watch, onNext, onPrev, onSave, getValues }) => {
   const handleNext = async () => {
-    const data = getValues();
-    await onSave(data);
-    onNext();
+    try {
+      const data = getValues();
+      console.log('🔍 ProfessionalInfoStep - Form data collected:', data);
+      await onSave(data);
+      onNext();
+    } catch (error) {
+      console.error('Failed to save professional information:', error);
+      // Error is already shown to user in saveStepData
+    }
   };
 
   return (
@@ -809,6 +821,8 @@ const WelcomeStep = ({
       {/* Account Summary */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-6">
         <h3 className="text-lg font-semibold text-blue-900 mb-4">Account Summary</h3>
+        {console.log('🔍 WelcomeStep - currentUserData:', currentUserData)}
+        {console.log('🔍 WelcomeStep - onboardingData:', onboardingData)}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-blue-700"><strong>Name:</strong> {currentUserData?.firstName || 'Not set'} {currentUserData?.lastName || ''}</p>

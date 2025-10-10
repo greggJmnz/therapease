@@ -102,8 +102,31 @@ const AdminNotifications = () => {
   const markAsReadMutation = useMutation(
     (notificationId) => adminAPI.markNotificationAsRead(notificationId),
     {
-      onSuccess: (data) => {
-        console.log('Successfully marked notification as read:', data);
+      onSuccess: (data, notificationId) => {
+        // Optimistically update the notification state
+        queryClient.setQueryData('adminNotifications', (oldData) => {
+          if (!oldData?.data?.data?.notifications) {
+            return oldData;
+          }
+          
+          const updatedNotifications = oldData.data.data.notifications.map(notification => {
+            if (notification.id === notificationId) {
+              return { ...notification, read: 1, isRead: true };
+            }
+            return notification;
+          });
+          
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              data: {
+                ...oldData.data.data,
+                notifications: updatedNotifications
+              }
+            }
+          };
+        });
         queryClient.invalidateQueries('adminNotifications');
       },
       onError: (error) => {
@@ -117,7 +140,27 @@ const AdminNotifications = () => {
     () => adminAPI.markAllNotificationsAsRead(),
     {
       onSuccess: (data) => {
-        console.log('Successfully marked all notifications as read:', data);
+        // Optimistically update all notifications to read
+        queryClient.setQueryData('adminNotifications', (oldData) => {
+          if (!oldData?.data?.data?.notifications) return oldData;
+          
+          const updatedNotifications = oldData.data.data.notifications.map(notification => ({
+            ...notification,
+            read: 1,
+            isRead: true
+          }));
+          
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              data: {
+                ...oldData.data.data,
+                notifications: updatedNotifications
+              }
+            }
+          };
+        });
         queryClient.invalidateQueries('adminNotifications');
       },
       onError: (error) => {
@@ -131,7 +174,6 @@ const AdminNotifications = () => {
     (notificationId) => adminAPI.deleteNotification(notificationId),
     {
       onSuccess: (data) => {
-        console.log('Successfully deleted notification:', data);
         queryClient.invalidateQueries('adminNotifications');
       },
       onError: (error) => {
@@ -142,12 +184,59 @@ const AdminNotifications = () => {
 
   // Actions
   const markAsRead = (notificationId) => {
-    console.log('Marking notification as read:', notificationId);
+    // Immediately update the local state to hide the button
+    queryClient.setQueryData('adminNotifications', (oldData) => {
+      if (!oldData?.data?.data?.notifications) {
+        return oldData;
+      }
+      
+      const updatedNotifications = oldData.data.data.notifications.map(notification => {
+        if (notification.id === notificationId) {
+          return { ...notification, read: 1, isRead: true };
+        }
+        return notification;
+      });
+      
+      return {
+        ...oldData,
+        data: {
+          ...oldData.data,
+          data: {
+            ...oldData.data.data,
+            notifications: updatedNotifications
+          }
+        }
+      };
+    });
+    
     markAsReadMutation.mutate(notificationId);
   };
 
   const markAllAsRead = () => {
-    console.log('Marking all notifications as read');
+    // Immediately update all notifications to read state
+    queryClient.setQueryData('adminNotifications', (oldData) => {
+      if (!oldData?.data?.data?.notifications) {
+        return oldData;
+      }
+      
+      const updatedNotifications = oldData.data.data.notifications.map(notification => ({
+        ...notification,
+        read: 1,
+        isRead: true
+      }));
+      
+      return {
+        ...oldData,
+        data: {
+          ...oldData.data,
+          data: {
+            ...oldData.data.data,
+            notifications: updatedNotifications
+          }
+        }
+      };
+    });
+    
     markAllAsReadMutation.mutate();
   };
 
@@ -219,15 +308,12 @@ const AdminNotifications = () => {
   };
 
   const handleClearAllNotifications = () => {
-    console.log('Clear all notifications clicked');
     setShowClearConfirm(true);
   };
 
   const confirmClearAll = async () => {
-    console.log('Confirming clear all notifications');
     try {
       for (const notification of notifications) {
-        console.log('Deleting notification:', notification.id);
         await deleteNotification(notification.id);
       }
       setShowClearConfirm(false);
@@ -312,7 +398,6 @@ const AdminNotifications = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                console.log('Overview Mark All Read button clicked');
                 markAllAsRead();
               }}
               disabled={markAllAsReadMutation.isLoading}
@@ -332,7 +417,6 @@ const AdminNotifications = () => {
             </button>
             <button
               onClick={() => {
-                console.log('Overview Clear All button clicked');
                 handleClearAllNotifications();
               }}
               className="text-red-600 hover:text-red-700 font-medium flex items-center gap-1 text-sm"
@@ -346,7 +430,7 @@ const AdminNotifications = () => {
           {notifications.slice(0, 3).map(notification => {
             const TypeIcon = getTypeIcon(notification.type);
             return (
-              <div key={notification.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
+              <div key={notification.id} onClick={() => setSelectedNotification(notification)} className="flex items-center gap-3 p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors cursor-pointer">
                 <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${
                   notification.priority === 'high' ? 'bg-red-100' :
                   notification.priority === 'medium' ? 'bg-yellow-100' : 'bg-green-100'
@@ -376,12 +460,6 @@ const AdminNotifications = () => {
                     </span>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedNotification(notification)}
-                  className="text-blue-600 hover:text-blue-700 font-medium text-xs"
-                >
-                  View
-                </button>
               </div>
             );
           })}
@@ -452,7 +530,6 @@ const AdminNotifications = () => {
           <div className="flex gap-2">
             <button
               onClick={() => {
-                console.log('Mark All Read button clicked');
                 markAllAsRead();
               }}
               disabled={markAllAsReadMutation.isLoading}
@@ -472,26 +549,12 @@ const AdminNotifications = () => {
             </button>
             <button
               onClick={() => {
-                console.log('Clear All button clicked');
                 handleClearAllNotifications();
               }}
               className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center gap-2 font-medium text-sm shadow-sm hover:shadow-md whitespace-nowrap"
             >
               <Trash2 size={16} />
               Clear All
-            </button>
-            <button
-              onClick={() => {
-                console.log('Test API button clicked');
-                adminAPI.getNotifications().then(response => {
-                  console.log('API test response:', response);
-                }).catch(error => {
-                  console.error('API test error:', error);
-                });
-              }}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center gap-2 font-medium text-sm shadow-sm hover:shadow-md whitespace-nowrap"
-            >
-              Test API
             </button>
           </div>
         </div>
@@ -513,7 +576,8 @@ const AdminNotifications = () => {
             return (
               <div
                 key={notification.id}
-                className={`bg-white rounded-md border border-gray-200 overflow-hidden hover:shadow-sm transition-all duration-200 ${
+                onClick={() => setSelectedNotification(notification)}
+                className={`bg-white rounded-md border border-gray-200 overflow-hidden hover:shadow-sm transition-all duration-200 cursor-pointer ${
                   !notification.isRead ? 'ring-1 ring-blue-500 ring-opacity-20' : ''
                 }`}
               >
@@ -567,24 +631,16 @@ const AdminNotifications = () => {
 
                         {/* Action Buttons */}
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setSelectedNotification(notification)}
-                            className="bg-blue-600 text-white py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 hover:bg-blue-700 transition-colors"
-                          >
-                            <Eye className="w-3 h-3" />
-                            View
-                          </button>
-                          
                           {!notification.isRead && !markAsReadMutation.isLoading && (
                             <button
-                              onClick={() => {
-                                console.log('Individual Read button clicked for notification:', notification.id);
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent triggering the card click
                                 markAsRead(notification.id);
                               }}
                               className="bg-green-600 text-white py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 hover:bg-green-700 transition-colors"
                             >
                               <CheckCircle className="w-3 h-3" />
-                              Read
+                              Mark as Read
                             </button>
                           )}
                           {markAsReadMutation.isLoading && (
@@ -598,7 +654,10 @@ const AdminNotifications = () => {
                           )}
                           
                           <button
-                            onClick={() => deleteNotification(notification.id)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering the card click
+                              deleteNotification(notification.id);
+                            }}
                             disabled={deleteNotificationMutation.isLoading}
                             className="bg-red-50 text-red-700 py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >

@@ -572,17 +572,17 @@ const AdminTherapists = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      <div className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${
                         therapist.status === 'active'
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-green-500'
                           : therapist.status === 'inactive'
-                          ? 'bg-red-100 text-red-800'
+                          ? 'bg-red-500'
                           : therapist.status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-yellow-500'
+                          : 'bg-gray-500'
                       }`}>
-                        {therapist.status}
-                      </span>
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="therapist-actions">
@@ -699,177 +699,188 @@ const AdminTherapists = () => {
               </button>
             </div>
             <div className="modal-body">
-              <div className="therapist-detail-modern">
-                {/* Header Section */}
-                <div className="therapist-header">
-                  <div className="avatar-container">
-                    <InitialsAvatar 
-                      name={selectedTherapist.name} 
-                      size="3xl" 
-                      className="therapist-avatar"
-                    />
-                    <div className={`status-indicator ${selectedTherapist.status}`}></div>
-                  </div>
-                  <div className="therapist-basic-info">
-                    <h2 className="therapist-name">{selectedTherapist.name}</h2>
-                    <p className="therapist-specialization">{selectedTherapist.specialization || 'Specialization not set'}</p>
-                    <div className="therapist-stats">
-                      <div className="stat-item">
-                        <UserCheck size={16} className="stat-icon" />
-                        <span className="stat-value">{selectedTherapist.patientsCount}</span>
-                        <span className="stat-label">Patients</span>
+              <div className="therapist-profile-container">
+                {/* Hero Header Section */}
+                <div className="therapist-hero">
+                  <div className="hero-background"></div>
+                  <div className="hero-content">
+                    <div className="therapist-avatar-section">
+                      <div className="avatar-wrapper">
+                        <InitialsAvatar 
+                          name={selectedTherapist.name} 
+                          size="4xl" 
+                          className="therapist-avatar-large"
+                        />
                       </div>
-                      <div className="stat-item">
-                        <Calendar size={16} className="stat-icon" />
-                        <span className="stat-value">{selectedTherapist.experience}</span>
-                        <span className="stat-label">Experience</span>
-                      </div>
-                      <div className="stat-item">
-                        <Key size={16} className="stat-icon" />
-                        <span className="stat-value">{selectedTherapist.licenseNumber || 'N/A'}</span>
-                        <span className="stat-label">License</span>
+                    </div>
+                    <div className="therapist-info-section">
+                      <h1 className="therapist-name">{selectedTherapist.name}</h1>
+                      <p className="therapist-specialization">{selectedTherapist.specialization || 'Specialization not specified'}</p>
+                      <div className="therapist-meta">
+                        <div className="meta-item">
+                          <Users size={18} />
+                          <span>{selectedTherapist.patientsCount || 0} Patients</span>
+                        </div>
+                        <div className="meta-item">
+                          <Calendar size={18} />
+                          <span>{selectedTherapist.experience || 0} Years Experience</span>
+                        </div>
+                        <div className="meta-item">
+                          <Key size={18} />
+                          <span>{selectedTherapist.licenseNumber ? 'Licensed' : 'Not Licensed'}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Contact Information */}
-                <div className="info-section">
-                  <h4 className="section-title">
-                    <Mail size={18} className="section-icon" />
-                    Contact Information
-                  </h4>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <Mail size={16} className="info-icon" />
-                      <div className="info-content">
-                        <span className="info-label">Email Address</span>
-                        <span className="info-value">{selectedTherapist.email}</span>
+                {/* Main Content Grid */}
+                <div className="therapist-content-grid">
+                  {/* Left Column */}
+                  <div className="content-left">
+                    {/* Contact Information */}
+                    <div className="info-card">
+                      <div className="card-header">
+                        <div className="card-icon">
+                          <Mail size={20} />
+                        </div>
+                        <h3>Contact Information</h3>
+                      </div>
+                      <div className="card-content">
+                        <div className="contact-item">
+                          <div className="contact-icon">
+                            <Mail size={16} />
+                          </div>
+                          <div className="contact-details">
+                            <span className="contact-label">Email</span>
+                            <span className="contact-value">{selectedTherapist.email}</span>
+                          </div>
+                        </div>
+                        <div className="contact-item">
+                          <div className="contact-icon">
+                            <Phone size={16} />
+                          </div>
+                          <div className="contact-details">
+                            <span className="contact-label">Phone</span>
+                            <span className="contact-value">{selectedTherapist.phone || 'Not provided'}</span>
+                          </div>
+                        </div>
+                        <div className="contact-item">
+                          <div className="contact-icon">
+                            <MapPin size={16} />
+                          </div>
+                          <div className="contact-details">
+                            <span className="contact-label">Location</span>
+                            <span className="contact-value">
+                              {selectedTherapist.address ? `${selectedTherapist.city}, ${selectedTherapist.state}` : 'Not provided'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="info-item">
-                      <Phone size={16} className="info-icon" />
-                      <div className="info-content">
-                        <span className="info-label">Phone Number</span>
-                        <span className="info-value">{selectedTherapist.phone || 'Not provided'}</span>
+
+                    {/* Professional Details */}
+                    <div className="info-card">
+                      <div className="card-header">
+                        <div className="card-icon">
+                          <Briefcase size={20} />
+                        </div>
+                        <h3>Professional Details</h3>
+                      </div>
+                      <div className="card-content">
+                        <div className="detail-row">
+                          <span className="detail-label">License Number</span>
+                          <span className="detail-value">{selectedTherapist.licenseNumber || 'Not provided'}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Experience</span>
+                          <span className="detail-value">{selectedTherapist.experience || 'Not specified'} years</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Current Patients</span>
+                          <span className="detail-value">{selectedTherapist.patientsCount || 0}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="info-item">
-                      <MapPin size={16} className="info-icon" />
-                      <div className="info-content">
-                        <span className="info-label">Location</span>
-                        <span className="info-value">
-                          {selectedTherapist.address ? `${selectedTherapist.city}, ${selectedTherapist.state}` : 'Not provided'}
-                    </span>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="content-right">
+                    {/* Education & Certifications */}
+                    <div className="info-card">
+                      <div className="card-header">
+                        <div className="card-icon">
+                          <Shield size={20} />
+                        </div>
+                        <h3>Education & Certifications</h3>
+                      </div>
+                      <div className="card-content">
+                        <div className="education-section">
+                          <h4 className="subsection-title">Education</h4>
+                          <p className="education-text">{selectedTherapist.education || 'Not provided'}</p>
+                        </div>
+                        <div className="certifications-section">
+                          <h4 className="subsection-title">Certifications</h4>
+                          <p className="certifications-text">{selectedTherapist.certifications || 'Not provided'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Availability */}
+                    <div className="info-card">
+                      <div className="card-header">
+                        <div className="card-icon">
+                          <Calendar size={20} />
+                        </div>
+                        <h3>Availability</h3>
+                      </div>
+                      <div className="card-content">
+                        <div className="availability-section">
+                          <h4 className="subsection-title">Schedule</h4>
+                          <p className="availability-text">{selectedTherapist.availability || 'Not specified'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Account Status */}
+                    <div className="info-card status-card">
+                      <div className="card-header">
+                        <div className="card-icon">
+                          <Shield size={20} />
+                        </div>
+                        <h3>Account Status</h3>
+                      </div>
+                      <div className="card-content">
+                        <div className="status-info">
+                          <p className="status-description">
+                            {selectedTherapist.status === 'active' ? 'This therapist is currently active and can accept new patients.' :
+                             selectedTherapist.status === 'pending' ? 'This therapist account is pending approval from administration.' :
+                             'This therapist account is currently inactive.'}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Professional Details */}
-                <div className="info-section">
-                  <h4 className="section-title">
-                    <Briefcase size={18} className="section-icon" />
-                    Professional Details
-                  </h4>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <Key size={16} className="info-icon" />
-                      <div className="info-content">
-                        <span className="info-label">License Number</span>
-                        <span className="info-value">{selectedTherapist.licenseNumber}</span>
-                      </div>
-                    </div>
-                    <div className="info-item">
-                      <Calendar size={16} className="info-icon" />
-                      <div className="info-content">
-                        <span className="info-label">Years of Experience</span>
-                        <span className="info-value">{selectedTherapist.experience}</span>
-                      </div>
-                    </div>
-                    <div className="info-item">
-                      <Users size={16} className="info-icon" />
-                      <div className="info-content">
-                        <span className="info-label">Current Patients</span>
-                        <span className="info-value">{selectedTherapist.patientsCount}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Education & Certifications */}
-                <div className="info-section">
-                  <h4 className="section-title">
-                    <Shield size={18} className="section-icon" />
-                    Education & Certifications
-                  </h4>
-                  <div className="info-grid">
-                    <div className="info-item full-width">
-                      <div className="info-content">
-                        <span className="info-label">Education</span>
-                        <span className="info-value education-text">{selectedTherapist.education}</span>
-                      </div>
-                    </div>
-                    <div className="info-item full-width">
-                      <div className="info-content">
-                        <span className="info-label">Certifications</span>
-                        <span className="info-value certifications-text">{selectedTherapist.certifications}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Availability */}
-                <div className="info-section">
-                  <h4 className="section-title">
-                    <Calendar size={18} className="section-icon" />
-                    Availability
-                  </h4>
-                  <div className="info-grid">
-                    <div className="info-item full-width">
-                      <div className="info-content">
-                        <span className="info-label">Schedule</span>
-                        <span className="info-value availability-text">{selectedTherapist.availability}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Account Status */}
-                <div className="info-section">
-                  <h4 className="section-title">
-                    <Shield size={18} className="section-icon" />
-                    Account Status
-                  </h4>
-                  <div className="status-section">
-                    <div className={`status-badge-modern ${selectedTherapist.status}`}>
-                      <span className="status-dot"></span>
-                      {selectedTherapist.status.charAt(0).toUpperCase() + selectedTherapist.status.slice(1)}
-                    </div>
-                    <p className="status-description">
-                      {selectedTherapist.status === 'active' ? 'This therapist is currently active and can accept new patients.' :
-                       selectedTherapist.status === 'pending' ? 'This therapist account is pending approval from administration.' :
-                       'This therapist account is currently inactive.'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="quick-actions">
-                  <button className="therapist-action-btn" onClick={() => handleEdit(selectedTherapist)}>
-                    <Edit size={16} />
-                    Edit Profile
-                  </button>
-                  {selectedTherapist.status === 'pending' && (
-                    <button className="therapist-action-btn approve" onClick={() => handleApprove(selectedTherapist.id)}>
-                      <UserCheck size={16} />
-                      Approve Account
+                {/* Action Bar */}
+                <div className="action-bar">
+                  <div className="action-buttons">
+                    <button className="action-btn primary" onClick={() => handleEdit(selectedTherapist)}>
+                      <Edit size={18} />
+                      Edit Profile
                     </button>
-                  )}
-                  <button className="therapist-action-btn danger" onClick={() => handleDelete(selectedTherapist.id)}>
-                    <Trash2 size={16} />
-                    Delete Account
-                  </button>
+                    {selectedTherapist.status === 'pending' && (
+                      <button className="action-btn success" onClick={() => handleApprove(selectedTherapist.id)}>
+                        <UserCheck size={18} />
+                        Approve Account
+                      </button>
+                    )}
+                    <button className="action-btn danger" onClick={() => handleDelete(selectedTherapist.id)}>
+                      <Trash2 size={18} />
+                      Delete Account
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

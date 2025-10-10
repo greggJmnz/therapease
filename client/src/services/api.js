@@ -255,10 +255,7 @@ export const patientAPI = {
 
 // AI API endpoints
 export const aiAPI = {
-  analyzeSessionNotes: (data) => api.post('/ai/analyze-session', data),
-  generateProgressSummary: (data) => api.post('/ai/progress-summary', data),
-  generateHomeExercisePlan: (data) => api.post('/ai/exercise-plan', data),
-  generateParentSummary: (data) => api.post('/ai/parent-summary', data),
+  analyzeAssessment: (data) => api.post('/ai/analyze-assessment', data),
 };
 
 // Generic API methods

@@ -252,9 +252,7 @@ TherapEase leverages OpenAI's GPT-4 for pediatric occupational therapy:
 ### Pediatric AI Prompts
 Located in `ai/prompts/`:
 - `assessmentPrompt.js` - Pediatric session analysis templates with developmental focus
-- `progressSummaryPrompt.js` - Child progress tracking prompts with milestone references
-- `parentSummaryPrompt.js` - Family communication and parent education templates
-- `homeExercisePrompt.js` - Play-based home program creation templates
+- `otPromptTemplates.js` - OT prompt templates for various assessment types
 - `otpfFramework.js` - Pediatric OTPF-4 framework compliance system
 
 ## 🔐 Security Features

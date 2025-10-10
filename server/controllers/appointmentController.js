@@ -41,6 +41,8 @@ const getSchedule = async (req, res) => {
         a.duration,
         a.type,
         a.status,
+        a.approvalStatus,
+        a.approvedBy,
         a.reason,
         a.notes,
         a.createdAt,
@@ -155,6 +157,7 @@ const createAppointment = async (req, res) => {
       endTime,
       duration,
       type,
+      reason,
       notes
     } = req.body;
 
@@ -215,8 +218,8 @@ const createAppointment = async (req, res) => {
     const insertSql = `
       INSERT INTO appointments (
         patientId, therapistId, appointmentDate, startTime, endTime, 
-        duration, type, status, reason, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        duration, type, status, approvalStatus, approvedBy, approvedAt, reason, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
     `;
 
     const insertParams = [
@@ -228,7 +231,9 @@ const createAppointment = async (req, res) => {
       parseInt(duration),
       type,
       'scheduled',
-      null, // reason field - not provided in therapist appointment creation
+      'approved', // Therapist-created appointments are automatically approved
+      therapistId, // Therapist who created the appointment
+      reason || null, // Include reason field from request
       notes || null
     ];
 
@@ -324,6 +329,21 @@ const updateAppointment = async (req, res) => {
         success: false,
         error: 'Appointment not found or not authorized'
       });
+    }
+
+    // Check if appointment was created by admin - therapists cannot edit admin-created appointments
+    if (existingAppointment.approvedBy && existingAppointment.approvedBy !== req.user.id) {
+      // Check if the approver is an admin by checking their role
+      const approverRole = await getRow(`
+        SELECT role FROM users WHERE id = ?
+      `, [existingAppointment.approvedBy]);
+      
+      if (approverRole && approverRole.role === 'admin') {
+        return res.status(403).json({
+          success: false,
+          error: 'Cannot edit appointments created by administrators. Please contact an administrator for changes.'
+        });
+      }
     }
 
     // Check for scheduling conflicts if time is being changed

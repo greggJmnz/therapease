@@ -473,6 +473,8 @@ const updateOnboardingData = async (req, res) => {
     const userId = req.user.id;
     const onboardingData = req.body;
 
+    console.log('🔍 Update onboarding data - Received data:', JSON.stringify(onboardingData, null, 2));
+    console.log('🔍 User ID:', userId);
 
     // Validate userId
     if (!userId) {
@@ -526,47 +528,76 @@ const updateOnboardingData = async (req, res) => {
 
       // Update therapist table with professional data only if provided
       if (hasProfessionalData) {
-        const therapistUpdateFields = [];
-        const therapistUpdateParams = [];
+        // Check if therapist record exists
+        const [existingTherapist] = await connection.execute(
+          'SELECT id FROM therapists WHERE userId = ?', 
+          [userId]
+        );
 
-        if (onboardingData.licenseNumber !== undefined) {
-          therapistUpdateFields.push('licenseNumber = ?');
-          therapistUpdateParams.push(onboardingData.licenseNumber);
-        }
-        if (onboardingData.specialization !== undefined) {
-          therapistUpdateFields.push('specialization = ?');
-          therapistUpdateParams.push(onboardingData.specialization);
-        }
-        if (onboardingData.yearsOfExperience !== undefined) {
-          therapistUpdateFields.push('yearsOfExperience = ?');
-          therapistUpdateParams.push(onboardingData.yearsOfExperience ? parseInt(onboardingData.yearsOfExperience) : null);
-        }
-        if (onboardingData.education !== undefined) {
-          therapistUpdateFields.push('education = ?');
-          therapistUpdateParams.push(onboardingData.education);
-        }
-        if (onboardingData.certifications !== undefined) {
-          therapistUpdateFields.push('certifications = ?');
-          therapistUpdateParams.push(onboardingData.certifications);
-        }
-        if (onboardingData.availability !== undefined) {
-          therapistUpdateFields.push('availability = ?');
-          therapistUpdateParams.push(onboardingData.availability);
-        }
-        if (onboardingData.maxPatients !== undefined) {
-          therapistUpdateFields.push('maxPatients = ?');
-          therapistUpdateParams.push(onboardingData.maxPatients ? parseInt(onboardingData.maxPatients) : 20);
-        }
-        if (onboardingData.isAcceptingPatients !== undefined) {
-          therapistUpdateFields.push('isAcceptingPatients = ?');
-          therapistUpdateParams.push(onboardingData.isAcceptingPatients);
-        }
+        if (existingTherapist.length > 0) {
+          // Update existing therapist record
+          const therapistUpdateFields = [];
+          const therapistUpdateParams = [];
 
-        therapistUpdateFields.push('updatedAt = NOW()');
-        therapistUpdateParams.push(userId);
+          if (onboardingData.licenseNumber !== undefined) {
+            therapistUpdateFields.push('licenseNumber = ?');
+            therapistUpdateParams.push(onboardingData.licenseNumber);
+          }
+          if (onboardingData.specialization !== undefined) {
+            therapistUpdateFields.push('specialization = ?');
+            therapistUpdateParams.push(onboardingData.specialization);
+          }
+          if (onboardingData.yearsOfExperience !== undefined) {
+            therapistUpdateFields.push('yearsOfExperience = ?');
+            therapistUpdateParams.push(onboardingData.yearsOfExperience ? parseInt(onboardingData.yearsOfExperience) : null);
+          }
+          if (onboardingData.education !== undefined) {
+            therapistUpdateFields.push('education = ?');
+            therapistUpdateParams.push(onboardingData.education);
+          }
+          if (onboardingData.certifications !== undefined) {
+            therapistUpdateFields.push('certifications = ?');
+            therapistUpdateParams.push(onboardingData.certifications);
+          }
+          if (onboardingData.availability !== undefined) {
+            therapistUpdateFields.push('availability = ?');
+            therapistUpdateParams.push(onboardingData.availability);
+          }
+          if (onboardingData.maxPatients !== undefined) {
+            therapistUpdateFields.push('maxPatients = ?');
+            therapistUpdateParams.push(onboardingData.maxPatients ? parseInt(onboardingData.maxPatients) : 20);
+          }
+          if (onboardingData.isAcceptingPatients !== undefined) {
+            therapistUpdateFields.push('isAcceptingPatients = ?');
+            therapistUpdateParams.push(onboardingData.isAcceptingPatients);
+          }
 
-        const therapistSql = `UPDATE therapists SET ${therapistUpdateFields.join(', ')} WHERE userId = ?`;
-        await connection.execute(therapistSql, therapistUpdateParams);
+          therapistUpdateFields.push('updatedAt = NOW()');
+          therapistUpdateParams.push(userId);
+
+          const therapistSql = `UPDATE therapists SET ${therapistUpdateFields.join(', ')} WHERE userId = ?`;
+          await connection.execute(therapistSql, therapistUpdateParams);
+        } else {
+          // Create new therapist record
+          const createTherapistSql = `
+            INSERT INTO therapists (userId, licenseNumber, specialization, yearsOfExperience, education, certifications, availability, maxPatients, isAcceptingPatients, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+          `;
+
+          const therapistParams = [
+            userId,
+            onboardingData.licenseNumber || null,
+            onboardingData.specialization || null,
+            onboardingData.yearsOfExperience ? parseInt(onboardingData.yearsOfExperience) : null,
+            onboardingData.education || null,
+            onboardingData.certifications || null,
+            onboardingData.availability || null,
+            onboardingData.maxPatients ? parseInt(onboardingData.maxPatients) : 20,
+            onboardingData.isAcceptingPatients !== undefined ? onboardingData.isAcceptingPatients : true
+          ];
+
+          await connection.execute(createTherapistSql, therapistParams);
+        }
       }
 
       await connection.commit();
@@ -638,28 +669,57 @@ const completeOnboarding = async (req, res) => {
 
       await connection.execute(userSql, userParams);
 
-      // Update therapist table with professional data
-      const therapistSql = `
-        UPDATE therapists SET 
-          licenseNumber = ?, specialization = ?, yearsOfExperience = ?,
-          education = ?, certifications = ?, availability = ?,
-          maxPatients = ?, isAcceptingPatients = ?, updatedAt = NOW()
-        WHERE userId = ?
-      `;
+      // Update or create therapist table with professional data
+      // Check if therapist record exists
+      const [existingTherapist] = await connection.execute(
+        'SELECT id FROM therapists WHERE userId = ?', 
+        [userId]
+      );
 
-      const therapistParams = [
-        onboardingData.licenseNumber || null,
-        onboardingData.specialization || null,
-        onboardingData.yearsOfExperience ? parseInt(onboardingData.yearsOfExperience) : null,
-        onboardingData.education || null,
-        onboardingData.certifications || null,
-        onboardingData.availability || null,
-        onboardingData.maxPatients ? parseInt(onboardingData.maxPatients) : 20,
-        onboardingData.isAcceptingPatients !== undefined ? onboardingData.isAcceptingPatients : true,
-        userId
-      ];
+      if (existingTherapist.length > 0) {
+        // Update existing therapist record
+        const therapistSql = `
+          UPDATE therapists SET 
+            licenseNumber = ?, specialization = ?, yearsOfExperience = ?,
+            education = ?, certifications = ?, availability = ?,
+            maxPatients = ?, isAcceptingPatients = ?, updatedAt = NOW()
+          WHERE userId = ?
+        `;
 
-      await connection.execute(therapistSql, therapistParams);
+        const therapistParams = [
+          onboardingData.licenseNumber || null,
+          onboardingData.specialization || null,
+          onboardingData.yearsOfExperience ? parseInt(onboardingData.yearsOfExperience) : null,
+          onboardingData.education || null,
+          onboardingData.certifications || null,
+          onboardingData.availability || null,
+          onboardingData.maxPatients ? parseInt(onboardingData.maxPatients) : 20,
+          onboardingData.isAcceptingPatients !== undefined ? onboardingData.isAcceptingPatients : true,
+          userId
+        ];
+
+        await connection.execute(therapistSql, therapistParams);
+      } else {
+        // Create new therapist record
+        const createTherapistSql = `
+          INSERT INTO therapists (userId, licenseNumber, specialization, yearsOfExperience, education, certifications, availability, maxPatients, isAcceptingPatients, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        `;
+
+        const therapistParams = [
+          userId,
+          onboardingData.licenseNumber || null,
+          onboardingData.specialization || null,
+          onboardingData.yearsOfExperience ? parseInt(onboardingData.yearsOfExperience) : null,
+          onboardingData.education || null,
+          onboardingData.certifications || null,
+          onboardingData.availability || null,
+          onboardingData.maxPatients ? parseInt(onboardingData.maxPatients) : 20,
+          onboardingData.isAcceptingPatients !== undefined ? onboardingData.isAcceptingPatients : true
+        ];
+
+        await connection.execute(createTherapistSql, therapistParams);
+      }
 
       await connection.commit();
 

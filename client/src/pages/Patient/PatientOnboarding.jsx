@@ -49,7 +49,20 @@ const PatientOnboarding = () => {
     formState: { errors },
     setValue,
     getValues
-  } = useForm();
+  } = useForm({
+    mode: 'onChange',
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      phone: '',
+      dateOfBirth: '',
+      gender: '',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: ''
+    }
+  });
 
   const totalSteps = 4;
 
@@ -384,7 +397,9 @@ const PersonalInfoStep = ({ register, errors, watch, onNext, onSave, getValues }
             type="text"
             leftIcon={User}
             error={errors.firstName?.message}
-            {...register('firstName', { required: 'First name is required' })}
+            name="firstName"
+            register={register}
+            required
           />
 
           <ModernInput
@@ -392,7 +407,9 @@ const PersonalInfoStep = ({ register, errors, watch, onNext, onSave, getValues }
             type="text"
             leftIcon={User}
             error={errors.lastName?.message}
-            {...register('lastName', { required: 'Last name is required' })}
+            name="lastName"
+            register={register}
+            required
           />
         </div>
 
@@ -403,13 +420,9 @@ const PersonalInfoStep = ({ register, errors, watch, onNext, onSave, getValues }
             leftIcon={Phone}
             placeholder="+63 912 345 6789"
             error={errors.phone?.message}
-            {...register('phone', { 
-              required: 'Phone number is required',
-              pattern: {
-                value: /^(09\d{9}|\+639\d{9})$/,
-                message: 'Phone number must be in format 09XXXXXXXXX or +639XXXXXXXXX'
-              }
-            })}
+            name="phone"
+            register={register}
+            required
           />
 
           <ModernInput
@@ -417,7 +430,9 @@ const PersonalInfoStep = ({ register, errors, watch, onNext, onSave, getValues }
             type="date"
             leftIcon={Calendar}
             error={errors.dateOfBirth?.message}
-            {...register('dateOfBirth', { required: 'Date of birth is required' })}
+            name="dateOfBirth"
+            register={register}
+            required
           />
         </div>
 
@@ -447,7 +462,9 @@ const PersonalInfoStep = ({ register, errors, watch, onNext, onSave, getValues }
             leftIcon={MapPin}
             placeholder="Street address"
             error={errors.address?.message}
-            {...register('address', { required: 'Address is required' })}
+            name="address"
+            register={register}
+            required
           />
         </div>
 
@@ -456,21 +473,27 @@ const PersonalInfoStep = ({ register, errors, watch, onNext, onSave, getValues }
             label="City"
             type="text"
             error={errors.city?.message}
-            {...register('city', { required: 'City is required' })}
+            name="city"
+            register={register}
+            required
           />
 
           <ModernInput
             label="State/Province"
             type="text"
             error={errors.state?.message}
-            {...register('state', { required: 'State/Province is required' })}
+            name="state"
+            register={register}
+            required
           />
 
           <ModernInput
             label="ZIP Code"
             type="text"
             error={errors.zipCode?.message}
-            {...register('zipCode', { required: 'ZIP code is required' })}
+            name="zipCode"
+            register={register}
+            required
           />
         </div>
 

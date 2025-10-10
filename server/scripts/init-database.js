@@ -289,6 +289,31 @@ const createTables = async (connection) => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
+  // Patient-Therapist Assignments table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS patient_therapist_assignments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      patientId INT NOT NULL,
+      therapistId INT NOT NULL,
+      assignmentType ENUM('primary', 'secondary', 'collaborative') NOT NULL DEFAULT 'primary',
+      assignedBy INT NOT NULL,
+      notes TEXT,
+      status ENUM('active', 'inactive', 'terminated') DEFAULT 'active',
+      assignedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      terminatedAt TIMESTAMP NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+      FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (assignedBy) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE KEY unique_active_assignment (patientId, therapistId, status),
+      INDEX idx_patient (patientId),
+      INDEX idx_therapist (therapistId),
+      INDEX idx_assignment_type (assignmentType),
+      INDEX idx_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
   console.log('✅ All tables created successfully');
 };
 
