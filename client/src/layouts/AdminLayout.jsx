@@ -55,16 +55,25 @@ const AdminLayout = () => {
   console.log('AdminLayout - unreadCount:', unreadCount);
   console.log('AdminLayout - first notification:', notificationsData?.data?.data?.notifications?.[0]);
 
-  // Check screen size on mount and resize
+  // Check screen size on mount and resize with improved mobile detection
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsMobile(window.innerWidth <= 1024);
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      // More comprehensive mobile detection
+      const isMobile = width <= 1024 || (width <= 768 && height <= 1024);
+      setIsMobile(isMobile);
     };
     
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
+    window.addEventListener('orientationchange', checkScreenSize);
     
-    return () => window.removeEventListener('resize', checkScreenSize);
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+      window.removeEventListener('orientationchange', checkScreenSize);
+    };
   }, []);
 
   // Close dropdown when clicking outside
@@ -289,8 +298,10 @@ const AdminLayout = () => {
           {isMobile && (
             <button
               type="button"
-              className="mobile-menu-btn"
+              className="mobile-menu-btn touch-target"
               onClick={() => setSidebarOpen(true)}
+              title="Open Menu"
+              aria-label="Open navigation menu"
             >
               <Menu size={20} />
             </button>
@@ -315,7 +326,8 @@ const AdminLayout = () => {
             </a>
             <button 
               onClick={() => navigate('/admin/notifications')}
-              className="btn-secondary relative"
+              className="btn-secondary relative touch-target"
+              title="Notifications"
             >
               <Bell size={16} />
               {!isLoading && unreadCount > 0 && (
@@ -324,7 +336,8 @@ const AdminLayout = () => {
             </button>
             <button 
               onClick={() => navigate('/admin/settings')}
-              className="btn-secondary"
+              className="btn-secondary touch-target"
+              title="Settings"
             >
               <Settings size={16} />
             </button>

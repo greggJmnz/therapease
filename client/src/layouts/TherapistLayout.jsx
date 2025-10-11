@@ -96,13 +96,22 @@ const TherapistLayout = () => {
   // Check screen size on mount and resize
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsMobile(window.innerWidth <= 1024);
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      // More comprehensive mobile detection
+      const isMobile = width <= 1024 || (width <= 768 && height <= 1024);
+      setIsMobile(isMobile);
     };
     
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
+    window.addEventListener('orientationchange', checkScreenSize);
     
-    return () => window.removeEventListener('resize', checkScreenSize);
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+      window.removeEventListener('orientationchange', checkScreenSize);
+    };
   }, []);
 
   // Close dropdown when clicking outside
@@ -395,8 +404,10 @@ const TherapistLayout = () => {
             {isMobile && (
               <button
                 type="button"
-                className="mobile-menu-btn"
+                className="mobile-menu-btn touch-target"
                 onClick={() => setSidebarOpen(true)}
+                title="Open Menu"
+                aria-label="Open navigation menu"
               >
                 <Menu size={20} />
               </button>
@@ -414,7 +425,7 @@ const TherapistLayout = () => {
               href="http://localhost:8000/"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-secondary"
+              className="btn-secondary touch-target"
               title="Visit Public Website"
             >
               <Globe size={16} />
@@ -422,7 +433,7 @@ const TherapistLayout = () => {
             </a>
             <button 
               onClick={() => navigate('/therapist/notifications')}
-              className="btn-secondary relative"
+              className="btn-secondary relative touch-target"
               title="View Notifications"
             >
               <Bell size={16} />
@@ -432,7 +443,7 @@ const TherapistLayout = () => {
             </button>
             <button 
               onClick={() => navigate('/therapist/settings')}
-              className="btn-secondary"
+              className="btn-secondary touch-target"
               title="Settings"
             >
               <Settings size={16} />

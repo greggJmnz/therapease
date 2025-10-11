@@ -18,7 +18,19 @@ import {
   Clock,
   Calendar,
   BarChart3,
-  AlertTriangle
+  AlertTriangle,
+  // Modern icons
+  UserCircle,
+  Stethoscope,
+  Shield,
+  CalendarDays,
+  Clock3,
+  Hash,
+  Heart,
+  Activity,
+  Target,
+  Mail,
+  MapPin
 } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -41,7 +53,14 @@ const AdminPatients = () => {
   const [activeTab, setActiveTab] = useState('personal');
   const [actionDropdowns, setActionDropdowns] = useState({});
   const [patientTherapists, setPatientTherapists] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const dropdownRefs = useRef({});
+
+  // Reset to first page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
 
   // Fetch patient therapists
   const fetchPatientTherapists = async (patientId) => {
@@ -174,13 +193,17 @@ const AdminPatients = () => {
         city: patient.city || 'N/A',
         state: patient.state || 'N/A',
         zipCode: patient.zipCode || 'N/A',
-        diagnosis: patient.diagnosis || 'N/A',
-        goals: patient.goals || 'N/A',
+        country: patient.country || 'N/A',
+        // Access patient-specific data from nested patient object
+        diagnosis: patient.patient?.diagnosis || 'N/A',
+        medicalHistory: patient.patient?.medicalHistory || 'N/A',
+        goals: patient.patient?.goals || 'N/A',
         therapistId: patient.patient?.therapistId || null,
         therapistName: patient.therapistName || (patient.patient?.therapistId ? 'Assigned' : 'Not assigned'),
-        status: patient.status || patient.patient?.status || 'active', // Use user status, fallback to patient status
+        status: patient.patient?.status || patient.status || 'active', // Use patient status first, fallback to user status
         createdAt: patient.createdAt,
         updatedAt: patient.updatedAt,
+        profileImage: patient.profileImage || null,
         patient: patient.patient || {}
       };
     });
@@ -225,6 +248,34 @@ const AdminPatients = () => {
     
     return matchesSearch && matchesStatus;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPatients = filteredPatients.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    // Scroll to top of table when page changes
+    const tableContainer = document.querySelector('.patients-table-container');
+    if (tableContainer) {
+      tableContainer.scrollTop = 0;
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
 
   const handleEditPatient = (patient) => {
     console.log('Edit patient clicked:', patient);
@@ -515,8 +566,12 @@ const AdminPatients = () => {
             </tr>
           </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPatients.map((patient) => (
-                  <tr key={patient.id} className="hover:bg-gray-50">
+                {currentPatients.map((patient) => (
+                  <tr 
+                    key={patient.id} 
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => handleViewPatient(patient)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <Avatar 
@@ -599,7 +654,10 @@ const AdminPatients = () => {
                            <div className="patient-actions">
                              <button 
                                className="dropdown-trigger" 
-                               onClick={() => toggleActionDropdown(patient.id)}
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 toggleActionDropdown(patient.id);
+                               }}
                                title="Actions"
                                ref={el => dropdownRefs.current[patient.id] = el}
                                data-patient-id={patient.id}
@@ -639,7 +697,7 @@ const AdminPatients = () => {
                                    }}
                                    className="dropdown-item"
                                  >
-                                   <UserCheck size={16} />
+                                   <Heart size={16} className="text-red-500" />
                                    Assign Therapist
                                  </button>
                                  <button 
@@ -650,7 +708,7 @@ const AdminPatients = () => {
                                    }}
                                    className="dropdown-item"
                                  >
-                                   <Users size={16} />
+                                   <Activity size={16} className="text-green-500" />
                                    Add Therapist
                                  </button>
                                  <button 
@@ -686,153 +744,78 @@ const AdminPatients = () => {
               </p>
             </div>
           )}
+
+          {/* Pagination Controls */}
+          {filteredPatients.length > 0 && (
+            <div className="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="flex items-center text-sm text-gray-700">
+                <span>
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredPatients.length)} of {filteredPatients.length} patients
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                {/* Previous Button */}
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    currentPage === 1
+                      ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                      : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                  }`}
+                >
+                  Previous
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    currentPage === totalPages
+                      ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                      : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
                 </div>
 
 
-         {/* View Patient Modal */}
-         {selectedPatient && (
-           <div className="modal-overlay" onClick={() => setSelectedPatient(null)}>
-             <div className="modal-content patient-detail-modal" onClick={e => e.stopPropagation()}>
-               <div className="modal-header">
-                 <h3>Patient Profile</h3>
-                 <button className="close-btn" onClick={() => setSelectedPatient(null)}>
-                   <X size={20} />
-                 </button>
-               </div>
-               
-               <div className="modal-body">
-                 <div className="patient-detail-modern">
-                   {/* Header Section */}
-                   <div className="patient-header">
-                     <div className="avatar-container">
-                       <Avatar 
-                         name={`${selectedPatient.firstName} ${selectedPatient.lastName}`} 
-                         profileImage={selectedPatient.profileImage}
-                         size="3xl" 
-                         className="patient-avatar"
-                       />
-                       <div className={`status-indicator ${selectedPatient.status || 'active'}`}></div>
-                     </div>
-                     <div className="patient-basic-info">
-                       <h2 className="patient-name">{selectedPatient.firstName} {selectedPatient.lastName}</h2>
-                       <p className="patient-diagnosis">{selectedPatient.diagnosis || 'Diagnosis not set'}</p>
-                       <div className="patient-stats">
-                         <div className="stat-item">
-                           <User size={16} className="stat-icon" />
-                           <span className="stat-value">{selectedPatient.id}</span>
-                           <span className="stat-label">Patient ID</span>
-                         </div>
-                         <div className="stat-item">
-                           <Calendar size={16} className="stat-icon" />
-                           <span className="stat-value">{selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
-                           <span className="stat-label">Date of Birth</span>
-                         </div>
-                         <div className="stat-item">
-                           <Clock size={16} className="stat-icon" />
-                           <span className="stat-value">{selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'N/A'}</span>
-                           <span className="stat-label">Patient Since</span>
-                         </div>
-                       </div>
-                     </div>
-                   </div>
-
-                   {/* Information Sections */}
-                   <div className="info-section">
-                     <h3 className="section-title">
-                       <User size={20} className="section-icon" />
-                       Personal Information
-                     </h3>
-                     <div className="info-grid">
-                       <div className="info-item">
-                         <label>Email Address</label>
-                         <span>{selectedPatient.email || 'Not provided'}</span>
-                       </div>
-                       <div className="info-item">
-                         <label>Phone Number</label>
-                         <span>{selectedPatient.phone || 'Not provided'}</span>
-                       </div>
-                       <div className="info-item">
-                         <label>Date of Birth</label>
-                         <span>{selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 'Not provided'}</span>
-                       </div>
-                       <div className="info-item">
-                         <label>Gender</label>
-                         <span>{selectedPatient.gender || 'Not provided'}</span>
-                       </div>
-                       <div className="info-item full-width">
-                         <label>Full Address</label>
-                         <span>{selectedPatient.address ? `${selectedPatient.address}, ${selectedPatient.city}, ${selectedPatient.state} ${selectedPatient.zipCode}, ${selectedPatient.country}` : 'Not provided'}</span>
-                       </div>
-                     </div>
-                   </div>
-                   
-                   <div className="info-section">
-                     <h3 className="section-title">
-                       <FileText size={20} className="section-icon" />
-                       Medical Information
-                     </h3>
-                     <div className="info-grid">
-                       <div className="info-item">
-                         <label>Primary Diagnosis</label>
-                         <span>{selectedPatient.diagnosis || 'Not provided'}</span>
-                       </div>
-                       <div className="info-item">
-                         <label>Treatment Status</label>
-                         <span className={`status-badge ${selectedPatient.status || 'active'}`}>
-                           {selectedPatient.status || 'active'}
-                         </span>
-                       </div>
-                       <div className="info-item full-width">
-                         <label>Medical History</label>
-                         <span>{selectedPatient.patient?.medicalHistory || 'No medical history recorded'}</span>
-                       </div>
-                       <div className="info-item full-width">
-                         <label>Treatment Goals</label>
-                         <span>{selectedPatient.goals || 'No treatment goals set'}</span>
-                       </div>
-                     </div>
-                   </div>
-
-                   {/* Account Information */}
-                   <div className="info-section">
-                     <h3 className="section-title">
-                       <Calendar size={20} className="section-icon" />
-                       Account Information
-                     </h3>
-                     <div className="info-grid">
-                       <div className="info-item">
-                         <label>Patient Since</label>
-                         <span>{selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'Unknown'}</span>
-                       </div>
-                       <div className="info-item">
-                         <label>Last Updated</label>
-                         <span>{selectedPatient.updatedAt ? new Date(selectedPatient.updatedAt).toLocaleDateString() : 'Unknown'}</span>
-                       </div>
-                     </div>
-                   </div>
-
-                   {/* Action Buttons */}
-                   <div className="quick-actions">
-                     <button 
-                       onClick={() => handleEditPatient(selectedPatient)}
-                       className="patient-btn-primary"
-                     >
-                       <Edit size={16} />
-                       Edit Patient
-                     </button>
-                     <button 
-                       onClick={() => handleDeletePatient(selectedPatient.id)}
-                       className="patient-btn-danger"
-                     >
-                       <Trash2 size={16} />
-                       Delete Patient
-                     </button>
-                   </div>
-                 </div>
-               </div>
-             </div>
-           </div>
-         )}
 
          {/* Edit Patient Modal */}
          {editingPatient && (
@@ -1234,6 +1217,278 @@ const AdminPatients = () => {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* View Patient Modal - Floating Overlay */}
+    {selectedPatient && (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setSelectedPatient(null)}>
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-100" onClick={e => e.stopPropagation()}>
+          {/* Modern Header */}
+          <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 px-8 py-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20"></div>
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                  <UserCircle className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Patient Profile</h2>
+                  <p className="text-blue-100 text-sm mt-1">Complete patient information and medical details</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedPatient(null)}
+                className="text-white/80 hover:text-white p-2 hover:bg-white/10 rounded-xl transition-all duration-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-8 max-h-[calc(90vh-120px)] overflow-y-auto">
+            <div className="space-y-8">
+              {/* Modern Hero Section */}
+              <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-8 border border-gray-200">
+                <div className="flex items-start gap-6">
+                  <div className="relative">
+                    <Avatar 
+                      name={`${selectedPatient.firstName} ${selectedPatient.lastName}`} 
+                      profileImage={selectedPatient.profileImage}
+                      size="4xl" 
+                      className="ring-4 ring-white shadow-lg"
+                    />
+                    <div className={`absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-4 border-white ${
+                      selectedPatient.status === 'active' ? 'bg-green-500' : 
+                      selectedPatient.status === 'inactive' ? 'bg-red-500' : 
+                      'bg-yellow-500'
+                    }`}></div>
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                      {selectedPatient.firstName} {selectedPatient.lastName}
+                    </h1>
+                    <p className="text-lg text-gray-600 mb-6">
+                      {selectedPatient.diagnosis && selectedPatient.diagnosis !== 'N/A' ? selectedPatient.diagnosis : 'Diagnosis not set'}
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                            <Hash size={20} className="text-indigo-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Patient ID</p>
+                            <p className="font-semibold text-gray-900">{selectedPatient.id}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
+                            <CalendarDays size={20} className="text-pink-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Date of Birth</p>
+                            <p className="font-semibold text-gray-900">
+                              {selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <Clock3 size={20} className="text-orange-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Patient Since</p>
+                            <p className="font-semibold text-gray-900">
+                              {selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modern Information Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Personal Information Card */}
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 rounded-t-2xl border-b border-blue-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                        <UserCircle size={20} className="text-white" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                        <Mail size={18} className="text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">Email Address</p>
+                          <p className="font-medium text-gray-900">
+                            {selectedPatient.email && selectedPatient.email !== 'N/A' ? selectedPatient.email : 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                        <Phone size={18} className="text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">Phone Number</p>
+                          <p className="font-medium text-gray-900">
+                            {selectedPatient.phone && selectedPatient.phone !== 'N/A' ? selectedPatient.phone : 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                        <CalendarDays size={18} className="text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">Date of Birth</p>
+                          <p className="font-medium text-gray-900">
+                            {selectedPatient.dateOfBirth ? new Date(selectedPatient.dateOfBirth).toLocaleDateString() : 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                        <User size={18} className="text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">Gender</p>
+                          <p className="font-medium text-gray-900">
+                            {selectedPatient.gender && selectedPatient.gender !== 'N/A' ? selectedPatient.gender : 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <MapPin size={18} className="text-gray-500 mt-1" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">Full Address</p>
+                          <p className="font-medium text-gray-900">
+                            {selectedPatient.address && selectedPatient.address !== 'N/A' ? 
+                              `${selectedPatient.address}, ${selectedPatient.city}, ${selectedPatient.state} ${selectedPatient.zipCode}, ${selectedPatient.country}` : 
+                              'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Medical Information Card */}
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <div className="bg-gradient-to-r from-green-50 to-green-100 px-6 py-4 rounded-t-2xl border-b border-green-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                        <Stethoscope size={20} className="text-white" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">Medical Information</h3>
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                        <FileText size={18} className="text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">Primary Diagnosis</p>
+                          <p className="font-medium text-gray-900">
+                            {selectedPatient.diagnosis && selectedPatient.diagnosis !== 'N/A' ? selectedPatient.diagnosis : 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                        <CheckCircle size={18} className="text-gray-500" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">Treatment Status</p>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            selectedPatient.status === 'active' ? 'bg-green-100 text-green-800' :
+                            selectedPatient.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {selectedPatient.status || 'active'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <FileText size={18} className="text-gray-500 mt-1" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">Medical History</p>
+                          <p className="font-medium text-gray-900">
+                            {selectedPatient.medicalHistory && selectedPatient.medicalHistory !== 'N/A' ? selectedPatient.medicalHistory : 'No medical history recorded'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <Target size={18} className="text-gray-500 mt-1" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">Treatment Goals</p>
+                          <p className="font-medium text-gray-900">
+                            {selectedPatient.goals && selectedPatient.goals !== 'N/A' ? selectedPatient.goals : 'No treatment goals set'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Account Information Card */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-4 rounded-t-2xl border-b border-purple-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
+                      <Shield size={20} className="text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">Account Information</h3>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                      <Calendar size={18} className="text-gray-500" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500">Patient Since</p>
+                        <p className="font-medium text-gray-900">
+                          {selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                      <Clock3 size={18} className="text-gray-500" />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500">Last Updated</p>
+                        <p className="font-medium text-gray-900">
+                          {selectedPatient.updatedAt ? new Date(selectedPatient.updatedAt).toLocaleDateString() : 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modern Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-end">
+                <button 
+                  onClick={() => handleEditPatient(selectedPatient)}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  <Edit size={18} />
+                  Edit Patient
+                </button>
+                <button 
+                  onClick={() => handleDeletePatient(selectedPatient.id)}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  <Trash2 size={18} />
+                  Delete Patient
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,0 +1,43 @@
+/* TherapistSchedule.css - Horizontal scrolling for therapist schedule table */
+
+/* Therapist Schedule Table Container - Enable horizontal scrolling */
+.therapist-schedule-table-container {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Enhanced Responsive Design */
+@media (max-width: 1024px) {
+  .therapist-schedule-table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 768px) {
+  .therapist-schedule-table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  .therapist-schedule-table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .therapist-schedule-table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}

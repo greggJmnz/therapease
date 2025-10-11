@@ -36,6 +36,7 @@ const progressReportRoutes = require('./routes/progressReportRoutes');
 // Security Middleware
 app.use(helmet({
   contentSecurityPolicy: false, // Temporarily disable CSP to test image loading
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,

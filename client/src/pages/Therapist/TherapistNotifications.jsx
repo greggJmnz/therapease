@@ -273,7 +273,7 @@ const TherapistNotifications = () => {
                   <div className="flex items-center justify-between mb-1">
                     <h4 className="font-medium text-gray-900 text-sm truncate">{notification.title}</h4>
                     {!notification.isRead && (
-                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></div>
                     )}
                   </div>
                   <p className="text-gray-700 text-xs mb-1 line-clamp-1">{notification.message}</p>
@@ -402,8 +402,15 @@ const TherapistNotifications = () => {
             return (
               <div
                 key={notification.id}
-                className={`bg-white rounded-md border border-gray-200 overflow-hidden hover:shadow-sm transition-all duration-200 ${
-                  !notification.isRead ? 'ring-1 ring-blue-500 ring-opacity-20' : ''
+                onClick={() => {
+                  setSelectedNotification(notification);
+                  // Mark as read when clicked
+                  if (!notification.isRead) {
+                    markAsRead(notification.id);
+                  }
+                }}
+                className={`rounded-md border border-gray-200 overflow-hidden hover:shadow-sm transition-all duration-200 cursor-pointer ${
+                  !notification.isRead ? 'ring-1 ring-green-500 ring-opacity-20 bg-green-50' : 'bg-white'
                 }`}
               >
                 <div className={`p-3 border-l-3 ${getPriorityColor(notification.priority)}`}>
@@ -426,7 +433,7 @@ const TherapistNotifications = () => {
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <h3 className="font-medium text-gray-900 text-sm truncate">{notification.title}</h3>
                           {!notification.isRead && (
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></div>
                           )}
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
@@ -465,24 +472,6 @@ const TherapistNotifications = () => {
 
                         {/* Action Buttons */}
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setSelectedNotification(notification)}
-                            className="bg-blue-600 text-white py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 hover:bg-blue-700 transition-colors"
-                          >
-                            <Eye className="w-3 h-3" />
-                            View
-                          </button>
-                          
-                          {!notification.isRead && (
-                            <button
-                              onClick={() => markAsRead(notification.id)}
-                              className="bg-green-600 text-white py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 hover:bg-green-700 transition-colors"
-                            >
-                              <CheckCircle className="w-3 h-3" />
-                              Read
-                            </button>
-                          )}
-                          
                           <button
                             onClick={() => deleteNotification(notification.id)}
                             className="bg-red-50 text-red-700 py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 border border-red-200 hover:bg-red-100 transition-colors"
@@ -586,18 +575,30 @@ const TherapistNotifications = () => {
 
       {/* Notification Detail Modal */}
       {selectedNotification && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">Notification Details</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-100">
+            {/* Modern Gradient Header */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <Bell className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">Notification Details</h3>
+                    <p className="text-white/90 mt-1">{selectedNotification.title}</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setSelectedNotification(null)}
-                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                  className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-xl transition-all duration-200"
                 >
                   <X size={24} />
                 </button>
               </div>
+            </div>
+            
+            <div className="p-8">
 
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
@@ -620,7 +621,7 @@ const TherapistNotifications = () => {
                         {selectedNotification.priority} priority
                       </span>
                       {!selectedNotification.read && (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                           Unread
                         </span>
                       )}
@@ -677,18 +678,6 @@ const TherapistNotifications = () => {
                     ) : (
                       <button className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl hover:bg-blue-700 transition-colors font-medium">
                         {selectedNotification.action}
-                      </button>
-                    )}
-                    {!selectedNotification.read && (
-                      <button 
-                        onClick={() => {
-                          markAsRead(selectedNotification.id);
-                          setSelectedNotification(null);
-                        }}
-                        className="flex-1 bg-green-600 text-white py-3 px-6 rounded-xl hover:bg-green-700 transition-colors font-medium"
-                      >
-                        <CheckCircle className="w-4 h-4 inline mr-2" />
-                        Mark as Read
                       </button>
                     )}
                   </div>

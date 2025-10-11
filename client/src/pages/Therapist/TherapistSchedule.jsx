@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { 
   Calendar, 
@@ -6,7 +6,6 @@ import {
   User, 
   Plus, 
   Search, 
-  Eye,
   CheckCircle,
   AlertCircle,
   X,
@@ -22,6 +21,7 @@ import {
 import { UltraModernCalendar, SessionCreator } from '../../components';
 import { therapistAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+import './TherapistSchedule.css';
 
 const TherapistSchedule = () => {
   const queryClient = useQueryClient();
@@ -73,6 +73,8 @@ const TherapistSchedule = () => {
     notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Fetch schedule data from API
   const { data: scheduleData, isLoading, error, refetch } = useQuery(
@@ -206,6 +208,39 @@ const TherapistSchedule = () => {
 
     return filtered;
   }, [allAppointments, searchTerm, statusFilter, typeFilter, sortBy, sortOrder]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentAppointments = filteredAppointments.slice(startIndex, endIndex);
+
+  // Reset to first page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, typeFilter, sortBy, sortOrder]);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    // Scroll to top of table when page changes
+    const tableContainer = document.querySelector('.schedule-table-container');
+    if (tableContainer) {
+      tableContainer.scrollTop = 0;
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
 
   // Convert appointments to calendar events with color coding (same logic as admin appointments)
   const calendarEvents = useMemo(() => {
@@ -605,59 +640,60 @@ const TherapistSchedule = () => {
         ) : currentView === 'list' ? (
           /* List View */
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Table Header */}
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
-                <div className="col-span-3 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('date')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Date & Time
-                    {sortBy === 'date' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
+            {/* Scrollable Table Container */}
+            <div className="therapist-schedule-table-container overflow-x-auto overflow-y-visible">
+              {/* Table Header */}
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700 min-w-[800px]">
+                  <div className="col-span-4 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('date')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Date & Time
+                      {sortBy === 'date' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-3 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('patient')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Patient
+                      {sortBy === 'patient' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-3 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('type')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Type
+                      {sortBy === 'type' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-2 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('status')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Status
+                      {sortBy === 'status' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <div className="col-span-2 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('patient')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Patient
-                    {sortBy === 'patient' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
-                </div>
-                <div className="col-span-2 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('type')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Type
-                    {sortBy === 'type' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
-                </div>
-                <div className="col-span-2 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('status')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Status
-                    {sortBy === 'status' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
-        </div>
-                <div className="col-span-1 text-center">Actions</div>
               </div>
-            </div>
 
-            {/* Table Body */}
-            <div className="divide-y divide-gray-200">
+              {/* Table Body */}
+              <div className="divide-y divide-gray-200 min-w-[800px]">
               {filteredAppointments.length === 0 ? (
                 <div className="px-6 py-12 text-center">
                   <Calendar className="mx-auto h-12 w-12 text-gray-400" />
@@ -669,11 +705,16 @@ const TherapistSchedule = () => {
                   </p>
                 </div>
               ) : (
-                filteredAppointments.map((appointment) => (
-                  <div key={appointment.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                currentAppointments.map((appointment) => (
+                  <div 
+                    key={appointment.id} 
+                    onClick={() => handleViewAppointment(appointment)}
+                    className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                    title="Click to view appointment details"
+                  >
                     <div className="grid grid-cols-12 gap-4 items-center">
                       {/* Date & Time */}
-                      <div className="col-span-3">
+                      <div className="col-span-4">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
                           <div>
@@ -682,20 +723,20 @@ const TherapistSchedule = () => {
                             </div>
                             <div className="text-sm text-gray-500">
                               {formatTime12Hour(appointment.time)} ({appointment.duration} min)
-            </div>
-          </div>
-        </div>
-      </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
                       {/* Patient */}
-                      <div className="col-span-2">
+                      <div className="col-span-3">
                         <div className="text-sm text-gray-900">
                           {appointment.patientName}
                         </div>
                       </div>
 
                       {/* Type */}
-                      <div className="col-span-2">
+                      <div className="col-span-3">
                         <div className="flex items-center gap-2">
                           {getTypeIcon(appointment.type)}
                           <span className="text-sm text-gray-900 capitalize">
@@ -713,22 +754,81 @@ const TherapistSchedule = () => {
                           </span>
                         </div>
                       </div>
-
-                      {/* Actions */}
-                      <div className="col-span-1 flex justify-center">
-          <button
-                          onClick={() => handleViewAppointment(appointment)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="View Details"
-                        >
-                          <Eye size={16} />
-          </button>
-                      </div>
                     </div>
-              </div>
+                  </div>
                 ))
               )}
+              </div>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredAppointments.length > 0 && (
+              <div className="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div className="flex items-center text-sm text-gray-700">
+                  <span>
+                    Showing {startIndex + 1} to {Math.min(endIndex, filteredAppointments.length)} of {filteredAppointments.length} appointments
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {/* Previous Button */}
+                  <button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      currentPage === 1
+                        ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                        : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                    }`}
+                  >
+                    Previous
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            currentPage === pageNum
+                              ? 'bg-green-600 text-white'
+                              : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      currentPage === totalPages
+                        ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                        : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           /* Calendar View */

@@ -32,10 +32,12 @@
   overflow: visible;
 }
 
-/* Ensure table container allows dropdown overflow */
+/* Ensure table container allows dropdown overflow and horizontal scrolling */
 .patients-table-container {
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: visible;
   position: relative;
+  -webkit-overflow-scrolling: touch;
 }
 
 .patient-actions {
@@ -550,23 +552,47 @@
   animation: spin 1s linear infinite; 
 }
 
-/* Table Container - Ensure dropdowns can extend beyond table boundaries */
+/* Table Container - Ensure dropdowns can extend beyond table boundaries and enable horizontal scrolling */
 .patients-table-container {
-  overflow: visible !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
   position: relative; /* Ensure positioning context */
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Table - Ensure proper positioning context */
+/* Table - Ensure proper positioning context and minimum width for horizontal scrolling */
 .patients-table {
   position: relative;
   overflow: visible !important; /* Allow dropdowns to extend beyond table */
+  min-width: 800px; /* Ensure table has minimum width to trigger horizontal scroll */
 }
 
-/* Responsive Design */
+/* Enhanced Responsive Design */
+@media (max-width: 1024px) {
+  .patient-actions-cell {
+    width: 60px;
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .dropdown-trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .patient-action-dropdown {
+    min-width: 160px;
+  }
+}
+
 @media (max-width: 768px) {
   .patient-actions-cell {
-    width: 40px;
+    width: 50px;
     padding: 0.5rem 0.125rem;
+  }
+  
+  .dropdown-trigger {
+    width: 2.25rem;
+    height: 2.25rem;
   }
   
   .patient-btn-primary,
@@ -574,10 +600,272 @@
   .patient-btn-purple {
     width: 100%;
     justify-content: center;
+    padding: 10px 12px;
+    font-size: 13px;
   }
   
-  .dropdown-menu {
+  .patient-action-dropdown {
     min-width: 140px !important;
     max-width: 180px !important;
+  }
+  
+  .dropdown-item {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  /* Mobile table improvements */
+  .patients-table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .patients-table {
+    min-width: 700px; /* Increased minimum width for better mobile experience */
+  }
+  
+  .patients-table th,
+  .patients-table td {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .patients-table th {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  /* Mobile modal improvements */
+  .patient-detail-modal {
+    width: 95vw;
+    max-width: 95vw;
+    margin: 8px;
+  }
+  
+  .modal-header {
+    padding: 16px 20px;
+  }
+  
+  .modal-header h3 {
+    font-size: 18px;
+  }
+  
+  .modal-body {
+    padding: 20px;
+  }
+  
+  .modal-actions {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .patient-btn-primary,
+  .patient-btn-secondary,
+  .patient-btn-purple,
+  .patient-btn-danger {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  /* Mobile patient detail improvements */
+  .patient-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+  
+  .patient-avatar {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .patient-name {
+    font-size: 20px;
+  }
+  
+  .patient-diagnosis {
+    font-size: 14px;
+  }
+  
+  .patient-stats {
+    justify-content: center;
+    gap: 16px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .info-item {
+    padding: 12px;
+  }
+  
+  .info-item label {
+    font-size: 11px;
+  }
+  
+  .info-item span {
+    font-size: 13px;
+  }
+  
+  .quick-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .patient-actions-cell {
+    width: 40px;
+    padding: 0.25rem 0.125rem;
+  }
+  
+  .dropdown-trigger {
+    width: 2rem;
+    height: 2rem;
+  }
+  
+  .patient-action-dropdown {
+    min-width: 120px !important;
+    max-width: 160px !important;
+  }
+  
+  .dropdown-item {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  
+  .patients-table th,
+  .patients-table td {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  
+  .patients-table th {
+    font-size: 10px;
+  }
+  
+  .patient-detail-modal {
+    width: 100vw;
+    max-width: 100vw;
+    margin: 4px;
+    max-height: calc(100vh - 8px);
+  }
+  
+  .modal-header {
+    padding: 12px 16px;
+  }
+  
+  .modal-header h3 {
+    font-size: 16px;
+  }
+  
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .modal-actions {
+    padding: 12px 16px 16px;
+  }
+  
+  .patient-header {
+    gap: 12px;
+  }
+  
+  .patient-avatar {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .patient-name {
+    font-size: 18px;
+  }
+  
+  .patient-diagnosis {
+    font-size: 13px;
+  }
+  
+  .patient-stats {
+    gap: 12px;
+  }
+  
+  .stat-item {
+    min-width: 60px;
+  }
+  
+  .stat-value {
+    font-size: 12px;
+  }
+  
+  .stat-label {
+    font-size: 10px;
+  }
+  
+  .info-section {
+    margin-bottom: 20px;
+  }
+  
+  .section-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  
+  .info-item {
+    padding: 10px;
+  }
+  
+  .info-item label {
+    font-size: 10px;
+  }
+  
+  .info-item span {
+    font-size: 12px;
+  }
+  
+  .status-badge {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .dropdown-trigger {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .patient-action-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .dropdown-item {
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+  
+  .patient-btn-primary,
+  .patient-btn-secondary,
+  .patient-btn-purple,
+  .patient-btn-danger {
+    min-height: 44px;
+  }
+  
+  /* Remove hover effects on touch devices */
+  .dropdown-trigger:hover,
+  .patient-action-btn:hover,
+  .patient-btn-primary:hover,
+  .patient-btn-secondary:hover,
+  .patient-btn-purple:hover,
+  .patient-btn-danger:hover {
+    transform: none;
+    box-shadow: none;
   }
 }

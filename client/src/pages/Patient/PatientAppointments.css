@@ -1,0 +1,43 @@
+/* PatientAppointments.css - Horizontal scrolling for patient appointments table */
+
+/* Patient Appointments Table Container - Enable horizontal scrolling */
+.patient-appointments-table-container {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Enhanced Responsive Design */
+@media (max-width: 1024px) {
+  .patient-appointments-table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 768px) {
+  .patient-appointments-table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  .patient-appointments-table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .patient-appointments-table-container {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}

@@ -2263,479 +2263,639 @@ The therapist retains full responsibility for all clinical decisions and patient
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="sm:flex sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Insights</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Create assessments and get AI-powered analysis for your patients
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          {patientsLoading ? (
-            <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500"></div>
-              <span className="text-sm text-gray-500">Loading patients...</span>
-            </div>
-          ) : patientsError ? (
-            <div className="text-sm text-red-500">Failed to load patients</div>
-          ) : (
-          <select
-            value={selectedPatient}
-            onChange={(e) => setSelectedPatient(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-green-500 focus:border-green-500"
-          >
-            <option value="">Select Patient</option>
-            {patients.map((patient) => (
-              <option key={patient.id} value={patient.id}>
-                {patient.name} - {patient.diagnosis}
-              </option>
-            ))}
-          </select>
-          )}
-        </div>
-      </div>
-
-      {/* Assessment Creation Section */}
-      {selectedPatient && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-gray-900">Create Assessment</h2>
-            <div className="text-sm text-gray-500">
-              {interviewQuestions.some(q => q.question.trim() !== '') || observations.trim() !== '' ? (
-                <span className="text-green-600">✓ Assessment data ready</span>
-              ) : (
-                <span className="text-gray-400">No assessment data yet</span>
-              )}
-            </div>
-          </div>
-          
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">Assessment Instructions:</h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Add interview questions to gather patient information</li>
-              <li>• Record patient responses in the answer fields</li>
-              <li>• Write detailed observations about patient behavior and abilities</li>
-              <li>• Save your assessment data before generating AI insights</li>
-            </ul>
-          </div>
-          
-          <div className="space-y-8 mb-6">
-            {/* Interview Questions Panel */}
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <FileText className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Interview Questions</h3>
-                      <p className="text-sm text-gray-600">Add questions and record patient responses</p>
-                    </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="space-y-8">
+        {/* Modern AI-Themed Header */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 px-8 py-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div>
+                <h1 className="text-4xl font-bold text-white flex items-center gap-4">
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <Brain className="h-8 w-8 text-white" />
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {interviewQuestions.filter(q => q.question.trim() !== '').length} questions
+                  AI Insights
+                </h1>
+                <p className="mt-3 text-lg text-white/90">
+                  Create assessments and get AI-powered analysis for your patients
+                </p>
+                <div className="mt-4 flex items-center gap-4">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full backdrop-blur-sm">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-white font-medium">AI Service Active</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full backdrop-blur-sm">
+                    <Lightbulb className="h-4 w-4 text-yellow-300" />
+                    <span className="text-sm text-white font-medium">GPT-4 Powered</span>
                   </div>
                 </div>
               </div>
-              
-              <div className="p-6">
-                <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
-                  {interviewQuestions.map((item, index) => (
-                    <div key={item.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-2">
-                          <span className="inline-flex items-center justify-center w-6 h-6 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                            {index + 1}
-                          </span>
-                          <span className="text-sm font-medium text-gray-700">Question {index + 1}</span>
-                        </div>
-                      {interviewQuestions.length > 1 && (
-                        <button
-                          onClick={() => removeInterviewQuestion(item.id)}
-                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                            title="Remove question"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Question</label>
-                    <input
-                      type="text"
-                      value={item.question}
-                      onChange={(e) => updateInterviewQuestion(item.id, 'question', e.target.value)}
-                      placeholder="Enter your question here..."
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Patient Response</label>
-                          <textarea
-                      value={item.answer}
-                      onChange={(e) => updateInterviewQuestion(item.id, 'answer', e.target.value)}
-                            placeholder="Record the patient's response..."
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-colors"
-                            rows={2}
-                    />
-                        </div>
-                      </div>
+              <div className="flex flex-col sm:flex-row items-end gap-4">
+                {patientsLoading ? (
+                  <div className="flex items-center space-x-3 px-4 py-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <span className="text-white font-medium">Loading patients...</span>
                   </div>
-                ))}
-                </div>
-                
-                {/* Question Management Buttons */}
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                  <button
-                    onClick={addInterviewQuestion}
-                      className="flex items-center justify-center px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-green-700 hover:bg-green-100 hover:border-green-300 transition-colors text-sm font-medium"
-                  >
-                    <Plus size={16} className="mr-2" />
-                    Add Question
-                  </button>
-                  <button
-                    onClick={loadSampleQuestions}
-                      className="flex items-center justify-center px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-colors text-sm font-medium"
-                  >
-                    <FileText size={16} className="mr-2" />
-                      Load Sample
-                  </button>
-                  <button
-                      onClick={openTemplateModal}
-                      className="flex items-center justify-center px-4 py-2.5 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition-colors text-sm font-medium"
-                  >
-                      <Save size={16} className="mr-2" />
-                      Save Template
-                  </button>
-                  <button
-                      onClick={() => setShowTemplateList(true)}
-                      className="flex items-center justify-center px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-colors text-sm font-medium"
-                  >
-                      <BookOpen size={16} className="mr-2" />
-                      Load Template ({templates.length})
-                  </button>
+                ) : patientsError ? (
+                  <div className="px-4 py-3 bg-red-500/20 rounded-xl backdrop-blur-sm">
+                    <span className="text-red-100 font-medium">Failed to load patients</span>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Observations Panel */}
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Eye className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Clinical Observations</h3>
-                    <p className="text-sm text-gray-600">Record detailed observations about patient behavior and abilities</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Observation Notes
+                ) : (
+                  <div className="min-w-0 flex-1">
+                    <label className="block text-sm font-medium text-white mb-2">
+                      Select Patient
                     </label>
-              <textarea
-                value={observations}
-                onChange={(e) => setObservations(e.target.value)}
-                      placeholder="Record detailed observations about patient behavior, abilities, responses, and any notable patterns or concerns..."
-                      className="w-full h-80 border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
-                    />
+                    <select
+                      value={selectedPatient}
+                      onChange={(e) => setSelectedPatient(e.target.value)}
+                      className="w-full px-4 py-3 border border-white/30 rounded-xl text-sm focus:ring-2 focus:ring-white/50 focus:border-white/50 bg-white/10 backdrop-blur-sm text-white placeholder-white/70"
+                    >
+                      <option value="" className="text-gray-900">Select Patient</option>
+                      {patients.map((patient) => (
+                        <option key={patient.id} value={patient.id} className="text-gray-900">
+                          {patient.name} - {patient.diagnosis}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="flex justify-between items-center text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
-                    <span>Include behavioral patterns, motor skills, attention span, communication abilities, and any concerns</span>
-                    <span className="font-medium">{observations.length} characters</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-center space-x-4">
-            <button
-              onClick={saveAssessmentData}
-              disabled={isSaving}
-              className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save
-                </>
-              )}
-            </button>
+        {/* Modern Assessment Creation Section */}
+        {selectedPatient && (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <FileText className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Create Assessment</h2>
+                    <p className="text-white/90">Build comprehensive patient assessments for AI analysis</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {interviewQuestions.some(q => q.question.trim() !== '') || observations.trim() !== '' ? (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl backdrop-blur-sm">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-white font-medium">Assessment Ready</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                      <span className="text-white font-medium">No Data Yet</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
             
-            <button
-              onClick={generateInsights}
-              disabled={isGenerating}
-              className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Brain className="h-4 w-4 mr-2" />
-                  Generate Insights
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={clearAssessmentData}
-              className="inline-flex items-center px-6 py-3 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Clear
-            </button>
-
-            <button
-              onClick={generateWellStructuredCurrentAssessmentPDF}
-              disabled={insights.length === 0 || !selectedPatient}
-              className="inline-flex items-center px-6 py-3 border border-red-300 text-sm font-medium rounded-md shadow-sm text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              title={insights.length === 0 ? "Generate insights first to download PDF" : !selectedPatient ? "Select a patient first" : "Download AI Insights PDF"}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Download AI Insights PDF
-            </button>
-          </div>
-
-          {/* Assessment Summary */}
-          {(interviewQuestions.some(q => q.question.trim() !== '') || observations.trim() !== '') && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Assessment Summary:</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">Questions:</span>
-                  <span className="ml-2 text-gray-600">
-                    {interviewQuestions.filter(q => q.question.trim() !== '').length} questions added
-                  </span>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Observations:</span>
-                  <span className="ml-2 text-gray-600">
-                    {observations.trim() ? `${observations.length} characters` : 'None recorded'}
-                  </span>
-                </div>
-                <div className="md:col-span-2">
-                  <span className="font-medium text-gray-700">Ready for AI Analysis:</span>
-                  <span className="ml-2 text-green-600 font-medium">
-                    ✓ Assessment data is complete and ready for AI insights generation
-                  </span>
-                </div>
-                <div className="md:col-span-2 pt-2 border-t border-gray-200">
-                  <div className="flex items-center space-x-4 text-xs">
-                    <span className={`px-2 py-1 rounded-full ${interviewQuestions.some(q => q.question.trim() !== '') ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                      {interviewQuestions.some(q => q.question.trim() !== '') ? '✓ Questions' : '○ Questions'}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full ${observations.trim() !== '' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-                      {observations.trim() !== '' ? '✓ Observations' : '○ Observations'}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full ${interviewQuestions.some(q => q.question.trim() !== '') && observations.trim() !== '' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
-                      {interviewQuestions.some(q => q.question.trim() !== '') && observations.trim() !== '' ? '✓ Complete' : '○ Incomplete'}
-                    </span>
+            <div className="p-8">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 mb-8">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Lightbulb className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-blue-900 mb-3">Assessment Instructions</h3>
+                    <ul className="text-blue-800 space-y-2">
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                        Add interview questions to gather patient information
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                        Record patient responses in the answer fields
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                        Write detailed observations about patient behavior and abilities
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                        Save your assessment data before generating AI insights
+                      </li>
+                    </ul>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-
-
-      {/* AI Service Status */}
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-6">
-        <div className="flex items-center">
-          <Brain className="h-8 w-8 text-purple-600 mr-3" />
-          <div>
-            <h3 className="text-lg font-medium text-purple-900">AI Service Status</h3>
-            <p className="text-sm text-purple-700">
-              GPT-4 powered analysis is available and ready to provide insights
-            </p>
-          </div>
-        </div>
-      </div>
-
-
-      {/* Assessment Ready Message */}
-      {insights.length === 0 && !isGenerating && selectedPatient && (
-        <div className="text-center py-12">
-          <Brain className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to generate AI insights</h3>
-          <p className="text-sm text-gray-500 mb-6">
-            Create an assessment with interview questions and observations, then generate AI-powered insights. 
-            Generated insights will be available for download as PDF reports.
-          </p>
-        </div>
-      )}
-
-      {/* AI Assessment History */}
-      {selectedPatient && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">AI Assessment History</h2>
-          <p className="text-sm text-gray-600 mb-4">Previously generated AI assessments and insights for this patient</p>
           
-          {assessmentHistory && assessmentHistory.length > 0 ? (
-            <div className="space-y-3">
-              {assessmentHistory.map((pdfRecord) => (
-                pdfRecord && (
-                <div key={pdfRecord.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-green-600" />
+              <div className="space-y-8">
+                {/* Modern Interview Questions Panel */}
+                <div className="bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-8 py-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                          <FileText className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-white">Interview Questions</h3>
+                          <p className="text-white/90">Add questions and record patient responses</p>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">
-                          {pdfRecord.filename}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {pdfRecord.type} • Generated {new Date(pdfRecord.generatedAt).toLocaleDateString()}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {pdfRecord.assessmentData?.questions?.length || 0} questions • {pdfRecord.assessmentData?.observations?.length || 0} characters observations
-                          {pdfRecord.model && ` • ${pdfRecord.model.toUpperCase()}`}
-                          {pdfRecord.score && ` • Score: ${pdfRecord.score}%`}
-                        </p>
+                      <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                        <span className="text-white font-medium">
+                          {interviewQuestions.filter(q => q.question.trim() !== '').length} questions
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => downloadPDFFromHistory(pdfRecord)}
-                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        title="Download PDF"
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </button>
+                  </div>
+              
+                  <div className="p-8">
+                    <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
+                      {interviewQuestions.map((item, index) => (
+                        <div key={item.id} className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200 shadow-sm">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <span className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-bold rounded-full shadow-lg">
+                                {index + 1}
+                              </span>
+                              <span className="text-lg font-semibold text-gray-800">Question {index + 1}</span>
+                            </div>
+                            {interviewQuestions.length > 1 && (
+                              <button
+                                onClick={() => removeInterviewQuestion(item.id)}
+                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                title="Remove question"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            )}
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-700 mb-2">Question</label>
+                              <input
+                                type="text"
+                                value={item.question}
+                                onChange={(e) => updateInterviewQuestion(item.id, 'question', e.target.value)}
+                                placeholder="Enter your question here..."
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white shadow-sm hover:border-gray-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-700 mb-2">Patient Response</label>
+                              <textarea
+                                value={item.answer}
+                                onChange={(e) => updateInterviewQuestion(item.id, 'answer', e.target.value)}
+                                placeholder="Record the patient's response..."
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-all duration-200 bg-white shadow-sm hover:border-gray-400"
+                                rows={3}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                
+                    {/* Modern Question Management Buttons */}
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <button
+                          onClick={addInterviewQuestion}
+                          className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-500 border border-green-500 rounded-xl text-white hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
+                        >
+                          <Plus size={18} className="mr-2" />
+                          Add Question
+                        </button>
+                        <button
+                          onClick={loadSampleQuestions}
+                          className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 border border-blue-500 rounded-xl text-white hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
+                        >
+                          <FileText size={18} className="mr-2" />
+                          Load Sample
+                        </button>
+                        <button
+                          onClick={openTemplateModal}
+                          className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-500 border border-indigo-500 rounded-xl text-white hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
+                        >
+                          <Save size={18} className="mr-2" />
+                          Save Template
+                        </button>
+                        <button
+                          onClick={() => setShowTemplateList(true)}
+                          className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-gray-500 to-gray-600 border border-gray-500 rounded-xl text-white hover:from-gray-600 hover:to-gray-700 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
+                        >
+                          <BookOpen size={18} className="mr-2" />
+                          <span className="hidden sm:inline">Load Template ({templates.length})</span>
+                          <span className="sm:hidden">Load ({templates.length})</span>
+                        </button>
+                      </div>
+                    </div>
+              </div>
+            </div>
+
+                {/* Modern Observations Panel */}
+                <div className="bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-8 py-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                        <Eye className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white">Clinical Observations</h3>
+                        <p className="text-white/90">Record detailed observations about patient behavior and abilities</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-8">
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-lg font-semibold text-gray-700 mb-3">
+                          Observation Notes
+                        </label>
+                        <textarea
+                          value={observations}
+                          onChange={(e) => setObservations(e.target.value)}
+                          placeholder="Record detailed observations about patient behavior, abilities, responses, and any notable patterns or concerns..."
+                          className="w-full h-80 border border-gray-300 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 bg-white shadow-sm hover:border-gray-400"
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-sm text-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 rounded-2xl border border-gray-200">
+                        <span className="font-medium">Include behavioral patterns, motor skills, attention span, communication abilities, and any concerns</span>
+                        <span className="font-bold text-blue-600">{observations.length} characters</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                )
-              ))}
+          </div>
+
+              {/* Modern Action Buttons */}
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  <button
+                    onClick={saveAssessmentData}
+                    disabled={isSaving}
+                    className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-target"
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-3"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-5 w-5 mr-3" />
+                        Save Assessment
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={generateInsights}
+                    disabled={isGenerating}
+                    className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-target"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-3"></div>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-5 w-5 mr-3" />
+                        <span className="hidden sm:inline">Generate AI Insights</span>
+                        <span className="sm:hidden">Generate</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={clearAssessmentData}
+                    className="inline-flex items-center justify-center px-8 py-4 border border-gray-300 text-sm font-semibold rounded-xl shadow-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 touch-target"
+                  >
+                    <Trash2 className="h-5 w-5 mr-3" />
+                    Clear
+                  </button>
+
+                  <button
+                    onClick={generateWellStructuredCurrentAssessmentPDF}
+                    disabled={insights.length === 0 || !selectedPatient}
+                    className="inline-flex items-center justify-center px-8 py-4 border border-red-300 text-sm font-semibold rounded-xl shadow-lg text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-target"
+                    title={insights.length === 0 ? "Generate insights first to download PDF" : !selectedPatient ? "Select a patient first" : "Download AI Insights PDF"}
+                  >
+                    <Download className="h-5 w-5 mr-3" />
+                    <span className="hidden sm:inline">Download AI Insights PDF</span>
+                    <span className="sm:hidden">Download PDF</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Modern Assessment Summary */}
+              {(interviewQuestions.some(q => q.question.trim() !== '') || observations.trim() !== '') && (
+                <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl border border-gray-200">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Target className="h-5 w-5 text-blue-600" />
+                    Assessment Summary
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200">
+                      <span className="font-semibold text-gray-700">Questions:</span>
+                      <span className="text-gray-600 font-medium">
+                        {interviewQuestions.filter(q => q.question.trim() !== '').length} questions added
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200">
+                      <span className="font-semibold text-gray-700">Observations:</span>
+                      <span className="text-gray-600 font-medium">
+                        {observations.trim() ? `${observations.length} characters` : 'None recorded'}
+                      </span>
+                    </div>
+                    <div className="md:col-span-2 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="font-semibold text-green-800">Ready for AI Analysis:</span>
+                        <span className="text-green-700 font-medium">
+                          ✓ Assessment data is complete and ready for AI insights generation
+                        </span>
+                      </div>
+                    </div>
+                    <div className="md:col-span-2 pt-4 border-t border-gray-200">
+                      <div className="flex items-center gap-4">
+                        <span className={`px-4 py-2 rounded-full text-sm font-medium ${interviewQuestions.some(q => q.question.trim() !== '') ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                          {interviewQuestions.some(q => q.question.trim() !== '') ? '✓ Questions' : '○ Questions'}
+                        </span>
+                        <span className={`px-4 py-2 rounded-full text-sm font-medium ${observations.trim() !== '' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                          {observations.trim() !== '' ? '✓ Observations' : '○ Observations'}
+                        </span>
+                        <span className={`px-4 py-2 rounded-full text-sm font-medium ${interviewQuestions.some(q => q.question.trim() !== '') && observations.trim() !== '' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
+                          {interviewQuestions.some(q => q.question.trim() !== '') && observations.trim() !== '' ? '✓ Complete' : '○ Incomplete'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No AI assessments yet</h3>
-              <p className="text-sm text-gray-500">
-                Generate AI insights to create assessment history for this patient.
+          </div>
+        )}
+
+
+        {/* Modern AI Service Status */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 px-8 py-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Brain className="h-8 w-8 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-white">AI Service Status</h3>
+                <p className="text-white/90 mt-1">
+                  GPT-4 powered analysis is available and ready to provide insights
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 rounded-xl backdrop-blur-sm">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-white font-medium">Online</span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <Lightbulb className="h-4 w-4 text-yellow-300" />
+                  <span className="text-white font-medium">GPT-4</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        {/* Modern Assessment Ready Message */}
+        {insights.length === 0 && !isGenerating && selectedPatient && (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
+            <div className="text-center py-16">
+              <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Brain className="h-10 w-10 text-purple-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Ready to Generate AI Insights</h3>
+              <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+                Create an assessment with interview questions and observations, then generate AI-powered insights. 
+                Generated insights will be available for download as PDF reports.
+              </p>
+              <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>AI-Powered Analysis</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>PDF Reports</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span>Smart Recommendations</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modern AI Assessment History */}
+        {selectedPatient && (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">AI Assessment History</h2>
+                  <p className="text-white/90 mt-1">Previously generated AI assessments and insights for this patient</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-8">
+          
+              {assessmentHistory && assessmentHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {assessmentHistory.map((pdfRecord) => (
+                    pdfRecord && (
+                    <div key={pdfRecord.id} className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="flex-shrink-0">
+                            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                              <FileText className="h-6 w-6 text-white" />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">
+                              {pdfRecord.filename}
+                            </h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {pdfRecord.type} • Generated {new Date(pdfRecord.generatedAt).toLocaleDateString()}
+                            </p>
+                            <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                              <span className="flex items-center gap-1">
+                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                {pdfRecord.assessmentData?.questions?.length || 0} questions
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                {pdfRecord.assessmentData?.observations?.length || 0} chars
+                              </span>
+                              {pdfRecord.model && (
+                                <span className="flex items-center gap-1">
+                                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                                  {pdfRecord.model.toUpperCase()}
+                                </span>
+                              )}
+                              {pdfRecord.score && (
+                                <span className="flex items-center gap-1">
+                                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                                  Score: {pdfRecord.score}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => downloadPDFFromHistory(pdfRecord)}
+                            className="inline-flex items-center px-4 py-3 border border-gray-300 shadow-sm text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+                            title="Download PDF"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    )
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FileText className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No AI assessments yet</h3>
+                  <p className="text-gray-600">
+                    Generate AI insights to create assessment history for this patient.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modern No Patient Selected Message */}
+        {!selectedPatient && (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
+            <div className="text-center py-16">
+              <div className="w-20 h-20 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                <User className="h-10 w-10 text-gray-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Select a Patient to Begin</h3>
+              <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
+                Choose a patient from the dropdown above to create assessments and generate AI insights.
               </p>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* No Patient Selected Message */}
-      {!selectedPatient && (
-        <div className="text-center py-12">
-          <User className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Select a patient to begin</h3>
-          <p className="text-sm text-gray-500 mb-6">
-            Choose a patient from the dropdown above to create assessments and generate AI insights.
-          </p>
-        </div>
-      )}
+        {/* Modern Loading State */}
+        {selectedPatient && isGenerating && (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
+            <div className="text-center py-16">
+              <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Generating AI Insights</h3>
+              <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+                Analyzing assessment data and generating personalized recommendations...
+              </p>
+              <div className="max-w-md mx-auto">
+                <div className="bg-gray-200 rounded-full h-3 mb-4">
+                  <div className="bg-gradient-to-r from-purple-500 to-indigo-500 h-3 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                </div>
+                <p className="text-sm text-gray-500">Processing interview responses and observations...</p>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Loading State */}
-      {selectedPatient && isGenerating && (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Generating AI Insights</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Analyzing assessment data and generating personalized recommendations...
-          </p>
-          <div className="max-w-md mx-auto">
-            <div className="bg-gray-200 rounded-full h-2">
-              <div className="bg-purple-500 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+        {/* Modern How It Works Section */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+              <Lightbulb className="h-8 w-8 text-white" />
+              How AI Insights Work
+            </h2>
+            <p className="text-white/90 mt-2">Understanding the AI-powered assessment process</p>
+          </div>
+          <div className="p-8">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+              <div className="text-center">
+                <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Assessment</h3>
+                <p className="text-sm text-gray-600">
+                  Add interview questions and record observations about the patient
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="mx-auto h-16 w-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                  <Brain className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Analysis</h3>
+                <p className="text-sm text-gray-600">
+                  AI analyzes the assessment data to identify patterns and insights
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="mx-auto h-16 w-16 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                  <Lightbulb className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Smart Recommendations</h3>
+                <p className="text-sm text-gray-600">
+                  Get evidence-based treatment suggestions and progress insights
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Processing interview responses and observations...</p>
           </div>
         </div>
-      )}
 
-      {/* How It Works */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">How AI Insights Work</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="text-center">
-            <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-              <FileText className="h-6 w-6 text-blue-600" />
+        {/* Modern Recent Activity */}
+        {insights.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                <Activity className="h-8 w-8 text-white" />
+                Recent AI Activity
+              </h2>
             </div>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">Create Assessment</h3>
-            <p className="text-xs text-gray-500">
-              Add interview questions and record observations about the patient
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="mx-auto h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
-              <Brain className="h-6 w-6 text-green-600" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">AI Analysis</h3>
-            <p className="text-xs text-gray-500">
-              AI analyzes the assessment data to identify patterns and insights
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="mx-auto h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center mb-3">
-              <Lightbulb className="h-6 w-6 text-purple-600" />
-            </div>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">Smart Recommendations</h3>
-            <p className="text-xs text-gray-500">
-              Get evidence-based treatment suggestions and progress insights
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      {insights.length > 0 && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Recent AI Activity</h2>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {insights.slice(0, 3).map((insight) => (
-              <div key={insight.id} className="px-6 py-4">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                    {getInsightIcon(insight.type)}
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-900">{insight.title}</p>
-                    <p className="text-sm text-gray-500">
-                      Generated for {patients.find(p => p.id === parseInt(selectedPatient))?.name}
-                    </p>
-                    <div className="mt-1 flex items-center text-xs text-gray-400">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {new Date(insight.timestamp).toLocaleString()}
+            <div className="divide-y divide-gray-200">
+              {insights.slice(0, 3).map((insight) => (
+                <div key={insight.id} className="px-8 py-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg">
+                      {getInsightIcon(insight.type)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-lg font-semibold text-gray-900">{insight.title}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Generated for {patients.find(p => p.id === parseInt(selectedPatient))?.name}
+                      </p>
+                      <div className="mt-2 flex items-center text-sm text-gray-500">
+                        <Clock className="h-4 w-4 mr-2" />
+                        {new Date(insight.timestamp).toLocaleString()}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Assessment History Modal */}
       {showAssessmentModal && selectedAssessment && (

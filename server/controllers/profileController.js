@@ -90,11 +90,14 @@ const getUpdatedProfileData = async (userId, userRole) => {
       `;
       const patient = await getRow(patientQuery, [userId]);
       if (patient) {
+        // Import decryption utility
+        const { decryptField } = require('../utils/encryption');
+        
         profileData.diagnosis = patient.diagnosis;
         profileData.medicalHistory = patient.medicalHistory;
         profileData.goals = patient.goals;
-        profileData.emergencyContact = patient.emergencyContact;
-        profileData.insuranceInfo = patient.insuranceInfo;
+        profileData.emergencyContact = decryptField(patient.emergencyContact);
+        profileData.insuranceInfo = decryptField(patient.insuranceInfo);
         profileData.therapistId = patient.therapistId;
         if (patient.therapistFirstName && patient.therapistLastName) {
           profileData.therapistName = `${patient.therapistFirstName} ${patient.therapistLastName}`;
@@ -194,7 +197,14 @@ const getProfile = async (req, res) => {
       `;
       const patient = await getRow(patientSql, [userId]);
       if (patient) {
+        // Import decryption utility
+        const { decryptField } = require('../utils/encryption');
+        
         profileData = { ...profileData, ...patient };
+        // Decrypt sensitive fields
+        profileData.emergencyContact = decryptField(patient.emergencyContact);
+        profileData.insuranceInfo = decryptField(patient.insuranceInfo);
+        
         if (patient.therapistFirstName && patient.therapistLastName) {
           profileData.therapistName = `${patient.therapistFirstName} ${patient.therapistLastName}`;
           profileData.therapistSpecialization = patient.therapistSpecialization;

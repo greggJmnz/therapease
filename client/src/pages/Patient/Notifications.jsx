@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Bell, Calendar, User, FileText, Target, AlertCircle, CheckCircle, Info, Clock, X, Loader2 } from 'lucide-react';
+import { Bell, Calendar, User, FileText, Target, AlertCircle, CheckCircle, Info, Clock, X, Loader2, MessageSquare } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 
 const Notifications = () => {
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  
   const {
     notifications,
     isLoading,
@@ -82,7 +84,6 @@ const Notifications = () => {
             onClick={() => {
               // Navigate to appointments page
               window.location.href = '/patient/appointments';
-              handleMarkAsRead(notification.id);
             }}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
@@ -96,7 +97,6 @@ const Notifications = () => {
             onClick={() => {
               // Navigate to progress page instead
               window.location.href = '/patient/progress';
-              handleMarkAsRead(notification.id);
             }}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
           >
@@ -110,7 +110,6 @@ const Notifications = () => {
             onClick={() => {
               // Navigate to progress page
               window.location.href = '/patient/progress';
-              handleMarkAsRead(notification.id);
             }}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-orange-700 bg-orange-100 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
           >
@@ -124,7 +123,6 @@ const Notifications = () => {
             onClick={() => {
               // Navigate to daily notes page
               window.location.href = '/patient/daily-notes';
-              handleMarkAsRead(notification.id);
             }}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
           >
@@ -138,7 +136,6 @@ const Notifications = () => {
             onClick={() => {
               // Navigate to exercises page
               window.location.href = '/patient/exercises';
-              handleMarkAsRead(notification.id);
             }}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
@@ -354,41 +351,50 @@ const Notifications = () => {
           {filteredNotifications.map((notification) => (
             <div
               key={notification.id}
-              className={`bg-white border-l-4 ${getPriorityColor(notification.priority)} shadow rounded-lg p-4 ${
-                !notification.isRead ? 'ring-2 ring-blue-100' : ''
+              onClick={() => {
+                setSelectedNotification(notification);
+                // Mark as read when clicked
+                if (!notification.isRead) {
+                  handleMarkAsRead(notification.id);
+                }
+              }}
+              className={`border-l-4 ${getPriorityColor(notification.priority)} shadow rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+                !notification.isRead ? 'ring-2 ring-green-100 bg-green-50' : 'bg-white'
               }`}
             >
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start space-x-3 flex-1">
                   <div className="flex-shrink-0">
                     <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                      notification.isRead ? 'bg-gray-100' : 'bg-blue-100'
+                      notification.isRead ? 'bg-gray-100' : 'bg-green-100'
                     }`}>
                       {getTypeIcon(notification.type)}
                     </div>
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2 mb-1">
                       <h3 className={`text-sm font-medium ${
-                        notification.isRead ? 'text-gray-900' : 'text-blue-900'
+                        notification.isRead ? 'text-gray-900' : 'text-green-900'
                       }`}>
                         {notification.title}
                       </h3>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTypeColor(notification.type)}`}>
-                        {notification.type}
-                      </span>
-                      {getPriorityIcon(notification.priority)}
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getTypeColor(notification.type)}`}>
+                          {notification.type}
+                        </span>
+                        {getPriorityIcon(notification.priority)}
+                      </div>
                     </div>
                     
                     <p className="text-sm text-gray-600 mb-2">
                       {notification.message}
                     </p>
                     
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
                       <span>{notification.date} at {notification.time}</span>
                       {!notification.isRead && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           New
                         </span>
                       )}
@@ -396,39 +402,25 @@ const Notifications = () => {
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2 ml-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 sm:ml-4">
                   {/* Generate action button based on notification type */}
                   {getActionButton(notification)}
                   
-                  {!notification.isRead && (
-                    <button
-                      onClick={() => handleMarkAsRead(notification.id)}
-                      disabled={isMarkingAsRead}
-                      className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                    >
-                      {isMarkingAsRead ? (
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      ) : (
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                      )}
-                      Mark as read
-                    </button>
-                  )}
-                  
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent triggering the card click
                       if (window.confirm('Are you sure you want to delete this notification?')) {
                         handleDelete(notification.id);
                       }
                     }}
                     disabled={isDeleting}
-                    className="inline-flex items-center px-2 py-1 border border-red-200 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center px-3 py-2 border border-red-200 text-xs font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed touch-target"
                     title="Delete notification"
                   >
                     {isDeleting ? (
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
-                      <X className="h-3 w-3 mr-1" />
+                      <X className="h-4 w-4 mr-2" />
                     )}
                     Delete
                   </button>
@@ -492,6 +484,126 @@ const Notifications = () => {
           </button>
         </div>
       </div>
+
+      {/* Notification Details Modal */}
+      {selectedNotification && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
+          <div className="relative w-full max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+              {/* Modern Gradient Header */}
+              <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                      <Bell className="h-8 w-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">{selectedNotification.title}</h3>
+                      <p className="text-white/90 mt-1">Notification Details</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedNotification(null)}
+                    className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-xl transition-all duration-200"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-8">
+            
+                {/* Message Section */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200 mb-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-indigo-100 rounded-lg">
+                      <MessageSquare className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-900">Message</h4>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">{selectedNotification.message}</p>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <h4 className="font-semibold text-gray-900">Type</h4>
+                    </div>
+                    <p className="text-gray-700 capitalize font-medium">{selectedNotification.type}</p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <AlertCircle className="h-5 w-5 text-orange-600" />
+                      </div>
+                      <h4 className="font-semibold text-gray-900">Priority</h4>
+                    </div>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedNotification.priority === 'high' ? 'bg-red-100 text-red-800' :
+                      selectedNotification.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {selectedNotification.priority}
+                    </span>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Clock className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <h4 className="font-semibold text-gray-900">Date & Time</h4>
+                    </div>
+                    <p className="text-gray-700 font-medium">{selectedNotification.date} at {selectedNotification.time}</p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      </div>
+                      <h4 className="font-semibold text-gray-900">Status</h4>
+                    </div>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedNotification.isRead 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {selectedNotification.isRead ? 'Read' : 'Unread'}
+                    </span>
+                  </div>
+                </div>
+            
+                {/* Modern Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete this notification?')) {
+                        handleDelete(selectedNotification.id);
+                        setSelectedNotification(null);
+                      }
+                    }}
+                    className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
+                  >
+                    <X className="h-5 w-5 mr-2" />
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => setSelectedNotification(null)}
+                    className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

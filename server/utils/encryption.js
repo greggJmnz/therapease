@@ -95,6 +95,7 @@ const decryptField = (encryptedValue) => {
     try {
       return decrypt(encryptedValue);
     } catch (error) {
+      console.error(`Decryption failed for value: ${encryptedValue}, error: ${error.message}`);
       // If decryption fails, return original value
       return encryptedValue;
     }

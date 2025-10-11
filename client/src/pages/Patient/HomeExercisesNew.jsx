@@ -23,6 +23,7 @@ import {
 import { patientAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useRealtimeData } from '../../hooks/useWebSocket';
+import FullScreenImageViewer from '../../components/FullScreenImageViewer';
 import toast from 'react-hot-toast';
 
 const HomeExercisesNew = () => {
@@ -36,6 +37,7 @@ const HomeExercisesNew = () => {
   const [showProofsModal, setShowProofsModal] = useState(false);
   const [exerciseProofs, setExerciseProofs] = useState([]);
   const [expandedExercises, setExpandedExercises] = useState(new Set());
+  const [fullScreenImage, setFullScreenImage] = useState({ isOpen: false, url: '', fileName: '' });
 
   // Get patient ID from user data
   const patientId = user?.id;
@@ -612,11 +614,16 @@ const HomeExercisesNew = () => {
                               
                               {/* Display image */}
                               {proof.submissionType === 'image' && proof.fileUrl && (
-<div className="mt-2">
+                                <div className="mt-2">
                                   <img 
                                     src={`http://localhost:5000${proof.fileUrl}`}
                                     alt="Submitted proof"
-                                    className="max-w-full h-auto max-h-64 rounded-lg border"
+                                    className="max-w-full h-auto max-h-64 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => setFullScreenImage({
+                                      isOpen: true,
+                                      url: `http://localhost:5000${proof.fileUrl}`,
+                                      fileName: proof.fileName || 'Exercise Proof'
+                                    })}
                                     onError={(e) => {
                                       console.error('Image load error for:', e.target.src);
                                       e.target.style.display = 'none';
@@ -685,6 +692,15 @@ const HomeExercisesNew = () => {
           </div>
         </div>
       )}
+
+      {/* Full Screen Image Viewer */}
+      <FullScreenImageViewer
+        isOpen={fullScreenImage.isOpen}
+        onClose={() => setFullScreenImage({ isOpen: false, url: '', fileName: '' })}
+        imageUrl={fullScreenImage.url}
+        imageAlt="Exercise proof submission"
+        fileName={fullScreenImage.fileName}
+      />
     </div>
   );
 };

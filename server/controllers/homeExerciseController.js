@@ -147,7 +147,7 @@ const createExercise = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!patientId || !therapistId || !title || !description || !category || !instructions || !duration || !frequency || !difficulty) {
+    if (!patientId || !therapistId || !title || !description || !instructions || !frequency || !difficulty) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -163,9 +163,9 @@ const createExercise = async (req, res) => {
       therapistId,
       title,
       description,
-      category,
+      category || 'General',
       JSON.stringify(instructions),
-      duration,
+      duration || 30,
       frequency,
       difficulty,
       equipment ? JSON.stringify(equipment) : null,
@@ -232,9 +232,9 @@ const updateExercise = async (req, res) => {
     await runQuery(query, [
       title,
       description,
-      category,
+      category || 'General',
       JSON.stringify(instructions),
-      duration,
+      duration || 30,
       frequency,
       difficulty,
       equipment ? JSON.stringify(equipment) : null,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { 
   Plus, 
@@ -21,8 +21,6 @@ import {
   Users,
   User,
   Search,
-  Grid3X3,
-  List,
   MoreVertical
 } from 'lucide-react';
 import { adminAPI } from '../../services/api';
@@ -38,8 +36,10 @@ const AdminTherapists = () => {
   const [generatedCredentials, setGeneratedCredentials] = useState(null);
   const [capacityTherapist, setCapacityTherapist] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  // Removed viewMode state - only using list view now
   const [activeDropdown, setActiveDropdown] = useState(null); // Track which dropdown is open
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [newTherapist, setNewTherapist] = useState({
     name: '',
     email: ''
@@ -103,6 +103,38 @@ const AdminTherapists = () => {
     );
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(therapists.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTherapists = therapists.slice(startIndex, endIndex);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    // Scroll to top of table when page changes
+    const tableContainer = document.querySelector('.therapists-table-container');
+    if (tableContainer) {
+      tableContainer.scrollTop = 0;
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
 
   // Loading and error states
   if (isLoading) {
@@ -353,32 +385,6 @@ const AdminTherapists = () => {
           </div>
           <div className="welcome-actions">
             <div className="flex items-center gap-3">
-              {/* View Toggle Buttons */}
-              <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === 'grid'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Grid3X3 size={16} />
-                  Grid
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === 'list'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <List size={16} />
-                  List
-                </button>
-              </div>
-              
               <button className="therapist-btn-primary" onClick={() => setShowGenerateAccountModal(true)}>
                 <Key size={16} />
                 Generate Account
@@ -418,83 +424,7 @@ const AdminTherapists = () => {
         )}
       </div>
 
-      {/* Therapists List/Grid View */}
-      {viewMode === 'grid' ? (
-        <div className="therapists-grid">
-          {therapists.map(therapist => (
-            <div key={therapist.id} className="therapist-card">
-              <div className="therapist-header">
-                <InitialsAvatar 
-                  name={therapist.name} 
-                  size="lg" 
-                  className="therapist-avatar"
-                />
-                <div className="therapist-info">
-                  <h3>{therapist.name}</h3>
-                  <p className="specialization">
-                    {therapist.specialization || 'Specialization not set'}
-                  </p>
-                </div>
-                <span className={`status-badge ${therapist.status}`}>
-                  {therapist.status}
-                </span>
-              </div>
-              
-              <div className="therapist-details">
-                <div className="detail-item">
-                  <span className="label">License:</span>
-                  <span>{therapist.licenseNumber || 'Not provided'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">Experience:</span>
-                  <span>{therapist.experience || 'Not provided'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">Patients:</span>
-                  <span>{therapist.patientsCount}/{therapist.maxPatients}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">Available Slots:</span>
-                  <span className={therapist.availableSlots > 0 ? 'text-green-600' : 'text-red-600'}>
-                    {therapist.availableSlots}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">Accepting:</span>
-                  <span className={therapist.isAcceptingPatients ? 'text-green-600' : 'text-red-600'}>
-                    {therapist.isAcceptingPatients ? 'Yes' : 'No'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="therapist-actions">
-                <button className="therapist-action-btn" onClick={() => setSelectedTherapist(therapist)}>
-                  <Eye size={16} />
-                  View
-                </button>
-                <button className="therapist-action-btn" onClick={() => handleEdit(therapist)}>
-                  <Edit size={16} />
-                  Edit
-                </button>
-                <button className="therapist-action-btn" onClick={() => handleManageCapacity(therapist)}>
-                  <Users size={16} />
-                  Capacity
-                </button>
-                {therapist.status === 'pending' && (
-                  <button className="therapist-action-btn approve" onClick={() => handleApprove(therapist.id)}>
-                    <UserCheck size={16} />
-                    Approve
-                  </button>
-                )}
-                <button className="therapist-action-btn danger" onClick={() => handleDelete(therapist.id)}>
-                  <Trash2 size={16} />
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
+      {/* Therapists List View */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible">
           <div className="therapists-table-container overflow-x-auto overflow-y-visible">
             <table className="therapists-table w-full">
@@ -524,8 +454,12 @@ const AdminTherapists = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {therapists.map((therapist) => (
-                  <tr key={therapist.id} className="hover:bg-gray-50">
+                {currentTherapists.map((therapist) => (
+                  <tr 
+                    key={therapist.id} 
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => setSelectedTherapist(therapist)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <InitialsAvatar 
@@ -685,8 +619,76 @@ const AdminTherapists = () => {
               )}
             </div>
           )}
+
+          {/* Pagination Controls */}
+          {therapists.length > 0 && (
+            <div className="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="flex items-center text-sm text-gray-700">
+                <span>
+                  Showing {startIndex + 1} to {Math.min(endIndex, therapists.length)} of {therapists.length} therapists
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                {/* Previous Button */}
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    currentPage === 1
+                      ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                      : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                  }`}
+                >
+                  Previous
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-green-600 text-white'
+                            : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    currentPage === totalPages
+                      ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                      : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
 
       {/* Therapist Detail Modal */}
       {selectedTherapist && (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HelpCircle, Search, MessageCircle, Phone, Mail, FileText, Calendar, Target, Users, ChevronDown, ChevronRight, Settings, BarChart3, Shield, Database } from 'lucide-react';
+import { HelpCircle, Search, MessageCircle, Phone, Mail, FileText, Calendar, Target, Users, ChevronDown, ChevronRight, Settings, BarChart3, Shield, Database, Bell } from 'lucide-react';
 
 const AdminHelpCenter = () => {
   const navigate = useNavigate();
@@ -16,51 +16,51 @@ const AdminHelpCenter = () => {
 
   const faqs = [
     {
-      question: "How do I manage user accounts and permissions?",
-      answer: "Navigate to User Management to create, edit, or deactivate user accounts. You can assign roles (Admin, Therapist, Patient), set permissions, and manage access levels. Use the bulk actions for efficient user management."
+      question: "How do I manage patients and therapists?",
+      answer: "Use the Patients section to view all patient records with search and filter capabilities. The Therapists section allows you to manage therapist accounts, view their assigned patients, and monitor their schedules. You can also view detailed patient information including age, assigned therapist, and therapy progress."
     },
     {
-      question: "How can I view system analytics and reports?",
-      answer: "Access the Reports & Analytics section to view comprehensive dashboards, patient progress reports, therapist performance metrics, and system usage statistics. Export data in various formats for external analysis."
+      question: "How do I handle appointment requests and scheduling?",
+      answer: "The Notifications section shows incoming appointment booking requests from patients. You can accept requests or add patients to a waiting list. The Appointments section displays current and upcoming appointments with patient details, and the Schedule section provides an interactive calendar for managing all appointments."
     },
     {
-      question: "How do I configure system settings?",
-      answer: "Go to System Settings to configure user registration, security policies, notification preferences, and system maintenance. Changes take effect immediately and affect all users."
+      question: "How can I view system analytics and patient statistics?",
+      answer: "The Dashboard provides comprehensive statistics including total patients, therapists, and appointments. You can view patient demographics, therapy progress trends, and system usage metrics. The statistics cards show real-time data with quick access links to detailed views."
     },
     {
-      question: "How can I monitor system health and performance?",
-      answer: "The System Health dashboard shows real-time metrics including server performance, database status, user activity, and error logs. Set up alerts for critical issues."
+      question: "How do I configure system settings and security?",
+      answer: "Access System Settings to configure user registration policies, security settings, notification preferences, and system maintenance. You can manage password complexity, session timeouts, email notifications, and privacy settings. Changes take effect immediately and affect all users."
     },
     {
-      question: "How do I backup and restore system data?",
-      answer: "Automated backups run daily. Manual backups can be created in System Settings > Data Management. Restore from the backup management interface with proper permissions."
+      question: "How does the notification system work?",
+      answer: "The system supports multiple notification types: push notifications for real-time browser alerts, SMS integration for appointment reminders (Philippine number support), email notifications, and WebSocket-based live updates. You can configure notification preferences and delivery methods for different user roles."
     },
     {
-      question: "How can I manage therapist assignments and schedules?",
-      answer: "Use the Therapist Management section to assign patients, manage schedules, and track workload. The calendar view shows availability and conflicts."
+      question: "How can I monitor therapist workload and patient assignments?",
+      answer: "The Dashboard shows therapist statistics and patient assignments. You can view which patients are assigned to each therapist, monitor appointment schedules, and track therapy progress. The system provides real-time updates on therapist activities and patient care status."
     },
     {
-      question: "How do I handle patient data privacy and HIPAA compliance?",
-      answer: "The system includes built-in HIPAA compliance features. Enable audit logging, data encryption, and access controls. Regular compliance reports are available in the Reports section."
+      question: "How do I ensure HIPAA compliance and data security?",
+      answer: "The system includes built-in HIPAA compliance features with data encryption, secure user authentication, and audit logging. Patient data is encrypted at rest and in transit. Access controls ensure only authorized users can view patient information. Regular security updates and compliance monitoring are available."
     },
     {
-      question: "How can I customize the system for my organization?",
-      answer: "Use the Appearance settings to customize branding, colors, and logos. Configure email templates, notification preferences, and user interface elements to match your organization."
+      question: "How can I manage the pediatric therapy focus of the system?",
+      answer: "TherapEase is specifically designed for pediatric occupational therapy (ages 0-21). The system supports play-based interventions, developmental milestone tracking, family-centered care, and school integration. AI-powered assessments provide pediatric-specific insights and recommendations for child development."
     }
   ];
 
   const quickActions = [
     {
-      title: "User Management",
-      description: "Manage user accounts and permissions",
+      title: "Manage Patients",
+      description: "View and manage patient records",
       icon: Users,
-      action: () => navigate('/admin/therapists')
+      action: () => navigate('/admin/patients')
     },
     {
-      title: "View Reports",
-      description: "Access system analytics and reports",
-      icon: BarChart3,
-      action: () => navigate('/admin/reports')
+      title: "View Appointments",
+      description: "Manage appointments and schedules",
+      icon: Calendar,
+      action: () => navigate('/admin/appointments')
     },
     {
       title: "System Settings",
@@ -69,10 +69,10 @@ const AdminHelpCenter = () => {
       action: () => navigate('/admin/settings')
     },
     {
-      title: "Database Management",
-      description: "Manage system data and backups",
-      icon: Database,
-      action: () => navigate('/admin/settings')
+      title: "View Notifications",
+      description: "Handle appointment requests",
+      icon: Bell,
+      action: () => navigate('/admin/notifications')
     }
   ];
 
@@ -81,22 +81,22 @@ const AdminHelpCenter = () => {
       title: "Phone Support",
       description: "Call us for immediate assistance",
       icon: Phone,
-      value: "+1 (555) 123-4567",
-      action: () => window.open('tel:+15551234567')
+      value: "+639851423225",
+      action: () => window.open('tel:+639851423225')
     },
     {
       title: "Email Support",
       description: "Send us an email",
       icon: Mail,
-      value: "support@therapease.com",
-      action: () => window.open('mailto:support@therapease.com')
+      value: "therapease16@gmail.com",
+      action: () => window.open('mailto:therapease16@gmail.com')
     },
     {
-      title: "Live Chat",
-      description: "Chat with our support team",
+      title: "Facebook Page",
+      description: "Visit our Facebook page",
       icon: MessageCircle,
-      value: "Available 9 AM - 6 PM",
-      action: () => alert('Live chat feature coming soon!')
+      value: "TherapEase Page",
+      action: () => window.open('https://facebook.com/therapease', '_blank')
     }
   ];
 
@@ -114,7 +114,7 @@ const AdminHelpCenter = () => {
             </div>
         <h1 className="text-4xl font-bold text-gray-900 mb-4">How can we help you?</h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Find answers to common questions, get support, and learn how to make the most of your admin dashboard.
+          Find answers to common questions, get support, and learn how to make the most of your TherapEase admin portal for pediatric occupational therapy management.
         </p>
         </div>
         
@@ -200,33 +200,6 @@ const AdminHelpCenter = () => {
               </div>
             </div>
 
-      {/* Additional Resources */}
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">Still need help?</h2>
-        <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl p-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">We're here to help you succeed</h3>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            If you couldn't find what you're looking for, our support team is ready to assist you. 
-            Don't hesitate to reach out - we're committed to making your admin experience as smooth as possible.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <button
-              onClick={() => window.open('tel:+15551234567')}
-              className="px-8 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
-            >
-              <Phone size={20} />
-              Call Support
-                  </button>
-                  <button
-              onClick={() => window.open('mailto:support@therapease.com')}
-              className="px-8 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-                  >
-              <Mail size={20} />
-              Email Support
-                  </button>
-            </div>
-          </div>
-      </div>
     </div>
   );
 };

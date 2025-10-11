@@ -96,6 +96,9 @@ const getPatients = async (req, res) => {
       };
     }));
 
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+
     // Format patient data
     const formattedPatients = patientsWithAssignments.map(patient => ({
       id: patient.id,
@@ -113,8 +116,8 @@ const getPatients = async (req, res) => {
       medicalHistory: patient.medicalHistory,
       goals: patient.goals,
       status: patient.status,
-      emergencyContact: patient.emergencyContact,
-      insuranceInfo: patient.insuranceInfo,
+      emergencyContact: decryptField(patient.emergencyContact),
+      insuranceInfo: decryptField(patient.insuranceInfo),
       createdAt: patient.createdAt,
       updatedAt: patient.updatedAt,
       // Progress tracking data
@@ -184,6 +187,9 @@ const getPatientById = async (req, res) => {
       });
     }
 
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+
     // Format patient data
     const formattedPatient = {
       id: patient.id,
@@ -200,8 +206,8 @@ const getPatientById = async (req, res) => {
       diagnosis: patient.diagnosis,
       medicalHistory: patient.medicalHistory,
       goals: patient.goals,
-      emergencyContact: patient.emergencyContact,
-      insuranceInfo: patient.insuranceInfo,
+      emergencyContact: decryptField(patient.emergencyContact),
+      insuranceInfo: decryptField(patient.insuranceInfo),
       createdAt: patient.createdAt,
       updatedAt: patient.updatedAt
     };
@@ -1831,6 +1837,9 @@ const getProfile = async (req, res) => {
       });
     }
 
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+
     // Format patient data
     const formattedPatient = {
       id: patient.id,
@@ -1849,8 +1858,8 @@ const getProfile = async (req, res) => {
       medicalHistory: patient.medicalHistory,
       goals: patient.goals,
       therapistId: patient.therapistId,
-      emergencyContact: patient.emergencyContact,
-      insuranceInfo: patient.insuranceInfo,
+      emergencyContact: decryptField(patient.emergencyContact),
+      insuranceInfo: decryptField(patient.insuranceInfo),
       createdAt: patient.createdAt,
       updatedAt: patient.updatedAt
     };

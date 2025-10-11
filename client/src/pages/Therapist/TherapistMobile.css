@@ -1,0 +1,1138 @@
+/* Therapist Portal Mobile Responsive Styles */
+
+/* Dashboard Mobile Optimizations */
+@media (max-width: 1200px) {
+  .therapist-dashboard {
+    padding: 1rem;
+  }
+  
+  .dashboard-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .dashboard-stats .stat-card {
+    padding: 1rem;
+  }
+  
+  .dashboard-stats .stat-card h3 {
+    font-size: 1.5rem;
+  }
+  
+  .dashboard-stats .stat-card p {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .therapist-dashboard {
+    padding: 0.75rem;
+  }
+  
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .recent-section {
+    margin-top: 1rem;
+  }
+  
+  .recent-section h3 {
+    font-size: 1.25rem;
+  }
+  
+  .recent-item {
+    padding: 0.75rem;
+  }
+  
+  .recent-item h4 {
+    font-size: 0.875rem;
+  }
+  
+  .recent-item p {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .therapist-dashboard {
+    padding: 0.5rem;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .dashboard-header p {
+    font-size: 0.875rem;
+  }
+  
+  .dashboard-stats .stat-card {
+    padding: 0.75rem;
+    text-align: center;
+  }
+  
+  .dashboard-stats .stat-card h3 {
+    font-size: 1.25rem;
+  }
+  
+  .dashboard-stats .stat-card p {
+    font-size: 0.75rem;
+  }
+  
+  .dashboard-grid {
+    gap: 0.75rem;
+  }
+  
+  .recent-section h3 {
+    font-size: 1.125rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .recent-item {
+    padding: 0.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .recent-item .recent-info {
+    width: 100%;
+  }
+  
+  .recent-item h4 {
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .recent-item p {
+    font-size: 0.7rem;
+  }
+  
+  .recent-item .recent-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 0.5rem;
+  }
+  
+  .recent-item .recent-actions button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .therapist-dashboard {
+    padding: 0.25rem;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .dashboard-header p {
+    font-size: 0.75rem;
+  }
+  
+  .dashboard-stats .stat-card {
+    padding: 0.5rem;
+  }
+  
+  .dashboard-stats .stat-card h3 {
+    font-size: 1rem;
+  }
+  
+  .dashboard-stats .stat-card p {
+    font-size: 0.7rem;
+  }
+  
+  .recent-section h3 {
+    font-size: 1rem;
+  }
+  
+  .recent-item {
+    padding: 0.4rem;
+  }
+  
+  .recent-item h4 {
+    font-size: 0.75rem;
+  }
+  
+  .recent-item p {
+    font-size: 0.65rem;
+  }
+}
+
+/* Patient Management Mobile Optimizations */
+@media (max-width: 1200px) {
+  .therapist-patients {
+    padding: 1rem;
+  }
+  
+  .patients-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .patients-search {
+    width: 100%;
+  }
+  
+  .patients-filters {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 1024px) {
+  .therapist-patients {
+    padding: 0.75rem;
+  }
+  
+  .patients-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .patient-card {
+    padding: 0.75rem;
+  }
+  
+  .patient-card h3 {
+    font-size: 1rem;
+  }
+  
+  .patient-card .patient-info {
+    font-size: 0.875rem;
+  }
+  
+  .patient-card .patient-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .patient-card .patient-actions button {
+    width: 100%;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .therapist-patients {
+    padding: 0.5rem;
+  }
+  
+  .patients-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .patients-search input {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .patients-filters {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .patients-filters select {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .patient-card {
+    padding: 0.5rem;
+  }
+  
+  .patient-card h3 {
+    font-size: 0.9rem;
+  }
+  
+  .patient-card .patient-info {
+    font-size: 0.8rem;
+  }
+  
+  .patient-card .patient-actions button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .therapist-patients {
+    padding: 0.25rem;
+  }
+  
+  .patients-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .patients-search input {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+  
+  .patients-filters select {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+  
+  .patient-card {
+    padding: 0.4rem;
+  }
+  
+  .patient-card h3 {
+    font-size: 0.85rem;
+  }
+  
+  .patient-card .patient-info {
+    font-size: 0.75rem;
+  }
+  
+  .patient-card .patient-actions button {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Patient Detail Modal Mobile Optimizations */
+@media (max-width: 1024px) {
+  .patient-detail-modal {
+    width: 95%;
+    max-width: 95%;
+    margin: 1rem auto;
+  }
+  
+  .patient-detail-modal .modal-content {
+    padding: 1rem;
+  }
+  
+  .patient-detail-tabs {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .patient-detail-tabs button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .patient-detail-modal {
+    width: 98%;
+    max-width: 98%;
+    margin: 0.5rem auto;
+    max-height: 95vh;
+  }
+  
+  .patient-detail-modal .modal-content {
+    padding: 0.75rem;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .patient-detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .patient-detail-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .patient-detail-tabs {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .patient-detail-tabs button {
+    flex: 1;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+  
+  .patient-detail-content {
+    padding: 0.5rem 0;
+  }
+  
+  .patient-detail-content h3 {
+    font-size: 1rem;
+  }
+  
+  .patient-detail-content p {
+    font-size: 0.875rem;
+  }
+  
+  .patient-detail-content .form-group {
+    margin-bottom: 0.75rem;
+  }
+  
+  .patient-detail-content .form-group label {
+    font-size: 0.875rem;
+  }
+  
+  .patient-detail-content .form-group input,
+  .patient-detail-content .form-group textarea,
+  .patient-detail-content .form-group select {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .patient-detail-modal {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+  }
+  
+  .patient-detail-modal .modal-content {
+    padding: 0.5rem;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  
+  .patient-detail-header h2 {
+    font-size: 1.125rem;
+  }
+  
+  .patient-detail-tabs button {
+    padding: 0.3rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  
+  .patient-detail-content h3 {
+    font-size: 0.9rem;
+  }
+  
+  .patient-detail-content p {
+    font-size: 0.8rem;
+  }
+  
+  .patient-detail-content .form-group label {
+    font-size: 0.8rem;
+  }
+  
+  .patient-detail-content .form-group input,
+  .patient-detail-content .form-group textarea,
+  .patient-detail-content .form-group select {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Progress Tracking Mobile Optimizations */
+@media (max-width: 1200px) {
+  .progress-tracking {
+    padding: 1rem;
+  }
+  
+  .progress-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .progress-filters {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .progress-tracking {
+    padding: 0.75rem;
+  }
+  
+  .progress-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .progress-card {
+    padding: 0.75rem;
+  }
+  
+  .progress-card h3 {
+    font-size: 1rem;
+  }
+  
+  .progress-card .progress-info {
+    font-size: 0.875rem;
+  }
+  
+  .progress-card .progress-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .progress-card .progress-actions button {
+    width: 100%;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .progress-tracking {
+    padding: 0.5rem;
+  }
+  
+  .progress-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .progress-filters {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .progress-filters select {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .progress-card {
+    padding: 0.5rem;
+  }
+  
+  .progress-card h3 {
+    font-size: 0.9rem;
+  }
+  
+  .progress-card .progress-info {
+    font-size: 0.8rem;
+  }
+  
+  .progress-card .progress-actions button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .progress-tracking {
+    padding: 0.25rem;
+  }
+  
+  .progress-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .progress-filters select {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+  
+  .progress-card {
+    padding: 0.4rem;
+  }
+  
+  .progress-card h3 {
+    font-size: 0.85rem;
+  }
+  
+  .progress-card .progress-info {
+    font-size: 0.75rem;
+  }
+  
+  .progress-card .progress-actions button {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Daily Notes Mobile Optimizations */
+@media (max-width: 1200px) {
+  .daily-notes {
+    padding: 1rem;
+  }
+  
+  .notes-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .notes-filters {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .daily-notes {
+    padding: 0.75rem;
+  }
+  
+  .notes-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .note-card {
+    padding: 0.75rem;
+  }
+  
+  .note-card h3 {
+    font-size: 1rem;
+  }
+  
+  .note-card .note-content {
+    font-size: 0.875rem;
+  }
+  
+  .note-card .note-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .note-card .note-actions button {
+    width: 100%;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .daily-notes {
+    padding: 0.5rem;
+  }
+  
+  .notes-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .notes-filters {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .notes-filters select {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .note-card {
+    padding: 0.5rem;
+  }
+  
+  .note-card h3 {
+    font-size: 0.9rem;
+  }
+  
+  .note-card .note-content {
+    font-size: 0.8rem;
+  }
+  
+  .note-card .note-actions button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .daily-notes {
+    padding: 0.25rem;
+  }
+  
+  .notes-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .notes-filters select {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+  
+  .note-card {
+    padding: 0.4rem;
+  }
+  
+  .note-card h3 {
+    font-size: 0.85rem;
+  }
+  
+  .note-card .note-content {
+    font-size: 0.75rem;
+  }
+  
+  .note-card .note-actions button {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* AI Insights Mobile Optimizations */
+@media (max-width: 1200px) {
+  .ai-insights {
+    padding: 1rem;
+  }
+  
+  .insights-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .insights-filters {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .ai-insights {
+    padding: 0.75rem;
+  }
+  
+  .insights-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .insight-card {
+    padding: 0.75rem;
+  }
+  
+  .insight-card h3 {
+    font-size: 1rem;
+  }
+  
+  .insight-card .insight-content {
+    font-size: 0.875rem;
+  }
+  
+  .insight-card .insight-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .insight-card .insight-actions button {
+    width: 100%;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .ai-insights {
+    padding: 0.5rem;
+  }
+  
+  .insights-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .insights-filters {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .insights-filters select {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .insight-card {
+    padding: 0.5rem;
+  }
+  
+  .insight-card h3 {
+    font-size: 0.9rem;
+  }
+  
+  .insight-card .insight-content {
+    font-size: 0.8rem;
+  }
+  
+  .insight-card .insight-actions button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .ai-insights {
+    padding: 0.25rem;
+  }
+  
+  .insights-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .insights-filters select {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+  
+  .insight-card {
+    padding: 0.4rem;
+  }
+  
+  .insight-card h3 {
+    font-size: 0.85rem;
+  }
+  
+  .insight-card .insight-content {
+    font-size: 0.75rem;
+  }
+  
+  .insight-card .insight-actions button {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Home Exercises Mobile Optimizations */
+@media (max-width: 1200px) {
+  .home-exercises {
+    padding: 1rem;
+  }
+  
+  .exercises-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .exercises-filters {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .home-exercises {
+    padding: 0.75rem;
+  }
+  
+  .exercises-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .exercise-card {
+    padding: 0.75rem;
+  }
+  
+  .exercise-card h3 {
+    font-size: 1rem;
+  }
+  
+  .exercise-card .exercise-content {
+    font-size: 0.875rem;
+  }
+  
+  .exercise-card .exercise-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .exercise-card .exercise-actions button {
+    width: 100%;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-exercises {
+    padding: 0.5rem;
+  }
+  
+  .exercises-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .exercises-filters {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .exercises-filters select {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .exercise-card {
+    padding: 0.5rem;
+  }
+  
+  .exercise-card h3 {
+    font-size: 0.9rem;
+  }
+  
+  .exercise-card .exercise-content {
+    font-size: 0.8rem;
+  }
+  
+  .exercise-card .exercise-actions button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-exercises {
+    padding: 0.25rem;
+  }
+  
+  .exercises-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .exercises-filters select {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+  
+  .exercise-card {
+    padding: 0.4rem;
+  }
+  
+  .exercise-card h3 {
+    font-size: 0.85rem;
+  }
+  
+  .exercise-card .exercise-content {
+    font-size: 0.75rem;
+  }
+  
+  .exercise-card .exercise-actions button {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Schedule Mobile Optimizations */
+@media (max-width: 1200px) {
+  .therapist-schedule {
+    padding: 1rem;
+  }
+  
+  .schedule-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .schedule-filters {
+    width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .therapist-schedule {
+    padding: 0.75rem;
+  }
+  
+  .schedule-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .schedule-card {
+    padding: 0.75rem;
+  }
+  
+  .schedule-card h3 {
+    font-size: 1rem;
+  }
+  
+  .schedule-card .schedule-content {
+    font-size: 0.875rem;
+  }
+  
+  .schedule-card .schedule-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .schedule-card .schedule-actions button {
+    width: 100%;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .therapist-schedule {
+    padding: 0.5rem;
+  }
+  
+  .schedule-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .schedule-filters {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .schedule-filters select {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .schedule-card {
+    padding: 0.5rem;
+  }
+  
+  .schedule-card h3 {
+    font-size: 0.9rem;
+  }
+  
+  .schedule-card .schedule-content {
+    font-size: 0.8rem;
+  }
+  
+  .schedule-card .schedule-actions button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .therapist-schedule {
+    padding: 0.25rem;
+  }
+  
+  .schedule-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .schedule-filters select {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+  
+  .schedule-card {
+    padding: 0.4rem;
+  }
+  
+  .schedule-card h3 {
+    font-size: 0.85rem;
+  }
+  
+  .schedule-card .schedule-content {
+    font-size: 0.75rem;
+  }
+  
+  .schedule-card .schedule-actions button {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .therapist-dashboard .stat-card:hover,
+  .patient-card:hover,
+  .progress-card:hover,
+  .note-card:hover,
+  .insight-card:hover,
+  .exercise-card:hover,
+  .schedule-card:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .therapist-dashboard .stat-card:active,
+  .patient-card:active,
+  .progress-card:active,
+  .note-card:active,
+  .insight-card:active,
+  .exercise-card:active,
+  .schedule-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .therapist-dashboard button,
+  .patient-card button,
+  .progress-card button,
+  .note-card button,
+  .insight-card button,
+  .exercise-card button,
+  .schedule-card button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Landscape orientation optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  .therapist-dashboard,
+  .therapist-patients,
+  .progress-tracking,
+  .daily-notes,
+  .ai-insights,
+  .home-exercises,
+  .therapist-schedule {
+    padding: 0.25rem;
+  }
+  
+  .dashboard-stats,
+  .patients-grid,
+  .progress-grid,
+  .notes-grid,
+  .insights-grid,
+  .exercises-grid,
+  .schedule-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .patient-detail-modal {
+    max-height: 90vh;
+  }
+  
+  .patient-detail-modal .modal-content {
+    max-height: 85vh;
+  }
+}
+
+/* Print optimizations */
+@media print {
+  .therapist-dashboard .dashboard-actions,
+  .therapist-patients .patients-actions,
+  .progress-tracking .progress-actions,
+  .daily-notes .notes-actions,
+  .ai-insights .insights-actions,
+  .home-exercises .exercises-actions,
+  .therapist-schedule .schedule-actions {
+    display: none;
+  }
+  
+  .therapist-dashboard,
+  .therapist-patients,
+  .progress-tracking,
+  .daily-notes,
+  .ai-insights,
+  .home-exercises,
+  .therapist-schedule {
+    padding: 0;
+  }
+  
+  .dashboard-stats,
+  .patients-grid,
+  .progress-grid,
+  .notes-grid,
+  .insights-grid,
+  .exercises-grid,
+  .schedule-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}

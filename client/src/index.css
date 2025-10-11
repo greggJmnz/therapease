@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import mobile responsive utilities */
+@import './styles/mobile-responsive.css';
+
+/* Import therapist mobile responsive styles */
+@import './pages/Therapist/TherapistMobile.css';
+
+/* Import daily notes mobile responsive styles */
+@import './pages/DailyNotesMobile.css';
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

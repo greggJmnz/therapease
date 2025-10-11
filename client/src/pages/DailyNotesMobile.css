@@ -1,0 +1,190 @@
+/* Daily Notes Mobile Responsive Styles */
+
+/* Mobile-specific button improvements */
+@media (max-width: 640px) {
+  /* Daily notes action buttons */
+  .daily-notes-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .daily-notes-actions button {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+    font-size: 0.875rem;
+  }
+  
+  /* Comment action buttons */
+  .comment-actions {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Comment dropdown menu */
+  .comment-dropdown {
+    right: 0;
+    left: auto;
+    min-width: 140px;
+  }
+  
+  /* Daily notes card layout */
+  .daily-notes-card {
+    margin-bottom: 1rem;
+  }
+  
+  .daily-notes-card .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .daily-notes-card .card-content {
+    padding: 1rem;
+  }
+  
+  /* Patient info section */
+  .patient-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .patient-info .patient-details {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  /* Session info */
+  .session-info {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  /* Expanded note content */
+  .expanded-note-content {
+    padding: 1rem;
+  }
+  
+  .expanded-note-content .note-section {
+    margin-bottom: 1rem;
+  }
+  
+  /* Comment section */
+  .comment-section {
+    padding: 0.75rem;
+  }
+  
+  .comment-item {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Form elements */
+  .comment-form textarea {
+    min-height: 80px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .comment-form button {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .daily-notes-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .daily-notes-actions button {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .daily-notes-actions button:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .daily-notes-actions button:active {
+    transform: scale(0.98);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .comment-actions:hover {
+    background: transparent;
+  }
+  
+  .comment-actions:active {
+    background: #f3f4f6;
+    transform: scale(0.95);
+  }
+}
+
+/* Landscape orientation optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  .daily-notes-card .card-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .daily-notes-actions {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+  
+  .daily-notes-actions button {
+    flex: 1;
+    min-width: auto;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .daily-notes-actions button {
+    border-width: 2px;
+  }
+  
+  .comment-dropdown {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .daily-notes-actions button,
+  .comment-actions {
+    transition: none;
+  }
+  
+  .daily-notes-actions button:active,
+  .comment-actions:active {
+    transform: none;
+  }
+}
+
+/* Print optimizations */
+@media print {
+  .daily-notes-actions {
+    display: none;
+  }
+  
+  .comment-actions {
+    display: none;
+  }
+  
+  .daily-notes-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+}

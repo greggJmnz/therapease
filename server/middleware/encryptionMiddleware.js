@@ -58,6 +58,20 @@ const decryptResponseData = (req, res, next) => {
             data.data = data.data.map(item => 
               decryptSensitiveFields(item, SENSITIVE_FIELDS[tableName])
             );
+          } else if (data.data && data.data.data && Array.isArray(data.data.data)) {
+            // Handle nested data structure (e.g., { success: true, data: { data: { patients: [...] } } })
+            if (data.data.data.patients && Array.isArray(data.data.data.patients)) {
+              data.data.data.patients = data.data.data.patients.map(item => 
+                decryptSensitiveFields(item, SENSITIVE_FIELDS[tableName])
+              );
+            } else {
+              data.data.data = data.data.data.map(item => 
+                decryptSensitiveFields(item, SENSITIVE_FIELDS[tableName])
+              );
+            }
+          } else if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+            // Handle single object in data property
+            data.data = decryptSensitiveFields(data.data, SENSITIVE_FIELDS[tableName]);
           } else {
             // Handle single object
             data = decryptSensitiveFields(data, SENSITIVE_FIELDS[tableName]);
@@ -100,9 +114,11 @@ const getTableNameFromRoute = (path) => {
       '/api/patient/profile': 'patients' // Decrypt patient profile
     };
   
-  // Find matching route
+  // Find matching route - improved matching logic
   for (const [route, table] of Object.entries(routeMap)) {
-    if (path.includes(route.split('/').slice(2).join('/'))) {
+    // Extract the path part after /api/
+    const routePath = route.replace('/api/', '');
+    if (path.includes(routePath)) {
       return table;
     }
   }

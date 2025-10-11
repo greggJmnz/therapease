@@ -27,6 +27,7 @@ import {
 import { therapistAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useRealtimeData } from '../../hooks/useWebSocket';
+import FullScreenImageViewer from '../../components/FullScreenImageViewer';
 import toast from 'react-hot-toast';
 
 const HomeExercises = () => {
@@ -41,13 +42,12 @@ const HomeExercises = () => {
   const [patientFilter, setPatientFilter] = useState('all');
   const [patients, setPatients] = useState([]);
   const [expandedExercises, setExpandedExercises] = useState(new Set());
+  const [fullScreenImage, setFullScreenImage] = useState({ isOpen: false, url: '', fileName: '' });
   const [formData, setFormData] = useState({
     patientId: '',
     title: '',
     description: '',
-    category: '',
     instructions: '',
-    duration: '',
     frequency: '',
     difficulty: 'Beginner',
     equipment: '',
@@ -186,9 +186,7 @@ const HomeExercises = () => {
       patientId: '',
       title: '',
       description: '',
-      category: '',
       instructions: '',
-      duration: '',
       frequency: '',
       difficulty: 'Beginner',
       equipment: '',
@@ -224,9 +222,7 @@ const HomeExercises = () => {
       patientId: exercise.patientId.toString(),
       title: exercise.title,
       description: exercise.description,
-      category: exercise.category,
       instructions: Array.isArray(exercise.instructions) ? exercise.instructions.join('\n') : exercise.instructions,
-      duration: exercise.duration.toString(),
       frequency: exercise.frequency,
       difficulty: exercise.difficulty,
       equipment: Array.isArray(exercise.equipment) ? exercise.equipment.join(', ') : exercise.equipment || '',
@@ -468,18 +464,18 @@ const HomeExercises = () => {
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                         <h3 className="text-lg font-semibold text-gray-900 truncate">
                           {exercise.title}
                         </h3>
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(exercise.status)}`}>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium self-start ${getStatusColor(exercise.status)}`}>
                           {exercise.status.replace('_', ' ')}
                         </span>
                       </div>
                       <button
                         onClick={() => toggleExerciseExpansion(exercise.id)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 touch-target self-start sm:self-auto"
                       >
                         {expandedExercises.has(exercise.id) ? (
                           <ChevronUp className="h-5 w-5 text-gray-500" />
@@ -489,20 +485,16 @@ const HomeExercises = () => {
                       </button>
                     </div>
                     
-                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3 mb-3">
                       <div className="flex items-center text-sm text-gray-600">
                         <User className="h-4 w-4 mr-1.5 text-gray-400" />
                         <span>{exercise.patientFirstName} {exercise.patientLastName}</span>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
-                        <Clock className="h-4 w-4 mr-1.5 text-gray-400" />
-                        <span>{exercise.duration} min</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
                         <span>{exercise.frequency}</span>
                       </div>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getDifficultyColor(exercise.difficulty)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium self-start ${getDifficultyColor(exercise.difficulty)}`}>
                         {exercise.difficulty}
                       </span>
                     </div>
@@ -513,32 +505,31 @@ const HomeExercises = () => {
                   </div>
                 </div>
                 
-                <div className="flex flex-col items-end space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleViewProofs(exercise)}
-                      className="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Proofs ({exercise.proofCount})
-                    </button>
-                    
-                    <button
-                      onClick={() => handleEdit(exercise)}
-                      className="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </button>
-                    
-                    <button
-                      onClick={() => handleDelete(exercise.id)}
-                      className="inline-flex items-center px-4 py-2 border border-red-200 shadow-sm text-sm font-medium rounded-lg text-red-700 bg-white hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </button>
-                  </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
+                  <button
+                    onClick={() => handleViewProofs(exercise)}
+                    className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 touch-target"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">View Proofs ({exercise.proofCount})</span>
+                    <span className="sm:hidden">Proofs ({exercise.proofCount})</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleEdit(exercise)}
+                    className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 touch-target"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </button>
+                  
+                  <button
+                    onClick={() => handleDelete(exercise.id)}
+                    className="inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-lg text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200 touch-target"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </button>
                 </div>
               </div>
 
@@ -585,11 +576,7 @@ const HomeExercises = () => {
                         Exercise Details
                       </h4>
                       <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <span className="font-medium text-gray-700">Category:</span>
-                            <span className="ml-2 text-gray-600">{exercise.category || 'General'}</span>
-                          </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           <div>
                             <span className="font-medium text-gray-700">Assigned Date:</span>
                             <span className="ml-2 text-gray-600">
@@ -633,32 +620,48 @@ const HomeExercises = () => {
 
       {/* Create/Edit Exercise Modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {selectedExercise ? 'Edit Exercise' : 'Assign New Exercise'}
-                </h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Dumbbell className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      {selectedExercise ? 'Edit Exercise' : 'Assign New Exercise'}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {selectedExercise ? 'Update exercise details' : 'Create a new home exercise for your patient'}
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowCreateForm(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 touch-target"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5 text-gray-400" />
                 </button>
               </div>
+            </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Form Content */}
+            <div className="p-6">
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Patient and Title */}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
                       Patient *
                     </label>
                     <select
                       value={formData.patientId}
                       onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
                       required
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm transition-all duration-200"
                     >
                       <option value="">Select a patient</option>
                       {patients.map(patient => (
@@ -669,22 +672,24 @@ const HomeExercises = () => {
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Title *
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Exercise Title *
                     </label>
                     <input
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       required
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                      placeholder="e.g., Morning Stretches"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm transition-all duration-200"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                {/* Description */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
                     Description *
                   </label>
                   <textarea
@@ -692,137 +697,107 @@ const HomeExercises = () => {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     required
                     rows={3}
-                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    placeholder="Describe the exercise and its benefits..."
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm transition-all duration-200 resize-none"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Category
-                    </label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                    >
-                      <option value="">Select a category</option>
-                      <option value="Strength Training">Strength Training</option>
-                      <option value="Cardio">Cardio</option>
-                      <option value="Flexibility">Flexibility</option>
-                      <option value="Balance">Balance</option>
-                      <option value="Coordination">Coordination</option>
-                      <option value="Endurance">Endurance</option>
-                      <option value="Rehabilitation">Rehabilitation</option>
-                      <option value="Posture">Posture</option>
-                      <option value="Breathing">Breathing</option>
-                      <option value="Stretching">Stretching</option>
-                      <option value="Core">Core</option>
-                      <option value="Upper Body">Upper Body</option>
-                      <option value="Lower Body">Lower Body</option>
-                      <option value="Full Body">Full Body</option>
-                      <option value="Mental Health">Mental Health</option>
-                      <option value="Pain Management">Pain Management</option>
-                      <option value="Recovery">Recovery</option>
-                      <option value="General">General</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Duration (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                {/* Frequency and Difficulty */}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
                       Frequency
                     </label>
                     <input
                       type="text"
                       value={formData.frequency}
                       onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-                      placeholder="e.g., Daily, 3x/week"
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                      placeholder="e.g., Daily, 3x/week, Every other day"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm transition-all duration-200"
                     />
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Difficulty
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Difficulty Level
                     </label>
                     <select
                       value={formData.difficulty}
                       onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm transition-all duration-200"
                     >
                       <option value="Beginner">Beginner</option>
                       <option value="Intermediate">Intermediate</option>
                       <option value="Advanced">Advanced</option>
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Due Date
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.dueDate}
-                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                    />
-                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Instructions (one per line)
+                {/* Due Date */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm transition-all duration-200"
+                  />
+                </div>
+
+                {/* Instructions */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    Step-by-Step Instructions
                   </label>
                   <textarea
                     value={formData.instructions}
                     onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
-                    rows={4}
-                    placeholder="Enter step-by-step instructions..."
-                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    rows={5}
+                    placeholder="Enter detailed instructions, one step per line..."
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm transition-all duration-200 resize-none"
                   />
+                  <p className="text-xs text-gray-500">Enter each instruction on a new line</p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Equipment (comma-separated)
+                {/* Equipment */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    Required Equipment
                   </label>
                   <input
                     type="text"
                     value={formData.equipment}
                     onChange={(e) => setFormData({ ...formData, equipment: e.target.value })}
                     placeholder="e.g., Resistance band, Yoga mat, Water bottle"
-                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm transition-all duration-200"
                   />
+                  <p className="text-xs text-gray-500">Separate multiple items with commas</p>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
                   <button
                     type="button"
                     onClick={() => setShowCreateForm(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    className="flex-1 px-6 py-3 border border-gray-300 rounded-xl shadow-sm text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 touch-target"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={createExerciseMutation.isLoading || updateExerciseMutation.isLoading}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                    className="flex-1 px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-target"
                   >
-                    {createExerciseMutation.isLoading || updateExerciseMutation.isLoading ? 'Saving...' : (selectedExercise ? 'Update Exercise' : 'Assign Exercise')}
+                    {createExerciseMutation.isLoading || updateExerciseMutation.isLoading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Saving...
+                      </div>
+                    ) : (
+                      selectedExercise ? 'Update Exercise' : 'Create Exercise'
+                    )}
                   </button>
                 </div>
               </form>
@@ -885,11 +860,16 @@ const HomeExercises = () => {
                               
                               {/* Display image */}
                               {proof.submissionType === 'image' && proof.fileUrl && (
-<div className="mt-2">
+                                <div className="mt-2">
                                   <img 
                                     src={`http://localhost:5000${proof.fileUrl}`}
                                     alt="Submitted proof"
-                                    className="max-w-full h-auto max-h-64 rounded-lg border"
+                                    className="max-w-full h-auto max-h-64 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => setFullScreenImage({
+                                      isOpen: true,
+                                      url: `http://localhost:5000${proof.fileUrl}`,
+                                      fileName: proof.fileName || 'Exercise Proof'
+                                    })}
                                     onError={(e) => {
                                       console.error('Image load error for:', e.target.src);
                                       e.target.style.display = 'none';
@@ -950,14 +930,14 @@ const HomeExercises = () => {
                           )}
                         </div>
                         
-                        <div className="flex space-x-2">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
                           {proof.status === 'submitted' && (
                             <>
                               <button
                                 onClick={() => handleReviewProof(proof.id, 'approved', '')}
-                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200"
+                                className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-green-700 bg-green-100 hover:bg-green-200 touch-target"
                               >
-                                <CheckCircle className="h-3 w-3 mr-1" />
+                                <CheckCircle className="h-4 w-4 mr-2" />
                                 Approve
                               </button>
                               <button
@@ -967,9 +947,9 @@ const HomeExercises = () => {
                                     handleReviewProof(proof.id, 'needs_revision', feedback);
                                   }
                                 }}
-                                className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200"
+                                className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-yellow-700 bg-yellow-100 hover:bg-yellow-200 touch-target"
                               >
-                                <MessageSquare className="h-3 w-3 mr-1" />
+                                <MessageSquare className="h-4 w-4 mr-2" />
                                 Request Revision
                               </button>
                             </>
@@ -984,6 +964,15 @@ const HomeExercises = () => {
           </div>
         </div>
       )}
+
+      {/* Full Screen Image Viewer */}
+      <FullScreenImageViewer
+        isOpen={fullScreenImage.isOpen}
+        onClose={() => setFullScreenImage({ isOpen: false, url: '', fileName: '' })}
+        imageUrl={fullScreenImage.url}
+        imageAlt="Exercise proof submission"
+        fileName={fullScreenImage.fileName}
+      />
     </div>
   );
 };

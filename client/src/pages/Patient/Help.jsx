@@ -14,55 +14,63 @@ const PatientHelp = () => {
 
   const faqs = [
     {
-      question: "How do I schedule a session?",
-      answer: "You can schedule sessions through the Schedule page. Click on 'Book Session' and select your preferred date and time. Your therapist will confirm the session within 24 hours."
+      question: "How do I schedule a therapy session?",
+      answer: "Use the Appointments section to book therapy sessions. Click 'Book Session' to select your preferred date and time. Your therapist will confirm the session, and you'll receive notifications about your appointment status. The system supports pediatric occupational therapy sessions with play-based interventions."
     },
     {
-      question: "How do I access my daily notes?",
-      answer: "Daily notes can be found in the 'Daily Notes' section. You can view notes from your therapy sessions and add your own observations about your progress."
+      question: "How do I view my therapy progress and daily notes?",
+      answer: "Access the Daily Notes section to read detailed session summaries from your therapist. You can view activities performed, progress observations, and therapist recommendations. The Progress section shows your developmental milestones and therapy journey with visual charts and achievement tracking."
     },
     {
-      question: "What are home exercises?",
-      answer: "Home exercises are personalized activities assigned by your therapist to help you continue your progress outside of sessions. You can find them in the 'Home Exercises' section."
+      question: "What are home exercises and how do I complete them?",
+      answer: "Home exercises are personalized play-based activities assigned by your therapist to support your development outside of sessions. Access them in the Home Exercises section where you can view instructions, track completion, and submit proof of activities. The system includes timers and progress tracking for each exercise."
     },
     {
-      question: "How do I track my progress?",
-      answer: "Use the 'Progress Tracking' feature to monitor your improvement over time. You can view charts and see your therapy journey."
+      question: "How do I track my therapy progress and achievements?",
+      answer: "The Progress section provides comprehensive tracking of your therapy journey. View your developmental milestones, treatment plan progress, and achievement badges. The system shows visual progress indicators and celebrates your accomplishments in age-appropriate activities and skills development."
     },
     {
-      question: "Can I reschedule my session?",
-      answer: "Yes, you can reschedule sessions up to 24 hours before the scheduled time. Go to the Schedule page and click on the session you want to reschedule."
+      question: "How do I manage my appointments and schedule?",
+      answer: "The Appointments section shows your upcoming sessions with an interactive calendar view. You can view session details, reschedule appointments (with advance notice), and receive automatic reminders. The system integrates with notification features to keep you informed about your therapy schedule."
     },
     {
-      question: "How do I contact my therapist?",
-      answer: "You can contact your therapist through the messaging system in the app, or use the contact information provided in your profile. For urgent matters, please call the clinic directly."
+      question: "How do I receive notifications and stay updated?",
+      answer: "The system provides multiple notification options: push notifications for real-time browser alerts, SMS reminders for appointments (Philippine number support), and email updates. You can configure your notification preferences in the Settings section to receive updates about appointments, progress reports, and therapy activities."
+    },
+    {
+      question: "How do I access my therapy reports and documents?",
+      answer: "View your progress reports and therapy documents in the Progress Reports section. You can download files, view uploaded assessments, and access therapy summaries. All documents are securely stored and organized by date for easy reference and sharing with family members or other healthcare providers."
+    },
+    {
+      question: "How does the pediatric therapy focus benefit me?",
+      answer: "TherapEase is specifically designed for pediatric occupational therapy (ages 0-21) with play-based interventions, developmental milestone tracking, and family-centered care. The system supports your growth through age-appropriate activities, sensory processing support, and educational integration to help you succeed in school and daily life."
     }
   ];
 
   const quickActions = [
     {
       title: "Book Session",
-      description: "Book your next therapy session",
+      description: "Schedule your next therapy session",
       icon: Calendar,
       action: () => window.location.href = '/patient/appointments'
     },
     {
       title: "View Progress",
-      description: "Check your therapy progress",
+      description: "Track your therapy progress",
       icon: Target,
       action: () => window.location.href = '/patient/progress'
     },
     {
       title: "Daily Notes",
-      description: "Access your session notes",
+      description: "Read your session notes",
       icon: FileText,
       action: () => window.location.href = '/patient/daily-notes'
     },
     {
       title: "Home Exercises",
-      description: "View assigned exercises",
+      description: "Complete assigned exercises",
       icon: Target,
-      action: () => window.location.href = '/patient/exercises'
+      action: () => window.location.href = '/patient/home-exercises'
     }
   ];
 
@@ -71,22 +79,22 @@ const PatientHelp = () => {
       title: "Phone Support",
       description: "Call us for immediate assistance",
       icon: Phone,
-      value: "+1 (555) 123-4567",
-      action: () => window.open('tel:+15551234567')
+      value: "+639851423225",
+      action: () => window.open('tel:+639851423225')
     },
     {
       title: "Email Support",
       description: "Send us an email",
       icon: Mail,
-      value: "support@therapease.com",
-      action: () => window.open('mailto:support@therapease.com')
+      value: "therapease16@gmail.com",
+      action: () => window.open('mailto:therapease16@gmail.com')
     },
     {
-      title: "Live Chat",
-      description: "Chat with our support team",
+      title: "Facebook Page",
+      description: "Visit our Facebook page",
       icon: MessageCircle,
-      value: "Available 9 AM - 6 PM",
-      action: () => alert('Live chat feature coming soon!')
+      value: "TherapEase Page",
+      action: () => window.open('https://facebook.com/therapease', '_blank')
     }
   ];
 
@@ -104,7 +112,7 @@ const PatientHelp = () => {
         </div>
         <h1 className="text-4xl font-bold text-gray-900 mb-4">How can we help you?</h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Find answers to common questions, get support, and learn how to make the most of your therapy experience.
+          Find answers to common questions, get support, and learn how to make the most of your TherapEase patient portal for pediatric occupational therapy.
         </p>
       </div>
 
@@ -190,33 +198,6 @@ const PatientHelp = () => {
         </div>
       </div>
 
-      {/* Additional Resources */}
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">Still need help?</h2>
-        <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl p-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">We're here to help you succeed</h3>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            If you couldn't find what you're looking for, our support team is ready to assist you. 
-            Don't hesitate to reach out - we're committed to making your therapy journey as smooth as possible.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => window.open('tel:+15551234567')}
-              className="px-8 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
-            >
-              <Phone size={20} />
-              Call Support
-            </button>
-            <button
-              onClick={() => window.open('mailto:support@therapease.com')}
-              className="px-8 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-            >
-              <Mail size={20} />
-              Email Support
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

@@ -733,25 +733,26 @@ const ProgressTracking = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Progress Tracking</h1>
           <p className="text-gray-600">Monitor and manage patient treatment plans and progress</p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => setShowCreatePlan(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 touch-target"
           >
             <Plus size={20} />
-            <span>New Treatment Plan</span>
+            <span className="hidden sm:inline">New Treatment Plan</span>
+            <span className="sm:hidden">New Plan</span>
           </button>
         </div>
       </div>
 
       {/* Patient Selection */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Select Patient</h2>
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">Select Patient</h2>
           <select
             value={selectedPatient?.id || ''}
             onChange={(e) => {
@@ -759,7 +760,7 @@ const ProgressTracking = () => {
             setSelectedPatient(patient);
             setActiveTab('overview');
           }}
-          className="w-full max-w-md border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full max-w-md border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm hover:border-gray-400 transition-colors duration-200"
           >
             <option value="">Choose a patient...</option>
             {patients.map((patient) => (
@@ -773,8 +774,8 @@ const ProgressTracking = () => {
       {selectedPatient && (
         <>
           {/* Tabs */}
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+          <div className="border-b border-gray-200 bg-white rounded-t-xl">
+            <nav className="-mb-px flex flex-wrap gap-2 sm:gap-8 px-4 sm:px-0">
               {[
                 { id: 'overview', name: 'Overview', icon: BarChart3 },
                 { id: 'treatment-plans', name: 'Treatment Plans', icon: FileText },
@@ -784,14 +785,15 @@ const ProgressTracking = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
+                  className={`flex items-center space-x-2 py-3 px-2 sm:px-1 border-b-2 font-medium text-sm touch-target transition-all duration-200 ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-blue-500 text-blue-600 bg-blue-50 rounded-t-lg'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50 rounded-t-lg'
                   }`}
                 >
-                  <tab.icon size={20} />
-                  <span>{tab.name}</span>
+                  <tab.icon size={18} />
+                  <span className="hidden sm:inline">{tab.name}</span>
+                  <span className="sm:hidden text-xs">{tab.name.split(' ')[0]}</span>
                 </button>
               ))}
             </nav>
@@ -801,31 +803,37 @@ const ProgressTracking = () => {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Patient Info */}
-              <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center space-x-4">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
                 <InitialsAvatar 
                   name={`${selectedPatient.firstName} ${selectedPatient.lastName}`}
                   size="xl"
-                  className="shadow-md"
+                  className="shadow-lg ring-4 ring-blue-100"
                 />
-                <div>
-                  <h2 className="text-xl font-semibold">
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-gray-900">
                     {selectedPatient.firstName} {selectedPatient.lastName}
                   </h2>
-                  <p className="text-gray-600">{selectedPatient.email}</p>
-                  <p className="text-sm text-gray-500">
-                    Patient since {new Date(selectedPatient.createdAt).toLocaleDateString()}
-                  </p>
+                  <p className="text-gray-600 mt-1">{selectedPatient.email}</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+                    <p className="text-sm text-gray-500">
+                      Patient since {new Date(selectedPatient.createdAt).toLocaleDateString()}
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm text-green-600 font-medium">Active</span>
+                    </div>
+                  </div>
                 </div>
               </div>
           </div>
 
               {/* Treatment Plans Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-lg shadow p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg border border-blue-200 p-6 hover:shadow-xl transition-shadow duration-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Active Plans</p>
+                      <p className="text-sm font-medium text-blue-600">Active Plans</p>
                       <p className="text-2xl font-bold text-gray-900">
                         {treatmentPlansList?.length || 0}
                     </p>
@@ -834,10 +842,10 @@ const ProgressTracking = () => {
               </div>
               </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg border border-green-200 p-6 hover:shadow-xl transition-shadow duration-200">
                   <div className="flex items-center justify-between">
                           <div>
-                      <p className="text-sm font-medium text-gray-600">Overall Progress</p>
+                      <p className="text-sm font-medium text-green-600">Overall Progress</p>
                       <p className={`text-2xl font-bold ${getProgressColor((() => {
                         // Calculate overall progress as average of all treatment plans for this patient
                         if (!treatmentPlansList || !Array.isArray(treatmentPlansList) || treatmentPlansList.length === 0) return 0;
@@ -856,10 +864,10 @@ const ProgressTracking = () => {
                           </div>
           </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-lg border border-purple-200 p-6 hover:shadow-xl transition-shadow duration-200">
                   <div className="flex items-center justify-between">
                           <div>
-                      <p className="text-sm font-medium text-gray-600">Completed Objectives</p>
+                      <p className="text-sm font-medium text-purple-600">Completed Objectives</p>
                       <p className="text-2xl font-bold text-gray-900">
                         {(() => {
                           // Calculate total completed objectives from planDetails if available, otherwise from treatmentPlansList
@@ -895,7 +903,7 @@ const ProgressTracking = () => {
                         })()}
                       </p>
                           </div>
-                    <CheckCircle className="h-8 w-8 text-green-600" />
+                    <CheckCircle className="h-8 w-8 text-purple-600" />
                         </div>
                 </div>
               </div>
@@ -978,17 +986,17 @@ const ProgressTracking = () => {
                                 rows={3}
                               />
                           </div>
-                            <div className="flex space-x-2">
+                            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
                               <button
                                 onClick={handleSaveTreatmentPlan}
-                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-1"
+                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-1 touch-target"
                               >
                                 <Save size={16} />
                                 <span>Save</span>
                               </button>
                               <button
                                 onClick={handleCancelEditTreatmentPlan}
-                                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center space-x-1"
+                                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center justify-center space-x-1 touch-target"
                               >
                                 <X size={16} />
                                 <span>Cancel</span>
@@ -1000,7 +1008,7 @@ const ProgressTracking = () => {
                             <div className="flex-1">
                               <h4 className="text-lg font-semibold text-gray-900">{plan.title}</h4>
                               <p className="text-gray-600 mt-1">{plan.description}</p>
-                              <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-sm text-gray-500">
                                 <span>Status: <span className="font-medium">{plan.status}</span></span>
                                 <span>Start: {new Date(plan.startDate).toLocaleDateString()}</span>
                                 {plan.endDate && (
@@ -1015,26 +1023,27 @@ const ProgressTracking = () => {
                                 </div>
                                 <div className="text-sm text-gray-500">Progress</div>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
                         <button
                                   onClick={() => handleEditTreatmentPlan(plan)}
-                                  className="p-2 hover:bg-gray-100 rounded-lg"
+                                  className="p-2 hover:bg-gray-100 rounded-lg touch-target"
                                   title="Edit treatment plan"
                         >
                                   <Edit size={16} className="text-gray-500" />
                         </button>
                         <button
                                   onClick={() => handleDeleteTreatmentPlan(plan.id)}
-                                  className="p-2 hover:bg-red-100 rounded-lg"
+                                  className="p-2 hover:bg-red-100 rounded-lg touch-target"
                                   title="Delete treatment plan"
                                 >
                                   <Trash2 size={16} className="text-red-500" />
                                 </button>
                                 <button
                                   onClick={() => setSelectedPlan(plan)}
-                                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 touch-target"
                                 >
-                                  View Details
+                                  <span className="hidden sm:inline">View Details</span>
+                                  <span className="sm:hidden">View</span>
                         </button>
                       </div>
                     </div>
@@ -1058,13 +1067,14 @@ const ProgressTracking = () => {
                   <div className="px-6 py-4 border-b border-gray-200">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold">{selectedPlan.title}</h3>
-                      <div className="flex items-center space-x-4">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
               <button
                           onClick={() => setShowCreateMainObjective(true)}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2 touch-target"
               >
                           <Plus size={20} />
-                          <span>Add Main Objective</span>
+                          <span className="hidden sm:inline">Add Main Objective</span>
+                          <span className="sm:hidden">Add Objective</span>
               </button>
                       </div>
                     </div>
@@ -1124,17 +1134,17 @@ const ProgressTracking = () => {
                                       <option value="paused">Paused</option>
                                     </select>
                       </div>
-                                  <div className="flex space-x-2">
+                                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
                                     <button
                                       onClick={handleSaveMainObjective}
-                                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-1"
+                                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-1 touch-target"
                                     >
                                       <Save size={16} />
                                       <span>Save</span>
                                     </button>
                                     <button
                                       onClick={handleCancelEditMainObjective}
-                                      className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center space-x-1"
+                                      className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center justify-center space-x-1 touch-target"
                                     >
                                       <X size={16} />
                                       <span>Cancel</span>
@@ -1145,7 +1155,7 @@ const ProgressTracking = () => {
                                 <>
                                   <h4 className="text-lg font-semibold text-gray-900">{mainObj.title}</h4>
                                   <p className="text-gray-600 mt-1">{mainObj.description}</p>
-                                  <div className="flex items-center space-x-4 mt-2">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorities[mainObj.priority].color}`}>
                                       {priorities[mainObj.priority].label} Priority
                                     </span>
@@ -1159,19 +1169,19 @@ const ProgressTracking = () => {
                                 </>
                         )}
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
                               {editingMainObjective !== mainObj.id && (
                                 <>
                                   <button
                                     onClick={() => handleEditMainObjective(mainObj)}
-                                    className="p-2 hover:bg-gray-200 rounded-lg"
+                                    className="p-2 hover:bg-gray-200 rounded-lg touch-target"
                                     title="Edit objective"
                                   >
                                     <Edit size={16} />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteMainObjective(mainObj.id)}
-                                    className="p-2 hover:bg-red-200 rounded-lg"
+                                    className="p-2 hover:bg-red-200 rounded-lg touch-target"
                                     title="Delete objective"
                                   >
                                     <Trash2 size={16} className="text-red-600" />
@@ -1180,7 +1190,7 @@ const ProgressTracking = () => {
                               )}
                       <button
                                 onClick={() => toggleObjectiveExpansion(mainObj.id)}
-                                className="p-2 hover:bg-gray-200 rounded-lg"
+                                className="p-2 hover:bg-gray-200 rounded-lg touch-target"
                       >
                                 {expandedObjectives[mainObj.id] ? (
                                   <ChevronDown size={20} />
@@ -1201,10 +1211,11 @@ const ProgressTracking = () => {
                                   setSpecificObjectiveForm({ ...specificObjectiveForm, mainObjectiveId: mainObj.id });
                                   setShowCreateSpecificObjective(true);
                   }}
-                                className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 flex items-center space-x-1 text-sm"
+                                className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-1 text-sm touch-target"
                 >
                                 <Plus size={16} />
-                                <span>Add Objective</span>
+                                <span className="hidden sm:inline">Add Objective</span>
+                                <span className="sm:hidden">Add</span>
                 </button>
               </div>
               
@@ -1240,17 +1251,17 @@ const ProgressTracking = () => {
                                         placeholder="Therapist remarks"
                                         rows={2}
                                       />
-                                      <div className="flex space-x-2">
+                                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
                   <button
                                           onClick={handleSaveSpecificObjective}
-                                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-1"
+                                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center space-x-1 touch-target"
                                         >
                                           <Save size={16} />
                                           <span>Save</span>
                   </button>
                   <button
                                           onClick={handleCancelEditSpecificObjective}
-                                          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center space-x-1"
+                                          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center justify-center space-x-1 touch-target"
                   >
                                           <X size={16} />
                                           <span>Cancel</span>
@@ -1284,17 +1295,17 @@ const ProgressTracking = () => {
         </div>
       )}
                                       </div>
-                                      <div className="flex items-center space-x-1">
+                                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-1">
                                         <button
                                           onClick={() => handleEditSpecificObjective(specificObj)}
-                                          className="p-2 hover:bg-gray-100 rounded-lg"
+                                          className="p-2 hover:bg-gray-100 rounded-lg touch-target"
                                           title="Edit objective"
                                         >
                                           <Edit size={16} className="text-gray-500" />
                                         </button>
                                         <button
                                           onClick={() => handleDeleteSpecificObjective(specificObj.id)}
-                                          className="p-2 hover:bg-red-100 rounded-lg"
+                                          className="p-2 hover:bg-red-100 rounded-lg touch-target"
                                           title="Delete objective"
                                         >
                                           <Trash2 size={16} className="text-red-500" />
@@ -1306,7 +1317,7 @@ const ProgressTracking = () => {
                                               handleUpdateSpecificObjective(specificObj.id, newRemarks);
                                             }
                                           }}
-                                          className="p-2 hover:bg-gray-100 rounded-lg"
+                                          className="p-2 hover:bg-gray-100 rounded-lg touch-target"
                                           title="Add remarks"
                                         >
                                           <MessageSquare size={16} className="text-gray-500" />
@@ -1331,17 +1342,18 @@ const ProgressTracking = () => {
             <div className="space-y-6">
               {/* Upload Section */}
               <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <Upload className="h-5 w-5 text-blue-600" />
                     Upload Progress Report
                   </h3>
                   <button
                     onClick={() => setShowUploadReport(!showUploadReport)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 touch-target"
                   >
                     <Plus className="h-4 w-4" />
-                    {showUploadReport ? 'Cancel' : 'Upload Report'}
+                    <span className="hidden sm:inline">{showUploadReport ? 'Cancel' : 'Upload Report'}</span>
+                    <span className="sm:hidden">{showUploadReport ? 'Cancel' : 'Upload'}</span>
                   </button>
                 </div>
 
@@ -1397,11 +1409,11 @@ const ProgressTracking = () => {
                           </div>
                         </div>
                       )}
-                      <div className="flex gap-3">
+                      <div className="flex flex-col sm:flex-row gap-3">
                         <button
                           onClick={handleUploadReport}
                           disabled={uploadReportMutation.isLoading}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 touch-target"
                         >
                           {uploadReportMutation.isLoading ? (
                             <>
@@ -1411,7 +1423,8 @@ const ProgressTracking = () => {
                           ) : (
                             <>
                               <Upload className="h-4 w-4" />
-                              Upload Report
+                              <span className="hidden sm:inline">Upload Report</span>
+                              <span className="sm:hidden">Upload</span>
                             </>
                           )}
                         </button>
@@ -1420,7 +1433,7 @@ const ProgressTracking = () => {
                             setShowUploadReport(false);
                             setUploadForm({ title: '', description: '', file: null });
                           }}
-                          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+                          className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 touch-target"
                         >
                           Cancel
                         </button>
@@ -1443,13 +1456,13 @@ const ProgressTracking = () => {
                     <div className="space-y-4">
                       {progressReportsData.data.data.reports.map((report) => (
                         <div key={report.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                             <div className="flex-1">
                               <h4 className="font-medium text-gray-900">{report.title}</h4>
                               {report.description && (
                                 <p className="text-sm text-gray-600 mt-1">{report.description}</p>
                               )}
-                              <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-500">
                                 <span className="flex items-center gap-1">
                                   <File className="h-3 w-3" />
                                   {report.originalFileName}
@@ -1459,18 +1472,19 @@ const ProgressTracking = () => {
                                 <span>{new Date(report.uploadedAt).toLocaleDateString()}</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
                               <button
                                 onClick={() => handleDownloadReport(report.id, report.originalFileName)}
-                                className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 flex items-center gap-1"
+                                className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 flex items-center justify-center gap-1 touch-target"
                               >
                                 <Download className="h-3 w-3" />
-                                Download
+                                <span className="hidden sm:inline">Download</span>
+                                <span className="sm:hidden">Download</span>
                               </button>
                               <button
                                 onClick={() => handleDeleteReport(report.id, report.title)}
                                 disabled={deleteReportMutation.isLoading}
-                                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 disabled:opacity-50 flex items-center gap-1"
+                                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-1 touch-target"
                               >
                                 <Trash2 className="h-3 w-3" />
                                 Delete
@@ -1786,17 +1800,17 @@ const ProgressTracking = () => {
                   </div>
                 </div>
             </div>
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-3 mt-6">
                   <button
                 onClick={() => setShowCreatePlan(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 touch-target"
                   >
                     Cancel
                   </button>
                   <button
                 onClick={handleCreatePlan}
                 disabled={createPlanMutation.isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 touch-target"
                   >
                 {createPlanMutation.isLoading ? 'Creating...' : 'Create Plan'}
                   </button>
@@ -1856,17 +1870,17 @@ const ProgressTracking = () => {
                 </div>
               </div>
             </div>
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-3 mt-6">
               <button
                 onClick={() => setShowCreateMainObjective(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 touch-target"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateMainObjective}
                 disabled={createMainObjectiveMutation.isLoading}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 touch-target"
               >
                 {createMainObjectiveMutation.isLoading ? 'Creating...' : 'Create Objective'}
               </button>
@@ -1911,17 +1925,17 @@ const ProgressTracking = () => {
                     />
                   </div>
                 </div>
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-3 mt-6">
                   <button
                 onClick={() => setShowCreateSpecificObjective(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 touch-target"
                   >
                     Cancel
                   </button>
                   <button
                 onClick={() => handleCreateSpecificObjective(specificObjectiveForm.mainObjectiveId)}
                 disabled={createSpecificObjectiveMutation.isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 touch-target"
                   >
                 {createSpecificObjectiveMutation.isLoading ? 'Creating...' : 'Create Objective'}
                   </button>

@@ -14,38 +14,40 @@ const TherapistHelpCenter = () => {
 
   const faqs = [
     {
-      question: "How do I schedule a new therapy session?",
-      answer: "To schedule a new therapy session, navigate to the Schedule section and click 'Create Session'. Fill in the patient details, select the date and time, and choose the session type. You can also set priority levels and add notes for the session."
+      question: "How do I manage my patients and view their information?",
+      answer: "Use the Patients section to view all your assigned patients with their profiles, therapy progress, and appointment history. You can access detailed patient information including age, diagnosis, therapy goals, and developmental stage. The system is specifically designed for pediatric occupational therapy (ages 0-21)."
     },
     {
-      question: "How can I track patient progress?",
-      answer: "Patient progress can be tracked through the Progress Tracking section. You can view detailed reports, set goals, monitor achievements, and generate progress summaries. Use the assessment tools to evaluate patient development over time."
+      question: "How do I create and manage treatment plans?",
+      answer: "Access the Progress Tracking section to create comprehensive treatment plans with main objectives and specific goals. You can set progress indicators, track completion status, and monitor developmental milestones. The system supports play-based interventions and family-centered care approaches."
     },
     {
-      question: "What should I include in daily notes?",
-      answer: "Daily notes should include session objectives, activities performed, patient responses, progress observations, challenges encountered, and recommendations for future sessions. Be specific and use measurable outcomes when possible."
+      question: "How do I document daily therapy sessions?",
+      answer: "Use the Daily Notes section to document session activities, patient responses, and progress observations. Include session objectives, activities performed, developmental progress, and recommendations for future sessions. The system supports detailed documentation with date tracking and patient-specific notes."
     },
     {
-      question: "How do I use AI insights for patient care?",
-      answer: "AI insights provide data-driven recommendations based on patient progress patterns. Access this feature through the AI Insights section to get personalized therapy suggestions, progress predictions, and intervention recommendations."
+      question: "How do I use AI insights for pediatric therapy?",
+      answer: "The AI Insights feature provides GPT-4 powered pediatric session analysis and developmental insights. It offers OTPF-4 compliant assessments, play-based intervention recommendations, sensory processing analysis, and family-centered care suggestions. Access this through the AI Insights section for evidence-based therapy recommendations."
     },
     {
-      question: "Can I customize my working hours?",
-      answer: "Yes, you can customize your working hours in the Settings section under Profile. Set your availability for each day of the week, including start and end times. This helps with appointment scheduling and patient coordination."
+      question: "How do I assign and track home exercises?",
+      answer: "Use the Home Exercises section to create personalized play-based activities for patients. You can assign exercises with instructions, duration, frequency, and difficulty levels. Track patient completion and view proof submissions. The system supports equipment lists and due date management for comprehensive home programs."
     },
     {
-      question: "How do I manage patient notifications?",
-      answer: "Patient notifications can be managed in the Notifications section. You can set preferences for appointment reminders, progress updates, messages, and system alerts. Choose your preferred delivery methods (email, push, SMS)."
+      question: "How do I manage my schedule and appointments?",
+      answer: "The Schedule section provides an interactive calendar for managing therapy sessions. You can view your availability, schedule appointments, and track patient sessions. The system integrates with the notification system to send reminders and updates to patients and families."
+    },
+    {
+      question: "How do I upload and manage progress reports?",
+      answer: "Use the Progress Reports section to upload files (PDF, images, videos) documenting patient progress. The system supports file management with upload progress tracking, file organization, and patient-specific documentation. Files are securely stored and accessible for review and sharing."
+    },
+    {
+      question: "How do I handle notifications and communication?",
+      answer: "The Notifications section manages appointment alerts, patient updates, and system messages. The system supports push notifications, SMS integration (Philippine number support), and email notifications. You can configure notification preferences and delivery methods for optimal communication."
     }
   ];
 
   const quickActions = [
-    {
-      title: "Schedule Session",
-      description: "Create a new therapy session",
-      icon: Calendar,
-      action: () => window.location.href = '/therapist/sessions'
-    },
     {
       title: "View Patients",
       description: "Manage your patient list",
@@ -53,16 +55,22 @@ const TherapistHelpCenter = () => {
       action: () => window.location.href = '/therapist/patients'
     },
     {
-      title: "Track Progress",
-      description: "Monitor patient progress",
+      title: "Progress Tracking",
+      description: "Create treatment plans and track progress",
       icon: Target,
-      action: () => window.location.href = '/therapist/progress'
+      action: () => window.location.href = '/therapist/progress-tracking'
     },
     {
       title: "Daily Notes",
-      description: "Access session documentation",
+      description: "Document therapy sessions",
       icon: FileText,
       action: () => window.location.href = '/therapist/daily-notes'
+    },
+    {
+      title: "AI Insights",
+      description: "Get AI-powered therapy recommendations",
+      icon: Target,
+      action: () => window.location.href = '/therapist/ai-insights'
     }
   ];
 
@@ -71,22 +79,22 @@ const TherapistHelpCenter = () => {
       title: "Phone Support",
       description: "Call us for immediate assistance",
       icon: Phone,
-      value: "+1 (555) 123-4567",
-      action: () => window.open('tel:+15551234567')
+      value: "+639851423225",
+      action: () => window.open('tel:+639851423225')
     },
     {
       title: "Email Support",
       description: "Send us an email",
       icon: Mail,
-      value: "support@therapease.com",
-      action: () => window.open('mailto:support@therapease.com')
+      value: "therapease16@gmail.com",
+      action: () => window.open('mailto:therapease16@gmail.com')
     },
     {
-      title: "Live Chat",
-      description: "Chat with our support team",
+      title: "Facebook Page",
+      description: "Visit our Facebook page",
       icon: MessageCircle,
-      value: "Available 9 AM - 6 PM",
-      action: () => alert('Live chat feature coming soon!')
+      value: "TherapEase Page",
+      action: () => window.open('https://facebook.com/therapease', '_blank')
     }
   ];
 
@@ -105,7 +113,7 @@ const TherapistHelpCenter = () => {
         </div>
         <h1 className="text-4xl font-bold text-gray-900 mb-4">How can we help you?</h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Find answers to common questions, get support, and learn how to make the most of your therapy practice.
+          Find answers to common questions, get support, and learn how to make the most of your TherapEase therapist portal for pediatric occupational therapy practice.
         </p>
             </div>
 
@@ -191,33 +199,6 @@ const TherapistHelpCenter = () => {
       </div>
     </div>
 
-      {/* Additional Resources */}
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">Still need help?</h2>
-        <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl p-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">We're here to help you succeed</h3>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            If you couldn't find what you're looking for, our support team is ready to assist you. 
-            Don't hesitate to reach out - we're committed to making your therapy practice as smooth as possible.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => window.open('tel:+15551234567')}
-              className="px-8 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
-            >
-              <Phone size={20} />
-              Call Support
-            </button>
-            <button
-              onClick={() => window.open('mailto:support@therapease.com')}
-              className="px-8 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-            >
-              <Mail size={20} />
-              Email Support
-            </button>
-        </div>
-        </div>
-      </div>
     </div>
   );
 };

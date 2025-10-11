@@ -13,6 +13,7 @@ import {
   User,
   Loader2,
   Search,
+  MessageSquare,
   Clock,
   ExternalLink
 } from 'lucide-react';
@@ -445,7 +446,7 @@ const AdminNotifications = () => {
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <h4 className="font-medium text-gray-900 text-sm truncate">{notification.title}</h4>
                       {!notification.isRead && (
-                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></div>
                       )}
                     </div>
                   </div>
@@ -576,9 +577,15 @@ const AdminNotifications = () => {
             return (
               <div
                 key={notification.id}
-                onClick={() => setSelectedNotification(notification)}
-                className={`bg-white rounded-md border border-gray-200 overflow-hidden hover:shadow-sm transition-all duration-200 cursor-pointer ${
-                  !notification.isRead ? 'ring-1 ring-blue-500 ring-opacity-20' : ''
+                onClick={() => {
+                  setSelectedNotification(notification);
+                  // Mark as read when clicked
+                  if (!notification.isRead) {
+                    markAsRead(notification.id);
+                  }
+                }}
+                className={`rounded-md border border-gray-200 overflow-hidden hover:shadow-sm transition-all duration-200 cursor-pointer ${
+                  !notification.isRead ? 'ring-1 ring-green-500 ring-opacity-20 bg-green-50' : 'bg-white'
                 }`}
               >
                 <div className={`p-3 border-l-3 ${getPriorityColor(notification.priority)}`}>
@@ -601,7 +608,7 @@ const AdminNotifications = () => {
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <h3 className="font-medium text-gray-900 text-sm truncate">{notification.title}</h3>
                           {!notification.isRead && (
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0"></div>
                           )}
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
@@ -631,28 +638,6 @@ const AdminNotifications = () => {
 
                         {/* Action Buttons */}
                         <div className="flex items-center gap-1">
-                          {!notification.isRead && !markAsReadMutation.isLoading && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent triggering the card click
-                                markAsRead(notification.id);
-                              }}
-                              className="bg-green-600 text-white py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 hover:bg-green-700 transition-colors"
-                            >
-                              <CheckCircle className="w-3 h-3" />
-                              Mark as Read
-                            </button>
-                          )}
-                          {markAsReadMutation.isLoading && (
-                            <button
-                              disabled
-                              className="bg-gray-400 text-white py-0.5 px-2 rounded text-xs font-medium flex items-center gap-1 cursor-not-allowed"
-                            >
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                              Marking...
-                            </button>
-                          )}
-                          
                           <button
                             onClick={(e) => {
                               e.stopPropagation(); // Prevent triggering the card click
@@ -785,75 +770,103 @@ const AdminNotifications = () => {
 
       {/* Notification Detail Modal */}
       {selectedNotification && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-100">
+            {/* Modern Gradient Header */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   {(() => {
                     const TypeIcon = getTypeIcon(selectedNotification.type);
                     return (
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        selectedNotification.priority === 'high' ? 'bg-red-100' :
-                        selectedNotification.priority === 'medium' ? 'bg-yellow-100' : 'bg-green-100'
-                      }`}>
-                        <TypeIcon className={`w-6 h-6 ${
-                          selectedNotification.priority === 'high' ? 'text-red-600' :
-                          selectedNotification.priority === 'medium' ? 'text-yellow-600' : 'text-green-600'
-                        }`} />
-            </div>
+                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                        <TypeIcon className="w-8 h-8 text-white" />
+                      </div>
                     );
                   })()}
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{selectedNotification.title}</h2>
-                    <p className="text-gray-600 capitalize">{selectedNotification.type} notification</p>
-          </div>
-        </div>
+                    <h2 className="text-2xl font-bold text-white">{selectedNotification.title}</h2>
+                    <p className="text-white/90 capitalize">{selectedNotification.type} notification</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setSelectedNotification(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-xl transition-all duration-200"
                 >
-                  <X className="w-6 h-6 text-gray-500" />
+                  <X className="w-6 h-6" />
                 </button>
-        </div>
+              </div>
+            </div>
+            
+            <div className="p-8">
 
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Message</h3>
+                {/* Message Section */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-indigo-100 rounded-lg">
+                      <MessageSquare className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">Message</h3>
+                  </div>
                   <p className="text-gray-700 leading-relaxed">{selectedNotification.message}</p>
-      </div>
+                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Type</h4>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 capitalize">
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <h4 className="font-semibold text-gray-900">Type</h4>
+                    </div>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white text-gray-800 capitalize border border-gray-200">
                       {selectedNotification.type}
                     </span>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Status</h4>
+                  
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      </div>
+                      <h4 className="font-semibold text-gray-900">Status</h4>
+                    </div>
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                       selectedNotification.isRead 
                         ? 'bg-green-100 text-green-800' 
-                        : 'bg-blue-100 text-blue-800'
+                        : 'bg-green-100 text-green-800'
                     }`}>
                       {selectedNotification.isRead ? 'Read' : 'Unread'}
                     </span>
-          </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Created</h4>
-                    <p className="text-gray-600">{selectedNotification.date && selectedNotification.time ? `${selectedNotification.date} at ${selectedNotification.time}` : (selectedNotification.timeAgo || 'Just now')}</p>
-            </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Priority</h4>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Clock className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <h4 className="font-semibold text-gray-900">Created</h4>
+                    </div>
+                    <p className="text-gray-700 font-medium">{selectedNotification.date && selectedNotification.time ? `${selectedNotification.date} at ${selectedNotification.time}` : (selectedNotification.timeAgo || 'Just now')}</p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <AlertCircle className="h-5 w-5 text-orange-600" />
+                      </div>
+                      <h4 className="font-semibold text-gray-900">Priority</h4>
+                    </div>
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                       selectedNotification.priority === 'high' ? 'bg-red-100 text-red-800' :
                       selectedNotification.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
                     }`}>
                       {selectedNotification.priority?.charAt(0).toUpperCase() + selectedNotification.priority?.slice(1)}
-                </span>
-              </div>
-            </div>
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
@@ -866,27 +879,6 @@ const AdminNotifications = () => {
                     View Appointment
                   </button>
                 )}
-                {!selectedNotification.isRead && !markAsReadMutation.isLoading && (
-                  <button
-                    onClick={() => {
-                      markAsRead(selectedNotification.id);
-                      setSelectedNotification(null);
-                    }}
-                    className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-colors flex items-center gap-2 font-semibold"
-                  >
-                    <CheckCircle className="w-5 h-5" />
-                    Mark as Read
-                  </button>
-                )}
-                {markAsReadMutation.isLoading && (
-                  <button
-                    disabled
-                    className="bg-gray-400 text-white px-6 py-3 rounded-xl flex items-center gap-2 font-semibold cursor-not-allowed"
-                  >
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Marking as Read...
-                  </button>
-                )}
                 <button 
                   onClick={() => {
                     if (window.confirm('Are you sure you want to delete this notification?')) {
@@ -895,18 +887,18 @@ const AdminNotifications = () => {
                     }
                   }}
                   disabled={deleteNotificationMutation.isLoading}
-                  className="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-colors flex items-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {deleteNotificationMutation.isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
                   ) : (
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-5 h-5 mr-2" />
                   )}
                   Delete
                 </button>
               <button 
                   onClick={() => setSelectedNotification(null)}
-                  className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
+                  className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
                 >
                   Close
               </button>

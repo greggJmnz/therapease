@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { 
   Plus, 
@@ -23,11 +23,13 @@ import {
   Info,
   ChevronDown,
   SortAsc,
-  SortDesc
+  SortDesc,
+  MoreVertical
 } from 'lucide-react';
 import { UltraModernCalendar } from '../../components';
 import { adminAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+import './AdminAppointments.css';
 
 const AdminAppointments = () => {
   // State for appointment scheduling modal
@@ -53,9 +55,15 @@ const AdminAppointments = () => {
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('asc');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  
+  // State for dropdown management
+  const [actionDropdowns, setActionDropdowns] = useState({});
+  const dropdownRefs = useRef({});
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Fetch appointments data from API
   const { data: appointmentsData, isLoading, error, refetch, isFetching } = useQuery(
@@ -208,6 +216,39 @@ const AdminAppointments = () => {
 
     return filtered;
   }, [allAppointments, searchTerm, statusFilter, typeFilter, therapistFilter, sortBy, sortOrder]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentAppointments = filteredAppointments.slice(startIndex, endIndex);
+
+  // Reset to first page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, typeFilter, therapistFilter, sortBy, sortOrder]);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    // Scroll to top of table when page changes
+    const tableContainer = document.querySelector('.appointments-table-container');
+    if (tableContainer) {
+      tableContainer.scrollTop = 0;
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
 
   // Fallback for old appointments reference (for hot reload compatibility)
   const appointments = allAppointments; // Legacy support
@@ -525,6 +566,45 @@ const AdminAppointments = () => {
     setShowEditModal(false);
   };
 
+  // Dropdown management functions
+  const toggleDropdown = (appointmentId) => {
+    setActionDropdowns(prev => ({
+      ...prev,
+      [appointmentId]: !prev[appointmentId]
+    }));
+  };
+
+  const closeAllDropdowns = () => {
+    setActionDropdowns({});
+  };
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.appointment-action-dropdown') && !event.target.closest('.dropdown-trigger')) {
+        closeAllDropdowns();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Check if dropdown should open upward
+  const shouldOpenUpward = (appointmentId) => {
+    const button = dropdownRefs.current[appointmentId];
+    if (!button) return false;
+    
+    const rect = button.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const dropdownHeight = 200; // Approximate dropdown height
+    const spaceBelow = viewportHeight - rect.bottom;
+    
+    return spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+  };
+
   const handleDeleteAppointment = async (appointmentId) => {
     if (window.confirm('Are you sure you want to delete this appointment? This action cannot be undone.')) {
       try {
@@ -829,70 +909,72 @@ const AdminAppointments = () => {
         ) : currentView === 'list' ? (
           /* List View */
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Table Header */}
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
-                <div className="col-span-3 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('date')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Date & Time
-                    {sortBy === 'date' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
+            {/* Scrollable Table Container */}
+            <div className="appointments-table-container overflow-x-auto overflow-y-visible">
+              {/* Table Header */}
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700 min-w-[800px]">
+                  <div className="col-span-3 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('date')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Date & Time
+                      {sortBy === 'date' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-2 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('patient')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Patient
+                      {sortBy === 'patient' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-2 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('therapist')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Therapist
+                      {sortBy === 'therapist' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-2 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('type')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Type
+                      {sortBy === 'type' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-2 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('status')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Status
+                      {sortBy === 'status' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-1 text-center">Actions</div>
                 </div>
-                <div className="col-span-2 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('patient')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Patient
-                    {sortBy === 'patient' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
-                </div>
-                <div className="col-span-2 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('therapist')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Therapist
-                    {sortBy === 'therapist' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
-                </div>
-                <div className="col-span-2 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('type')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Type
-                    {sortBy === 'type' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
-                </div>
-                <div className="col-span-2 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('status')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Status
-                    {sortBy === 'status' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
-                </div>
-                <div className="col-span-1 text-center">Actions</div>
               </div>
-            </div>
 
-            {/* Table Body */}
-            <div className="divide-y divide-gray-200">
+              {/* Table Body */}
+              <div className="divide-y divide-gray-200 min-w-[800px]">
               {filteredAppointments.length === 0 ? (
                 <div className="p-12 text-center">
                   <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -900,7 +982,7 @@ const AdminAppointments = () => {
                   <p className="text-gray-600">Try adjusting your search or filters</p>
                 </div>
               ) : (
-                filteredAppointments.map((appointment) => {
+                currentAppointments.map((appointment) => {
                   const typeColor = getTypeColor(appointment.type);
                   const borderColor = typeColor.includes('pink') ? 'border-l-pink-400' :
                                     typeColor.includes('orange') ? 'border-l-orange-400' :
@@ -910,7 +992,11 @@ const AdminAppointments = () => {
                                     'border-l-gray-400';
                   
                   return (
-                  <div key={appointment.id} className={`px-6 py-4 hover:bg-gray-50 transition-colors border-l-4 ${borderColor}`}>
+                  <div 
+                    key={appointment.id} 
+                    className={`px-6 py-4 hover:bg-gray-50 transition-colors border-l-4 cursor-pointer ${borderColor}`}
+                    onClick={() => handleViewAppointment(appointment)}
+                  >
                     <div className="grid grid-cols-12 gap-4 items-center">
                       {/* Date & Time */}
                       <div className="col-span-3">
@@ -984,35 +1070,136 @@ const AdminAppointments = () => {
                       </div>
 
                       {/* Actions */}
-                      <div className="col-span-1 flex justify-center gap-1">
-                        <button
-                          onClick={() => handleViewAppointment(appointment)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="View Details"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleEditAppointment(appointment)}
-                          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title="Edit Appointment"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteAppointment(appointment.id)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete Appointment"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      <div className="col-span-1 flex justify-center">
+                        <div className="appointment-actions">
+                          <button 
+                            className="dropdown-trigger" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleDropdown(appointment.id);
+                            }}
+                            title="Actions"
+                            ref={el => dropdownRefs.current[appointment.id] = el}
+                            data-appointment-id={appointment.id}
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+                          
+                          {actionDropdowns[appointment.id] && (
+                            <div className={`appointment-action-dropdown ${shouldOpenUpward(appointment.id) ? 'dropdown-up' : ''}`}>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewAppointment(appointment);
+                                  closeAllDropdowns();
+                                }}
+                                className="dropdown-item"
+                              >
+                                <Eye size={16} />
+                                View Details
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditAppointment(appointment);
+                                  closeAllDropdowns();
+                                }}
+                                className="dropdown-item"
+                              >
+                                <Edit size={16} />
+                                Edit Appointment
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteAppointment(appointment.id);
+                                  closeAllDropdowns();
+                                }}
+                                className="dropdown-item danger"
+                              >
+                                <Trash2 size={16} />
+                                Delete Appointment
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                   );
                 })
               )}
+              </div>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredAppointments.length > 0 && (
+              <div className="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div className="flex items-center text-sm text-gray-700">
+                  <span>
+                    Showing {startIndex + 1} to {Math.min(endIndex, filteredAppointments.length)} of {filteredAppointments.length} appointments
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {/* Previous Button */}
+                  <button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      currentPage === 1
+                        ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                        : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                    }`}
+                  >
+                    Previous
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            currentPage === pageNum
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      currentPage === totalPages
+                        ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                        : 'text-gray-700 hover:bg-gray-100 bg-white border border-gray-300'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           /* Calendar View */

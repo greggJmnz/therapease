@@ -23,6 +23,7 @@ import { UltraModernCalendar } from '../../components';
 import { patientAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import './PatientAppointments.css';
 
 const Appointments = () => {
   const { user } = useAuth();
@@ -527,7 +528,7 @@ const Appointments = () => {
             <div className="flex items-center gap-3">
         <button
           onClick={() => setShowBookingForm(true)}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
         >
                 <Plus size={20} />
           Book Session
@@ -612,129 +613,164 @@ const Appointments = () => {
           </div>
       </div>
 
-      {/* Booking Form Modal */}
+      {/* Enhanced Booking Form Modal */}
       {showBookingForm && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowBookingForm(false)}></div>
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-              <div className="absolute top-0 right-0 pt-4 pr-4">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity backdrop-blur-sm" 
+              onClick={() => setShowBookingForm(false)}
+            ></div>
+            
+            {/* Modal Container */}
+            <div className="inline-block align-bottom bg-white rounded-2xl px-6 pt-6 pb-6 text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-xl">
+                    <Calendar className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      Book New Appointment
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Schedule your therapy session
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowBookingForm(false)}
-                  className="bg-white rounded-md text-gray-400 hover:text-gray-500"
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-6 w-6 text-gray-400 hover:text-gray-600" />
                 </button>
               </div>
               
-              <div className="sm:flex sm:items-start">
-                <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                    Book New Appointment
-                  </h3>
-                  
-                  <form onSubmit={handleBooking} className="space-y-4">
-
-                    {/* Therapist Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Select Therapist
-                      </label>
-                      {therapistsLoading ? (
-                        <div className="mt-1 text-sm text-gray-500">Loading therapists...</div>
-                      ) : therapistsError ? (
-                        <div className="mt-1 text-sm text-red-600">
-                          Error loading therapists. Please try again.
-                        </div>
-                      ) : Array.isArray(availableTherapists) && availableTherapists.length > 0 ? (
-                        <select
-                          value={selectedTherapist}
-                          onChange={(e) => setSelectedTherapist(e.target.value)}
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                          required
-                        >
-                          {availableTherapists.map((therapist) => (
-                            <option key={therapist.therapistId} value={therapist.therapistId}>
-                              {therapist.therapistName} - {therapist.specialization} 
-                              {therapist.assignmentType === 'primary' ? ' (Primary)' : ' (Secondary)'}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div className="mt-1 text-sm text-red-600">
-                          No therapists assigned. Please contact support.
-                        </div>
-                      )}
+              {/* Form */}
+              <form onSubmit={handleBooking} className="space-y-6">
+                {/* Therapist Selection */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                    <User className="h-4 w-4 text-blue-600" />
+                    Select Therapist
+                  </label>
+                  {therapistsLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      Loading therapists...
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Preferred Date
-                      </label>
-                      <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        required
-                      />
+                  ) : therapistsError ? (
+                    <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+                      <AlertCircle className="h-4 w-4" />
+                      Error loading therapists. Please try again.
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Preferred Time
-                      </label>
-                      <select
-                        value={selectedTime}
-                        onChange={(e) => setSelectedTime(e.target.value)}
-                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                        required
-                      >
-                        <option value="">Choose a time</option>
-                        {timeSlots.map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Select exact time (5-minute intervals)
-                      </p>
+                  ) : Array.isArray(availableTherapists) && availableTherapists.length > 0 ? (
+                    <select
+                      value={selectedTherapist}
+                      onChange={(e) => setSelectedTherapist(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition-all"
+                      required
+                    >
+                      {availableTherapists.map((therapist) => (
+                        <option key={therapist.therapistId} value={therapist.therapistId}>
+                          {therapist.therapistName} - {therapist.specialization} 
+                          {therapist.assignmentType === 'primary' ? ' (Primary)' : ' (Secondary)'}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+                      <AlertTriangle className="h-4 w-4" />
+                      No therapists assigned. Please contact support.
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Reason for Visit
-                      </label>
-                      <textarea
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        rows={3}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        placeholder="Describe the reason for your appointment..."
-                        required
-                      />
-                    </div>
-
-                    <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                      <button
-                        type="submit"
-                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                      >
-                        Book Appointment
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowBookingForm(false)}
-                        className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
+                  )}
                 </div>
-              </div>
+
+                {/* Date and Time Selection */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Date Selection */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      Preferred Date
+                    </label>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition-all"
+                      required
+                    />
+                  </div>
+
+                  {/* Time Selection */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                      <Clock className="h-4 w-4 text-blue-600" />
+                      Preferred Time
+                    </label>
+                    <select
+                      value={selectedTime}
+                      onChange={(e) => setSelectedTime(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition-all"
+                      required
+                    >
+                      <option value="">Choose a time</option>
+                      {timeSlots.map((time) => (
+                        <option key={time} value={time}>
+                          {time}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                      <Info className="h-3 w-3" />
+                      Select exact time (5-minute intervals)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Reason for Visit */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                    <Stethoscope className="h-4 w-4 text-blue-600" />
+                    Reason for Visit
+                  </label>
+                  <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition-all resize-none"
+                    placeholder="Please describe the reason for your appointment, any specific concerns, or goals you'd like to work on..."
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    This helps your therapist prepare for your session
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowBookingForm(false)}
+                    className="flex-1 px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02]"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle className="h-5 w-5" />
+                      Book Appointment
+                    </div>
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -744,48 +780,50 @@ const Appointments = () => {
         {currentView === 'list' ? (
           /* List View */
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Table Header */}
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
-                <div className="col-span-3 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('date')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Date & Time
-                    {sortBy === 'date' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
+            {/* Scrollable Table Container */}
+            <div className="patient-appointments-table-container overflow-x-auto overflow-y-visible">
+              {/* Table Header */}
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700 min-w-[800px]">
+                  <div className="col-span-3 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('date')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Date & Time
+                      {sortBy === 'date' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-3 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('type')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Therapist & Type
+                      {sortBy === 'type' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-3 flex items-center gap-2">
+                    <button
+                      onClick={() => handleSort('status')}
+                      className="flex items-center gap-1 hover:text-blue-600"
+                    >
+                      Status
+                      {sortBy === 'status' && (
+                        sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
+                      )}
+                    </button>
+                  </div>
+                  <div className="col-span-3 text-center">Actions</div>
                 </div>
-                <div className="col-span-3 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('type')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Therapist & Type
-                    {sortBy === 'type' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
-                </div>
-                <div className="col-span-3 flex items-center gap-2">
-                  <button
-                    onClick={() => handleSort('status')}
-                    className="flex items-center gap-1 hover:text-blue-600"
-                  >
-                    Status
-                    {sortBy === 'status' && (
-                      sortOrder === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />
-                    )}
-                  </button>
-                </div>
-                <div className="col-span-3 text-center">Actions</div>
               </div>
-            </div>
 
-            {/* Table Body */}
-            <div className="divide-y divide-gray-200">
+              {/* Table Body */}
+              <div className="divide-y divide-gray-200 min-w-[800px]">
               {filteredAppointments.length === 0 ? (
                 <div className="px-6 py-12 text-center">
                   <Calendar className="mx-auto h-12 w-12 text-gray-400" />
@@ -798,7 +836,11 @@ const Appointments = () => {
                 </div>
               ) : (
                 filteredAppointments.map((appointment) => (
-                  <div key={appointment.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                  <div 
+                    key={appointment.id} 
+                    className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => handleViewAppointment(appointment)}
+                  >
                     <div className="grid grid-cols-12 gap-4 items-center">
                       {/* Date & Time */}
                       <div className="col-span-3">
@@ -856,41 +898,21 @@ const Appointments = () => {
                       {/* Actions */}
                       <div className="col-span-3 flex justify-center gap-2">
                         <button
-                          onClick={() => handleViewAppointment(appointment)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewAppointment(appointment);
+                          }}
                           className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="View Details"
                         >
                           <Eye size={16} />
                         </button>
-                    {(appointment.status === 'scheduled' || appointment.status === 'pending') && (
-                      <>
-                        <button
-                          onClick={() => {
-                            setSelectedAppointment(appointment);
-                            setShowCancelModal(true);
-                          }}
-                          className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedAppointment(appointment);
-                            setNewAppointmentDate(appointment.date);
-                            setNewAppointmentTime(appointment.time);
-                            setShowPostponeModal(true);
-                          }}
-                          className="px-3 py-1 text-xs font-medium text-orange-700 bg-orange-100 hover:bg-orange-200 rounded-lg transition-colors"
-                        >
-                          Postpone
-                        </button>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
                 ))
               )}
+              </div>
             </div>
           </div>
         ) : (
@@ -1073,7 +1095,7 @@ const Appointments = () => {
                   >
                     Close
                   </button>
-                  {(selectedAppointment.status === 'scheduled' || selectedAppointment.status === 'pending') && (
+                  {(selectedAppointment.status === 'scheduled' || selectedAppointment.status === 'pending' || selectedAppointment.status === 'confirmed') && (
                     <>
                       <button
                         onClick={() => {

@@ -814,7 +814,31 @@
   padding: 0;
 }
 
-/* Responsive Design */
+/* Enhanced Responsive Design */
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 260px;
+  }
+  
+  .main-content {
+    padding: 20px;
+  }
+  
+  .content-header {
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+  
+  .header-actions {
+    gap: 8px;
+  }
+  
+  .btn-secondary {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
 @media (max-width: 1024px) {
   .sidebar {
     display: none;
@@ -832,12 +856,33 @@
     left: 0;
   }
   
-  .header h1 {
-    font-size: 24px;
+  .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
   }
   
-  .header-subtitle {
-    font-size: 14px;
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .breadcrumb {
+    font-size: 13px;
+  }
+  
+  .breadcrumb-main,
+  .breadcrumb-current {
+    font-size: 15px;
   }
   
   .nav-link-content {
@@ -866,11 +911,36 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+  }
+  
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
   }
   
   .header-actions {
     width: 100%;
     justify-content: space-between;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .btn-secondary {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  .breadcrumb {
+    font-size: 12px;
+  }
+  
+  .breadcrumb-main,
+  .breadcrumb-current {
+    font-size: 14px;
   }
   
   .mobile-sidebar-nav .nav-link {
@@ -891,6 +961,48 @@
   
   .mobile-menu-btn {
     padding: 8px;
+  }
+  
+  /* Enhanced mobile sidebar */
+  .mobile-sidebar-content {
+    width: 100%;
+    max-width: 320px;
+  }
+  
+  .mobile-sidebar-header {
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  
+  .mobile-sidebar-header h1 {
+    font-size: 20px;
+  }
+  
+  .mobile-sidebar-nav {
+    padding: 0 20px;
+  }
+  
+  .mobile-sidebar-nav .nav-link {
+    padding: 14px 16px;
+    margin-bottom: 4px;
+  }
+  
+  /* Profile section mobile optimization */
+  .user-profile {
+    padding: 16px 20px;
+    margin-top: 24px;
+  }
+  
+  .profile-main {
+    padding: 8px;
+  }
+  
+  .profile-info strong {
+    font-size: 13px;
+  }
+  
+  .profile-info span {
+    font-size: 11px;
   }
 }
 
@@ -3631,6 +3743,406 @@ textarea:focus {
     width: 100%;
     justify-content: center;
   }
+  
+  /* Enhanced mobile sidebar for very small screens */
+  .mobile-sidebar-content {
+    width: 100%;
+    max-width: 100vw;
+  }
+  
+  .mobile-sidebar-header {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+  }
+  
+  .mobile-sidebar-header h1 {
+    font-size: 18px;
+  }
+  
+  .mobile-sidebar-nav {
+    padding: 0 16px;
+  }
+  
+  .mobile-sidebar-nav .nav-link {
+    padding: 12px 14px;
+    margin-bottom: 2px;
+  }
+  
+  .mobile-sidebar-nav .nav-link-name {
+    font-size: 13px;
+  }
+  
+  .mobile-sidebar-nav .nav-link-description {
+    font-size: 10px;
+  }
+  
+  .user-profile {
+    padding: 12px 16px;
+    margin-top: 20px;
+  }
+  
+  .profile-main {
+    padding: 6px;
+  }
+  
+  .profile-info strong {
+    font-size: 12px;
+  }
+  
+  .profile-info span {
+    font-size: 10px;
+  }
+  
+  /* Mobile dropdown improvements */
+  .profile-dropdown {
+    margin: 0 8px 8px 8px;
+  }
+  
+  .dropdown-item {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  /* Mobile menu button improvements */
+  .mobile-menu-btn {
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  /* Touch-friendly button sizing */
+  .btn-primary,
+  .btn-secondary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improved modal sizing for mobile */
+  .modal-content {
+    margin: 8px;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+  }
+  
+  .modal-overlay {
+    padding: 8px;
+  }
+}
+
+/* Additional mobile responsive styles for very small screens */
+@media (max-width: 360px) {
+  .main-content {
+    padding: 8px;
+  }
+  
+  .content-header {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+  }
+  
+  .breadcrumb {
+    font-size: 11px;
+  }
+  
+  .breadcrumb-main,
+  .breadcrumb-current {
+    font-size: 13px;
+  }
+  
+  .btn-secondary {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  .mobile-sidebar-content {
+    width: 100%;
+    max-width: 100vw;
+  }
+  
+  .mobile-sidebar-header {
+    padding: 8px 12px;
+    margin-bottom: 16px;
+  }
+  
+  .mobile-sidebar-header h1 {
+    font-size: 16px;
+  }
+  
+  .mobile-sidebar-nav {
+    padding: 0 12px;
+  }
+  
+  .mobile-sidebar-nav .nav-link {
+    padding: 10px 12px;
+    margin-bottom: 2px;
+  }
+  
+  .mobile-sidebar-nav .nav-link-name {
+    font-size: 12px;
+  }
+  
+  .mobile-sidebar-nav .nav-link-description {
+    font-size: 9px;
+  }
+  
+  .user-profile {
+    padding: 8px 12px;
+    margin-top: 16px;
+  }
+  
+  .profile-info strong {
+    font-size: 11px;
+  }
+  
+  .profile-info span {
+    font-size: 9px;
+  }
+  
+  .modal-content {
+    margin: 4px;
+    max-width: calc(100vw - 8px);
+    max-height: calc(100vh - 8px);
+  }
+  
+  .modal-header {
+    padding: 12px 16px;
+  }
+  
+  .modal-header h3 {
+    font-size: 16px;
+  }
+  
+  .modal-body {
+    padding: 16px;
+  }
+  
+  .modal-actions {
+    padding: 12px 16px 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+  
+  .mobile-card {
+    padding: 12px;
+  }
+  
+  .mobile-card-header {
+    margin-bottom: 8px;
+  }
+  
+  .mobile-card-title {
+    font-size: 14px;
+  }
+  
+  .mobile-card-body {
+    grid-template-columns: 1fr;
+    gap: 6px 12px;
+  }
+  
+  .mobile-card-label {
+    font-size: 11px;
+  }
+  
+  .mobile-card-value {
+    font-size: 13px;
+  }
+}
+
+/* Landscape orientation optimizations for mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .mobile-sidebar-content {
+    width: 280px;
+    max-width: 280px;
+  }
+  
+  .modal-content {
+    max-height: calc(100vh - 16px);
+  }
+  
+  .modal-body {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+  
+  .content-header {
+    padding: 8px 16px;
+    margin-bottom: 8px;
+  }
+  
+  .header-actions {
+    flex-direction: row;
+    gap: 8px;
+  }
+  
+  .btn-secondary {
+    width: auto;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .stats-overview {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .stat-card {
+    padding: 12px;
+  }
+  
+  .stat-icon {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .stat-number {
+    font-size: 18px;
+  }
+  
+  .stat-content h3 {
+    font-size: 12px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects on touch devices */
+  .nav-link:hover,
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .action-btn:hover,
+  .dropdown-trigger:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  /* Increase touch targets */
+  .nav-link {
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .action-btn,
+  .dropdown-trigger {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve dropdown positioning for touch */
+  .dropdown-menu {
+    margin-top: 4px;
+  }
+  
+  .dropdown-item {
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+  
+  /* Better spacing for touch interactions */
+  .list-item {
+    padding: 16px;
+    margin-bottom: 8px;
+  }
+  
+  .mobile-card {
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  
+  /* Prevent text selection on interactive elements */
+  .btn-primary,
+  .btn-secondary,
+  .action-btn,
+  .dropdown-trigger,
+  .nav-link {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .logo-icon i {
+    font-size: 28px;
+  }
+  
+  .mobile-sidebar-header .logo-icon i {
+    font-size: 24px;
+  }
+  
+  .stat-icon,
+  .action-icon,
+  .activity-icon {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Print styles for admin portal */
+@media print {
+  .sidebar,
+  .mobile-sidebar,
+  .content-header,
+  .header-actions,
+  .btn-primary,
+  .btn-secondary,
+  .action-btn,
+  .dropdown-trigger {
+    display: none !important;
+  }
+  
+  .main-content {
+    padding: 0;
+    margin: 0;
+  }
+  
+  .page-content {
+    padding: 0;
+  }
+  
+  .admin-dashboard,
+  .therapist-dashboard,
+  .patient-dashboard {
+    padding: 0;
+    background: white;
+  }
+  
+  .stat-card,
+  .mobile-card,
+  .list-item {
+    border: 1px solid #000;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  
+  .table {
+    border-collapse: collapse;
+  }
+  
+  .table th,
+  .table td {
+    border: 1px solid #000;
+    padding: 4px 8px;
+  }
 }
 
 /* List View Styles */
@@ -4042,7 +4554,7 @@ textarea:focus {
   margin-top: 1rem;
 }
 
-/* Responsive List View */
+/* Enhanced Responsive List View */
 @media (max-width: 1024px) {
   .list-header,
   .list-item {
@@ -4117,6 +4629,217 @@ textarea:focus {
   }
 }
 
+/* Enhanced Mobile Table Responsiveness */
+@media (max-width: 768px) {
+  /* Table container improvements */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Table mobile optimizations */
+  .table {
+    min-width: 600px; /* Ensure table doesn't get too cramped */
+  }
+  
+  .table th,
+  .table td {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .table th {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  /* Mobile-friendly action buttons */
+  .action-btn,
+  .dropdown-trigger {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px;
+  }
+  
+  /* Mobile card layout for table data */
+  .mobile-card-view {
+    display: block;
+  }
+  
+  .mobile-card-view .table {
+    display: none;
+  }
+  
+  .mobile-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .mobile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  
+  .mobile-card-title {
+    font-weight: 600;
+    color: #111827;
+    font-size: 16px;
+  }
+  
+  .mobile-card-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .mobile-card-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+  }
+  
+  .mobile-card-field {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .mobile-card-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+  }
+  
+  .mobile-card-value {
+    font-size: 14px;
+    color: #111827;
+    font-weight: 500;
+  }
+  
+  .mobile-card-field.full-width {
+    grid-column: 1 / -1;
+  }
+  
+  /* Mobile search and filter improvements */
+  .search-filter-container {
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .search-input,
+  .filter-select {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px; /* Prevent zoom on iOS */
+    border-radius: 8px;
+  }
+  
+  /* Mobile button improvements */
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 20px;
+    font-size: 16px;
+    min-height: 48px;
+  }
+  
+  /* Mobile modal improvements */
+  .modal-content {
+    margin: 16px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    border-radius: 12px;
+  }
+  
+  .modal-header {
+    padding: 20px 24px 16px;
+  }
+  
+  .modal-header h3 {
+    font-size: 20px;
+  }
+  
+  .modal-body {
+    padding: 20px 24px;
+  }
+  
+  .modal-actions {
+    padding: 16px 24px 20px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Mobile form improvements */
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 14px 16px;
+    font-size: 16px; /* Prevent zoom on iOS */
+    border-radius: 8px;
+  }
+  
+  .form-textarea {
+    min-height: 120px;
+  }
+  
+  /* Mobile grid improvements */
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  /* Mobile stats improvements */
+  .stats-overview {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .stat-card {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+  }
+  
+  .stat-number {
+    font-size: 24px;
+    margin-bottom: 4px;
+  }
+  
+  .stat-content h3 {
+    font-size: 14px;
+  }
+}
+
 /* Edit Therapist Modal - Simple Pop-up Style */
 .edit-therapist-modal {
   position: fixed !important;
@@ -4138,5 +4861,333 @@ textarea:focus {
   }
   to {
     opacity: 1;
+  }
+}
+
+/* ========================================
+   THERAPIST PORTAL MOBILE RESPONSIVE ENHANCEMENTS
+   ======================================== */
+
+/* Therapist Portal Mobile Sidebar Enhancements */
+@media (max-width: 1024px) {
+  .therapist-layout .mobile-sidebar-content {
+    width: 100%;
+    max-width: 320px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .therapist-layout .mobile-sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .therapist-layout .mobile-sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+  }
+  
+  .therapist-layout .nav-link {
+    padding: 0.75rem;
+    margin-bottom: 0.25rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+  
+  .therapist-layout .nav-link:hover {
+    background: #f3f4f6;
+  }
+  
+  .therapist-layout .nav-link.active {
+    background: #10b981;
+    color: white;
+  }
+  
+  .therapist-layout .nav-link-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .therapist-layout .nav-link-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  
+  .therapist-layout .nav-link-name {
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+  
+  .therapist-layout .nav-link-description {
+    font-size: 0.75rem;
+    opacity: 0.7;
+  }
+  
+  .therapist-layout .tools-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .therapist-layout .tools-section h4 {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    padding: 0 0.75rem;
+  }
+  
+  .therapist-layout .user-profile {
+    margin-top: auto;
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .therapist-layout .profile-main {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  
+  .therapist-layout .profile-main:hover {
+    background: #f3f4f6;
+  }
+  
+  .therapist-layout .profile-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  
+  .therapist-layout .profile-info strong {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  
+  .therapist-layout .profile-info span {
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+  
+  .therapist-layout .profile-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 1rem;
+    right: 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    margin-bottom: 0.5rem;
+  }
+  
+  .therapist-layout .dropdown-header {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+  
+  .therapist-layout .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    color: #374151;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: background 0.2s ease;
+  }
+  
+  .therapist-layout .dropdown-item:hover {
+    background: #f3f4f6;
+  }
+  
+  .therapist-layout .dropdown-item.logout-item {
+    color: #dc2626;
+    border-top: 1px solid #e5e7eb;
+  }
+}
+
+/* Therapist Portal Header Mobile Enhancements */
+@media (max-width: 1024px) {
+  .therapist-layout .content-header {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .therapist-layout .header-left {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .therapist-layout .breadcrumb {
+    flex: 1;
+    font-size: 0.875rem;
+  }
+  
+  .therapist-layout .breadcrumb-main {
+    font-weight: 600;
+  }
+  
+  .therapist-layout .breadcrumb-current {
+    color: #6b7280;
+  }
+  
+  .therapist-layout .header-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  
+  .therapist-layout .header-actions .btn-secondary {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .therapist-layout .header-actions .btn-secondary span {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .therapist-layout .content-header {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .therapist-layout .header-left {
+    gap: 0.5rem;
+  }
+  
+  .therapist-layout .breadcrumb {
+    font-size: 0.8rem;
+  }
+  
+  .therapist-layout .header-actions {
+    gap: 0.25rem;
+  }
+  
+  .therapist-layout .header-actions .btn-secondary {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .therapist-layout .content-header {
+    padding: 0.4rem 0.5rem;
+  }
+  
+  .therapist-layout .breadcrumb {
+    font-size: 0.75rem;
+  }
+  
+  .therapist-layout .header-actions .btn-secondary {
+    padding: 0.3rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Therapist Portal Page Content Mobile Enhancements */
+@media (max-width: 1024px) {
+  .therapist-layout .page-content {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .therapist-layout .page-content {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .therapist-layout .page-content {
+    padding: 0.25rem;
+  }
+}
+
+/* Therapist Portal Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .therapist-layout .nav-link,
+  .therapist-layout .profile-main,
+  .therapist-layout .dropdown-item,
+  .therapist-layout .btn-secondary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .therapist-layout .nav-link:hover,
+  .therapist-layout .profile-main:hover,
+  .therapist-layout .dropdown-item:hover {
+    background: transparent;
+  }
+  
+  .therapist-layout .nav-link:active,
+  .therapist-layout .profile-main:active,
+  .therapist-layout .dropdown-item:active {
+    background: #f3f4f6;
+    transform: scale(0.98);
+  }
+  
+  .therapist-layout .btn-secondary:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Therapist Portal Landscape Orientation Optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  .therapist-layout .mobile-sidebar-content {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+  }
+  
+  .therapist-layout .mobile-sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  .therapist-layout .content-header {
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .therapist-layout .page-content {
+    padding: 0.25rem;
+  }
+}
+
+/* Therapist Portal Print Optimizations */
+@media print {
+  .therapist-layout .mobile-sidebar,
+  .therapist-layout .sidebar,
+  .therapist-layout .content-header,
+  .therapist-layout .header-actions {
+    display: none;
+  }
+  
+  .therapist-layout .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .therapist-layout .page-content {
+    padding: 0;
   }
 }
