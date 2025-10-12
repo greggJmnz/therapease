@@ -9,6 +9,7 @@ node --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo ERROR: Node.js is not installed or not in PATH
     echo Please install Node.js from https://nodejs.org/
+    echo Minimum required version: Node.js 18.0.0
     pause
     exit /b 1
 )
@@ -29,44 +30,50 @@ echo npm version:
 npm --version
 echo.
 
-REM Install dependencies
-echo [1/4] Installing dependencies...
-call npm run install:all
-if %errorlevel% neq 0 (
-    echo ERROR: Failed to install dependencies
+REM Check Node.js version (minimum 18.0.0)
+for /f "tokens=1 delims=v" %%i in ('node --version') do set NODE_VERSION=%%i
+for /f "tokens=1 delims=." %%i in ("%NODE_VERSION%") do set NODE_MAJOR=%%i
+if %NODE_MAJOR% LSS 18 (
+    echo ERROR: Node.js version %NODE_VERSION% is not supported
+    echo Please install Node.js 18.0.0 or higher from https://nodejs.org/
     pause
     exit /b 1
 )
 
 echo.
-echo [2/4] Setting up security configuration...
-cd server
-call npm run security:setup
+echo [1/2] Running comprehensive setup...
+call npm run setup
 if %errorlevel% neq 0 (
-    echo WARNING: Security setup failed, but continuing...
-)
-cd ..
-
-echo.
-echo [3/4] Initializing database...
-cd server
-call npm run db:init
-if %errorlevel% neq 0 (
-    echo ERROR: Database initialization failed
-    echo Please check your MySQL configuration in .env file
+    echo ERROR: Setup failed. Please check the error messages above.
+    echo.
+    echo Troubleshooting tips:
+    echo 1. Make sure MySQL is running and accessible
+    echo 2. Check your database credentials
+    echo 3. Ensure you have sufficient disk space
+    echo 4. Try running: npm run reset
     pause
     exit /b 1
 )
-cd ..
 
 echo.
-echo [4/4] Testing SSL configuration...
-cd server
-call npm run security:test
-if %errorlevel% neq 0 (
-    echo WARNING: SSL test failed, but setup is complete
+echo [2/2] Verifying setup...
+echo Checking if all components are ready...
+
+REM Check if .env file exists
+if not exist .env (
+    echo ERROR: .env file not created
+    pause
+    exit /b 1
 )
-cd ..
+
+REM Check if SSL certificates exist
+if not exist server\certs\server.key (
+    echo WARNING: SSL certificates not found, but setup may still work
+)
+
+if not exist server\certs\server.crt (
+    echo WARNING: SSL certificates not found, but setup may still work
+)
 
 echo.
 echo ========================================
@@ -78,10 +85,11 @@ echo 1. Start the development server: npm run dev
 echo 2. Open your browser to http://localhost:3000
 echo 3. For HTTPS, use https://localhost:5443
 echo.
-echo Default login credentials:
-echo - Admin: admin@therapease.com / Admin123!@#
-echo - Therapist: therapist@therapease.com / Therapist123!@#
-echo - Patient: emma@example.com / Patient123!@#
+echo Default admin credentials:
+echo - Email: admin@therapease.com
+echo - Password: SecureAdmin2024!@#$
+echo.
+echo IMPORTANT: Change these credentials after first login!
 echo.
 echo Press any key to exit...
 pause >nul

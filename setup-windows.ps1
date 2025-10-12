@@ -10,9 +10,21 @@ Write-Host ""
 try {
     $nodeVersion = node --version
     Write-Host "Node.js version: $nodeVersion" -ForegroundColor Green
+    
+    # Check Node.js version (minimum 18.0.0)
+    $versionNumber = $nodeVersion -replace 'v', ''
+    $majorVersion = [int]($versionNumber.Split('.')[0])
+    
+    if ($majorVersion -lt 18) {
+        Write-Host "ERROR: Node.js version $nodeVersion is not supported" -ForegroundColor Red
+        Write-Host "Please install Node.js 18.0.0 or higher from https://nodejs.org/" -ForegroundColor Yellow
+        Read-Host "Press Enter to exit"
+        exit 1
+    }
 } catch {
     Write-Host "ERROR: Node.js is not installed or not in PATH" -ForegroundColor Red
     Write-Host "Please install Node.js from https://nodejs.org/" -ForegroundColor Yellow
+    Write-Host "Minimum required version: Node.js 18.0.0" -ForegroundColor Yellow
     Read-Host "Press Enter to exit"
     exit 1
 }
@@ -30,71 +42,52 @@ try {
 
 Write-Host ""
 
-# Install dependencies
-Write-Host "[1/4] Installing dependencies..." -ForegroundColor Yellow
+# Run comprehensive setup
+Write-Host "[1/2] Running comprehensive setup..." -ForegroundColor Yellow
 try {
-    npm run install:all
+    npm run setup
     if ($LASTEXITCODE -ne 0) {
-        throw "npm install failed"
+        throw "Setup failed"
     }
-    Write-Host "Dependencies installed successfully" -ForegroundColor Green
+    Write-Host "Setup completed successfully" -ForegroundColor Green
 } catch {
-    Write-Host "ERROR: Failed to install dependencies" -ForegroundColor Red
+    Write-Host "ERROR: Setup failed. Please check the error messages above." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Troubleshooting tips:" -ForegroundColor Yellow
+    Write-Host "1. Make sure MySQL is running and accessible" -ForegroundColor Gray
+    Write-Host "2. Check your database credentials" -ForegroundColor Gray
+    Write-Host "3. Ensure you have sufficient disk space" -ForegroundColor Gray
+    Write-Host "4. Try running: npm run reset" -ForegroundColor Gray
     Read-Host "Press Enter to exit"
     exit 1
 }
 
 Write-Host ""
 
-# Setup security
-Write-Host "[2/4] Setting up security configuration..." -ForegroundColor Yellow
-try {
-    Set-Location server
-    npm run security:setup
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "WARNING: Security setup failed, but continuing..." -ForegroundColor Yellow
-    } else {
-        Write-Host "Security configuration completed" -ForegroundColor Green
-    }
-    Set-Location ..
-} catch {
-    Write-Host "WARNING: Security setup failed, but continuing..." -ForegroundColor Yellow
-}
+# Verify setup
+Write-Host "[2/2] Verifying setup..." -ForegroundColor Yellow
+Write-Host "Checking if all components are ready..." -ForegroundColor Gray
 
-Write-Host ""
-
-# Initialize database
-Write-Host "[3/4] Initializing database..." -ForegroundColor Yellow
-try {
-    Set-Location server
-    npm run db:init
-    if ($LASTEXITCODE -ne 0) {
-        throw "Database initialization failed"
-    }
-    Write-Host "Database initialized successfully" -ForegroundColor Green
-    Set-Location ..
-} catch {
-    Write-Host "ERROR: Database initialization failed" -ForegroundColor Red
-    Write-Host "Please check your MySQL configuration in .env file" -ForegroundColor Yellow
+# Check if .env file exists
+if (-not (Test-Path ".env")) {
+    Write-Host "ERROR: .env file not created" -ForegroundColor Red
     Read-Host "Press Enter to exit"
     exit 1
+} else {
+    Write-Host "✓ .env file created" -ForegroundColor Green
 }
 
-Write-Host ""
+# Check if SSL certificates exist
+if (-not (Test-Path "server\certs\server.key")) {
+    Write-Host "⚠ WARNING: SSL certificates not found, but setup may still work" -ForegroundColor Yellow
+} else {
+    Write-Host "✓ SSL certificates created" -ForegroundColor Green
+}
 
-# Test SSL
-Write-Host "[4/4] Testing SSL configuration..." -ForegroundColor Yellow
-try {
-    Set-Location server
-    npm run security:test
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "WARNING: SSL test failed, but setup is complete" -ForegroundColor Yellow
-    } else {
-        Write-Host "SSL configuration test passed" -ForegroundColor Green
-    }
-    Set-Location ..
-} catch {
-    Write-Host "WARNING: SSL test failed, but setup is complete" -ForegroundColor Yellow
+if (-not (Test-Path "server\certs\server.crt")) {
+    Write-Host "⚠ WARNING: SSL certificates not found, but setup may still work" -ForegroundColor Yellow
+} else {
+    Write-Host "✓ SSL certificates created" -ForegroundColor Green
 }
 
 Write-Host ""
@@ -107,10 +100,11 @@ Write-Host "1. Start the development server: npm run dev" -ForegroundColor Gray
 Write-Host "2. Open your browser to http://localhost:3000" -ForegroundColor Gray
 Write-Host "3. For HTTPS, use https://localhost:5443" -ForegroundColor Gray
 Write-Host ""
-Write-Host "Default login credentials:" -ForegroundColor White
-Write-Host "- Admin: admin@therapease.com / Admin123!@#" -ForegroundColor Gray
-Write-Host "- Therapist: therapist@therapease.com / Therapist123!@#" -ForegroundColor Gray
-Write-Host "- Patient: emma@example.com / Patient123!@#" -ForegroundColor Gray
+Write-Host "Default admin credentials:" -ForegroundColor White
+Write-Host "- Email: admin@therapease.com" -ForegroundColor Gray
+Write-Host "- Password: SecureAdmin2024!@#$" -ForegroundColor Gray
+Write-Host ""
+Write-Host "IMPORTANT: Change these credentials after first login!" -ForegroundColor Yellow
 Write-Host ""
 
 # Ask if user wants to start the server

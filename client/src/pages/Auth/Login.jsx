@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Lock, Mail, LogIn, Shield, CheckCircle, AlertCircle, Copy, Check, Clock, UserCheck, FileText } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, LogIn, Shield, CheckCircle, AlertCircle, Copy, Check, Clock, UserCheck, FileText, KeyRound, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import ModernInput from '../../components/ModernInput';
@@ -22,8 +22,13 @@ const Login = () => {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [lockoutTime, setLockoutTime] = useState(null);
+  const [show2FA, setShow2FA] = useState(false);
+  const [twoFactorEmail, setTwoFactorEmail] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [is2FALoading, setIs2FALoading] = useState(false);
+  const [isResendingCode, setIsResendingCode] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWith2FA, send2FACode } = useAuth();
 
   const {
     register,
@@ -121,6 +126,28 @@ const Login = () => {
       const result = await login(data.email, data.password);
       
       if (result.success) {
+        // Check if 2FA is required
+        if (result.requires2FA) {
+          setTwoFactorEmail(result.email);
+          setShow2FA(true);
+          
+          // Automatically send 2FA code
+          try {
+            const sendResult = await send2FACode({ email: result.email });
+            if (sendResult.success) {
+              toast.success('Verification code sent to your email. Please check your inbox.');
+            } else {
+              toast.error(sendResult.message || 'Failed to send verification code');
+            }
+          } catch (error) {
+            console.error('Error sending 2FA code:', error);
+            toast.error('Failed to send verification code. Please try again.');
+          }
+          
+          setIsLoading(false);
+          return;
+        }
+
         // Clear any lockout data on successful login
         localStorage.removeItem('loginLockout');
         setLoginAttempts(0);
@@ -190,6 +217,85 @@ const Login = () => {
     toast.error('You must accept the terms and conditions to continue');
   };
 
+  const handle2FASubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!twoFactorCode || twoFactorCode.length !== 6) {
+      toast.error('Please enter a valid 6-digit code');
+      return;
+    }
+
+    setIs2FALoading(true);
+    setLoginError('');
+
+    try {
+      const result = await loginWith2FA(twoFactorEmail, twoFactorCode);
+      
+      if (result.success) {
+        // Clear any lockout data on successful login
+        localStorage.removeItem('loginLockout');
+        setLoginAttempts(0);
+        setIsLocked(false);
+        
+        toast.success('Login successful!');
+        
+        // Redirect based on role
+        switch (result.user.role) {
+          case 'admin':
+            navigate('/admin/dashboard');
+            break;
+          case 'therapist':
+            navigate('/therapist/dashboard');
+            break;
+          case 'patient':
+            navigate('/patient/dashboard');
+            break;
+          default:
+            navigate('/');
+        }
+      } else {
+        const errorMessage = result.message || 'Invalid verification code. Please try again.';
+        setLoginError(errorMessage);
+        toast.error(errorMessage);
+        setTwoFactorCode(''); // Clear the code input
+      }
+    } catch (error) {
+      console.error('2FA login error:', error);
+      const errorMessage = 'Network error. Please check your connection and try again.';
+      setLoginError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIs2FALoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setIsResendingCode(true);
+    
+    try {
+      const result = await send2FACode({ email: twoFactorEmail });
+      
+      if (result.success) {
+        toast.success('Verification code sent to your email');
+        setTwoFactorCode(''); // Clear the current code
+      } else {
+        toast.error(result.message || 'Failed to resend code');
+      }
+    } catch (error) {
+      console.error('Resend code error:', error);
+      toast.error('Failed to resend code. Please try again.');
+    } finally {
+      setIsResendingCode(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setShow2FA(false);
+    setTwoFactorEmail('');
+    setTwoFactorCode('');
+    setLoginError('');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center relative py-12 px-4 sm:px-6 lg:px-8">
       {/* Modern Background with Healthcare Theme */}
@@ -251,8 +357,122 @@ const Login = () => {
             </div>
           </div>
           
-          {/* Login Form */}
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          {/* 2FA Form */}
+          {show2FA ? (
+            <div className="space-y-6">
+              {/* 2FA Header */}
+              <div className="text-center space-y-4">
+                <div className="flex justify-center">
+                  <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
+                    <KeyRound className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">
+                    Two-Factor Authentication
+                  </h2>
+                  <p className="text-gray-600 text-sm">
+                    Enter the 6-digit code sent to your email
+                  </p>
+                  <p className="text-blue-600 text-sm font-medium mt-1">
+                    {twoFactorEmail}
+                  </p>
+                </div>
+              </div>
+
+              {/* 2FA Error Display */}
+              {loginError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-in fade-in-0 slide-in-from-top-2 duration-300">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <AlertCircle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">
+                        Verification Failed
+                      </h3>
+                      <div className="mt-2 text-sm text-red-700">
+                        <p>{loginError}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 2FA Code Form */}
+              <form onSubmit={handle2FASubmit} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="relative">
+                    <label htmlFor="twoFactorCode" className="block text-sm font-medium text-gray-700 mb-2">
+                      Verification Code
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="twoFactorCode"
+                        type="text"
+                        value={twoFactorCode}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setTwoFactorCode(value);
+                        }}
+                        placeholder="000000"
+                        className="w-full px-4 py-3 text-center text-2xl font-mono tracking-widest border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        maxLength={6}
+                        autoComplete="one-time-code"
+                        required
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <KeyRound className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                      Enter the 6-digit code from your email
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2FA Action Buttons */}
+                <div className="space-y-3">
+                  <ModernButton
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    loading={is2FALoading}
+                    icon={KeyRound}
+                    className="w-full"
+                  >
+                    {is2FALoading ? 'Verifying...' : 'Verify Code'}
+                  </ModernButton>
+
+                  <div className="flex space-x-3">
+                    <ModernButton
+                      type="button"
+                      variant="secondary"
+                      size="md"
+                      loading={isResendingCode}
+                      onClick={handleResendCode}
+                      className="flex-1"
+                    >
+                      {isResendingCode ? 'Sending...' : 'Resend Code'}
+                    </ModernButton>
+
+                    <ModernButton
+                      type="button"
+                      variant="outline"
+                      size="md"
+                      icon={ArrowLeft}
+                      onClick={handleBackToLogin}
+                      className="flex-1"
+                    >
+                      Back to Login
+                    </ModernButton>
+                  </div>
+                </div>
+              </form>
+            </div>
+          ) : (
+            /* Login Form */
+            <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             {/* Account Lockout Notice */}
             {isLocked && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-in fade-in-0 slide-in-from-top-2 duration-300">
@@ -460,6 +680,7 @@ const Login = () => {
               </p>
             </div>
           </form>
+          )}
         </div>
 
         {/* Demo Account Information */}

@@ -312,6 +312,109 @@ const getNodeCommand = () => {
 };
 
 /**
+ * Check if running on Windows with proper shell support
+ * @returns {boolean} True if Windows with proper shell
+ */
+const isWindowsWithShell = () => {
+  return isWindows && (process.env.ComSpec || process.env.SHELL);
+};
+
+/**
+ * Get Windows-specific MySQL connection options
+ * @returns {Object} MySQL connection options for Windows
+ */
+const getWindowsMySQLOptions = () => {
+  if (!isWindows) return {};
+  
+  return {
+    // Windows-specific MySQL options
+    acquireTimeout: 60000,
+    timeout: 60000,
+    reconnect: true,
+    charset: 'utf8mb4',
+    timezone: 'Z',
+    // Handle Windows path separators
+    ssl: false,
+    // Windows-specific connection pooling
+    connectionLimit: 10,
+    queueLimit: 0
+  };
+};
+
+/**
+ * Check if MySQL service is running on Windows
+ * @returns {boolean} True if MySQL service is running
+ */
+const isMySQLServiceRunning = () => {
+  if (!isWindows) return true; // Assume running on non-Windows
+  
+  try {
+    const output = execCommand('sc query MySQL', { stdio: 'pipe' });
+    return output.toString().includes('RUNNING');
+  } catch (error) {
+    // Try alternative command
+    try {
+      const output = execCommand('net start | findstr MySQL', { stdio: 'pipe' });
+      return output.toString().includes('MySQL');
+    } catch (error2) {
+      return false;
+    }
+  }
+};
+
+/**
+ * Get Windows-specific environment variable handling
+ * @param {string} name - Environment variable name
+ * @param {string} defaultValue - Default value
+ * @returns {string} Environment variable value
+ */
+const getWindowsEnvVar = (name, defaultValue = '') => {
+  let value = process.env[name] || defaultValue;
+  
+  if (isWindows) {
+    // Handle Windows-specific environment variable quirks
+    value = value.replace(/\\/g, '/'); // Normalize path separators
+    value = value.replace(/"/g, ''); // Remove quotes if present
+  }
+  
+  return value;
+};
+
+/**
+ * Check if Windows Defender or antivirus might interfere
+ * @returns {Object} Antivirus interference information
+ */
+const checkWindowsAntivirusInterference = () => {
+  if (!isWindows) return { hasInterference: false };
+  
+  const interference = {
+    hasInterference: false,
+    warnings: []
+  };
+  
+  // Check for common antivirus processes
+  const antivirusProcesses = [
+    'MsMpEng.exe', // Windows Defender
+    'avastsvc.exe', // Avast
+    'avgnt.exe', // Avira
+    'bdagent.exe', // Bitdefender
+    'ekrn.exe', // ESET
+    'mcshield.exe', // McAfee
+    'norton.exe', // Norton
+    'sophos.exe' // Sophos
+  ];
+  
+  try {
+    const tasklist = execCommand('tasklist /FI "IMAGENAME eq node.exe"', { stdio: 'pipe' });
+    // This is a basic check - in practice, you'd need more sophisticated detection
+  } catch (error) {
+    // Ignore errors
+  }
+  
+  return interference;
+};
+
+/**
  * Check if a command is available
  * @param {string} command - Command to check
  * @returns {boolean} True if command is available
@@ -374,11 +477,18 @@ module.exports = {
   // Environment
   getEnvVar,
   setEnvVar,
+  getWindowsEnvVar,
   
   // Node.js commands
   getNPMCommand,
   getNodeCommand,
   isCommandAvailable,
+  
+  // Windows-specific
+  isWindowsWithShell,
+  getWindowsMySQLOptions,
+  isMySQLServiceRunning,
+  checkWindowsAntivirusInterference,
   
   // Platform info
   getPlatformInfo

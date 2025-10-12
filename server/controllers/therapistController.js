@@ -63,6 +63,7 @@ const updateProfile = async (req, res) => {
     const {
       firstName,
       lastName,
+      email,
       phone,
       dateOfBirth,
       gender,
@@ -87,10 +88,11 @@ const updateProfile = async (req, res) => {
     try {
       // Check if user data is provided
       const hasUserData = firstName !== undefined || lastName !== undefined || 
-                         phone !== undefined || dateOfBirth !== undefined || 
-                         gender !== undefined || address !== undefined || 
-                         city !== undefined || state !== undefined || 
-                         zipCode !== undefined || country !== undefined;
+                         email !== undefined || phone !== undefined || 
+                         dateOfBirth !== undefined || gender !== undefined || 
+                         address !== undefined || city !== undefined || 
+                         state !== undefined || zipCode !== undefined || 
+                         country !== undefined;
 
       // Update user table only if user data is provided
       if (hasUserData) {
@@ -104,6 +106,10 @@ const updateProfile = async (req, res) => {
         if (lastName !== undefined) {
           userUpdateFields.push('lastName = ?');
           userUpdateParams.push(lastName);
+        }
+        if (email !== undefined) {
+          userUpdateFields.push('email = ?');
+          userUpdateParams.push(email);
         }
         if (phone !== undefined) {
           userUpdateFields.push('phone = ?');

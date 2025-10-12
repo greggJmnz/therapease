@@ -1,7 +1,22 @@
 const mysql = require('mysql2/promise');
 const path = require('path');
+const crypto = require('crypto');
+const fs = require('fs');
+const webpush = require('web-push');
 const { hashPassword } = require('../utils/password');
-const { joinPaths, getEnvVar } = require('../utils/windowsCompatibility');
+const { 
+  joinPaths, 
+  getEnvVar, 
+  isWindows, 
+  execCommand, 
+  createDirectory, 
+  fileExists, 
+  copyFile,
+  generateSSLCertificates,
+  getOpenSSLCommand,
+  isOpenSSLAvailable,
+  getPlatformInfo
+} = require('../utils/windowsCompatibility');
 
 // Load environment variables with Windows compatibility
 require('dotenv').config({ path: joinPaths(__dirname, '../../.env') });
@@ -72,6 +87,9 @@ const createTables = async () => {
         city VARCHAR(100),
         state VARCHAR(50),
         zipCode VARCHAR(20),
+        twoFactorEnabled BOOLEAN DEFAULT FALSE,
+        twoFactorMethod ENUM('email', 'sms', 'push') DEFAULT 'email',
+        twoFactorEnabledAt TIMESTAMP NULL,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -436,6 +454,21 @@ const createTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // Two-Factor Authentication codes table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS two_factor_codes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        code VARCHAR(6) NOT NULL,
+        expiresAt TIMESTAMP NOT NULL,
+        used BOOLEAN DEFAULT FALSE,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user_expires (userId, expiresAt),
+        INDEX idx_code_expires (code, expiresAt, used)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
     console.log('Database tables created successfully');
     
   } catch (error) {
@@ -536,6 +569,279 @@ const closeDatabase = async () => {
   }
 };
 
+// Security setup functions
+const generateEncryptionKey = () => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+const generateJWTSecret = () => {
+  return crypto.randomBytes(64).toString('hex');
+};
+
+const generateSessionSecret = () => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+// Create or update .env file with security configuration
+const setupEnvironmentConfig = () => {
+  const envPath = joinPaths(__dirname, '../../.env');
+  const envExamplePath = joinPaths(__dirname, '../../.env.example');
+  
+  if (fileExists(envPath)) {
+    console.log('⚠️  .env file already exists. Backing up to .env.backup');
+    copyFile(envPath, envPath + '.backup');
+  }
+  
+  let envContent = '';
+  
+  if (fileExists(envExamplePath)) {
+    envContent = fs.readFileSync(envExamplePath, 'utf8');
+  } else {
+    // Create basic .env template if no example exists
+    envContent = `# TherapEase Environment Configuration
+# Database Configuration
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=therapease
+DB_PORT=3306
+
+# Server Configuration
+NODE_ENV=development
+PORT=5000
+HTTPS_PORT=5443
+
+# Security Configuration
+JWT_SECRET=your-super-secure-jwt-secret-key-here-make-it-long-and-random
+ENCRYPTION_KEY=your-64-character-hex-encryption-key-here
+SESSION_SECRET=your-session-secret-key-here
+
+# Admin Configuration
+ADMIN_EMAIL=admin@therapease.com
+ADMIN_PASSWORD=SecureAdmin2024!@#$
+
+# SSL Configuration
+SSL_ENABLED=true
+SSL_KEY_PATH=./server/certs/server.key
+SSL_CERT_PATH=./server/certs/server.crt
+
+# CORS Configuration
+CORS_ORIGIN=http://localhost:3000
+
+# Email Configuration
+EMAIL_ENABLED=false
+EMAIL_HOST=
+EMAIL_PORT=587
+EMAIL_USER=
+EMAIL_PASS=
+EMAIL_FROM=noreply@therapease.com
+
+# SMS Configuration
+SMS_ENABLED=false
+VONAGE_API_KEY=
+VONAGE_API_SECRET=
+VONAGE_BASE_URL=https://api.nexmo.com
+VONAGE_FROM_NUMBER=TherapEase
+
+# Push Notifications
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:admin@therapease.com
+
+# OpenAI Configuration
+OPENAI_API_KEY=
+
+# API Base URL
+API_BASE_URL=http://localhost:5000
+`;
+  }
+  
+  // Replace placeholder values with generated ones
+  envContent = envContent.replace('your-super-secure-jwt-secret-key-here-make-it-long-and-random', generateJWTSecret());
+  envContent = envContent.replace('your-64-character-hex-encryption-key-here', generateEncryptionKey());
+  envContent = envContent.replace('your-session-secret-key-here', generateSessionSecret());
+  
+  fs.writeFileSync(envPath, envContent);
+  console.log('✅ Created/updated .env file with secure configuration');
+  
+  // Reload environment variables
+  require('dotenv').config({ path: envPath });
+};
+
+// Generate SSL certificates
+const setupSSLCertificates = () => {
+  const certsDir = joinPaths(__dirname, '../certs');
+  
+  createDirectory(certsDir);
+  console.log('📁 Created certs directory');
+  
+  const keyPath = joinPaths(certsDir, 'server.key');
+  const certPath = joinPaths(certsDir, 'server.crt');
+  
+  if (fileExists(keyPath) && fileExists(certPath)) {
+    console.log('✅ SSL certificates already exist');
+    return;
+  }
+  
+  console.log('🔐 Generating SSL certificates...');
+  
+  const success = generateSSLCertificates(keyPath, certPath, {
+    keySize: 4096,
+    days: 365,
+    subject: '/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=localhost'
+  });
+  
+  if (!success) {
+    console.log('❌ Failed to generate SSL certificates');
+    if (isWindows) {
+      console.log('💡 For Windows, you can:');
+      console.log('   1. Install OpenSSL from https://slproweb.com/products/Win32OpenSSL.html');
+      console.log('   2. Add OpenSSL to your PATH environment variable');
+      console.log('   3. Or use Windows Subsystem for Linux (WSL)');
+    } else {
+      console.log('💡 Make sure OpenSSL is installed on your system');
+    }
+  } else {
+    console.log('✅ SSL certificates generated successfully');
+  }
+};
+
+// Setup VAPID keys for push notifications (check existing first)
+const setupVAPIDKeys = () => {
+  try {
+    const envPath = joinPaths(__dirname, '../../.env');
+    
+    if (fileExists(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      
+      // Check if VAPID keys already exist and have values
+      const publicKeyMatch = envContent.match(/^VAPID_PUBLIC_KEY=(.+)$/m);
+      const privateKeyMatch = envContent.match(/^VAPID_PRIVATE_KEY=(.+)$/m);
+      
+      const hasPublicKey = publicKeyMatch && publicKeyMatch[1].trim() !== '';
+      const hasPrivateKey = privateKeyMatch && privateKeyMatch[1].trim() !== '';
+      
+      if (hasPublicKey && hasPrivateKey) {
+        console.log('✅ VAPID keys already configured in .env file');
+        return { publicKey: 'existing', privateKey: 'existing' };
+      }
+    }
+    
+    console.log('🔑 Generating VAPID keys for push notifications...');
+    
+    const vapidKeys = webpush.generateVAPIDKeys();
+    
+    // Update .env file with VAPID keys
+    if (fileExists(envPath)) {
+      let envContent = fs.readFileSync(envPath, 'utf8');
+      
+      // Update or add VAPID keys
+      const vapidConfig = {
+        VAPID_PUBLIC_KEY: vapidKeys.publicKey,
+        VAPID_PRIVATE_KEY: vapidKeys.privateKey,
+        VAPID_SUBJECT: 'mailto:admin@therapease.com'
+      };
+      
+      Object.entries(vapidConfig).forEach(([key, value]) => {
+        const regex = new RegExp(`^${key}=.*$`, 'm');
+        const newLine = `${key}=${value}`;
+        
+        if (regex.test(envContent)) {
+          envContent = envContent.replace(regex, newLine);
+        } else {
+          envContent += `\n${newLine}`;
+        }
+      });
+      
+      fs.writeFileSync(envPath, envContent);
+      console.log('✅ VAPID keys generated and added to .env file');
+    }
+    
+    return vapidKeys;
+    
+  } catch (error) {
+    console.error('❌ Failed to setup VAPID keys:', error.message);
+    return null;
+  }
+};
+
+// Create database if it doesn't exist
+const createDatabase = async () => {
+  let connection;
+  
+  try {
+    // Connect to MySQL server (without specifying database)
+    connection = await mysql.createConnection({
+      host: getEnvVar('DB_HOST', 'localhost'),
+      user: getEnvVar('DB_USER', 'root'),
+      password: getEnvVar('DB_PASSWORD', ''),
+      port: parseInt(getEnvVar('DB_PORT', '3306'))
+    });
+
+    console.log('✅ Connected to MySQL server successfully');
+
+    // Create database if it doesn't exist
+    const dbName = getEnvVar('DB_NAME', 'therapease');
+    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
+    console.log(`✅ Database '${dbName}' created/verified successfully`);
+
+    // Close connection
+    await connection.end();
+    
+  } catch (error) {
+    console.error('❌ Database creation failed:', error.message);
+    if (connection) {
+      await connection.end();
+    }
+    throw error;
+  }
+};
+
+// Comprehensive setup function
+const performCompleteSetup = async () => {
+  try {
+    console.log('🚀 TherapEase Complete Setup');
+    console.log('============================\n');
+    
+    // Display platform information
+    const platformInfo = getPlatformInfo();
+    console.log(`🖥️  Platform: ${platformInfo.platform} ${platformInfo.arch}`);
+    console.log(`📦 Node.js: ${platformInfo.nodeVersion}`);
+    console.log(`🔧 NPM: ${platformInfo.npmVersion}\n`);
+    
+    console.log('1. Setting up environment configuration...');
+    setupEnvironmentConfig();
+    
+    console.log('\n2. Creating database...');
+    await createDatabase();
+    
+    console.log('\n3. Generating SSL certificates...');
+    setupSSLCertificates();
+    
+    console.log('\n4. Setting up VAPID keys...');
+    setupVAPIDKeys();
+    
+    console.log('\n5. Initializing database tables and data...');
+    // The initializeDatabase function will be called automatically
+    
+    console.log('\n🎉 Complete setup finished successfully!');
+    console.log('\n📋 Next steps:');
+    console.log('   1. Review and update .env file with your specific configuration');
+    console.log('   2. For production, obtain SSL certificates from a trusted CA');
+    console.log('   3. Update CORS_ORIGIN in .env with your domain');
+    console.log('   4. Configure email and SMS services if needed');
+    console.log('   5. Start the server: npm run dev');
+    console.log('\n🔗 Useful commands:');
+    console.log('   npm run dev          # Start development server');
+    console.log('   npm run build        # Build for production');
+    console.log('   npm run setup        # Re-run complete setup');
+    
+  } catch (error) {
+    console.error('❌ Setup failed:', error.message);
+    throw error;
+  }
+};
+
 // Initialize database when module is loaded
 initializeDatabase();
 
@@ -545,5 +851,10 @@ module.exports = {
   getRow,
   getAll,
   getConnection,
-  closeDatabase
+  closeDatabase,
+  performCompleteSetup,
+  setupEnvironmentConfig,
+  setupSSLCertificates,
+  setupVAPIDKeys,
+  createDatabase
 };

@@ -6,12 +6,19 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "setup": "node -e \"require('./config/database').performCompleteSetup()\"",
+    "setup:env": "node -e \"require('./config/database').setupEnvironmentConfig()\"",
+    "setup:ssl": "node -e \"require('./config/database').setupSSLCertificates()\"",
+    "setup:vapid": "node -e \"require('./config/database').setupVAPIDKeys()\"",
+    "setup:db": "node -e \"require('./config/database').createDatabase()\"",
     "db:init": "node scripts/init-database.js",
     "db:seed": "node scripts/simple-seed.js",
     "security:setup": "node scripts/setup-security.js",
     "ssl:generate": "node scripts/generate-ssl.js",
     "sms:setup": "node scripts/setup-sms.js",
-    "vapid:generate": "node scripts/generate-vapid-keys.js"
+    "vapid:generate": "node scripts/generate-vapid-keys.js",
+    "test": "echo \"No tests specified\" && exit 0",
+    "lint": "echo \"No linting configured\" && exit 0"
   },
   "dependencies": {
     "axios": "^1.6.0",

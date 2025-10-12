@@ -36,6 +36,8 @@ const login = async (req, res) => {
         u.state,
         u.zipCode,
         u.status,
+        u.twoFactorEnabled,
+        u.twoFactorMethod,
         u.createdAt,
         u.updatedAt
       FROM users u
@@ -67,7 +69,18 @@ const login = async (req, res) => {
       });
     }
 
-    // Generate JWT token
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // Return 2FA required response instead of JWT token
+      return res.json({
+        success: true,
+        requires2FA: true,
+        message: 'Two-Factor Authentication is enabled. Please enter the verification code sent to your email.',
+        email: user.email
+      });
+    }
+
+    // Generate JWT token (only if 2FA is not enabled)
     const token = jwt.sign(
       { 
         userId: user.id, 
@@ -806,8 +819,195 @@ const verifyResetToken = async (req, res) => {
   }
 };
 
+// Login with 2FA verification
+const loginWith2FA = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email and verification code are required'
+      });
+    }
+
+    // Get user data
+    const user = await getRow(`
+      SELECT 
+        u.id,
+        u.email,
+        u.role,
+        u.firstName,
+        u.lastName,
+        u.phone,
+        u.dateOfBirth,
+        u.gender,
+        u.address,
+        u.city,
+        u.state,
+        u.zipCode,
+        u.status,
+        u.twoFactorEnabled,
+        u.createdAt,
+        u.updatedAt
+      FROM users u
+      WHERE u.email = ?
+    `, [email]);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or verification code'
+      });
+    }
+
+    // Check if user account is active
+    if (user.status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        error: 'Account is deactivated. Please contact administrator for assistance.'
+      });
+    }
+
+    if (!user.twoFactorEnabled) {
+      return res.status(400).json({
+        success: false,
+        error: 'Two-Factor Authentication is not enabled for this account'
+      });
+    }
+
+    // Verify the 2FA code
+    const codeRecord = await getRow(
+      'SELECT id, expiresAt FROM two_factor_codes WHERE userId = ? AND code = ? AND used = FALSE ORDER BY createdAt DESC LIMIT 1',
+      [user.id, code]
+    );
+
+    if (!codeRecord) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid or expired verification code'
+      });
+    }
+
+    // Check if code is expired
+    if (new Date() > new Date(codeRecord.expiresAt)) {
+      return res.status(401).json({
+        success: false,
+        error: 'Verification code has expired. Please request a new one.'
+      });
+    }
+
+    // Mark the code as used
+    await runQuery(
+      'UPDATE two_factor_codes SET used = TRUE WHERE id = ?',
+      [codeRecord.id]
+    );
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email, 
+        role: user.role 
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Get additional role-specific data
+    let roleData = {};
+    
+    if (user.role === 'therapist') {
+      const therapistSql = `
+        SELECT 
+          t.id,
+          t.licenseNumber,
+          t.specialization,
+          t.yearsOfExperience,
+          t.education,
+          t.certifications,
+          t.availability
+        FROM therapists t
+        WHERE t.userId = ?
+      `;
+      
+      const therapistData = await getRow(therapistSql, [user.id]);
+      if (therapistData) {
+        roleData = {
+          therapistId: therapistData.id,
+          license: therapistData.licenseNumber,
+          specialization: therapistData.specialization,
+          experience: therapistData.yearsOfExperience,
+          education: therapistData.education,
+          certifications: therapistData.certifications,
+          availability: therapistData.availability
+        };
+      }
+    } else if (user.role === 'patient') {
+      const patientSql = `
+        SELECT 
+          p.id,
+          p.diagnosis,
+          p.medicalHistory,
+          p.goals,
+          p.therapistId,
+          p.emergencyContact,
+          p.insuranceInfo
+        FROM patients p
+        WHERE p.userId = ?
+      `;
+      
+      const patientData = await getRow(patientSql, [user.id]);
+      if (patientData) {
+        roleData = {
+          patientId: patientData.id,
+          diagnosis: patientData.diagnosis,
+          medicalHistory: patientData.medicalHistory,
+          goals: patientData.goals,
+          therapistId: patientData.therapistId,
+          emergencyContact: patientData.emergencyContact,
+          insuranceInfo: patientData.insuranceInfo
+        };
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          dateOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          address: user.address,
+          city: user.city,
+          state: user.state,
+          zipCode: user.zipCode,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          ...roleData
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Login with 2FA error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Login failed'
+    });
+  }
+};
+
 module.exports = {
   login,
+  loginWith2FA,
   register,
   verify,
   changePassword,

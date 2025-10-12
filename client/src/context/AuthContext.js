@@ -82,6 +82,17 @@ export const AuthProvider = ({ children }) => {
       // Axios automatically throws errors for non-2xx status codes
       // If we reach here, the request was successful
       if (data.success) {
+        // Check if 2FA is required
+        if (data.requires2FA) {
+          console.log('AuthContext: 2FA required for login');
+          return { 
+            success: true, 
+            requires2FA: true, 
+            message: data.message,
+            email: data.email 
+          };
+        }
+
         const userData = {
           id: data.data.user.id,
           email: data.data.user.email,
@@ -135,6 +146,68 @@ export const AuthProvider = ({ children }) => {
       } else {
         // Something else happened
         console.log('AuthContext: Other error:', error.message);
+        return { success: false, message: 'An unexpected error occurred.' };
+      }
+    }
+  };
+
+  const loginWith2FA = async (email, code) => {
+    console.log('AuthContext: loginWith2FA called with:', { email, code });
+    try {
+      console.log('AuthContext: making API call to loginWith2FA...');
+      const response = await authAPI.loginWith2FA({ email, code });
+      console.log('AuthContext: API response received:', response);
+      const data = response.data;
+      console.log('AuthContext: response data:', data);
+
+      if (data.success) {
+        const userData = {
+          id: data.data.user.id,
+          email: data.data.user.email,
+          firstName: data.data.user.firstName,
+          lastName: data.data.user.lastName,
+          role: data.data.user.role,
+          phone: data.data.user.phone,
+          dateOfBirth: data.data.user.dateOfBirth,
+          onboardingCompleted: data.data.user.onboardingCompleted || false,
+        };
+
+        console.log('AuthContext: setting user data:', userData);
+        
+        // Clear any cached data from previous users
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
+            localStorage.removeItem(key);
+          }
+        });
+        
+        // Clear React Query cache
+        queryClient.clear();
+        
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('userRole', data.data.user.role);
+        localStorage.setItem('userId', data.data.user.id);
+
+        setUser(userData);
+        setToken(data.data.token);
+        setIsAuthenticated(true);
+        
+        // Initialize WebSocket connection
+        websocketService.connect(data.data.token);
+
+        return { success: true, user: userData };
+      } else {
+        console.log('AuthContext: 2FA login failed with message:', data.message);
+        return { success: false, message: data.message || '2FA verification failed' };
+      }
+    } catch (error) {
+      console.error('AuthContext: 2FA Login error:', error);
+      if (error.response) {
+        return { success: false, message: error.response.data?.message || '2FA verification failed' };
+      } else if (error.request) {
+        return { success: false, message: 'Network error. Please check your connection.' };
+      } else {
         return { success: false, message: 'An unexpected error occurred.' };
       }
     }
@@ -274,12 +347,36 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const send2FACode = async (email) => {
+    try {
+      const response = await authAPI.send2FACode({ email });
+      const data = response.data;
+      
+      if (data.success) {
+        return { success: true, message: data.message || '2FA code sent successfully' };
+      } else {
+        return { success: false, message: data.message || 'Failed to send 2FA code' };
+      }
+    } catch (error) {
+      console.error('Send 2FA code error:', error);
+      if (error.response) {
+        return { success: false, message: error.response.data?.message || 'Failed to send 2FA code' };
+      } else if (error.request) {
+        return { success: false, message: 'Network error. Please check your connection.' };
+      } else {
+        return { success: false, message: 'An unexpected error occurred.' };
+      }
+    }
+  };
+
   const value = {
     user,
     isAuthenticated,
     isLoading,
     token,
     login,
+    loginWith2FA,
+    send2FACode,
     register,
     logout,
     updateUser,

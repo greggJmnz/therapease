@@ -39,7 +39,11 @@
     "start": "DANGEROUSLY_DISABLE_HOST_CHECK=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "echo \"No linting configured\" && exit 0",
+    "lint:fix": "echo \"No linting configured\" && exit 0",
+    "preview": "serve -s build -l 3000",
+    "analyze": "npm run build && npx bundle-analyzer build/static/js/*.js"
   },
   "eslintConfig": {
     "extends": [

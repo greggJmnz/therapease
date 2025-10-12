@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, User, Shield, Bell, Save, Users, Clock, AlertTriangle, CheckCircle, RefreshCw, Server, Database, Lock, Mail, Globe, Key, Eye, EyeOff, Smartphone, Monitor, Wifi, HardDrive, ChevronDown, Target, Activity, Calendar, Download, Trash2 } from 'lucide-react';
+import { Settings, User, Bell, Save, Users, Clock, AlertTriangle, CheckCircle, RefreshCw, Server, Database, Lock, Mail, Globe, Key, Eye, EyeOff, Smartphone, Monitor, Wifi, HardDrive, ChevronDown, Activity, Calendar, Download, Trash2, Shield } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { adminAPI } from '../../services/api';
+import { adminAPI, authAPI } from '../../services/api';
 import ProfileForm from '../../components/Profile/ProfileForm';
 import toast from 'react-hot-toast';
 
@@ -22,6 +22,44 @@ const AdminSettings = () => {
       }
     }
   );
+
+  // Fetch 2FA status
+  const { data: twoFactorStatus, isLoading: twoFactorStatusLoading, error: twoFactorStatusError } = useQuery(
+    'twoFactorStatus',
+    authAPI.get2FAStatus,
+    {
+      onSuccess: (data) => {
+        console.log('2FA Status fetched:', data);
+        // Handle nested data structure: data.data.data.enabled
+        const enabledValue = data?.data?.data?.enabled ?? data?.data?.enabled;
+        if (enabledValue !== undefined) {
+          const enabled = Boolean(enabledValue);
+          console.log('Setting 2FA state in onSuccess:', enabled, 'original:', enabledValue);
+          setTwoFactorEnabled(enabled);
+        }
+      },
+      onError: (error) => {
+        console.error('Error fetching 2FA status:', error);
+      },
+      staleTime: 0, // Always refetch when invalidated
+      cacheTime: 0, // Don't cache the result
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      retry: 3,
+      retryDelay: 1000
+    }
+  );
+
+  // Update 2FA state when data changes
+  useEffect(() => {
+    // Handle nested data structure: data.data.data.enabled
+    const enabledValue = twoFactorStatus?.data?.data?.enabled ?? twoFactorStatus?.data?.enabled;
+    if (enabledValue !== undefined) {
+      const enabled = Boolean(enabledValue);
+      console.log('Updating 2FA state from data:', enabled, 'original:', enabledValue);
+      setTwoFactorEnabled(enabled);
+    }
+  }, [twoFactorStatus]);
 
   const [systemSettings, setSystemSettings] = useState({
     systemName: 'TherapEase',
@@ -45,12 +83,6 @@ const AdminSettings = () => {
     pushNotifications: true
   });
 
-  const [privacySettings, setPrivacySettings] = useState({
-    shareDataWithAnalytics: true,
-    allowResearchParticipation: false,
-    dataRetention: 'standard',
-    thirdPartySharing: false
-  });
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -61,12 +93,20 @@ const AdminSettings = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  // 2FA state
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [show2FAVerify, setShow2FAVerify] = useState(false);
+  const [show2FADisable, setShow2FADisable] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [twoFactorPassword, setTwoFactorPassword] = useState('');
+
   // Navigation tabs data
   const navigationTabs = [
     { id: 'profile', name: 'Profile', icon: User, description: 'Personal information' },
     { id: 'system', name: 'System', icon: Settings, description: 'System configuration' },
     { id: 'notifications', name: 'Notifications', icon: Bell, description: 'Alert preferences' },
-    { id: 'privacy', name: 'Privacy', icon: Shield, description: 'Privacy & data settings' },
     { id: 'security', name: 'Security', icon: Lock, description: 'Security settings' }
   ];
 
@@ -113,12 +153,6 @@ const AdminSettings = () => {
     }));
   };
 
-  const handlePrivacyChange = (setting, value) => {
-    setPrivacySettings(prev => ({
-      ...prev,
-      [setting]: value
-    }));
-  };
 
   const handlePasswordChange = (field, value) => {
     setPasswordData(prev => ({
@@ -127,11 +161,91 @@ const AdminSettings = () => {
     }));
   };
 
+  // 2FA handlers
+  const handle2FAToggle = async () => {
+    if (twoFactorEnabled) {
+      setShow2FADisable(true);
+    } else {
+      setShow2FASetup(true);
+    }
+  };
+
+  const handleEnable2FA = async () => {
+    if (!twoFactorPassword) {
+      toast.error('Please enter your password');
+      return;
+    }
+
+    setTwoFactorLoading(true);
+    try {
+      await authAPI.enable2FA(twoFactorPassword);
+      toast.success('2FA setup code sent to your email. Please check your inbox.');
+      setTwoFactorPassword('');
+      setShow2FASetup(false);
+      setShow2FAVerify(true);
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to enable 2FA');
+    } finally {
+      setTwoFactorLoading(false);
+    }
+  };
+
+  const handleVerify2FASetup = async () => {
+    if (!twoFactorCode || twoFactorCode.length !== 6) {
+      toast.error('Please enter a valid 6-digit code');
+      return;
+    }
+
+    setTwoFactorLoading(true);
+    try {
+      await authAPI.verify2FASetup(twoFactorCode);
+      toast.success('Two-Factor Authentication enabled successfully!');
+      
+      // Update local state immediately
+      setTwoFactorEnabled(true);
+      setTwoFactorCode('');
+      setShow2FAVerify(false);
+      
+      // Refetch the 2FA status to ensure consistency
+      await queryClient.invalidateQueries('twoFactorStatus');
+      await queryClient.refetchQueries('twoFactorStatus');
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to verify 2FA setup');
+    } finally {
+      setTwoFactorLoading(false);
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (!twoFactorPassword) {
+      toast.error('Please enter your password');
+      return;
+    }
+
+    setTwoFactorLoading(true);
+    try {
+      await authAPI.disable2FA(twoFactorPassword);
+      toast.success('Two-Factor Authentication disabled successfully');
+      
+      // Update local state immediately
+      setTwoFactorEnabled(false);
+      setTwoFactorPassword('');
+      setShow2FADisable(false);
+      
+      // Refetch the 2FA status to ensure consistency
+      await queryClient.invalidateQueries('twoFactorStatus');
+      await queryClient.refetchQueries('twoFactorStatus');
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to disable 2FA');
+    } finally {
+      setTwoFactorLoading(false);
+    }
+  };
+
   const handleSaveSettings = () => {
     updateSettingsMutation.mutate({
       system: systemSettings,
       notifications: notificationSettings,
-      privacy: privacySettings,
       password: passwordData
     });
   };
@@ -504,79 +618,6 @@ const AdminSettings = () => {
                 </div>
               )}
 
-              {/* Privacy Tab */}
-              {activeTab === 'privacy' && (
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Privacy Settings</h2>
-                    <p className="text-gray-600">Control how system data is used and shared</p>
-                  </div>
-
-                  <div className="space-y-6">
-                    {/* Data Sharing */}
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Target className="h-5 w-5 mr-2 text-blue-600" />
-                        Data Sharing
-                      </h3>
-                      <div className="space-y-4">
-                        {[
-                          { key: 'shareDataWithAnalytics', label: 'Share Data with Analytics', description: 'Help improve the system by sharing usage analytics' },
-                          { key: 'allowResearchParticipation', label: 'Research Participation', description: 'Allow anonymized data to be used for research' },
-                          { key: 'thirdPartySharing', label: 'Third-Party Sharing', description: 'Share data with trusted third-party services' }
-                        ].map((setting) => (
-                          <div key={setting.key} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
-                            <div>
-                              <h4 className="font-medium text-gray-900">{setting.label}</h4>
-                              <p className="text-sm text-gray-500">{setting.description}</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={privacySettings[setting.key]}
-                                onChange={(e) => handlePrivacyChange(setting.key, e.target.checked)}
-                                className="sr-only peer"
-                              />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Data Management */}
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Calendar className="h-5 w-5 mr-2 text-green-600" />
-                        Data Management
-                      </h3>
-                      <div className="space-y-4">
-                        <div className="p-4 bg-white rounded-lg border border-gray-200">
-                          <h4 className="font-medium text-gray-900 mb-2">Data Retention Policy</h4>
-                          <p className="text-sm text-gray-500 mb-4">Choose how long to retain user data</p>
-                          <select
-                            value={privacySettings.dataRetention}
-                            onChange={(e) => handlePrivacyChange('dataRetention', e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                          >
-                            <option value="standard">Standard (2 years)</option>
-                            <option value="extended">Extended (5 years)</option>
-                            <option value="minimal">Minimal (1 year)</option>
-                          </select>
-                        </div>
-                        <div className="p-4 bg-white rounded-lg border border-gray-200">
-                          <h4 className="font-medium text-gray-900 mb-2">Export System Data</h4>
-                          <p className="text-sm text-gray-500 mb-4">Download a copy of all system data</p>
-                          <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Data
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Security Tab */}
               {activeTab === 'security' && (
@@ -727,18 +768,155 @@ const AdminSettings = () => {
                       </h3>
                       <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
                         <div>
-                          <h4 className="font-medium text-gray-900">Enable 2FA</h4>
-                          <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+                          <h4 className="font-medium text-gray-900">
+                            {twoFactorEnabled ? '2FA Enabled' : 'Enable 2FA'}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            {twoFactorEnabled 
+                              ? 'Two-Factor Authentication is active on your account' 
+                              : 'Add an extra layer of security to your account'
+                            }
+                          </p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
+                            checked={twoFactorEnabled}
+                            onChange={handle2FAToggle}
+                            disabled={twoFactorLoading}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          <div className={`w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${twoFactorEnabled ? 'bg-blue-600' : 'bg-gray-200'} ${twoFactorLoading ? 'opacity-50' : ''}`}></div>
                         </label>
                       </div>
                     </div>
+
+                    {/* 2FA Setup Modal */}
+                    {show2FASetup && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Enable Two-Factor Authentication</h3>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Enter your password to start the 2FA setup process. A verification code will be sent to your email.
+                          </p>
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Current Password
+                            </label>
+                            <input
+                              type="password"
+                              value={twoFactorPassword}
+                              onChange={(e) => setTwoFactorPassword(e.target.value)}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter your password"
+                            />
+                          </div>
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={handleEnable2FA}
+                              disabled={twoFactorLoading}
+                              className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              {twoFactorLoading ? 'Sending...' : 'Send Code'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShow2FASetup(false);
+                                setTwoFactorPassword('');
+                              }}
+                              className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-xl hover:bg-gray-400"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 2FA Verification Modal */}
+                    {show2FAVerify && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Verify 2FA Setup</h3>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Enter the 6-digit verification code sent to your email.
+                          </p>
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Verification Code
+                            </label>
+                            <input
+                              type="text"
+                              value={twoFactorCode}
+                              onChange={(e) => setTwoFactorCode(e.target.value)}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg tracking-widest"
+                              placeholder="000000"
+                              maxLength="6"
+                            />
+                          </div>
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={handleVerify2FASetup}
+                              disabled={twoFactorLoading}
+                              className="flex-1 bg-green-600 text-white py-3 px-4 rounded-xl hover:bg-green-700 disabled:opacity-50"
+                            >
+                              {twoFactorLoading ? 'Verifying...' : 'Verify & Enable'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setTwoFactorCode('');
+                                setShow2FAVerify(false);
+                              }}
+                              className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-xl hover:bg-gray-400"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 2FA Disable Modal */}
+                    {show2FADisable && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Disable Two-Factor Authentication</h3>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Enter your password to disable 2FA. This will make your account less secure.
+                          </p>
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Current Password
+                            </label>
+                            <input
+                              type="password"
+                              value={twoFactorPassword}
+                              onChange={(e) => setTwoFactorPassword(e.target.value)}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter your password"
+                            />
+                          </div>
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={handleDisable2FA}
+                              disabled={twoFactorLoading}
+                              className="flex-1 bg-red-600 text-white py-3 px-4 rounded-xl hover:bg-red-700 disabled:opacity-50"
+                            >
+                              {twoFactorLoading ? 'Disabling...' : 'Disable 2FA'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShow2FADisable(false);
+                                setTwoFactorPassword('');
+                              }}
+                              className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-xl hover:bg-gray-400"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

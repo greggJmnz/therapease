@@ -284,6 +284,177 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
       return { success: false, error: error.message };
     }
   }
+
+  // Generate a 6-digit 2FA code
+  generate2FACode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // Send 2FA verification code via email
+  async send2FACodeEmail(email, code, userFirstName = 'User') {
+    try {
+      const mailOptions = {
+        from: {
+          name: 'TherapEase Support',
+          address: 'therapease16@gmail.com'
+        },
+        to: email,
+        subject: 'TherapEase - Your 2FA Login Code',
+        html: this.get2FACodeEmailTemplate(code, userFirstName)
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ 2FA code email sent successfully to:', email);
+      
+      return {
+        success: true,
+        messageId: result.messageId,
+        message: '2FA code sent successfully'
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to send 2FA code email:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Send 2FA setup verification code
+  async send2FASetupCodeEmail(email, code, userFirstName = 'User') {
+    try {
+      const mailOptions = {
+        from: {
+          name: 'TherapEase Support',
+          address: 'therapease16@gmail.com'
+        },
+        to: email,
+        subject: 'TherapEase - Verify 2FA Setup',
+        html: this.get2FASetupCodeEmailTemplate(code, userFirstName)
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ 2FA setup code email sent successfully to:', email);
+      
+      return {
+        success: true,
+        messageId: result.messageId,
+        message: '2FA setup code sent successfully'
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to send 2FA setup code email:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // 2FA code email template
+  get2FACodeEmailTemplate(code, firstName) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TherapEase - 2FA Login Code</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #4F46E5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+          .code-box { background: white; border: 3px solid #4F46E5; padding: 25px; text-align: center; margin: 25px 0; border-radius: 8px; }
+          .code { color: #4F46E5; font-size: 36px; font-weight: bold; letter-spacing: 8px; margin: 0; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+          .warning { background: #FEF3C7; border: 1px solid #F59E0B; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Two-Factor Authentication</h1>
+          </div>
+          <div class="content">
+            <h2>Hello ${firstName}!</h2>
+            <p>Your TherapEase login verification code is:</p>
+            <div class="code-box">
+              <h1 class="code">${code}</h1>
+            </div>
+            <div class="warning">
+              <p><strong>⚠️ Important:</strong></p>
+              <ul>
+                <li>This code expires in <strong>10 minutes</strong></li>
+                <li>Enter this code on the login page to complete your sign-in</li>
+                <li>Never share this code with anyone</li>
+              </ul>
+            </div>
+            <p>If you didn't request this login attempt, please ignore this email and consider changing your password.</p>
+            <p>For security reasons, this code can only be used once.</p>
+          </div>
+          <div class="footer">
+            <p>This email was sent from TherapEase - Your trusted occupational therapy platform</p>
+            <p>© 2024 TherapEase. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  // 2FA setup code email template
+  get2FASetupCodeEmailTemplate(code, firstName) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TherapEase - Verify 2FA Setup</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #10B981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+          .code-box { background: white; border: 3px solid #10B981; padding: 25px; text-align: center; margin: 25px 0; border-radius: 8px; }
+          .code { color: #10B981; font-size: 36px; font-weight: bold; letter-spacing: 8px; margin: 0; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+          .info { background: #EBF8FF; border: 1px solid #3B82F6; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔒 Enable Two-Factor Authentication</h1>
+          </div>
+          <div class="content">
+            <h2>Hello ${firstName}!</h2>
+            <p>You're setting up Two-Factor Authentication for your TherapEase account. To complete the setup, please enter this verification code:</p>
+            <div class="code-box">
+              <h1 class="code">${code}</h1>
+            </div>
+            <div class="info">
+              <p><strong>ℹ️ What happens next:</strong></p>
+              <ul>
+                <li>Enter this code in the setup form to verify your email</li>
+                <li>Once verified, 2FA will be enabled for your account</li>
+                <li>Future logins will require a code sent to your email</li>
+                <li>This code expires in <strong>10 minutes</strong></li>
+              </ul>
+            </div>
+            <p>If you didn't request to enable 2FA, please ignore this email and contact support if you have concerns.</p>
+          </div>
+          <div class="footer">
+            <p>This email was sent from TherapEase - Your trusted occupational therapy platform</p>
+            <p>© 2024 TherapEase. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 }
 
 module.exports = new EmailService();
