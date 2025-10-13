@@ -817,7 +817,7 @@ const ProgressTracking = () => {
                   <p className="text-gray-600 mt-1">{selectedPatient.email}</p>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
                     <p className="text-sm text-gray-500">
-                      Patient since {new Date(selectedPatient.createdAt).toLocaleDateString()}
+                      Patient since {new Date(selectedPatient.createdAt).toLocaleDateString('en-US', { timeZone: 'UTC' })}
                     </p>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>

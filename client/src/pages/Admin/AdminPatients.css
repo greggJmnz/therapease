@@ -78,29 +78,18 @@
 
 /* Patient action dropdown */
 .patient-action-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 0.25rem;
+  position: fixed;
   background: white;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  z-index: 1000;
+  z-index: 9999;
   min-width: 180px;
   max-height: 200px;
   overflow-y: auto;
   animation: dropdownFadeIn 0.2s ease-out;
 }
 
-.patient-action-dropdown.dropdown-up {
-  top: auto;
-  bottom: 100%;
-  margin-top: 0;
-  margin-bottom: 0.25rem;
-  box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.1), 0 -4px 6px -2px rgba(0, 0, 0, 0.05);
-  animation: dropdownFadeInUp 0.2s ease-out;
-}
 
 /* Dropdown items */
 .dropdown-item {

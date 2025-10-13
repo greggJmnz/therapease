@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSystemSettings } from '../context/SystemSettingsContext';
 import InitialsAvatar from '../components/InitialsAvatar';
 import { useQuery } from 'react-query';
 import { adminAPI } from '../services/api';
@@ -26,6 +27,7 @@ const AdminLayout = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { systemName } = useSystemSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const profileDropdownRef = useRef(null);
@@ -124,7 +126,7 @@ const AdminLayout = () => {
             <div className="logo-icon">
               <i className="fas fa-heart-pulse"></i>
             </div>
-            <h1>TherapEase</h1>
+            <h1>{systemName}</h1>
             <p className="subtitle">Admin Portal</p>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -214,7 +216,7 @@ const AdminLayout = () => {
             <div className="logo-icon">
               <i className="fas fa-heart-pulse"></i>
             </div>
-            <h1>TherapEase</h1>
+            <h1>{systemName}</h1>
             <p className="subtitle">Admin Portal</p>
           </div>
         </div>

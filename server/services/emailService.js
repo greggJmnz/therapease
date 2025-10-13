@@ -455,6 +455,7 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
       </html>
     `;
   }
+
 }
 
 module.exports = new EmailService();

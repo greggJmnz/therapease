@@ -93,6 +93,14 @@ export const adminAPI = {
   markNotificationAsRead: (id) => api.patch(`/admin/notifications/${id}/read`),
   markAllNotificationsAsRead: () => api.patch('/admin/notifications/read-all'),
   getSettings: () => api.get(`/admin/settings?_t=${Date.now()}`),
+  updateSettings: (settingsData) => api.put('/admin/settings', settingsData),
+  
+  // System settings management
+  getSystemSettings: () => api.get(`/admin/system-settings?_t=${Date.now()}`),
+  updateSystemSettings: (settingsData) => api.put('/admin/system-settings', settingsData),
+  
+  // Public maintenance status check
+  getMaintenanceStatus: () => api.get(`/maintenance-status?_t=${Date.now()}`),
   
   // Profile management
   getProfile: () => api.get(`/admin/profile?_t=${Date.now()}`),
@@ -101,9 +109,6 @@ export const adminAPI = {
   uploadProfileImage: (formData) => api.post('/admin/upload-profile-image', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  
-  // Settings management
-  updateSettings: (settingsData) => api.put('/admin/settings', settingsData),
   
   // Create/Update operations
   createUser: (userData) => api.post('/admin/users', userData),

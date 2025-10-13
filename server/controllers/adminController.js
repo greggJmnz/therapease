@@ -1,6 +1,18 @@
 const { runQuery, getRow, getAll, getConnection } = require('../config/database');
 const { decryptSensitiveFields } = require('../utils/encryption');
 
+// Helper function to convert 24-hour time to 12-hour format
+const formatTime12Hour = (time24) => {
+  if (!time24) return '';
+  
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 // Helper function to calculate time ago
 const getTimeAgo = (date) => {
   const now = new Date();
@@ -921,8 +933,8 @@ const createAppointment = async (req, res) => {
     const insertSql = `
       INSERT INTO appointments (
         patientId, therapistId, appointmentDate, startTime, endTime, 
-        duration, type, status, approvalStatus, approvedBy, approvedAt, reason, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
+        duration, type, status, approvalStatus, approvedBy, approvedAt, createdBy, reason, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)
     `;
 
     const insertParams = [
@@ -936,6 +948,7 @@ const createAppointment = async (req, res) => {
       'scheduled',
       'approved', // Admin-created appointments are automatically approved
       req.user.id, // Admin who created the appointment
+      req.user.id, // Admin who created the appointment (createdBy)
       reason, // Include reason field
       notes || null
     ];
@@ -968,7 +981,7 @@ const createAppointment = async (req, res) => {
       await notificationController.createNotification(
         therapist.userId, // Use therapist user ID
         'New Appointment Scheduled',
-        `You have a new ${type} appointment with ${patient.patientName} on ${date} at ${time}`,
+        `You have a new ${type} appointment with ${patient.patientName} on ${date} at ${formatTime12Hour(time)}`,
         'appointment',
         { relatedId: appointmentId }
       );
@@ -977,7 +990,7 @@ const createAppointment = async (req, res) => {
       await notificationController.createNotification(
         patient.userId, // Use patient user ID
         'Appointment Scheduled',
-        `Your ${type} appointment with ${therapist.therapistName} has been scheduled for ${date} at ${time}`,
+        `Your ${type} appointment with ${therapist.therapistName} has been scheduled for ${date} at ${formatTime12Hour(time)}`,
         'appointment',
         { relatedId: appointmentId }
       );
@@ -988,7 +1001,7 @@ const createAppointment = async (req, res) => {
         await notificationController.createNotification(
           admin.id,
           'Appointment Created by Admin',
-          `An admin has created a ${type} appointment between ${therapist.therapistName} and ${patient.patientName} on ${date} at ${time}`,
+          `An admin has created a ${type} appointment between ${therapist.therapistName} and ${patient.patientName} on ${date} at ${formatTime12Hour(time)}`,
           'appointment',
           { relatedId: appointmentId }
         );
@@ -1071,7 +1084,7 @@ const getNotifications = async (req, res) => {
         minute: '2-digit',
         hour12: true,
         timeZone: 'UTC'
-      });
+      }).replace(/\s*GMT.*$/, ''); // Remove timezone information
       
       return {
         id: notification.id,
@@ -2338,7 +2351,7 @@ const updateAppointment = async (req, res) => {
         await notificationController.createNotification(
           updatedAppointment.patientUserId,
           'Appointment Status Updated',
-          `Your appointment on ${new Date(updatedAppointment.appointmentDate).toLocaleDateString()} at ${updatedAppointment.startTime} has been ${updateData.status}.`,
+          `Your appointment on ${new Date(updatedAppointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(updatedAppointment.startTime)} has been ${updateData.status}.`,
           'appointment',
           { relatedId: parseInt(id) }
         );
@@ -2347,7 +2360,7 @@ const updateAppointment = async (req, res) => {
         await notificationController.createNotification(
           updatedAppointment.therapistId,
           'Appointment Status Updated',
-          `The appointment with ${updatedAppointment.patientName} on ${new Date(updatedAppointment.appointmentDate).toLocaleDateString()} at ${updatedAppointment.startTime} has been ${updateData.status}.`,
+          `The appointment with ${updatedAppointment.patientName} on ${new Date(updatedAppointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(updatedAppointment.startTime)} has been ${updateData.status}.`,
           'appointment',
           { relatedId: parseInt(id) }
         );
@@ -3175,7 +3188,7 @@ const approveAppointment = async (req, res) => {
     await notificationController.createNotification(
       appointment.patientUserId,
       'Appointment Approved',
-      `Your appointment on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.startTime} has been approved.`,
+      `Your appointment on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved.`,
       'appointment',
       { relatedId: appointmentId }
     );
@@ -3184,7 +3197,7 @@ const approveAppointment = async (req, res) => {
     await notificationController.createNotification(
       appointment.therapistId,
       'Appointment Approved',
-      `The appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.startTime} has been approved.`,
+      `The appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved.`,
       'appointment',
       { relatedId: appointmentId }
     );
@@ -3244,7 +3257,7 @@ const rejectAppointment = async (req, res) => {
     await notificationController.createNotification(
       appointment.patientUserId,
       'Appointment Rejected',
-      `Your appointment request for ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.startTime} has been rejected. Reason: ${reason || 'No reason provided'}`,
+      `Your appointment request for ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been rejected. Reason: ${reason || 'No reason provided'}`,
       'appointment',
       { relatedId: appointmentId }
     );
@@ -3253,7 +3266,7 @@ const rejectAppointment = async (req, res) => {
     await notificationController.createNotification(
       appointment.therapistId,
       'Appointment Rejected',
-      `The appointment request with ${appointment.patientName} for ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.startTime} has been rejected.`,
+      `The appointment request with ${appointment.patientName} for ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been rejected.`,
       'appointment',
       { relatedId: appointmentId }
     );

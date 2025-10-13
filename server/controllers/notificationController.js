@@ -106,7 +106,7 @@ const getNotifications = async (req, res) => {
         minute: '2-digit',
         hour12: true,
         timeZone: 'UTC'
-      });
+      }).replace(/\s*GMT.*$/, ''); // Remove timezone information
       
       return {
         ...notification,

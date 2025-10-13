@@ -1,6 +1,18 @@
 const { runQuery, getRow, getAll } = require('../config/database');
 const websocketService = require('../services/websocketService');
-const { decryptSensitiveFields } = require('../utils/encryption');
+const { decryptSensitiveFields, encryptField } = require('../utils/encryption');
+
+// Helper function to convert 24-hour time to 12-hour format
+const formatTime12Hour = (time24) => {
+  if (!time24) return '';
+  
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  
+  return `${hour12}:${minutes} ${ampm}`;
+};
 
 // Get therapist schedule
 const getSchedule = async (req, res) => {
@@ -43,16 +55,19 @@ const getSchedule = async (req, res) => {
         a.status,
         a.approvalStatus,
         a.approvedBy,
+        a.createdBy,
         a.reason,
         a.notes,
         a.createdAt,
         a.updatedAt,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
         p.diagnosis,
-        u.phone as patientPhone
+        u.phone as patientPhone,
+        creator.role as creatorRole
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
       JOIN users u ON p.userId = u.id
+      LEFT JOIN users creator ON a.createdBy = creator.id
       ${whereClause}
       ORDER BY a.appointmentDate ASC, a.startTime ASC
     `;
@@ -218,8 +233,8 @@ const createAppointment = async (req, res) => {
     const insertSql = `
       INSERT INTO appointments (
         patientId, therapistId, appointmentDate, startTime, endTime, 
-        duration, type, status, approvalStatus, approvedBy, approvedAt, reason, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
+        duration, type, status, approvalStatus, approvedBy, approvedAt, createdBy, reason, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)
     `;
 
     const insertParams = [
@@ -233,8 +248,9 @@ const createAppointment = async (req, res) => {
       'scheduled',
       'approved', // Therapist-created appointments are automatically approved
       therapistId, // Therapist who created the appointment
+      therapistId, // Therapist who created the appointment (createdBy)
       reason || null, // Include reason field from request
-      notes || null
+      notes && notes.trim() !== '' ? encryptField(notes) : null // Encrypt notes if not empty
     ];
 
     const result = await runQuery(insertSql, insertParams);
@@ -267,7 +283,7 @@ const createAppointment = async (req, res) => {
       await notificationController.createNotification(
         newAppointment.patientUserId,
         'Appointment Scheduled',
-        `Your ${type} appointment with ${newAppointment.therapistName} has been scheduled for ${appointmentDate} at ${startTime}`,
+        `Your ${type} appointment with ${newAppointment.therapistName} has been scheduled for ${appointmentDate} at ${formatTime12Hour(startTime)}`,
         'appointment',
         { relatedId: appointmentId }
       );
@@ -276,7 +292,7 @@ const createAppointment = async (req, res) => {
       await notificationController.createNotification(
         newAppointment.therapistUserId,
         'Appointment Created',
-        `You have created a ${type} appointment with ${newAppointment.patientName} on ${appointmentDate} at ${startTime}`,
+        `You have created a ${type} appointment with ${newAppointment.patientName} on ${appointmentDate} at ${formatTime12Hour(startTime)}`,
         'appointment',
         { relatedId: appointmentId }
       );
@@ -287,7 +303,7 @@ const createAppointment = async (req, res) => {
         await notificationController.createNotification(
           admin.id,
           'New Appointment Created',
-          `${newAppointment.therapistName} has created a ${type} appointment with ${newAppointment.patientName} on ${appointmentDate} at ${startTime}`,
+          `${newAppointment.therapistName} has created a ${type} appointment with ${newAppointment.patientName} on ${appointmentDate} at ${formatTime12Hour(startTime)}`,
           'appointment',
           { relatedId: appointmentId }
         );
@@ -331,14 +347,25 @@ const updateAppointment = async (req, res) => {
       });
     }
 
-    // Check if appointment was created by admin - therapists cannot edit admin-created appointments
-    if (existingAppointment.approvedBy && existingAppointment.approvedBy !== req.user.id) {
-      // Check if the approver is an admin by checking their role
-      const approverRole = await getRow(`
+    // Check appointment editing permissions
+    // Therapists can edit:
+    // 1. Appointments they created themselves (approvedBy === therapistId)
+    // 2. Patient-created appointments that were confirmed by admin (createdBy !== therapistId AND approvedBy === admin)
+    // Therapists cannot edit:
+    // 1. Admin-created appointments (createdBy === admin)
+    
+    // Get the creator of the appointment
+    const appointmentCreator = await getRow(`
+      SELECT createdBy FROM appointments WHERE id = ?
+    `, [parseInt(id)]);
+    
+    if (appointmentCreator && appointmentCreator.createdBy) {
+      // Check if the appointment was created by an admin
+      const creatorRole = await getRow(`
         SELECT role FROM users WHERE id = ?
-      `, [existingAppointment.approvedBy]);
+      `, [appointmentCreator.createdBy]);
       
-      if (approverRole && approverRole.role === 'admin') {
+      if (creatorRole && creatorRole.role === 'admin') {
         return res.status(403).json({
           success: false,
           error: 'Cannot edit appointments created by administrators. Please contact an administrator for changes.'
@@ -415,7 +442,11 @@ const updateAppointment = async (req, res) => {
 
     if (updateData.notes !== undefined) {
       updateFields.push('notes = ?');
-      updateParams.push(updateData.notes);
+      // Encrypt notes if they are not empty
+      const encryptedNotes = updateData.notes && updateData.notes.trim() !== '' 
+        ? encryptField(updateData.notes) 
+        : updateData.notes;
+      updateParams.push(encryptedNotes);
     }
 
     if (updateFields.length === 0) {
@@ -443,6 +474,7 @@ const updateAppointment = async (req, res) => {
         a.*,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
         p.diagnosis,
+        p.userId as patientUserId,
         u.phone as patientPhone
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
@@ -451,6 +483,52 @@ const updateAppointment = async (req, res) => {
     `;
 
     const updatedAppointment = await getRow(getAppointmentSql, [parseInt(id)]);
+
+    // Create notifications for patient and admin when therapist updates appointment
+    try {
+      const notificationController = require('./notificationController');
+      
+      // Get therapist name for notifications
+      const therapistInfo = await getRow(`
+        SELECT CONCAT(firstName, ' ', lastName) as therapistName 
+        FROM users WHERE id = ?
+      `, [req.user.id]);
+
+      // Create notification for patient
+      await notificationController.createNotification(
+        updatedAppointment.patientUserId,
+        'Appointment Updated',
+        `Your appointment with ${therapistInfo.therapistName} has been updated. New time: ${updatedAppointment.appointmentDate} at ${formatTime12Hour(updatedAppointment.startTime)}`,
+        'appointment',
+        { relatedId: parseInt(id) }
+      );
+
+      // Create notification for all admin users
+      const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
+      for (const admin of adminUsers) {
+        await notificationController.createNotification(
+          admin.id,
+          'Appointment Updated by Therapist',
+          `${therapistInfo.therapistName} has updated an appointment with ${updatedAppointment.patientName}. New time: ${updatedAppointment.appointmentDate} at ${formatTime12Hour(updatedAppointment.startTime)}`,
+          'appointment',
+          { relatedId: parseInt(id) }
+        );
+      }
+
+      console.log(`📧 Created notifications for appointment update ${id}`);
+    } catch (notificationError) {
+      console.error('Notification creation error:', notificationError);
+      // Continue without failing the update if notifications fail
+    }
+
+    // Broadcast appointment update to all relevant users via WebSocket
+    try {
+      const websocketService = require('../services/websocketService');
+      websocketService.broadcastAppointmentChange(updatedAppointment, 'updated');
+      console.log(`📢 Broadcasted appointment update for appointment ${id}`);
+    } catch (error) {
+      console.error('Error broadcasting appointment update:', error);
+    }
 
     res.json({
       success: true,

@@ -485,31 +485,20 @@
 }
 
 .user-action-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
+  position: fixed;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  z-index: 50;
+  z-index: 9999;
   min-width: 180px;
   max-width: 200px;
   padding: 0.5rem 0;
-  margin-top: 0.25rem;
   white-space: nowrap;
   max-height: 200px;
   overflow-y: auto;
 }
 
-/* Dropdown positioning for last rows - opens upward */
-.user-action-dropdown.dropdown-up {
-  top: auto;
-  bottom: 100%;
-  margin-top: 0;
-  margin-bottom: 0.25rem;
-  box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.1), 0 -4px 6px -2px rgba(0, 0, 0, 0.05);
-}
 
 /* Ensure dropdown doesn't get cut off by table boundaries */
 .user-actions-cell {

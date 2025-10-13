@@ -351,17 +351,32 @@ const AdminTherapists = () => {
     }, 100);
   };
 
-  // Check if dropdown should open upward
-  const shouldOpenUpward = (therapistId) => {
+  // Get dropdown position for fixed positioning
+  const getDropdownPosition = (therapistId) => {
     const button = document.querySelector(`[data-therapist-id="${therapistId}"]`);
-    if (!button) return false;
+    if (!button) return { top: 0, right: 0 };
     
     const rect = button.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
+    const dropdownWidth = 160; // Approximate dropdown width
     const dropdownHeight = 200; // Approximate dropdown height
-    const spaceBelow = viewportHeight - rect.bottom;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
     
-    return spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+    // Calculate horizontal position (right-aligned to button)
+    let right = viewportWidth - rect.right;
+    
+    // Calculate vertical position (always open downward by default)
+    let top = rect.bottom + 4; // 4px margin from button
+    
+    // If dropdown would go off screen, adjust position
+    if (right < 0) {
+      right = 8; // 8px from right edge
+    }
+    if (top + dropdownHeight > viewportHeight) {
+      top = rect.top - dropdownHeight - 4; // Open upward if no space below
+    }
+    
+    return { top, right };
   };
 
   return (
@@ -425,8 +440,8 @@ const AdminTherapists = () => {
       </div>
 
       {/* Therapists List View */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible">
-          <div className="therapists-table-container overflow-x-auto overflow-y-visible">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="therapists-table-container">
             <table className="therapists-table w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -466,37 +481,53 @@ const AdminTherapists = () => {
                           name={therapist.name} 
                           size="md" 
                         />
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                        <div className="ml-4 min-w-0 flex-1">
+                          <div 
+                            className="text-sm font-medium text-gray-900 truncate"
+                            title={therapist.name}
+                          >
                             {therapist.name}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 contact-cell">
                       <div className="flex items-center text-sm text-gray-900">
-                        <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                        {therapist.phone || 'Not provided'}
+                        <Phone className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                        <span 
+                          className="truncate"
+                          title={therapist.phone || 'Not provided'}
+                        >
+                          {therapist.phone || 'Not provided'}
+                        </span>
                       </div>
                       <div className="flex items-center text-sm text-gray-500 mt-1">
-                        <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                        {therapist.email}
+                        <Mail className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                        <span 
+                          className="truncate"
+                          title={therapist.email}
+                        >
+                          {therapist.email}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td 
+                      className="px-6 py-4 license-cell text-sm text-gray-900"
+                      title={therapist.licenseNumber || 'Not provided'}
+                    >
                       {therapist.licenseNumber || 'Not provided'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-900">
-                        <Users className="h-4 w-4 text-gray-400 mr-2" />
-                        {therapist.patientsCount || 0}
+                        <Users className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                        <span>{therapist.patientsCount || 0}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 capacity-cell">
                       <div className="text-sm text-gray-900">
                         <div className="flex items-center justify-between">
-                          <span>{therapist.patientsCount}/{therapist.maxPatients}</span>
-                          <span className={`text-xs ${therapist.availableSlots > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <span className="truncate">{therapist.patientsCount}/{therapist.maxPatients}</span>
+                          <span className={`text-xs flex-shrink-0 ml-2 ${therapist.availableSlots > 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {therapist.availableSlots} available
                           </span>
                         </div>
@@ -505,7 +536,7 @@ const AdminTherapists = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 status-cell">
                       <div className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${
                         therapist.status === 'active'
                           ? 'bg-green-500'
@@ -518,7 +549,7 @@ const AdminTherapists = () => {
                         <div className="w-2 h-2 bg-white rounded-full"></div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 actions-cell text-right text-sm font-medium">
                       <div className="therapist-actions">
                         <button 
                           className="dropdown-trigger" 
@@ -533,7 +564,13 @@ const AdminTherapists = () => {
                         </button>
                         
                         {activeDropdown === therapist.id && (
-                          <div className={`dropdown-menu ${shouldOpenUpward(therapist.id) ? 'dropdown-up' : ''}`}>
+                          <div 
+                            className="dropdown-menu"
+                            style={{
+                              top: `${getDropdownPosition(therapist.id).top}px`,
+                              right: `${getDropdownPosition(therapist.id).right}px`
+                            }}
+                          >
                             <button 
                               className="dropdown-item" 
                               onClick={(e) => {

@@ -5,6 +5,7 @@ const adminController = require('../controllers/adminController');
 const profileController = require('../controllers/profileController');
 const upload = require('../middleware/uploadMiddleware');
 const settingsController = require('../controllers/settingsController');
+const systemSettingsController = require('../controllers/systemSettingsController');
 
 // Apply authentication and admin role authorization to all routes
 router.use(authenticateToken);
@@ -61,6 +62,13 @@ router.post('/upload-profile-image', upload.single('profileImage'), profileContr
 // Settings management
 router.get('/settings', settingsController.getSettings);
 router.put('/settings', settingsController.updateSettings);
+
+// System settings management
+router.get('/system-settings', systemSettingsController.getSystemSettings);
+router.put('/system-settings', systemSettingsController.updateSystemSettings);
+
+// Public maintenance mode check (no auth required)
+router.get('/maintenance-status', systemSettingsController.getMaintenanceStatus);
 
 // Notifications
 router.get('/notifications', adminController.getNotifications);

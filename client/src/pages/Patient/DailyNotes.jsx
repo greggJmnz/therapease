@@ -279,11 +279,12 @@ const DailyNotes = () => {
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',
-                            day: 'numeric'
+                            day: 'numeric',
+                            timeZone: 'UTC'
                           })}
                         </h3>
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 self-start">
-                          {new Date(note.sessionDate).toLocaleDateString()}
+                          {new Date(note.sessionDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}
                         </span>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 gap-1 sm:gap-0">

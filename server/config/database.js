@@ -90,10 +90,26 @@ const createTables = async () => {
         twoFactorEnabled BOOLEAN DEFAULT FALSE,
         twoFactorMethod ENUM('email', 'sms', 'push') DEFAULT 'email',
         twoFactorEnabledAt TIMESTAMP NULL,
+        emailVerified BOOLEAN DEFAULT FALSE,
+        emailVerifiedAt TIMESTAMP NULL,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Add email verification fields to users table if they don't exist
+    try {
+      await pool.execute(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS emailVerified BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS emailVerifiedAt TIMESTAMP NULL
+      `);
+    } catch (error) {
+      // Ignore error if columns already exist
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Email verification columns may already exist');
+      }
+    }
 
     // Patients table
     await pool.execute(`
@@ -250,12 +266,14 @@ const createTables = async () => {
         approvalStatus ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
         approvedBy INT NULL,
         approvedAt TIMESTAMP NULL,
+        createdBy INT NULL,
         reason TEXT,
         notes TEXT,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
-        FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
+        FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
@@ -273,6 +291,82 @@ const createTables = async () => {
       } else {
         console.log('Error adding foreign key for approvedBy:', error.message);
       }
+    }
+
+    // Add createdBy column if it doesn't exist
+    try {
+      // First, check if the column exists
+      const columnCheck = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'appointments' 
+        AND COLUMN_NAME = 'createdBy'
+      `);
+      
+      if (columnCheck[0].length === 0) {
+        // Column doesn't exist, add it
+        await pool.execute(`
+          ALTER TABLE appointments 
+          ADD COLUMN createdBy INT NULL
+        `);
+        console.log('createdBy column added to appointments table');
+        
+        // Add foreign key constraint
+        try {
+          await pool.execute(`
+            ALTER TABLE appointments 
+            ADD CONSTRAINT fk_appointments_created_by 
+            FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+          `);
+          console.log('createdBy foreign key added to appointments table');
+        } catch (fkError) {
+          if (fkError.code === 'ER_DUP_KEYNAME') {
+            console.log('createdBy foreign key already exists');
+          } else {
+            console.log('Error adding createdBy foreign key:', fkError.message);
+          }
+        }
+        
+        // Populate existing appointments with default createdBy values
+        try {
+          // For existing appointments, set createdBy based on approvedBy
+          // If approvedBy is the same as therapistId, it was likely created by the therapist
+          // If approvedBy is different from therapistId, it was likely created by admin
+          await pool.execute(`
+            UPDATE appointments 
+            SET createdBy = CASE 
+              WHEN approvedBy = therapistId THEN therapistId
+              WHEN approvedBy IS NOT NULL AND approvedBy != therapistId THEN approvedBy
+              ELSE therapistId
+            END
+            WHERE createdBy IS NULL
+          `);
+          console.log('Populated createdBy field for existing appointments');
+        } catch (updateError) {
+          console.log('Error populating createdBy field:', updateError.message);
+        }
+      } else {
+        console.log('createdBy column already exists');
+        
+        // Still try to populate any NULL values
+        try {
+          await pool.execute(`
+            UPDATE appointments 
+            SET createdBy = CASE 
+              WHEN approvedBy = therapistId THEN therapistId
+              WHEN approvedBy IS NOT NULL AND approvedBy != therapistId THEN approvedBy
+              ELSE therapistId
+            END
+            WHERE createdBy IS NULL
+          `);
+          console.log('Updated NULL createdBy values for existing appointments');
+        } catch (updateError) {
+          console.log('Error updating NULL createdBy values:', updateError.message);
+        }
+      }
+    } catch (error) {
+      console.log('Error checking/adding createdBy column:', error.message);
     }
 
     // Progress Tracking table
@@ -469,6 +563,23 @@ const createTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // System settings table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(100) UNIQUE NOT NULL,
+        setting_value TEXT,
+        setting_type ENUM('string', 'number', 'boolean', 'json') DEFAULT 'string',
+        description TEXT,
+        category VARCHAR(50) DEFAULT 'general',
+        is_public BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_category (category),
+        INDEX idx_public (is_public)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
     console.log('Database tables created successfully');
     
   } catch (error) {
@@ -516,9 +627,72 @@ const seedInitialData = async () => {
     } else {
       console.log('✅ Admin account already exists, skipping creation');
     }
+
+    // Seed default system settings
+    await seedSystemSettings();
     
   } catch (error) {
     console.error('❌ Error creating admin account:', error);
+    throw error;
+  }
+};
+
+// Seed default system settings
+const seedSystemSettings = async () => {
+  try {
+    console.log('🔧 Seeding system settings...');
+    
+    const defaultSettings = [
+      // General Settings
+      { key: 'system_name', value: 'TherapEase', type: 'string', category: 'general', description: 'System name displayed throughout the application' },
+      { key: 'maintenance_mode', value: 'false', type: 'boolean', category: 'general', description: 'Enable maintenance mode to disable system access' },
+      { key: 'session_timeout', value: '30', type: 'number', category: 'general', description: 'Session timeout in minutes' },
+      
+      // Registration Settings
+      { key: 'allow_registration', value: 'true', type: 'boolean', category: 'registration', description: 'Allow new user registrations' },
+      { key: 'require_email_verification', value: 'true', type: 'boolean', category: 'registration', description: 'Require email verification for new users' },
+      
+      // Security Settings
+      { key: 'password_complexity', value: 'medium', type: 'string', category: 'security', description: 'Password complexity requirement (low, medium, high)' },
+      { key: 'max_login_attempts', value: '5', type: 'number', category: 'security', description: 'Maximum login attempts before lockout' },
+      { key: 'email_notifications', value: 'true', type: 'boolean', category: 'security', description: 'Enable email notifications' },
+      { key: 'notification_frequency', value: 'immediate', type: 'string', category: 'security', description: 'Notification frequency (immediate, daily, weekly)' },
+      
+      // Notification Settings
+      { key: 'system_alerts', value: 'true', type: 'boolean', category: 'notifications', description: 'Enable system alerts' },
+      { key: 'user_activity', value: 'true', type: 'boolean', category: 'notifications', description: 'Enable user activity notifications' },
+      { key: 'security_events', value: 'true', type: 'boolean', category: 'notifications', description: 'Enable security event notifications' },
+      { key: 'maintenance_notifications', value: 'true', type: 'boolean', category: 'notifications', description: 'Enable maintenance notifications' },
+      { key: 'sms_notifications', value: 'false', type: 'boolean', category: 'notifications', description: 'Enable SMS notifications' },
+      { key: 'push_notifications', value: 'true', type: 'boolean', category: 'notifications', description: 'Enable push notifications' }
+    ];
+
+    for (const setting of defaultSettings) {
+      // Check if setting already exists
+      const [existing] = await pool.execute(
+        'SELECT id FROM system_settings WHERE setting_key = ?',
+        [setting.key]
+      );
+
+      if (existing.length === 0) {
+        await pool.execute(`
+          INSERT INTO system_settings (setting_key, setting_value, setting_type, category, description, is_public)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `, [
+          setting.key,
+          setting.value,
+          setting.type,
+          setting.category,
+          setting.description,
+          false
+        ]);
+      }
+    }
+
+    console.log('✅ System settings seeded successfully');
+    
+  } catch (error) {
+    console.error('❌ Error seeding system settings:', error);
     throw error;
   }
 };

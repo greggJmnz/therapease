@@ -403,17 +403,32 @@ const AdminPatients = () => {
     }));
   };
 
-  // Check if dropdown should open upward
-  const shouldOpenUpward = (patientId) => {
+  // Get dropdown position for fixed positioning
+  const getDropdownPosition = (patientId) => {
     const button = dropdownRefs.current[patientId];
-    if (!button) return false;
+    if (!button) return { top: 0, right: 0 };
     
     const rect = button.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
+    const dropdownWidth = 180; // Approximate dropdown width
     const dropdownHeight = 200; // Approximate dropdown height
-    const spaceBelow = viewportHeight - rect.bottom;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
     
-    return spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+    // Calculate horizontal position (right-aligned to button)
+    let right = viewportWidth - rect.right;
+    
+    // Calculate vertical position (always open downward by default)
+    let top = rect.bottom + 4; // 4px margin from button
+    
+    // If dropdown would go off screen, adjust position
+    if (right < 0) {
+      right = 8; // 8px from right edge
+    }
+    if (top + dropdownHeight > viewportHeight) {
+      top = rect.top - dropdownHeight - 4; // Open upward if no space below
+    }
+    
+    return { top, right };
   };
 
   return (
@@ -584,7 +599,7 @@ const AdminPatients = () => {
                             {patient.firstName} {patient.lastName}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {patient.gender} • {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
+                            {patient.gender} • {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'N/A'}
                           </div>
                         </div>
                       </div>
@@ -648,7 +663,7 @@ const AdminPatients = () => {
                   </span>
                 </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {patient.createdAt ? new Date(patient.createdAt).toLocaleDateString() : 'N/A'}
+                      {patient.createdAt ? new Date(patient.createdAt).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'N/A'}
                 </td>
                          <td className="patient-actions-cell">
                            <div className="patient-actions">
@@ -666,7 +681,13 @@ const AdminPatients = () => {
                              </button>
                              
                              {actionDropdowns[patient.id] && (
-                               <div className={`patient-action-dropdown ${shouldOpenUpward(patient.id) ? 'dropdown-up' : ''}`}>
+                               <div 
+                                 className="patient-action-dropdown"
+                                 style={{
+                                   top: `${getDropdownPosition(patient.id).top}px`,
+                                   right: `${getDropdownPosition(patient.id).right}px`
+                                 }}
+                               >
                                  <button 
                                    onClick={(e) => {
                                      e.stopPropagation();
@@ -1307,7 +1328,7 @@ const AdminPatients = () => {
                           <div>
                             <p className="text-sm text-gray-500">Patient Since</p>
                             <p className="font-semibold text-gray-900">
-                              {selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'N/A'}
+                              {selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'N/A'}
                             </p>
                           </div>
                         </div>
@@ -1455,7 +1476,7 @@ const AdminPatients = () => {
                       <div className="flex-1">
                         <p className="text-sm text-gray-500">Patient Since</p>
                         <p className="font-medium text-gray-900">
-                          {selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString() : 'Unknown'}
+                          {selectedPatient.createdAt ? new Date(selectedPatient.createdAt).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown'}
                         </p>
                       </div>
                     </div>
@@ -1464,7 +1485,7 @@ const AdminPatients = () => {
                       <div className="flex-1">
                         <p className="text-sm text-gray-500">Last Updated</p>
                         <p className="font-medium text-gray-900">
-                          {selectedPatient.updatedAt ? new Date(selectedPatient.updatedAt).toLocaleDateString() : 'Unknown'}
+                          {selectedPatient.updatedAt ? new Date(selectedPatient.updatedAt).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown'}
                         </p>
                       </div>
                     </div>

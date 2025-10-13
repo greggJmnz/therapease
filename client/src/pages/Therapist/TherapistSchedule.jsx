@@ -144,6 +144,8 @@ const TherapistSchedule = () => {
     notes: appointment.notes || '',
         createdAt: appointment.createdAt || appointment.appointmentDate || appointment.sessionDate || new Date().toISOString(),
         updatedAt: appointment.updatedAt,
+        createdBy: appointment.createdBy,
+        creatorRole: appointment.creatorRole,
         // Additional computed fields
         dateTime: dateTime,
         endTime: new Date(dateTime.getTime() + (appointment.duration || 60) * 60000),
@@ -315,11 +317,21 @@ const TherapistSchedule = () => {
   // Edit appointment handlers
   const handleEditAppointment = (appointment) => {
     setSelectedAppointment(appointment);
+    
+    // Calculate end time from start time and duration
+    const startTime = appointment.time || appointment.startTime || '09:00';
+    const duration = appointment.duration || 60;
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startDateTime = new Date();
+    startDateTime.setHours(hours, minutes, 0, 0);
+    const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+    const endTime = endDateTime.toTimeString().slice(0, 5);
+    
     setEditFormData({
-      appointmentDate: appointment.appointmentDate || '',
-      startTime: appointment.startTime || '',
-      endTime: appointment.endTime || '',
-      duration: appointment.duration || '',
+      appointmentDate: appointment.date || appointment.appointmentDate || '',
+      startTime: startTime,
+      endTime: endTime,
+      duration: duration.toString(),
       type: appointment.type || '',
       status: appointment.status || '',
       notes: appointment.notes || ''
@@ -341,11 +353,38 @@ const TherapistSchedule = () => {
     });
   };
 
+  // Helper function to calculate end time from start time and duration
+  const calculateEndTime = (startTime, duration) => {
+    if (!startTime || !duration) return '';
+    
+    try {
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const startDateTime = new Date();
+      startDateTime.setHours(hours, minutes, 0, 0);
+      const endDateTime = new Date(startDateTime.getTime() + parseInt(duration) * 60000);
+      return endDateTime.toTimeString().slice(0, 5);
+    } catch (error) {
+      console.warn('Error calculating end time:', error);
+      return '';
+    }
+  };
+
   const handleEditFormChange = (field, value) => {
-    setEditFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setEditFormData(prev => {
+      const updatedData = {
+        ...prev,
+        [field]: value
+      };
+
+      // Auto-calculate end time when start time or duration changes
+      if (field === 'startTime' || field === 'duration') {
+        const startTime = field === 'startTime' ? value : prev.startTime;
+        const duration = field === 'duration' ? value : prev.duration;
+        updatedData.endTime = calculateEndTime(startTime, duration);
+      }
+
+      return updatedData;
+    });
   };
 
   const handleUpdateAppointment = async () => {
@@ -972,6 +1011,19 @@ const TherapistSchedule = () => {
                 </div>
 
                 <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Created By</label>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-400" />
+                          <span className="text-gray-900">
+                            {selectedAppointment.creatorRole === 'admin' ? 'Administrator' :
+                             selectedAppointment.creatorRole === 'therapist' ? 'Therapist' :
+                             selectedAppointment.creatorRole === 'patient' ? 'Patient' :
+                             'Unknown'}
+                          </span>
+                        </div>
+                </div>
+
+                <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
                         <p className="text-gray-900 bg-gray-50 p-3 rounded-lg text-sm">
                           {selectedAppointment.reason || 'No reason provided'}
@@ -1020,7 +1072,7 @@ const TherapistSchedule = () => {
                   Close
                 </button>
                   {/* Only show edit button if appointment was not created by admin */}
-                  {!selectedAppointment.approvedBy || selectedAppointment.approvedBy === selectedAppointment.therapistId ? (
+                  {selectedAppointment.creatorRole !== 'admin' ? (
                     <button
                       onClick={() => handleEditAppointment(selectedAppointment)}
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
@@ -1112,13 +1164,15 @@ const TherapistSchedule = () => {
                   {/* End Time */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Time
+                      End Time <span className="text-xs text-gray-500">(Auto-calculated)</span>
                     </label>
                     <input
                       type="time"
                       value={editFormData.endTime}
                       onChange={(e) => handleEditFormChange('endTime', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                      readOnly
+                      title="End time is automatically calculated based on start time and duration"
                     />
                   </div>
 

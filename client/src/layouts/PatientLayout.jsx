@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Layouts.css';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSystemSettings } from '../context/SystemSettingsContext';
 import InitialsAvatar from '../components/InitialsAvatar';
 import { useNotificationStats } from '../hooks/useNotifications';
 import OnboardingStatus from '../components/OnboardingStatus';
@@ -33,6 +34,7 @@ const PatientLayout = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const { user, logout } = useAuth();
+  const { systemName } = useSystemSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const profileDropdownRef = useRef(null);
@@ -171,7 +173,7 @@ const PatientLayout = () => {
             <div className="logo-icon">
               <i className="fas fa-heart-pulse"></i>
             </div>
-            <h1>TherapEase</h1>
+            <h1>{systemName}</h1>
             <p className="subtitle">Patient Portal</p>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -277,7 +279,7 @@ const PatientLayout = () => {
             <div className="logo-icon">
               <i className="fas fa-heart-pulse"></i>
             </div>
-            <h1>TherapEase</h1>
+            <h1>{systemName}</h1>
             <p className="subtitle">Patient Portal</p>
           </div>
         </div>

@@ -50,7 +50,7 @@ const encrypt = (text) => {
 // AES-256-CBC Decryption
 const decrypt = (encryptedData) => {
   try {
-    if (!encryptedData || encryptedData === null || encryptedData === undefined) {
+    if (!encryptedData || encryptedData === null || encryptedData === undefined || encryptedData === '') {
       return null;
     }
 
@@ -96,8 +96,8 @@ const decryptField = (encryptedValue) => {
       return decrypt(encryptedValue);
     } catch (error) {
       console.error(`Decryption failed for value: ${encryptedValue}, error: ${error.message}`);
-      // If decryption fails, return original value
-      return encryptedValue;
+      // If decryption fails, return empty string for notes or original value for other fields
+      return '';
     }
   }
   
@@ -131,8 +131,17 @@ const decryptSensitiveFields = (obj, sensitiveFields = []) => {
   const decrypted = { ...obj };
   
   sensitiveFields.forEach(field => {
-    if (decrypted[field] !== undefined && decrypted[field] !== null) {
-      decrypted[field] = decryptField(decrypted[field]);
+    if (decrypted[field] !== undefined && decrypted[field] !== null && decrypted[field] !== '') {
+      try {
+        decrypted[field] = decryptField(decrypted[field]);
+      } catch (error) {
+        console.error(`Failed to decrypt field ${field}:`, error.message);
+        // For notes field, return empty string if decryption fails
+        // For other fields, keep original value
+        if (field === 'notes') {
+          decrypted[field] = '';
+        }
+      }
     }
   });
   

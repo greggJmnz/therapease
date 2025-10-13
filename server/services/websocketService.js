@@ -185,11 +185,14 @@ class WebSocketService {
     // Send to therapist
     this.sendToRoom(`user_${appointment.therapistId}`, message);
     
-    // Send to patient
-    this.sendToRoom(`user_${appointment.patientId}`, message);
+    // Send to patient (use patientUserId if available, otherwise fallback to patientId)
+    const patientUserId = appointment.patientUserId || appointment.patientId;
+    this.sendToRoom(`user_${patientUserId}`, message);
     
     // Send to patient-specific room
     this.sendToRoom(`patient_${appointment.patientId}`, message);
+    
+    console.log(`📢 Broadcasted appointment change: ${changeType} for appointment ${appointment.id}`);
   }
 
   // Broadcast patient record changes
@@ -301,6 +304,18 @@ class WebSocketService {
     this.sendToRoom('role_admin', event);
   }
 
+  // Broadcast to all connected clients
+  broadcastToAll(event) {
+    let sentCount = 0;
+    for (const [userId, client] of this.clients) {
+      if (client.ws.readyState === WebSocket.OPEN) {
+        client.ws.send(JSON.stringify(event));
+        sentCount++;
+      }
+    }
+    return sentCount;
+  }
+
   // Broadcast profile change
   broadcastProfileChange(userId, userRole, profileData, action) {
     const event = {
@@ -348,6 +363,22 @@ class WebSocketService {
     this.broadcastToAdmins(event);
 
     console.log(`📢 Broadcasted settings change: ${action} for user ${userId} (${userRole})`);
+  }
+
+  // Broadcast system settings change
+  broadcastSystemSettingsChange(settingsData) {
+    const event = {
+      type: 'system_settings_change',
+      data: {
+        settings: settingsData
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    // Send to all connected clients
+    this.broadcastToAll(event);
+
+    console.log(`📢 Broadcasted system settings change to all clients`);
   }
 
   // Broadcast session change

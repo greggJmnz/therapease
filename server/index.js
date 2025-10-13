@@ -11,6 +11,7 @@ const {
   handleEncryptionError 
 } = require('./middleware/encryptionMiddleware');
 const websocketService = require('./services/websocketService');
+const { checkMaintenanceMode, checkPublicMaintenanceMode } = require('./middleware/maintenanceMiddleware');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Import database configuration using the loader
@@ -87,6 +88,34 @@ app.get('/health', (req, res) => {
 // SSL Health check endpoint
 app.get('/health/ssl', sslHealthCheck);
 
+// Public maintenance status endpoint (no auth required)
+app.get('/api/maintenance-status', async (req, res) => {
+  try {
+    const { getRow } = require('./config/database');
+    const maintenanceSetting = await getRow(
+      'SELECT setting_value FROM system_settings WHERE setting_key = ?',
+      ['maintenance_mode']
+    );
+
+    const isMaintenanceMode = maintenanceSetting && maintenanceSetting.setting_value === 'true';
+
+    res.json({
+      success: true,
+      maintenanceMode: isMaintenanceMode,
+      message: isMaintenanceMode 
+        ? 'System is currently under maintenance. Please try again later.'
+        : 'System is operational'
+    });
+
+  } catch (error) {
+    console.error('Error fetching maintenance status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch maintenance status'
+    });
+  }
+});
+
 // Serve static files from public-website directory
 app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
 
@@ -98,7 +127,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // API routes
 app.use('/api/auth', authRoutes);
+
+// Apply maintenance middleware to non-admin routes
+app.use('/api/therapist', checkMaintenanceMode);
+app.use('/api/patient', checkMaintenanceMode);
+app.use('/api/ai', checkMaintenanceMode);
+app.use('/api/notifications', checkMaintenanceMode);
+app.use('/api/notifications/sms', checkMaintenanceMode);
+app.use('/api/treatment-plans', checkMaintenanceMode);
+app.use('/api/home-exercises', checkMaintenanceMode);
+app.use('/api/progress-reports', checkMaintenanceMode);
+
+// Admin routes (no maintenance mode check - admins can always access)
 app.use('/api/admin', adminRoutes);
+
+// Other routes with maintenance mode check
 app.use('/api/therapist', therapistRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/ai', aiRoutes);

@@ -80,6 +80,16 @@ const login = async (req, res) => {
       });
     }
 
+    // Get session timeout from system settings
+    const sessionTimeoutSetting = await getRow(
+      'SELECT setting_value FROM system_settings WHERE setting_key = ?',
+      ['session_timeout']
+    );
+    
+    const sessionTimeoutMinutes = sessionTimeoutSetting ? parseInt(sessionTimeoutSetting.setting_value) : 30;
+    const sessionTimeoutHours = sessionTimeoutMinutes / 60;
+    const expiresIn = sessionTimeoutHours >= 1 ? `${sessionTimeoutHours}h` : `${sessionTimeoutMinutes}m`;
+
     // Generate JWT token (only if 2FA is not enabled)
     const token = jwt.sign(
       { 
@@ -88,7 +98,7 @@ const login = async (req, res) => {
         role: user.role 
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn }
     );
 
     // Get additional role-specific data
@@ -196,6 +206,19 @@ const register = async (req, res) => {
       });
     }
 
+    // Check registration settings
+    const allowRegistrationSetting = await getRow(
+      'SELECT setting_value FROM system_settings WHERE setting_key = ?',
+      ['allow_registration']
+    );
+    
+    if (!allowRegistrationSetting || allowRegistrationSetting.setting_value !== 'true') {
+      return res.status(403).json({
+        success: false,
+        error: 'User registration is currently disabled. Please contact an administrator.'
+      });
+    }
+
     // Validate compliance requirements
     if (!termsAccepted) {
       return res.status(400).json({
@@ -244,6 +267,14 @@ const register = async (req, res) => {
       }
     }
 
+    // Check email verification requirement
+    const requireEmailVerificationSetting = await getRow(
+      'SELECT setting_value FROM system_settings WHERE setting_key = ?',
+      ['require_email_verification']
+    );
+    
+    const requireEmailVerification = requireEmailVerificationSetting && requireEmailVerificationSetting.setting_value === 'true';
+
     // Hash the password
     const hashedPassword = await hashPassword(password);
 
@@ -254,8 +285,8 @@ const register = async (req, res) => {
     try {
       // Create user
       const createUserSql = `
-        INSERT INTO users (email, password, role, firstName, lastName, phone, dateOfBirth, gender, address, city, state, zipCode, termsAccepted, hipaaAcknowledged, acceptedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO users (email, password, role, firstName, lastName, phone, dateOfBirth, gender, address, city, state, zipCode, termsAccepted, hipaaAcknowledged, acceptedAt, emailVerified, emailVerifiedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const userParams = [
@@ -273,7 +304,9 @@ const register = async (req, res) => {
         zipCode || null,
         termsAccepted,
         hipaaAcknowledged || false,
-        acceptedAt ? new Date(acceptedAt).toISOString().slice(0, 19).replace('T', ' ') : new Date().toISOString().slice(0, 19).replace('T', ' ')
+        acceptedAt ? new Date(acceptedAt).toISOString().slice(0, 19).replace('T', ' ') : new Date().toISOString().slice(0, 19).replace('T', ' '),
+        !requireEmailVerification, // If email verification is not required, mark as verified
+        !requireEmailVerification ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null
       ];
 
       const userResult = await connection.execute(createUserSql, userParams);
@@ -377,6 +410,16 @@ const register = async (req, res) => {
 
       const newUser = await getRow(getUserSql, [userId]);
 
+      // Get session timeout from system settings
+      const sessionTimeoutSetting = await getRow(
+        'SELECT setting_value FROM system_settings WHERE setting_key = ?',
+        ['session_timeout']
+      );
+      
+      const sessionTimeoutMinutes = sessionTimeoutSetting ? parseInt(sessionTimeoutSetting.setting_value) : 30;
+      const sessionTimeoutHours = sessionTimeoutMinutes / 60;
+      const expiresIn = sessionTimeoutHours >= 1 ? `${sessionTimeoutHours}h` : `${sessionTimeoutMinutes}m`;
+
       // Generate JWT token
       const token = jwt.sign(
         { 
@@ -385,7 +428,7 @@ const register = async (req, res) => {
           role: newUser.role 
         },
         JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn }
       );
 
       res.status(201).json({
@@ -903,6 +946,16 @@ const loginWith2FA = async (req, res) => {
       [codeRecord.id]
     );
 
+    // Get session timeout from system settings
+    const sessionTimeoutSetting = await getRow(
+      'SELECT setting_value FROM system_settings WHERE setting_key = ?',
+      ['session_timeout']
+    );
+    
+    const sessionTimeoutMinutes = sessionTimeoutSetting ? parseInt(sessionTimeoutSetting.setting_value) : 30;
+    const sessionTimeoutHours = sessionTimeoutMinutes / 60;
+    const expiresIn = sessionTimeoutHours >= 1 ? `${sessionTimeoutHours}h` : `${sessionTimeoutMinutes}m`;
+
     // Generate JWT token
     const token = jwt.sign(
       { 
@@ -911,7 +964,7 @@ const loginWith2FA = async (req, res) => {
         role: user.role 
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn }
     );
 
     // Get additional role-specific data

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, User, Bell, Save, Users, Clock, AlertTriangle, CheckCircle, RefreshCw, Server, Database, Lock, Mail, Globe, Key, Eye, EyeOff, Smartphone, Monitor, Wifi, HardDrive, ChevronDown, Activity, Calendar, Download, Trash2, Shield } from 'lucide-react';
+import { Settings, User, Bell, Save, Users, Clock, RefreshCw, Server, Lock, Mail, Globe, Eye, EyeOff, Smartphone, Monitor, ChevronDown, Shield } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { adminAPI, authAPI } from '../../services/api';
+import { useSystemSettings } from '../../context/SystemSettingsContext';
 import ProfileForm from '../../components/Profile/ProfileForm';
 import toast from 'react-hot-toast';
 
@@ -10,10 +11,11 @@ const AdminSettings = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [navigationType, setNavigationType] = useState('top'); // 'top' or 'dropdown'
   const queryClient = useQueryClient();
+  const { refreshSystemSettings, systemSettings: contextSettings, updateSystemSettings } = useSystemSettings();
   const dropdownRef = useRef(null);
 
   // Fetch settings data
-  const { data: settingsData, isLoading } = useQuery(
+  const { isLoading } = useQuery(
     'adminSettings',
     adminAPI.getSettings,
     {
@@ -23,8 +25,33 @@ const AdminSettings = () => {
     }
   );
 
+  // Fetch system settings data
+  const { isLoading: systemSettingsLoading } = useQuery(
+    'systemSettings',
+    adminAPI.getSystemSettings,
+    {
+      onSuccess: (data) => {
+        if (data?.data) {
+          setSystemSettings(prev => ({
+            ...prev,
+            ...data.data.general,
+            ...data.data.registration,
+            ...data.data.security
+          }));
+          setNotificationSettings(prev => ({
+            ...prev,
+            ...data.data.notifications
+          }));
+        }
+      },
+      onError: (error) => {
+        console.error('Error fetching system settings:', error);
+      }
+    }
+  );
+
   // Fetch 2FA status
-  const { data: twoFactorStatus, isLoading: twoFactorStatusLoading, error: twoFactorStatusError } = useQuery(
+  const { data: twoFactorStatus } = useQuery(
     'twoFactorStatus',
     authAPI.get2FAStatus,
     {
@@ -69,7 +96,6 @@ const AdminSettings = () => {
     requireEmailVerification: true,
     passwordComplexity: 'medium',
     maxLoginAttempts: 5,
-    emailNotifications: true,
     notificationFrequency: 'immediate'
   });
 
@@ -124,17 +150,62 @@ const AdminSettings = () => {
     };
   }, []);
 
+  // Sync local state with context state
+  useEffect(() => {
+    if (contextSettings && contextSettings.systemName) {
+      setSystemSettings(prev => ({
+        ...prev,
+        systemName: contextSettings.systemName,
+        sessionTimeout: contextSettings.sessionTimeout,
+        maintenanceMode: contextSettings.maintenanceMode
+      }));
+    }
+  }, [contextSettings]);
+
   // Update settings mutation
   const updateSettingsMutation = useMutation(
-    (settings) => adminAPI.updateSettings(settings),
+    (settings) => adminAPI.updateSystemSettings(settings),
     {
-      onSuccess: () => {
-        queryClient.invalidateQueries('adminSettings');
-        toast.success('Settings updated successfully');
+      onSuccess: async () => {
+        // Immediately update the context with the new settings
+        updateSystemSettings({
+          systemName: systemSettings.systemName,
+          sessionTimeout: systemSettings.sessionTimeout,
+          maintenanceMode: systemSettings.maintenanceMode
+        });
+        
+        // Small delay to ensure backend has processed the update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Invalidate and refetch system settings to ensure all components get updated
+        await queryClient.invalidateQueries('systemSettings');
+        await queryClient.refetchQueries('systemSettings');
+        // Also refresh the system settings context
+        await refreshSystemSettings();
+        toast.success('System settings updated successfully');
       },
       onError: (error) => {
-        toast.error('Failed to update settings');
-        console.error('Error updating settings:', error);
+        toast.error('Failed to update system settings');
+        console.error('Error updating system settings:', error);
+      }
+    }
+  );
+
+  // Update password mutation
+  const updatePasswordMutation = useMutation(
+    (passwordData) => adminAPI.changePassword(passwordData),
+    {
+      onSuccess: () => {
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+        toast.success('Password updated successfully');
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.error || 'Failed to update password');
+        console.error('Error updating password:', error);
       }
     }
   );
@@ -243,14 +314,36 @@ const AdminSettings = () => {
   };
 
   const handleSaveSettings = () => {
+    // Only save system and notification settings, not password
     updateSettingsMutation.mutate({
-      system: systemSettings,
-      notifications: notificationSettings,
-      password: passwordData
+      general: systemSettings,
+      notifications: notificationSettings
     });
   };
 
-  if (isLoading) {
+  const handlePasswordSubmit = () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long');
+      return;
+    }
+
+    updatePasswordMutation.mutate({
+      currentPassword: passwordData.currentPassword,
+      newPassword: passwordData.newPassword
+    });
+  };
+
+  if (isLoading || systemSettingsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
@@ -696,6 +789,25 @@ const AdminSettings = () => {
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                             placeholder="Confirm new password"
                           />
+                        </div>
+                        <div className="mt-6">
+                          <button
+                            onClick={handlePasswordSubmit}
+                            disabled={updatePasswordMutation.isLoading}
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {updatePasswordMutation.isLoading ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                Updating...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="h-4 w-4 mr-2" />
+                                Update Password
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>

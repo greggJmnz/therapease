@@ -2,6 +2,18 @@ const { runQuery, getRow, getAll, getConnection } = require('../config/database'
 const { decryptSensitiveFields } = require('../utils/encryption');
 const websocketService = require('../services/websocketService');
 
+// Helper function to convert 24-hour time to 12-hour format
+const formatTime12Hour = (time24) => {
+  if (!time24) return '';
+  
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 // Helper function to calculate time ago (same as admin controller)
 const getTimeAgo = (date) => {
   const now = new Date();
@@ -1578,7 +1590,7 @@ const getNotifications = async (req, res) => {
         minute: '2-digit',
         hour12: true,
         timeZone: 'UTC'
-      });
+      }).replace(/\s*GMT.*$/, ''); // Remove timezone information
       
       return {
         ...notification,
@@ -1711,8 +1723,8 @@ const bookAppointment = async (req, res) => {
 
     // Insert appointment with pending approval status
     const insertResult = await runQuery(`
-      INSERT INTO appointments (patientId, therapistId, appointmentDate, startTime, endTime, duration, type, status, approvalStatus, reason, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled', 'pending', ?, ?)
+      INSERT INTO appointments (patientId, therapistId, appointmentDate, startTime, endTime, duration, type, status, approvalStatus, createdBy, reason, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled', 'pending', ?, ?, ?)
     `, [
       patient.id,
       selectedTherapistId,
@@ -1721,6 +1733,7 @@ const bookAppointment = async (req, res) => {
       endTimeStr,
       duration || 60,
       type,
+      userId, // Patient who created the appointment (createdBy)
       reason || null,
       notes || null
     ]);
@@ -1742,7 +1755,7 @@ const bookAppointment = async (req, res) => {
       await notificationController.createNotification(
         userId,
         'Appointment Request Submitted',
-        `Your ${type} appointment request has been submitted for ${new Date(date).toLocaleDateString()} at ${time}. It is pending admin approval.`,
+        `Your ${type} appointment request has been submitted for ${new Date(date).toLocaleDateString()} at ${formatTime12Hour(time)}. It is pending admin approval.`,
         'appointment',
         { relatedId: appointmentId }
       );
@@ -1751,7 +1764,7 @@ const bookAppointment = async (req, res) => {
       await notificationController.createNotification(
         selectedTherapistId,
         'New Appointment Request (Pending Approval)',
-        `${patient.patientName} has requested a ${type} appointment on ${new Date(date).toLocaleDateString()} at ${time}. This appointment is pending admin approval.`,
+        `${patient.patientName} has requested a ${type} appointment on ${new Date(date).toLocaleDateString()} at ${formatTime12Hour(time)}. This appointment is pending admin approval.`,
         'appointment',
         { relatedId: appointmentId }
       );
@@ -1763,7 +1776,7 @@ const bookAppointment = async (req, res) => {
           await notificationController.createNotification(
             admin.id,
             'New Appointment Request - Approval Required',
-            `${patient.patientName} has requested a ${type} appointment with ${therapist.therapistName} on ${new Date(date).toLocaleDateString()} at ${time}. Please review and approve.`,
+            `${patient.patientName} has requested a ${type} appointment with ${therapist.therapistName} on ${new Date(date).toLocaleDateString()} at ${formatTime12Hour(time)}. Please review and approve.`,
             'admin_notification',
             { relatedId: appointmentId }
           );

@@ -233,17 +233,32 @@ const AdminUserManagement = () => {
     setActionDropdowns({});
   };
 
-  // Check if dropdown should open upward
-  const shouldOpenUpward = (userId) => {
+  // Get dropdown position for fixed positioning
+  const getDropdownPosition = (userId) => {
     const button = dropdownRefs.current[userId];
-    if (!button) return false;
+    if (!button) return { top: 0, right: 0 };
     
     const rect = button.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
+    const dropdownWidth = 180; // Approximate dropdown width
     const dropdownHeight = 200; // Approximate dropdown height
-    const spaceBelow = viewportHeight - rect.bottom;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
     
-    return spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+    // Calculate horizontal position (right-aligned to button)
+    let right = viewportWidth - rect.right;
+    
+    // Calculate vertical position (always open downward by default)
+    let top = rect.bottom + 4; // 4px margin from button
+    
+    // If dropdown would go off screen, adjust position
+    if (right < 0) {
+      right = 8; // 8px from right edge
+    }
+    if (top + dropdownHeight > viewportHeight) {
+      top = rect.top - dropdownHeight - 4; // Open upward if no space below
+    }
+    
+    return { top, right };
   };
 
   // Handle click outside to close dropdowns
@@ -320,7 +335,8 @@ const AdminUserManagement = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'UTC'
     });
   };
 
@@ -656,7 +672,13 @@ const AdminUserManagement = () => {
                           <MoreVertical className="w-4 h-4" />
                         </button>
                         {actionDropdowns[user.id] && (
-                          <div className={`user-action-dropdown ${shouldOpenUpward(user.id) ? 'dropdown-up' : ''}`}>
+                          <div 
+                            className="user-action-dropdown"
+                            style={{
+                              top: `${getDropdownPosition(user.id).top}px`,
+                              right: `${getDropdownPosition(user.id).right}px`
+                            }}
+                          >
                             <button
                               className="dropdown-item"
                               onClick={(e) => {
