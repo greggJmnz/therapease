@@ -4,7 +4,7 @@ const otPromptTemplates = require('../prompts/otPromptTemplates');
 
 class GPTService {
   constructor() {
-    this.model = 'gpt-4o'; // Using GPT-4o as it works better than GPT-5
+    this.model = 'gpt-4.1'; // Using GPT-4.1 for faster, more efficient, and more accurate responses
     this.maxTokens = 2500;
     this.temperature = 0.7;
   }
@@ -33,24 +33,16 @@ class GPTService {
         content: prompt
       });
 
-      // Use max_completion_tokens for GPT-5, max_tokens for other models
       const model = options.model || this.model;
-      const isGPT5 = model.includes('gpt-5');
       
       const response = await openai.chat.completions.create({
         model: model,
         messages: messages,
-        ...(isGPT5 ? 
-          { max_completion_tokens: options.maxTokens || this.maxTokens } : 
-          { max_tokens: options.maxTokens || this.maxTokens }
-        ),
-        // GPT-5 only supports default temperature (1), other models support custom values
-        ...(isGPT5 ? {} : {
-          temperature: options.temperature || this.temperature,
-          top_p: options.topP || 1,
-          frequency_penalty: options.frequencyPenalty || 0,
-          presence_penalty: options.presencePenalty || 0
-        })
+        max_tokens: options.maxTokens || this.maxTokens,
+        temperature: options.temperature || this.temperature,
+        top_p: options.topP || 1,
+        frequency_penalty: options.frequencyPenalty || 0,
+        presence_penalty: options.presencePenalty || 0
       });
 
       // Handle different response formats for different models
@@ -58,7 +50,7 @@ class GPTService {
       if (response.choices && response.choices[0]) {
         content = response.choices[0].message?.content || '';
         
-        // For GPT-5, check if there's reasoning content or other fields
+        // For advanced models, check if there's reasoning content or other fields
         if (!content && response.choices[0].message?.reasoning) {
           content = response.choices[0].message.reasoning;
         }

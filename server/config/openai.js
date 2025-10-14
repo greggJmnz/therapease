@@ -15,7 +15,7 @@ const testOpenAI = async () => {
     
     // Test the connection with a simple request
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4.1',
       messages: [{ role: 'user', content: 'Hello' }],
       max_tokens: 5
     });

@@ -10,7 +10,7 @@ The AI insights feature has been successfully tested and is working perfectly wi
 
 ### **✅ API Integration Test**
 - **Status**: ✅ **PASSED**
-- **Model**: GPT-4o (optimized for reliability)
+- **Model**: GPT-4.1 (optimized for faster, more efficient, and more accurate responses)
 - **Response Time**: ~22 seconds
 - **Content Quality**: High-quality, professional OT insights
 - **Token Usage**: 1,478 total tokens (806 prompt + 672 completion)
@@ -70,7 +70,7 @@ The AI generated a comprehensive, professional assessment including:
 - ✅ **Real-time Processing**: Live AI generation
 
 ### **Model Configuration**
-- **Default Model**: `gpt-4o` (reliable and fast)
+- **Default Model**: `gpt-4.1` (faster, more efficient, and more accurate)
 - **Max Tokens**: 2,500 (optimal for detailed insights)
 - **Temperature**: 0.6 (balanced creativity and consistency)
 - **Response Format**: Structured, professional OT documentation

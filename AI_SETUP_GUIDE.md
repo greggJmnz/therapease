@@ -1,10 +1,10 @@
-# AI Insights Setup Guide for GPT-5
+# AI Insights Setup Guide for GPT-4.1
 
-This guide will help you set up the AI Insights feature with GPT-5 model and your OpenAI API key.
+This guide will help you set up the AI Insights feature with GPT-4.1 model and your OpenAI API key.
 
 ## Prerequisites
 
-1. **OpenAI API Key**: You need a valid OpenAI API key with access to GPT-5
+1. **OpenAI API Key**: You need a valid OpenAI API key with access to GPT-4.1
 2. **Node.js**: Ensure Node.js is installed on your system
 3. **TherapEase Application**: The application should be running
 
@@ -28,7 +28,7 @@ This guide will help you set up the AI Insights feature with GPT-5 model and you
 ```env
 # OpenAI Configuration
 OPENAI_API_KEY=your_api_key_here
-OPENAI_MODEL=gpt-5
+OPENAI_MODEL=gpt-4.1
 OPENAI_MAX_TOKENS=2500
 OPENAI_TEMPERATURE=0.7
 ```
@@ -43,10 +43,10 @@ export OPENAI_API_KEY="your_api_key_here"
 
 ### 3. Update Server Configuration
 
-The server configuration is already set up to use GPT-5. The following files have been updated:
+The server configuration is already set up to use GPT-4.1. The following files have been updated:
 
-- `/ai/services/gptService.js` - Updated to use GPT-5 model
-- `/server/routes/aiRoutes.js` - Updated to explicitly use GPT-5 for AI insights
+- `/ai/services/gptService.js` - Updated to use GPT-4.1 model
+- `/server/routes/aiRoutes.js` - Updated to explicitly use GPT-4.1 for AI insights
 - `/client/src/pages/Therapist/AIInsights.jsx` - Updated to make real API calls
 
 ### 4. Restart the Application
@@ -66,13 +66,13 @@ After setting up the API key:
 3. Select a patient
 4. Add interview questions and observations
 5. Click "Generate Insights"
-6. The system will now use GPT-5 to generate real AI insights
+6. The system will now use GPT-4.1 to generate real AI insights
 
 ## Configuration Details
 
-### GPT-5 Model Settings
+### GPT-4.1 Model Settings
 
-- **Model**: `gpt-5`
+- **Model**: `gpt-4.1`
 - **Max Tokens**: 2500
 - **Temperature**: 0.7 (for AI insights), 0.6 (for other features)
 - **Top P**: 1
@@ -81,7 +81,7 @@ After setting up the API key:
 
 ### API Endpoints
 
-The following endpoints are configured for GPT-5:
+The following endpoints are configured for GPT-4.1:
 
 - `POST /api/ai/analyze-assessment` - AI Insights generation
 - `POST /api/ai/analyze-session` - Session analysis
@@ -108,7 +108,7 @@ The following endpoints are configured for GPT-5:
 
 4. **"Failed to generate insights"**
    - Check if the API key is set correctly
-   - Verify the GPT-5 model is available in your OpenAI account
+   - Verify the GPT-4.1 model is available in your OpenAI account
 
 ### Debug Mode
 
@@ -120,7 +120,7 @@ DEBUG=therapease:ai
 
 ## Cost Considerations
 
-GPT-5 is a premium model with higher costs than GPT-4. Monitor your usage:
+GPT-4.1 is a premium model with enhanced capabilities. Monitor your usage:
 
 1. Check your OpenAI usage dashboard
 2. Set up usage alerts

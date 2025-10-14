@@ -2030,7 +2030,7 @@ The therapist retains full responsibility for all clinical decisions and patient
             questions: pdf.assessmentData?.questions || [],
             observations: pdf.assessmentData?.observations || ''
           },
-          model: pdf.model || 'gpt-4',
+          model: pdf.model || 'gpt-4.1',
           score: pdf.score || 0,
           usage: pdf.usage || null
         }));
@@ -2056,7 +2056,7 @@ The therapist retains full responsibility for all clinical decisions and patient
           questions: pdf.assessmentData?.questions || [],
           observations: pdf.assessmentData?.observations || ''
         },
-        model: pdf.model || 'gpt-4',
+        model: pdf.model || 'gpt-4.1',
         score: pdf.score || 0,
         usage: pdf.usage || null
       }));
@@ -2078,7 +2078,7 @@ The therapist retains full responsibility for all clinical decisions and patient
         observations: observations ? observations.trim() : ''
       },
       // Additional metadata
-      model: pdfData.model || 'gpt-4',
+      model: pdfData.model || 'gpt-4.1',
       score: pdfData.score || 0,
       usage: pdfData.usage || null
     };
@@ -2173,13 +2173,13 @@ The therapist retains full responsibility for all clinical decisions and patient
         const newInsights = parseAIResponse(aiResponse, patient.name);
         
         setInsights(newInsights);
-        toast.success('AI insights generated successfully using GPT-5!');
+        toast.success('AI insights generated successfully using GPT-4.1!');
         
         // Save to PDF history (this will also update the assessment history display)
         const pdfData = {
           filename: `${patient.name.replace(/\s+/g, '_')}_AI_Insights_${new Date().toISOString().split('T')[0].replace(/-/g, '_')}.pdf`,
           type: 'AI Insights',
-          model: result.data.model || 'gpt-5',
+          model: result.data.model || 'gpt-4.1',
           score: calculateAssessmentScore(newInsights),
           usage: result.data.usage
         };
