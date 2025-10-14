@@ -608,6 +608,18 @@ const createTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // Patient settings table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS patient_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL UNIQUE,
+        notifications JSON,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
     console.log('Database tables created successfully');
     
   } catch (error) {

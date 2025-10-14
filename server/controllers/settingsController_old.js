@@ -6,7 +6,6 @@ const getSettings = async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
-    
 
     // Get user-specific settings
     const settingsQuery = `
@@ -69,10 +68,8 @@ const getSettings = async (req, res) => {
     // Get notification settings from database
     let notifications = {
       appointmentReminders: true,
-      progressUpdates: true,
-      assessmentResults: true,
-      homeExerciseReminders: true,
-      systemUpdates: false,
+      patientUpdates: true,
+      systemNotifications: true,
       emailNotifications: true,
       smsNotifications: false,
       pushNotifications: true
@@ -82,26 +79,6 @@ const getSettings = async (req, res) => {
       const settingsQuery = `
         SELECT notifications
         FROM therapist_settings
-        WHERE userId = ?
-      `;
-      const settingsData = await getRow(settingsQuery, [userId]);
-      
-      if (settingsData && settingsData.notifications) {
-        try {
-          // Handle case where notifications is already an object
-          if (typeof settingsData.notifications === 'string') {
-            notifications = JSON.parse(settingsData.notifications);
-          } else if (typeof settingsData.notifications === 'object') {
-            notifications = settingsData.notifications;
-          }
-        } catch (error) {
-          // Handle parsing error silently
-        }
-      }
-    } else if (userRole === 'patient') {
-      const settingsQuery = `
-        SELECT notifications
-        FROM patient_settings
         WHERE userId = ?
       `;
       const settingsData = await getRow(settingsQuery, [userId]);
@@ -142,26 +119,48 @@ const getSettings = async (req, res) => {
     if (userRole === 'therapist') {
       const therapistQuery = `
         SELECT 
-          ts.notifications,
-          ts.workingHours,
-          ts.updatedAt as settingsUpdatedAt
-        FROM therapist_settings ts
-        WHERE ts.userId = ?
+          licenseNumber as license,
+          specialization,
+          yearsOfExperience as experience,
+          education,
+          certifications,
+          availability
+        FROM therapists
+        WHERE userId = ?
       `;
-      const therapistSettings = await getRow(therapistQuery, [userId]);
-      
-      if (therapistSettings) {
-        settings.therapistSettings = {
-          notifications: therapistSettings.notifications ? 
-            (typeof therapistSettings.notifications === 'string' ? 
-              JSON.parse(therapistSettings.notifications) : 
-              therapistSettings.notifications) : null,
-          workingHours: therapistSettings.workingHours ? 
-            (typeof therapistSettings.workingHours === 'string' ? 
-              JSON.parse(therapistSettings.workingHours) : 
-              therapistSettings.workingHours) : null,
-          updatedAt: therapistSettings.settingsUpdatedAt
-        };
+      const therapistData = await getRow(therapistQuery, [userId]);
+      if (therapistData) {
+        settings.license = therapistData.license;
+        settings.specialization = therapistData.specialization;
+        settings.experience = therapistData.experience;
+        settings.education = therapistData.education;
+        settings.certifications = therapistData.certifications;
+        settings.availability = therapistData.availability;
+      } else {
+        // If no therapist record exists, create default values
+        settings.license = '';
+        settings.specialization = '';
+        settings.experience = 0;
+        settings.education = '';
+        settings.certifications = '';
+        settings.availability = '';
+      }
+    } else if (userRole === 'patient') {
+      const patientQuery = `
+        SELECT 
+          dateOfBirth,
+          emergencyContact,
+          medicalHistory,
+          therapistId
+        FROM patients
+        WHERE userId = ?
+      `;
+      const patientData = await getRow(patientQuery, [userId]);
+      if (patientData) {
+        settings.dateOfBirth = patientData.dateOfBirth;
+        settings.emergencyContact = patientData.emergencyContact;
+        settings.medicalHistory = patientData.medicalHistory;
+        settings.therapistId = patientData.therapistId;
       }
     }
 
@@ -171,7 +170,6 @@ const getSettings = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get settings error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch settings'
@@ -240,10 +238,8 @@ const getSettingsData = async (userId, userRole) => {
     // Get notification settings from database
     let notifications = {
       appointmentReminders: true,
-      progressUpdates: true,
-      assessmentResults: true,
-      homeExerciseReminders: true,
-      systemUpdates: false,
+      patientUpdates: true,
+      systemNotifications: true,
       emailNotifications: true,
       smsNotifications: false,
       pushNotifications: true
@@ -253,26 +249,6 @@ const getSettingsData = async (userId, userRole) => {
       const settingsQuery = `
         SELECT notifications
         FROM therapist_settings
-        WHERE userId = ?
-      `;
-      const settingsData = await getRow(settingsQuery, [userId]);
-      
-      if (settingsData && settingsData.notifications) {
-        try {
-          // Handle case where notifications is already an object
-          if (typeof settingsData.notifications === 'string') {
-            notifications = JSON.parse(settingsData.notifications);
-          } else if (typeof settingsData.notifications === 'object') {
-            notifications = settingsData.notifications;
-          }
-        } catch (error) {
-          // Handle parsing error silently
-        }
-      }
-    } else if (userRole === 'patient') {
-      const settingsQuery = `
-        SELECT notifications
-        FROM patient_settings
         WHERE userId = ?
       `;
       const settingsData = await getRow(settingsQuery, [userId]);
@@ -313,33 +289,54 @@ const getSettingsData = async (userId, userRole) => {
     if (userRole === 'therapist') {
       const therapistQuery = `
         SELECT 
-          ts.notifications,
-          ts.workingHours,
-          ts.updatedAt as settingsUpdatedAt
-        FROM therapist_settings ts
-        WHERE ts.userId = ?
+          licenseNumber as license,
+          specialization,
+          yearsOfExperience as experience,
+          education,
+          certifications,
+          availability
+        FROM therapists
+        WHERE userId = ?
       `;
-      const therapistSettings = await getRow(therapistQuery, [userId]);
-      
-      if (therapistSettings) {
-        settings.therapistSettings = {
-          notifications: therapistSettings.notifications ? 
-            (typeof therapistSettings.notifications === 'string' ? 
-              JSON.parse(therapistSettings.notifications) : 
-              therapistSettings.notifications) : null,
-          workingHours: therapistSettings.workingHours ? 
-            (typeof therapistSettings.workingHours === 'string' ? 
-              JSON.parse(therapistSettings.workingHours) : 
-              therapistSettings.workingHours) : null,
-          updatedAt: therapistSettings.settingsUpdatedAt
-        };
+      const therapistData = await getRow(therapistQuery, [userId]);
+      if (therapistData) {
+        settings.license = therapistData.license;
+        settings.specialization = therapistData.specialization;
+        settings.experience = therapistData.experience;
+        settings.education = therapistData.education;
+        settings.certifications = therapistData.certifications;
+        settings.availability = therapistData.availability;
+      } else {
+        // If no therapist record exists, create default values
+        settings.license = '';
+        settings.specialization = '';
+        settings.experience = 0;
+        settings.education = '';
+        settings.certifications = '';
+        settings.availability = '';
+      }
+    } else if (userRole === 'patient') {
+      const patientQuery = `
+        SELECT 
+          dateOfBirth,
+          emergencyContact,
+          medicalHistory,
+          therapistId
+        FROM patients
+        WHERE userId = ?
+      `;
+      const patientData = await getRow(patientQuery, [userId]);
+      if (patientData) {
+        settings.dateOfBirth = patientData.dateOfBirth;
+        settings.emergencyContact = patientData.emergencyContact;
+        settings.medicalHistory = patientData.medicalHistory;
+        settings.therapistId = patientData.therapistId;
       }
     }
 
     return settings;
 
   } catch (error) {
-    console.error('Get settings data error:', error);
     throw error;
   }
 };
@@ -356,57 +353,81 @@ const updateSettings = async (req, res) => {
     await connection.beginTransaction();
 
     try {
-      // Update basic user information
-      if (updateData.firstName || updateData.lastName || updateData.email || 
-          updateData.phone || updateData.address || updateData.city || 
-          updateData.state || updateData.zipCode) {
+      // Update user table
+      // Update user-specific settings only if provided
+      if (updateData.firstName !== undefined || updateData.lastName !== undefined || updateData.email !== undefined || 
+          updateData.phone !== undefined || updateData.address !== undefined || updateData.city !== undefined || 
+          updateData.state !== undefined || updateData.zipCode !== undefined) {
         
-        const updateFields = [];
-        const updateValues = [];
-
-        if (updateData.firstName) {
-          updateFields.push('firstName = ?');
-          updateValues.push(updateData.firstName);
-        }
-        if (updateData.lastName) {
-          updateFields.push('lastName = ?');
-          updateValues.push(updateData.lastName);
-        }
-        if (updateData.email) {
-          updateFields.push('email = ?');
-          updateValues.push(updateData.email);
-        }
-        if (updateData.phone) {
-          updateFields.push('phone = ?');
-          updateValues.push(updateData.phone);
-        }
-        if (updateData.address) {
-          updateFields.push('address = ?');
-          updateValues.push(updateData.address);
-        }
-        if (updateData.city) {
-          updateFields.push('city = ?');
-          updateValues.push(updateData.city);
-        }
-        if (updateData.state) {
-          updateFields.push('state = ?');
-          updateValues.push(updateData.state);
-        }
-        if (updateData.zipCode) {
-          updateFields.push('zipCode = ?');
-          updateValues.push(updateData.zipCode);
-        }
-
-        if (updateFields.length > 0) {
-          updateFields.push('updatedAt = NOW()');
-          updateValues.push(userId);
-
-          await connection.execute(`
+        const userUpdateQuery = `
           UPDATE users 
-            SET ${updateFields.join(', ')}
+          SET 
+            firstName = COALESCE(?, firstName),
+            lastName = COALESCE(?, lastName),
+            email = COALESCE(?, email),
+            phone = COALESCE(?, phone),
+            address = COALESCE(?, address),
+            city = COALESCE(?, city),
+            state = COALESCE(?, state),
+            zipCode = COALESCE(?, zipCode),
+            updatedAt = NOW()
           WHERE id = ?
-          `, updateValues);
-        }
+        `;
+
+        await connection.execute(userUpdateQuery, [
+          updateData.firstName || null,
+          updateData.lastName || null,
+          updateData.email || null,
+          updateData.phone || null,
+          updateData.address || null,
+          updateData.city || null,
+          updateData.state || null,
+          updateData.zipCode || null,
+          userId
+        ]);
+      }
+
+      // Update role-specific table
+      if (userRole === 'therapist' && (updateData.license !== undefined || updateData.specialization !== undefined || 
+          updateData.experience !== undefined || updateData.education !== undefined || updateData.bio !== undefined)) {
+        const therapistUpdateQuery = `
+          UPDATE therapists 
+          SET 
+            licenseNumber = ?,
+            specialization = ?,
+            yearsOfExperience = ?,
+            education = ?,
+            bio = ?,
+            updatedAt = NOW()
+          WHERE userId = ?
+        `;
+
+        await connection.execute(therapistUpdateQuery, [
+          updateData.license || null,
+          updateData.specialization || null,
+          updateData.experience || null,
+          updateData.education || null,
+          updateData.bio || null,
+          userId
+        ]);
+      } else if (userRole === 'patient' && (updateData.dateOfBirth !== undefined || updateData.emergencyContact !== undefined || 
+                 updateData.medicalHistory !== undefined)) {
+        const patientUpdateQuery = `
+          UPDATE patients 
+          SET 
+            dateOfBirth = ?,
+            emergencyContact = ?,
+            medicalHistory = ?,
+            updatedAt = NOW()
+          WHERE userId = ?
+        `;
+
+        await connection.execute(patientUpdateQuery, [
+          updateData.dateOfBirth || null,
+          updateData.emergencyContact || null,
+          updateData.medicalHistory || null,
+          userId
+        ]);
       }
 
       // Update working hours for therapists
@@ -457,29 +478,6 @@ const updateSettings = async (req, res) => {
         }
       }
 
-      // Update notification settings for patients
-      if (userRole === 'patient' && updateData.notifications) {
-        // Check if patient settings exist
-        const existingSettings = await connection.execute(`
-          SELECT id FROM patient_settings WHERE userId = ?
-        `, [userId]);
-
-        if (existingSettings[0].length > 0) {
-          // Update existing settings
-          await connection.execute(`
-            UPDATE patient_settings 
-            SET notifications = ?, updatedAt = NOW()
-            WHERE userId = ?
-          `, [JSON.stringify(updateData.notifications), userId]);
-        } else {
-          // Insert new settings
-          await connection.execute(`
-            INSERT INTO patient_settings (userId, notifications)
-            VALUES (?, ?)
-          `, [userId, JSON.stringify(updateData.notifications)]);
-        }
-      }
-
       await connection.commit();
 
       res.json({
@@ -495,16 +493,15 @@ const updateSettings = async (req, res) => {
     }
 
   } catch (error) {
-    console.error('Update settings error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to update settings'
+      error: 'Failed to update settings',
+      details: error.message
     });
   }
 };
 
 module.exports = {
   getSettings,
-  getSettingsData,
   updateSettings
 };

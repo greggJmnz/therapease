@@ -47,9 +47,6 @@ router.get('/exercises', patientController.getHomeExercises);
 // Notifications
 router.get('/notifications', patientController.getNotifications);
 
-// Settings
-router.get('/settings', patientController.getSettings);
-
 // Profile management
 router.get('/profile', profileController.getProfile);
 router.put('/profile', profileController.updateProfile);

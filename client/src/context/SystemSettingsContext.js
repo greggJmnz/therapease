@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { adminAPI } from '../services/api';
+import { useAuth } from './AuthContext';
 
 const SystemSettingsContext = createContext();
 
@@ -14,17 +15,22 @@ export const useSystemSettings = () => {
 
 export const SystemSettingsProvider = ({ children }) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [systemSettings, setSystemSettings] = useState({
     systemName: 'TherapEase',
     sessionTimeout: 30,
     maintenanceMode: false
   });
 
-  // Fetch system settings
+  // Only fetch system settings for admin users
+  const shouldFetchSettings = user?.role === 'admin';
+
+  // Fetch system settings (only for admin users)
   const { data: settingsData, isLoading, error, refetch } = useQuery(
     'systemSettings',
     adminAPI.getSystemSettings,
     {
+      enabled: shouldFetchSettings, // Only fetch if user is admin
       onSuccess: (data) => {
         if (data?.data?.general) {
           const newSettings = {
@@ -39,8 +45,13 @@ export const SystemSettingsProvider = ({ children }) => {
         }
       },
       onError: (error) => {
-        console.error('Error fetching system settings:', error);
-        // Keep default values on error
+        // Handle 403 Forbidden errors gracefully for non-admin users
+        if (error?.response?.status === 403) {
+          console.log('System settings not accessible for this user role - using defaults');
+          // Keep default values for non-admin users
+        } else {
+          console.error('Error fetching system settings:', error);
+        }
       },
       staleTime: 30 * 1000, // 30 seconds - reasonable cache time for system settings
       cacheTime: 5 * 60 * 1000, // 5 minutes

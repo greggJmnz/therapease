@@ -6,7 +6,6 @@ const getSettings = async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
-    
 
     // Get user-specific settings
     const settingsQuery = `
@@ -350,7 +349,6 @@ const updateSettings = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
     const updateData = req.body;
-    
 
     const connection = await getConnection();
     await connection.beginTransaction();
@@ -402,9 +400,9 @@ const updateSettings = async (req, res) => {
           updateValues.push(userId);
 
           await connection.execute(`
-          UPDATE users 
+            UPDATE users 
             SET ${updateFields.join(', ')}
-          WHERE id = ?
+            WHERE id = ?
           `, updateValues);
         }
       }

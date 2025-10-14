@@ -314,6 +314,30 @@ const createTables = async (connection) => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
+  // Therapist settings table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS therapist_settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL UNIQUE,
+      notifications JSON,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Patient settings table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS patient_settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL UNIQUE,
+      notifications JSON,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
   console.log('✅ All tables created successfully');
 };
 

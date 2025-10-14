@@ -14,12 +14,7 @@ const Settings = () => {
   // Fetch settings data
   const { data: settingsData, isLoading } = useQuery(
     'patientSettings',
-    patientAPI.getSettings,
-    {
-      onError: (error) => {
-        console.error('Error fetching settings:', error);
-      }
-    }
+    patientAPI.getSettings
   );
 
   // Fetch 2FA status
@@ -27,19 +22,6 @@ const Settings = () => {
     'twoFactorStatus',
     authAPI.get2FAStatus,
     {
-      onSuccess: (data) => {
-        console.log('2FA Status fetched:', data);
-        // Handle nested data structure: data.data.data.enabled
-        const enabledValue = data?.data?.data?.enabled ?? data?.data?.enabled;
-        if (enabledValue !== undefined) {
-          const enabled = Boolean(enabledValue);
-          console.log('Setting 2FA state in onSuccess:', enabled, 'original:', enabledValue);
-          setTwoFactorEnabled(enabled);
-        }
-      },
-      onError: (error) => {
-        console.error('Error fetching 2FA status:', error);
-      },
       staleTime: 0, // Always refetch when invalidated
       cacheTime: 0, // Don't cache the result
       refetchOnMount: true,
@@ -55,10 +37,16 @@ const Settings = () => {
     const enabledValue = twoFactorStatus?.data?.data?.enabled ?? twoFactorStatus?.data?.enabled;
     if (enabledValue !== undefined) {
       const enabled = Boolean(enabledValue);
-      console.log('Updating 2FA state from data:', enabled, 'original:', enabledValue);
       setTwoFactorEnabled(enabled);
     }
   }, [twoFactorStatus]);
+
+  // Update notification settings when API data is received
+  useEffect(() => {
+    if (settingsData?.data?.data?.notifications) {
+      setNotificationSettings(settingsData.data.data.notifications);
+    }
+  }, [settingsData]);
 
   const [notificationSettings, setNotificationSettings] = useState({
     appointmentReminders: true,
@@ -127,6 +115,25 @@ const Settings = () => {
     }
   );
 
+  // Password change mutation
+  const changePasswordMutation = useMutation(
+    (passwordData) => patientAPI.changePassword(passwordData),
+    {
+      onSuccess: () => {
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+        toast.success('Password changed successfully');
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.error || 'Failed to change password');
+        console.error('Error changing password:', error);
+      }
+    }
+  );
+
   const handleNotificationChange = (setting, value) => {
     setNotificationSettings(prev => ({
       ...prev,
@@ -144,8 +151,29 @@ const Settings = () => {
 
   const handleSaveSettings = () => {
     updateSettingsMutation.mutate({
-      notifications: notificationSettings,
-      password: passwordData
+      notifications: notificationSettings
+    });
+  };
+
+  const handlePasswordSubmit = () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters long');
+      return;
+    }
+
+    changePasswordMutation.mutate({
+      currentPassword: passwordData.currentPassword,
+      newPassword: passwordData.newPassword
     });
   };
 
@@ -594,6 +622,27 @@ const Settings = () => {
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           placeholder="Confirm new password"
                         />
+                      </div>
+                      
+                      {/* Password Change Button */}
+                      <div className="pt-4">
+                        <button
+                          onClick={handlePasswordSubmit}
+                          disabled={changePasswordMutation.isLoading}
+                          className="w-full bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        >
+                          {changePasswordMutation.isLoading ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Changing Password...
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="h-4 w-4 mr-2" />
+                              Change Password
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   </div>
