@@ -37,8 +37,9 @@ const AdminLayout = () => {
     adminAPI.getNotifications,
     {
       refetchOnWindowFocus: false,
-      staleTime: 30000, // 30 seconds
-      cacheTime: 300000, // 5 minutes
+      staleTime: 300000, // 5 minutes - much longer to prevent continuous fetching
+      cacheTime: 600000, // 10 minutes
+      refetchInterval: false, // Disable automatic refetching
     }
   );
 
@@ -48,14 +49,6 @@ const AdminLayout = () => {
     notification.read === 0 || notification.isRead === false
   ).length || 0;
 
-  // Debug logging
-  console.log('AdminLayout - isLoading:', isLoading);
-  console.log('AdminLayout - error:', error);
-  console.log('AdminLayout - notificationsData:', notificationsData);
-  console.log('AdminLayout - notificationsData.data:', notificationsData?.data);
-  console.log('AdminLayout - notifications count:', notificationsData?.data?.data?.notifications?.length);
-  console.log('AdminLayout - unreadCount:', unreadCount);
-  console.log('AdminLayout - first notification:', notificationsData?.data?.data?.notifications?.[0]);
 
   // Check screen size on mount and resize with improved mobile detection
   useEffect(() => {

@@ -52,7 +52,9 @@ router.post('/users/:userId/send-reset-link', adminController.sendPasswordResetL
 
 
 // Reports
-router.get('/reports', adminController.getSystemStats);
+router.get('/reports', adminController.getReports);
+router.get('/system-stats', adminController.getSystemStats);
+router.get('/daily-trends', adminController.getDailyTrends);
 
 // Profile management
 router.get('/profile', profileController.getProfile);
@@ -77,7 +79,5 @@ router.patch('/notifications/:id/read', adminController.markNotificationAsRead);
 router.patch('/notifications/read-all', adminController.markAllNotificationsAsRead);
 router.delete('/notifications/:id', adminController.deleteNotification);
 
-// Settings
-router.get('/settings', adminController.getSystemStats);
 
 module.exports = router;

@@ -108,12 +108,13 @@ const AdminDashboard = () => {
 
   // Fetch notifications data from API
   const { data: notificationsData, isLoading: notificationsLoading, error: notificationsError } = useQuery(
-    'adminNotifications',
+    'adminNotificationsDashboard',
     adminAPI.getNotifications,
     {
-      staleTime: 30000, // 30 seconds
-      cacheTime: 300000, // 5 minutes
+      staleTime: 300000, // 5 minutes - match header query
+      cacheTime: 600000, // 10 minutes
       refetchOnWindowFocus: false,
+      refetchInterval: false, // Disable automatic refetching
       retry: 3,
       onError: (error) => {
         console.error('Error fetching notifications:', error);

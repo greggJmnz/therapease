@@ -81,19 +81,45 @@ const getDashboard = async (req, res) => {
     const [systemHealthResult] = await getAll(systemHealthSql);
     const systemHealth = systemHealthResult;
 
-    // Get user growth over time
+    // Get user growth over time (last 12 months for better coverage)
     const userGrowthSql = `
       SELECT 
         DATE_FORMAT(createdAt, '%Y-%m') as month,
         role,
         COUNT(*) as count
       FROM users
-      WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+      WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
       GROUP BY DATE_FORMAT(createdAt, '%Y-%m'), role
       ORDER BY month, role
     `;
 
     const userGrowth = await getAll(userGrowthSql);
+
+    // Get appointment trends over time (last 12 months)
+    const appointmentTrendsSql = `
+      SELECT 
+        DATE_FORMAT(appointmentDate, '%Y-%m') as month,
+        COUNT(*) as count
+      FROM appointments
+      WHERE appointmentDate >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+      GROUP BY DATE_FORMAT(appointmentDate, '%Y-%m')
+      ORDER BY month
+    `;
+
+    const appointmentTrends = await getAll(appointmentTrendsSql);
+
+    // Get assessment trends over time (last 12 months)
+    const assessmentTrendsSql = `
+      SELECT 
+        DATE_FORMAT(createdAt, '%Y-%m') as month,
+        COUNT(*) as count
+      FROM assessments
+      WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m')
+      ORDER BY month
+    `;
+
+    const assessmentTrends = await getAll(assessmentTrendsSql);
 
     // Get assessment statistics by type
     const assessmentStatsSql = `
@@ -150,13 +176,15 @@ const getDashboard = async (req, res) => {
     const avgSessionsPerPatient = stats.totalPatients > 0 ? 
       Math.round(stats.totalDailyNotes / stats.totalPatients) : 0;
 
-    res.json({
+    const responseData = {
       success: true,
       data: {
         stats,
         recentUsers,
         systemHealth,
         userGrowth,
+        appointmentTrends,
+        assessmentTrends,
         assessmentStats,
         appointmentStats,
         analytics: {
@@ -167,7 +195,9 @@ const getDashboard = async (req, res) => {
           avgSessionsPerPatient
         }
       }
-    });
+    };
+    
+    res.json(responseData);
 
   } catch (error) {
     console.error('Get admin dashboard error:', error);
@@ -744,6 +774,61 @@ const getSystemStats = async (req, res) => {
   }
 };
 
+// Get daily trends data for growth charts
+const getDailyTrends = async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const dateRange = `DATE_SUB(NOW(), INTERVAL ${parseInt(days)} DAY)`;
+
+    // Get daily user registration trends
+    const dailyUserTrends = await getAll(`
+      SELECT 
+        DATE_FORMAT(createdAt, '%Y-%m-%d') as date,
+        role,
+        COUNT(*) as count
+      FROM users
+      WHERE createdAt >= ${dateRange}
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m-%d'), role
+      ORDER BY date, role
+    `);
+
+    // Get daily appointment trends
+    const dailyAppointmentTrends = await getAll(`
+      SELECT 
+        DATE_FORMAT(appointmentDate, '%Y-%m-%d') as date,
+        COUNT(*) as count
+      FROM appointments
+      WHERE appointmentDate >= ${dateRange}
+      GROUP BY DATE_FORMAT(appointmentDate, '%Y-%m-%d')
+      ORDER BY date
+    `);
+
+    // Get daily assessment trends
+    const dailyAssessmentTrends = await getAll(`
+      SELECT 
+        DATE_FORMAT(createdAt, '%Y-%m-%d') as date,
+        COUNT(*) as count
+      FROM assessments
+      WHERE createdAt >= ${dateRange}
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m-%d')
+      ORDER BY date
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        userTrends: dailyUserTrends,
+        appointmentTrends: dailyAppointmentTrends,
+        assessmentTrends: dailyAssessmentTrends
+      }
+    });
+
+  } catch (error) {
+    console.error('Get daily trends error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch daily trends data' });
+  }
+};
+
 // Get appointments for admin
 const getAppointments = async (req, res) => {
   try {
@@ -1123,7 +1208,7 @@ const markNotificationAsRead = async (req, res) => {
   try {
     const { id } = req.params;
     const adminUserId = req.user.id;
-
+    
     // Check if notification exists and belongs to admin
     const notificationSql = `
       SELECT id, isRead FROM notifications 
@@ -1150,7 +1235,6 @@ const markNotificationAsRead = async (req, res) => {
       'UPDATE notifications SET isRead = 1 WHERE id = ?',
       [parseInt(id)]
     );
-
     res.json({
       success: true,
       message: 'Notification marked as read successfully'
@@ -2529,26 +2613,58 @@ const getReports = async (req, res) => {
       GROUP BY type
     `);
     
-    // Get monthly appointment trends (last 6 months)
+    // Get monthly appointment trends (last 12 months for better coverage)
     const monthlyTrends = await getAll(`
       SELECT 
         DATE_FORMAT(appointmentDate, '%Y-%m') as month,
         COUNT(*) as count
       FROM appointments 
-      WHERE appointmentDate >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+      WHERE appointmentDate >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
       GROUP BY DATE_FORMAT(appointmentDate, '%Y-%m')
       ORDER BY month
     `);
     
-    // Get user registration trends (last 6 months)
+    // Get user registration trends with role breakdown (last 12 months)
     const userTrends = await getAll(`
       SELECT 
         DATE_FORMAT(createdAt, '%Y-%m') as month,
+        role,
         COUNT(*) as count
       FROM users 
-      WHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+      WHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m'), role
+      ORDER BY month, role
+    `);
+    
+    // Get assessment trends (last 12 months)
+    const assessmentTrends = await getAll(`
+      SELECT 
+        DATE_FORMAT(createdAt, '%Y-%m') as month,
+        COUNT(*) as count
+      FROM assessments 
+      WHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
       GROUP BY DATE_FORMAT(createdAt, '%Y-%m')
       ORDER BY month
+    `);
+    
+    // Get daily trends for recent periods (last 30 days)
+    const dailyTrends = await getAll(`
+      SELECT 
+        DATE_FORMAT(createdAt, '%Y-%m-%d') as date,
+        'appointment' as type,
+        COUNT(*) as count
+      FROM appointments 
+      WHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m-%d')
+      UNION ALL
+      SELECT 
+        DATE_FORMAT(createdAt, '%Y-%m-%d') as date,
+        'user' as type,
+        COUNT(*) as count
+      FROM users 
+      WHERE createdAt >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m-%d')
+      ORDER BY date, type
     `);
     
     // Get recent activity (last 30 days)
@@ -2581,6 +2697,8 @@ const getReports = async (req, res) => {
         appointmentTypes: appointmentTypes,
         monthlyTrends: monthlyTrends,
         userTrends: userTrends,
+        assessmentTrends: assessmentTrends,
+        dailyTrends: dailyTrends,
         recentActivity: recentActivity
       }
     });
@@ -3424,6 +3542,7 @@ module.exports = {
   updateUser,
   deleteUser,
   getSystemStats,
+  getDailyTrends,
   getAppointments,
   createAppointment,
   updateAppointment,

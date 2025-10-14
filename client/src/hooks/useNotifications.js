@@ -31,7 +31,31 @@ export const useNotifications = (options = {}) => {
   const markAsReadMutation = useMutation(
     (notificationId) => notificationService.markAsRead(notificationId),
     {
-      onSuccess: () => {
+      onSuccess: (data, notificationId) => {
+        // Update the notification state optimistically
+        queryClient.setQueryData(['notifications', filter, searchTerm, options.page, options.limit], (oldData) => {
+          if (!oldData?.data?.notifications) return oldData;
+          
+          const updatedNotifications = oldData.data.notifications.map(notification => {
+            if (notification.id === notificationId) {
+              return { ...notification, isRead: true };
+            }
+            return notification;
+          });
+          
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              notifications: updatedNotifications
+            }
+          };
+        });
+        // Don't invalidate queries to avoid refetching and losing optimistic updates
+      },
+      onError: (error) => {
+        console.error('Error marking notification as read:', error);
+        // Revert optimistic update on error
         queryClient.invalidateQueries('notifications');
       }
     }
@@ -41,7 +65,29 @@ export const useNotifications = (options = {}) => {
   const markAllAsReadMutation = useMutation(
     () => notificationService.markAllAsRead(),
     {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        // Update all notifications to read state optimistically
+        queryClient.setQueryData(['notifications', filter, searchTerm, options.page, options.limit], (oldData) => {
+          if (!oldData?.data?.notifications) return oldData;
+          
+          const updatedNotifications = oldData.data.notifications.map(notification => ({
+            ...notification,
+            isRead: true
+          }));
+          
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              notifications: updatedNotifications
+            }
+          };
+        });
+        // Don't invalidate queries to avoid refetching and losing optimistic updates
+      },
+      onError: (error) => {
+        console.error('Error marking all notifications as read:', error);
+        // Revert optimistic update on error
         queryClient.invalidateQueries('notifications');
       }
     }

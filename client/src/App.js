@@ -57,7 +57,7 @@ import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 
 // Components
-import RealtimeNotification from './components/RealtimeNotification';
+import RealtimeNotificationToast from './components/RealtimeNotificationToast';
 import MaintenancePage from './components/MaintenancePage';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 
@@ -226,7 +226,7 @@ const AppContent = () => (
       />
 
       {/* Real-time notifications */}
-      <RealtimeNotification />
+      <RealtimeNotificationToast />
     </div>
   </MaintenanceWrapper>
 );

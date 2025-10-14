@@ -88,6 +88,8 @@ export const adminAPI = {
   approveAppointment: (appointmentId) => api.post(`/admin/appointments/${appointmentId}/approve`),
   rejectAppointment: (appointmentId, reason) => api.post(`/admin/appointments/${appointmentId}/reject`, { reason }),
   getReports: () => api.get(`/admin/reports?_t=${Date.now()}`),
+  getSystemStats: (period = 'month') => api.get(`/admin/system-stats?period=${period}&_t=${Date.now()}`),
+  getDailyTrends: (days = 30) => api.get(`/admin/daily-trends?days=${days}&_t=${Date.now()}`),
   getNotifications: () => api.get(`/admin/notifications?_t=${Date.now()}`),
   deleteNotification: (id) => api.delete(`/admin/notifications/${id}`),
   markNotificationAsRead: (id) => api.patch(`/admin/notifications/${id}/read`),
