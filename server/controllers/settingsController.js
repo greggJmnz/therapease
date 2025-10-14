@@ -92,8 +92,7 @@ const getSettings = async (req, res) => {
             notifications = settingsData.notifications;
           }
         } catch (error) {
-          console.error('Error parsing notification settings:', error);
-          console.error('Raw notification data:', settingsData.notifications);
+          // Handle parsing error silently
         }
       }
     }
@@ -171,7 +170,6 @@ const getSettings = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching settings:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch settings'
@@ -264,8 +262,7 @@ const getSettingsData = async (userId, userRole) => {
             notifications = settingsData.notifications;
           }
         } catch (error) {
-          console.error('Error parsing notification settings:', error);
-          console.error('Raw notification data:', settingsData.notifications);
+          // Handle parsing error silently
         }
       }
     }
@@ -340,7 +337,6 @@ const getSettingsData = async (userId, userRole) => {
     return settings;
 
   } catch (error) {
-    console.error('Error fetching settings data:', error);
     throw error;
   }
 };
@@ -352,14 +348,6 @@ const updateSettings = async (req, res) => {
     const userRole = req.user.role;
     const updateData = req.body;
     
-    console.log('Update settings request:', {
-      userId,
-      userRole,
-      updateData: {
-        ...updateData,
-        password: updateData.password ? '[REDACTED]' : undefined
-      }
-    });
 
     const connection = await getConnection();
     await connection.beginTransaction();
@@ -367,9 +355,9 @@ const updateSettings = async (req, res) => {
     try {
       // Update user table
       // Update user-specific settings only if provided
-      if (updateData.firstName || updateData.lastName || updateData.email || 
-          updateData.phone || updateData.address || updateData.city || 
-          updateData.state || updateData.zipCode) {
+      if (updateData.firstName !== undefined || updateData.lastName !== undefined || updateData.email !== undefined || 
+          updateData.phone !== undefined || updateData.address !== undefined || updateData.city !== undefined || 
+          updateData.state !== undefined || updateData.zipCode !== undefined) {
         
         const userUpdateQuery = `
           UPDATE users 
@@ -400,7 +388,8 @@ const updateSettings = async (req, res) => {
       }
 
       // Update role-specific table
-      if (userRole === 'therapist' && updateData.license) {
+      if (userRole === 'therapist' && (updateData.license !== undefined || updateData.specialization !== undefined || 
+          updateData.experience !== undefined || updateData.education !== undefined || updateData.bio !== undefined)) {
         const therapistUpdateQuery = `
           UPDATE therapists 
           SET 
@@ -421,7 +410,8 @@ const updateSettings = async (req, res) => {
           updateData.bio || null,
           userId
         ]);
-      } else if (userRole === 'patient' && updateData.dateOfBirth) {
+      } else if (userRole === 'patient' && (updateData.dateOfBirth !== undefined || updateData.emergencyContact !== undefined || 
+                 updateData.medicalHistory !== undefined)) {
         const patientUpdateQuery = `
           UPDATE patients 
           SET 
@@ -442,7 +432,6 @@ const updateSettings = async (req, res) => {
 
       // Update working hours for therapists
       if (userRole === 'therapist' && updateData.workingHours) {
-        console.log('Updating working hours for therapist:', userId, updateData.workingHours);
         
         // Delete existing working hours
         await connection.execute(`
@@ -452,21 +441,18 @@ const updateSettings = async (req, res) => {
         // Insert new working hours
         const workingHours = updateData.workingHours;
         for (const [day, hours] of Object.entries(workingHours)) {
-          console.log(`Inserting working hours for ${day}:`, hours);
           
           // Convert undefined values to null for MySQL
           const startTime = hours.start || null;
           const endTime = hours.end || null;
           const isEnabled = hours.enabled !== undefined ? hours.enabled : false;
           
-          console.log(`SQL parameters for ${day}:`, [userId, day, startTime, endTime, isEnabled]);
           
           await connection.execute(`
             INSERT INTO working_hours (userId, dayOfWeek, startTime, endTime, isEnabled)
             VALUES (?, ?, ?, ?, ?)
           `, [userId, day, startTime, endTime, isEnabled]);
         }
-        console.log('Working hours updated successfully');
       }
 
       // Update notification settings for therapists
@@ -507,8 +493,6 @@ const updateSettings = async (req, res) => {
     }
 
   } catch (error) {
-    console.error('Error updating settings:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
       error: 'Failed to update settings',

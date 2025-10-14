@@ -33,8 +33,6 @@ const dbConfig = {
   queueLimit: 0,
   acquireTimeout: 60000,
   connectTimeout: 60000,
-  acquireTimeoutMillis: 60000,
-  timeout: 60000,
   // Windows-specific MySQL configuration
   charset: 'utf8mb4',
   timezone: 'Z',

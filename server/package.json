@@ -12,7 +12,7 @@
     "setup:vapid": "node -e \"require('./config/database').setupVAPIDKeys()\"",
     "setup:db": "node -e \"require('./config/database').createDatabase()\"",
     "db:init": "node scripts/init-database.js",
-    "db:seed": "node scripts/simple-seed.js",
+    "db:seed": "node scripts/seed-database.js",
     "security:setup": "node scripts/setup-security.js",
     "ssl:generate": "node scripts/generate-ssl.js",
     "sms:setup": "node scripts/setup-sms.js",

@@ -1,0 +1,25 @@
+{
+  "name": "therapease-public-website",
+  "version": "1.0.0",
+  "description": "TherapEase Public Website",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "website",
+    "public",
+    "therapease"
+  ],
+  "author": "TherapEase Team",
+  "license": "MIT"
+}

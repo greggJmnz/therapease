@@ -885,7 +885,6 @@ const TherapistSchedule = () => {
               onDateClick={(date) => {
                 // Could open a modal to add appointment for this date
                 // For now, just log the date
-                console.log(`Date clicked: ${date.toDateString()}`);
               }}
               onAddEvent={() => {
                 setShowSessionModal(true);
