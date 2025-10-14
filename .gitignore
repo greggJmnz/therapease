@@ -82,6 +82,9 @@ web_modules/
 .env.example
 .env.backup
 
+# DigitalOcean deployment files
+env-vars-generated.txt
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
