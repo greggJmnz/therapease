@@ -31,11 +31,11 @@ services:
   - key: SESSION_SECRET
     value: ${SESSION_SECRET}
   - key: CORS_ORIGIN
-    value: https://therapease-frontend.ondigitalocean.app
+    value: https://therapease.site
   - key: API_BASE_URL
-    value: https://therapease-api.ondigitalocean.app
+    value: https://api.therapease.site
   - key: REACT_APP_API_URL
-    value: https://therapease-api.ondigitalocean.app
+    value: https://api.therapease.site
   - key: SSL_ENABLED
     value: "true"
   - key: EMAIL_ENABLED
@@ -67,7 +67,7 @@ services:
   instance_size_slug: basic-xxs
   envs:
   - key: REACT_APP_API_URL
-    value: https://therapease-api.ondigitalocean.app
+    value: https://api.therapease.site
   - key: REACT_APP_VAPID_PUBLIC_KEY
     value: ${VAPID_PUBLIC_KEY}
 

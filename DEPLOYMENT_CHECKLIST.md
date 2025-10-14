@@ -61,9 +61,9 @@ git push origin main
 6. Deploy!
 
 ### 4. Access Your Application
-- **Frontend**: `https://therapease-frontend.ondigitalocean.app`
-- **API**: `https://therapease-api.ondigitalocean.app`
-- **Public Website**: `https://therapease-public.ondigitalocean.app`
+- **Frontend**: `https://therapease.site`
+- **API**: `https://api.therapease.site`
+- **Public Website**: `https://www.therapease.site`
 
 ## 💰 Expected Costs:
 - **App Platform**: $12-25/month (3 services)

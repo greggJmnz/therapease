@@ -78,9 +78,9 @@ In the App Platform settings, add these environment variables:
 
 After deployment, your app will be available at:
 
-- **Frontend**: `https://therapease-frontend.ondigitalocean.app`
-- **API**: `https://therapease-api.ondigitalocean.app`
-- **Public Website**: `https://therapease-public.ondigitalocean.app`
+- **Frontend**: `https://therapease.site`
+- **API**: `https://api.therapease.site`
+- **Public Website**: `https://www.therapease.site`
 
 ## 🗄️ Database Configuration
 
