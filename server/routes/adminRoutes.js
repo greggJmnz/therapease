@@ -29,6 +29,7 @@ router.get('/patients/:patientId/therapists', adminController.getPatientTherapis
 // Therapist management
 router.get('/therapists', adminController.getTherapists);
 router.get('/therapists/available', adminController.getAvailableTherapists);
+router.get('/therapists/:therapistId/working-hours', adminController.getTherapistWorkingHours);
 router.put('/therapists/:therapistId/availability', adminController.updateTherapistAvailability);
 
 // Appointment management

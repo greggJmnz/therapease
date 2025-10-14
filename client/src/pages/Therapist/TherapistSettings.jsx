@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Bell, Settings as SettingsIcon, Clock, MapPin, Globe, Lock, Calendar, Smartphone, Monitor, Save, RefreshCw, Users, Activity, ChevronDown, Eye, EyeOff, Download, Trash2, Shield, KeyRound, ArrowLeft } from 'lucide-react';
+import { User, Bell, Settings as SettingsIcon, Clock, MapPin, Globe, Lock, Calendar, Smartphone, Monitor, Save, RefreshCw, Users, ChevronDown, Eye, EyeOff, Download, Trash2, Shield, KeyRound, ArrowLeft } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { therapistAPI, authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -64,6 +64,36 @@ const TherapistSettings = () => {
     }
   }, [twoFactorStatus]);
 
+  // Update local state when settings data is loaded
+  useEffect(() => {
+    if (settingsData?.data?.data) {
+      const data = settingsData.data.data;
+      
+      // Update working hours if available
+      if (data.workingHours) {
+        // Ensure all working hours have proper values
+        const sanitizedWorkingHours = {};
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        
+        days.forEach(day => {
+          const dayData = data.workingHours[day];
+          sanitizedWorkingHours[day] = {
+            start: dayData?.start || '09:00',
+            end: dayData?.end || '17:00',
+            enabled: Boolean(dayData?.enabled) // Convert to boolean
+          };
+        });
+        
+        setWorkingHours(sanitizedWorkingHours);
+      }
+      
+      // Update notification settings if available
+      if (data.notifications) {
+        setNotificationSettings(data.notifications);
+      }
+    }
+  }, [settingsData]);
+
   const [notificationSettings, setNotificationSettings] = useState({
     appointmentReminders: true,
     patientUpdates: true,
@@ -83,13 +113,6 @@ const TherapistSettings = () => {
     sunday: { start: '10:00', end: '14:00', enabled: false }
   });
 
-  const [sessionPreferences, setSessionPreferences] = useState({
-    defaultDuration: 45,
-    bufferTime: 15,
-    maxSessionsPerDay: 8,
-    allowWeekendSessions: false,
-    allowEveningSessions: true
-  });
 
 
   const [passwordData, setPasswordData] = useState({
@@ -114,7 +137,6 @@ const TherapistSettings = () => {
   const navigationTabs = [
     { id: 'profile', name: 'Profile', icon: User, description: 'Personal information' },
     { id: 'schedule', name: 'Schedule', icon: Calendar, description: 'Working hours & availability' },
-    { id: 'sessions', name: 'Sessions', icon: Activity, description: 'Session preferences' },
     { id: 'notifications', name: 'Notifications', icon: Bell, description: 'Alert preferences' },
     { id: 'security', name: 'Security', icon: Lock, description: 'Security settings' }
   ];
@@ -165,12 +187,6 @@ const TherapistSettings = () => {
     }));
   };
 
-  const handleSessionPreferenceChange = (field, value) => {
-    setSessionPreferences(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
 
 
   const handlePasswordChange = (field, value) => {
@@ -181,12 +197,27 @@ const TherapistSettings = () => {
   };
 
   const handleSaveSettings = () => {
-    updateSettingsMutation.mutate({
-      notifications: notificationSettings,
-      workingHours: workingHours,
-      sessionPreferences: sessionPreferences,
-      password: passwordData
+    // Sanitize working hours to ensure no undefined values
+    const sanitizedWorkingHours = {};
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    
+    days.forEach(day => {
+      const dayData = workingHours[day];
+      sanitizedWorkingHours[day] = {
+        start: dayData?.start || '09:00',
+        end: dayData?.end || '17:00',
+        enabled: Boolean(dayData?.enabled) // Convert to boolean
+      };
     });
+
+    const settingsData = {
+      notifications: notificationSettings,
+      workingHours: sanitizedWorkingHours,
+      password: passwordData
+    };
+    console.log('Sending settings data:', settingsData);
+    console.log('Working hours structure:', JSON.stringify(sanitizedWorkingHours, null, 2));
+    updateSettingsMutation.mutate(settingsData);
   };
 
   // 2FA handlers
@@ -516,102 +547,6 @@ const TherapistSettings = () => {
             </div>
           )}
 
-              {/* Sessions Tab */}
-          {activeTab === 'sessions' && (
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Session Preferences</h2>
-                    <p className="text-gray-600">Configure your session settings and preferences</p>
-                  </div>
-
-            <div className="space-y-6">
-                    {/* Session Duration */}
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Clock className="h-5 w-5 mr-2 text-blue-600" />
-                        Session Duration
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Default Duration (minutes)
-                          </label>
-                    <input
-                      type="number"
-                      value={sessionPreferences.defaultDuration}
-                      onChange={(e) => handleSessionPreferenceChange('defaultDuration', parseInt(e.target.value))}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    />
-                  </div>
-                  <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Buffer Time (minutes)
-                          </label>
-                    <input
-                      type="number"
-                      value={sessionPreferences.bufferTime}
-                      onChange={(e) => handleSessionPreferenceChange('bufferTime', parseInt(e.target.value))}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    />
-                        </div>
-                      </div>
-                  </div>
-
-                    {/* Session Limits */}
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Users className="h-5 w-5 mr-2 text-green-600" />
-                        Session Limits
-                      </h3>
-                      <div className="space-y-4">
-                  <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Maximum Sessions Per Day
-                          </label>
-                    <input
-                      type="number"
-                      value={sessionPreferences.maxSessionsPerDay}
-                      onChange={(e) => handleSessionPreferenceChange('maxSessionsPerDay', parseInt(e.target.value))}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    />
-                  </div>
-                  <div className="space-y-4">
-                          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
-                      <div>
-                              <h4 className="font-medium text-gray-900">Allow Weekend Sessions</h4>
-                              <p className="text-sm text-gray-500">Enable appointments on weekends</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={sessionPreferences.allowWeekendSessions}
-                          onChange={(e) => handleSessionPreferenceChange('allowWeekendSessions', e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
-                      <div>
-                              <h4 className="font-medium text-gray-900">Allow Evening Sessions</h4>
-                              <p className="text-sm text-gray-500">Enable appointments after 6 PM</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={sessionPreferences.allowEveningSessions}
-                          onChange={(e) => handleSessionPreferenceChange('allowEveningSessions', e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-                  </div>
-                </div>
-              )}
 
               {/* Notifications Tab */}
               {activeTab === 'notifications' && (

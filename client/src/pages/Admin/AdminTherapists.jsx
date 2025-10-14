@@ -21,7 +21,8 @@ import {
   Users,
   User,
   Search,
-  MoreVertical
+  MoreVertical,
+  Clock
 } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -33,8 +34,11 @@ const AdminTherapists = () => {
   const [editingTherapist, setEditingTherapist] = useState(null);
   const [showGenerateAccountModal, setShowGenerateAccountModal] = useState(false);
   const [showCapacityModal, setShowCapacityModal] = useState(false);
+  const [showWorkingHoursModal, setShowWorkingHoursModal] = useState(false);
   const [generatedCredentials, setGeneratedCredentials] = useState(null);
   const [capacityTherapist, setCapacityTherapist] = useState(null);
+  const [workingHoursTherapist, setWorkingHoursTherapist] = useState(null);
+  const [workingHoursData, setWorkingHoursData] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   // Removed viewMode state - only using list view now
   const [activeDropdown, setActiveDropdown] = useState(null); // Track which dropdown is open
@@ -175,12 +179,28 @@ const AdminTherapists = () => {
     setShowCapacityModal(true);
   };
 
+  const handleViewWorkingHours = async (therapist) => {
+    try {
+      setWorkingHoursTherapist(therapist);
+      setShowWorkingHoursModal(true);
+      
+      const response = await adminAPI.getTherapistWorkingHours(therapist.id);
+      setWorkingHoursData(response.data.data);
+    } catch (error) {
+      toast.error('Failed to load working hours');
+      console.error('Error fetching working hours:', error);
+    }
+  };
+
   const closeModal = () => {
     setSelectedTherapist(null);
     setEditingTherapist(null);
     setShowGenerateAccountModal(false);
     setShowCapacityModal(false);
+    setShowWorkingHoursModal(false);
     setCapacityTherapist(null);
+    setWorkingHoursTherapist(null);
+    setWorkingHoursData(null);
   };
 
   const handleSave = async () => {
@@ -603,6 +623,17 @@ const AdminTherapists = () => {
                             >
                               <Users size={16} />
                               Manage Capacity
+                            </button>
+                            <button 
+                              className="dropdown-item" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewWorkingHours(therapist);
+                                closeDropdownWithDelay();
+                              }}
+                            >
+                              <Clock size={16} />
+                              View Working Hours
                             </button>
                             {therapist.status === 'pending' && (
                               <button 
@@ -1307,6 +1338,48 @@ const AdminTherapists = () => {
         </div>
       </div>
     )}
+
+    {/* Working Hours Modal */}
+    {showWorkingHoursModal && workingHoursTherapist && workingHoursData && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Therapist Working Hours</h2>
+                <p className="text-blue-100 mt-1">
+                  View working hours for {workingHoursData.therapist.name}
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                className="text-white hover:text-blue-200 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Content */}
+          <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
+            <WorkingHoursDisplay workingHours={workingHoursData.workingHours} />
+          </div>
+
+          {/* Modal Footer */}
+          <div className="p-6 bg-gray-50 border-t border-gray-200">
+            <div className="flex justify-end">
+              <button
+                onClick={closeModal}
+                className="px-6 py-3 text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 };
@@ -1456,6 +1529,103 @@ const TherapistCapacityContent = ({ therapist, onCapacityUpdate }) => {
         </button>
       </div>
     </form>
+  );
+};
+
+// Working Hours Display Component
+const WorkingHoursDisplay = ({ workingHours }) => {
+  const days = [
+    { key: 'monday', label: 'Monday' },
+    { key: 'tuesday', label: 'Tuesday' },
+    { key: 'wednesday', label: 'Wednesday' },
+    { key: 'thursday', label: 'Thursday' },
+    { key: 'friday', label: 'Friday' },
+    { key: 'saturday', label: 'Saturday' },
+    { key: 'sunday', label: 'Sunday' }
+  ];
+
+  const formatTime = (time) => {
+    if (!time) return 'N/A';
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {days.map((day) => {
+          const dayHours = workingHours[day.key];
+          return (
+            <div key={day.key} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900">{day.label}</h3>
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  dayHours?.enabled 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {dayHours?.enabled ? 'Available' : 'Unavailable'}
+                </div>
+              </div>
+              
+              {dayHours?.enabled ? (
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Clock className="h-4 w-4 mr-2" />
+                    <span className="font-medium">Start:</span>
+                    <span className="ml-2">{formatTime(dayHours.start)}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Clock className="h-4 w-4 mr-2" />
+                    <span className="font-medium">End:</span>
+                    <span className="ml-2">{formatTime(dayHours.end)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500 italic">
+                  Not available on this day
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      
+      {/* Summary */}
+      <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+        <h4 className="text-lg font-semibold text-blue-900 mb-2">Summary</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="font-medium text-blue-700">Available Days:</span>
+            <span className="ml-2 text-blue-900">
+              {Object.values(workingHours).filter(day => day.enabled).length} / 7
+            </span>
+          </div>
+          <div>
+            <span className="font-medium text-blue-700">Total Hours/Week:</span>
+            <span className="ml-2 text-blue-900">
+              {Object.values(workingHours)
+                .filter(day => day.enabled)
+                .reduce((total, day) => {
+                  const start = new Date(`2000-01-01T${day.start}`);
+                  const end = new Date(`2000-01-01T${day.end}`);
+                  const hours = (end - start) / (1000 * 60 * 60);
+                  return total + hours;
+                }, 0).toFixed(1)} hours
+            </span>
+          </div>
+          <div>
+            <span className="font-medium text-blue-700">Weekend Availability:</span>
+            <span className="ml-2 text-blue-900">
+              {workingHours.saturday?.enabled || workingHours.sunday?.enabled ? 'Yes' : 'No'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

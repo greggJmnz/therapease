@@ -580,6 +580,36 @@ const createTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // Working hours table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS working_hours (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        dayOfWeek ENUM('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday') NOT NULL,
+        startTime TIME NOT NULL,
+        endTime TIME NOT NULL,
+        isEnabled BOOLEAN DEFAULT TRUE,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_user_day (userId, dayOfWeek),
+        INDEX idx_user (userId),
+        INDEX idx_day (dayOfWeek)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Therapist settings table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS therapist_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL UNIQUE,
+        notifications JSON,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
     console.log('Database tables created successfully');
     
   } catch (error) {
@@ -630,6 +660,9 @@ const seedInitialData = async () => {
 
     // Seed default system settings
     await seedSystemSettings();
+    
+    // Seed default working hours and settings for therapists
+    await seedTherapistDefaults();
     
   } catch (error) {
     console.error('❌ Error creating admin account:', error);
@@ -693,6 +726,79 @@ const seedSystemSettings = async () => {
     
   } catch (error) {
     console.error('❌ Error seeding system settings:', error);
+    throw error;
+  }
+};
+
+// Seed default working hours and settings for therapists
+const seedTherapistDefaults = async () => {
+  try {
+    console.log('🔧 Seeding therapist defaults...');
+    
+    // Get all therapists
+    const therapists = await pool.execute(`
+      SELECT id FROM users WHERE role = 'therapist'
+    `);
+
+    if (therapists[0].length > 0) {
+      console.log(`📝 Adding default working hours and settings for ${therapists[0].length} therapists...`);
+      
+      for (const therapist of therapists[0]) {
+        // Check if working hours already exist for this therapist
+        const existingHours = await pool.execute(`
+          SELECT COUNT(*) as count FROM working_hours WHERE userId = ?
+        `, [therapist.id]);
+
+        if (existingHours[0][0].count === 0) {
+          // Add default working hours
+          const defaultWorkingHours = [
+            { day: 'monday', start: '09:00', end: '17:00', enabled: true },
+            { day: 'tuesday', start: '09:00', end: '17:00', enabled: true },
+            { day: 'wednesday', start: '09:00', end: '17:00', enabled: true },
+            { day: 'thursday', start: '09:00', end: '17:00', enabled: true },
+            { day: 'friday', start: '09:00', end: '17:00', enabled: true },
+            { day: 'saturday', start: '10:00', end: '14:00', enabled: false },
+            { day: 'sunday', start: '10:00', end: '14:00', enabled: false }
+          ];
+
+          for (const hours of defaultWorkingHours) {
+            await pool.execute(`
+              INSERT INTO working_hours (userId, dayOfWeek, startTime, endTime, isEnabled)
+              VALUES (?, ?, ?, ?, ?)
+            `, [therapist.id, hours.day, hours.start, hours.end, hours.enabled]);
+          }
+        }
+
+        // Check if therapist settings already exist
+        const existingSettings = await pool.execute(`
+          SELECT COUNT(*) as count FROM therapist_settings WHERE userId = ?
+        `, [therapist.id]);
+
+        if (existingSettings[0][0].count === 0) {
+          // Add default notification settings
+          const defaultNotifications = {
+            appointmentReminders: true,
+            patientUpdates: true,
+            systemNotifications: true,
+            emailNotifications: true,
+            smsNotifications: false,
+            pushNotifications: true
+          };
+
+          await pool.execute(`
+            INSERT INTO therapist_settings (userId, notifications)
+            VALUES (?, ?)
+          `, [therapist.id, JSON.stringify(defaultNotifications)]);
+        }
+      }
+      
+      console.log('✅ Default working hours and settings added for all therapists');
+    } else {
+      console.log('ℹ️  No therapists found, skipping default seeding');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error seeding therapist defaults:', error);
     throw error;
   }
 };

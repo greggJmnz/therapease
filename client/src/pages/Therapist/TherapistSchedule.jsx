@@ -4,6 +4,7 @@ import {
   Calendar, 
   Clock, 
   User, 
+  Users,
   Plus, 
   Search, 
   CheckCircle,
@@ -572,7 +573,6 @@ const TherapistSchedule = () => {
               >
                 <option value="all">All Status</option>
                 <option value="scheduled">Scheduled</option>
-                <option value="confirmed">Confirmed</option>
                 <option value="pending">Pending</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
@@ -585,7 +585,9 @@ const TherapistSchedule = () => {
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">All Types</option>
-                <option value="therapy-session">Therapy Session</option>
+                <option value="session">Therapy Session</option>
+                <option value="individual">Individual Therapy</option>
+                <option value="group">Group Therapy</option>
                 <option value="consultation">Consultation</option>
                 <option value="assessment">Assessment</option>
                 <option value="follow-up">Follow-up</option>
@@ -1187,8 +1189,7 @@ const TherapistSchedule = () => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">Select type</option>
-                      <option value="individual">Individual Therapy</option>
-                      <option value="group">Group Therapy</option>
+                      <option value="session">Therapy Session</option>
                       <option value="assessment">Assessment</option>
                       <option value="consultation">Consultation</option>
                       <option value="follow-up">Follow-up</option>
@@ -1206,7 +1207,6 @@ const TherapistSchedule = () => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="scheduled">Scheduled</option>
-                      <option value="confirmed">Confirmed</option>
                       <option value="completed">Completed</option>
                       <option value="cancelled">Cancelled</option>
                     </select>

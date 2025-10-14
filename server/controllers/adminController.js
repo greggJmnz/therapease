@@ -2221,6 +2221,94 @@ const updateTherapistAvailability = async (req, res) => {
   }
 };
 
+// Get therapist working hours (admin)
+const getTherapistWorkingHours = async (req, res) => {
+  try {
+    const { therapistId } = req.params;
+
+    // Get therapist basic info
+    const therapistSql = `
+      SELECT 
+        u.id,
+        u.firstName,
+        u.lastName,
+        u.email,
+        CONCAT(u.firstName, ' ', u.lastName) as therapistName
+      FROM users u
+      JOIN therapists t ON u.id = t.userId
+      WHERE u.id = ? AND u.role = 'therapist'
+    `;
+    
+    const therapist = await getRow(therapistSql, [parseInt(therapistId)]);
+    if (!therapist) {
+      return res.status(404).json({
+        success: false,
+        error: 'Therapist not found'
+      });
+    }
+
+    // Get working hours
+    const workingHoursSql = `
+      SELECT dayOfWeek, startTime, endTime, isEnabled
+      FROM working_hours
+      WHERE userId = ?
+      ORDER BY 
+        CASE dayOfWeek
+          WHEN 'monday' THEN 1
+          WHEN 'tuesday' THEN 2
+          WHEN 'wednesday' THEN 3
+          WHEN 'thursday' THEN 4
+          WHEN 'friday' THEN 5
+          WHEN 'saturday' THEN 6
+          WHEN 'sunday' THEN 7
+        END
+    `;
+    
+    const workingHoursData = await getAll(workingHoursSql, [parseInt(therapistId)]);
+    
+    // Format working hours
+    const workingHours = {};
+    workingHoursData.forEach(hour => {
+      workingHours[hour.dayOfWeek] = {
+        start: hour.startTime,
+        end: hour.endTime,
+        enabled: hour.isEnabled
+      };
+    });
+
+    // If no working hours found, return default structure
+    if (workingHoursData.length === 0) {
+      const defaultDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      defaultDays.forEach(day => {
+        workingHours[day] = {
+          start: day === 'saturday' || day === 'sunday' ? '10:00' : '09:00',
+          end: day === 'saturday' || day === 'sunday' ? '14:00' : '17:00',
+          enabled: day === 'saturday' || day === 'sunday' ? false : true
+        };
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        therapist: {
+          id: therapist.id,
+          name: therapist.therapistName,
+          email: therapist.email
+        },
+        workingHours: workingHours
+      }
+    });
+
+  } catch (error) {
+    console.error('Get therapist working hours error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch therapist working hours' 
+    });
+  }
+};
+
 // Update appointment (admin)
 const updateAppointment = async (req, res) => {
   try {
@@ -3353,6 +3441,7 @@ module.exports = {
   sendPasswordResetLink,
   updateUserStatus,
   getAvailableTherapists,
+  getTherapistWorkingHours,
   assignTherapistToPatient,
   unassignTherapistFromPatient,
   updateTherapistAvailability,

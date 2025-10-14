@@ -125,6 +125,9 @@ export const adminAPI = {
   unassignTherapistFromPatient: (patientId) => api.delete(`/admin/patients/${patientId}/unassign-therapist`),
   deleteAppointment: (id) => api.delete(`/admin/appointments/${id}`),
   
+  // Therapist working hours
+  getTherapistWorkingHours: (therapistId) => api.get(`/admin/therapists/${therapistId}/working-hours?_t=${Date.now()}`),
+  
   // Patient-specific data
   getPatientAssessments: (patientId) => api.get(`/admin/patients/${patientId}/assessments?_t=${Date.now()}`),
   getPatientSessions: (patientId) => api.get(`/admin/patients/${patientId}/sessions?_t=${Date.now()}`),

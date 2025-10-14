@@ -12,6 +12,7 @@ const {
 } = require('./middleware/encryptionMiddleware');
 const websocketService = require('./services/websocketService');
 const { checkMaintenanceMode, checkPublicMaintenanceMode } = require('./middleware/maintenanceMiddleware');
+const { validateEnvironmentSecurity, securityHeaders: customSecurityHeaders, checkEnvironmentExposure } = require('./middleware/securityMiddleware');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Import database configuration using the loader
@@ -45,7 +46,12 @@ app.use(helmet({
   }
 }));
 
+// Environment security validation (run early)
+app.use(validateEnvironmentSecurity);
+app.use(checkEnvironmentExposure);
+
 app.use(securityHeaders);
+app.use(customSecurityHeaders);
 app.use(addEncryptionHeaders);
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? ['https://yourdomain.com'] : true,
