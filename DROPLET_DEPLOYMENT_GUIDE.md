@@ -200,7 +200,7 @@ ENCRYPTION_KEY=your_encryption_key_here
 SESSION_SECRET=your_session_secret_here
 
 # CORS Configuration
-CORS_ORIGIN=http://YOUR_DROPLET_IP:3000
+CORS_ORIGIN=https://therapease.site
 
 # SSL Configuration
 SSL_ENABLED=false
@@ -309,7 +309,7 @@ sudo nano /etc/nginx/sites-available/therapease
 # API Server (Port 5000)
 server {
     listen 80;
-    server_name YOUR_DROPLET_IP api.yourdomain.com;
+    server_name api.therapease.site;
 
     location / {
         proxy_pass http://localhost:5000;
@@ -327,7 +327,7 @@ server {
 # Frontend (Static Files)
 server {
     listen 80;
-    server_name YOUR_DROPLET_IP yourdomain.com;
+    server_name therapease.site www.therapease.site;
 
     root /home/therapease/therapease/client/build;
     index index.html;
@@ -346,7 +346,7 @@ server {
 # Public Website (Port 8080)
 server {
     listen 80;
-    server_name www.yourdomain.com;
+    server_name www.therapease.site;
 
     location / {
         proxy_pass http://localhost:8080;
@@ -411,7 +411,7 @@ sudo apt install -y certbot python3-certbot-nginx
 ### 10.2 Obtain SSL Certificate
 ```bash
 # Get SSL certificate (replace with your domain)
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com -d api.yourdomain.com
+sudo certbot --nginx -d therapease.site -d www.therapease.site -d api.therapease.site
 
 # Test automatic renewal
 sudo certbot renew --dry-run
@@ -532,9 +532,9 @@ sudo dpkg-reconfigure -plow unattended-upgrades
 Your TherapEase application is now deployed on your DigitalOcean Droplet! 
 
 ### Access URLs:
-- **Frontend**: `http://YOUR_DROPLET_IP` or `https://yourdomain.com`
-- **API**: `http://YOUR_DROPLET_IP/api` or `https://api.yourdomain.com`
-- **Public Website**: `http://YOUR_DROPLET_IP:8080` or `https://www.yourdomain.com`
+- **Frontend**: `https://therapease.site`
+- **API**: `https://api.therapease.site`
+- **Public Website**: `https://www.therapease.site`
 
 ### Default Admin Credentials:
 - **Email**: admin@therapease.com

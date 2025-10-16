@@ -47,7 +47,7 @@ API_BASE_URL=http://localhost:3000
 1. **Create Vonage Account**: Sign up at [vonage.com](https://www.vonage.com)
 2. **Get API Credentials**: Generate your API key and secret from the Vonage dashboard
 3. **Configure From Number**: Set up your sender number or name (e.g., "TherapEase")
-4. **Add Webhook URL**: Configure delivery status webhook: `https://yourdomain.com/api/notifications/sms/delivery-status`
+4. **Add Webhook URL**: Configure delivery status webhook: `https://therapease.site/api/notifications/sms/delivery-status`
 
 ## 📊 Database Schema Updates
 
@@ -172,7 +172,7 @@ Vonage will send delivery status updates to your webhook URL:
 
 ### Webhook Configuration
 
-1. **URL**: `https://yourdomain.com/api/notifications/sms/delivery-status`
+1. **URL**: `https://therapease.site/api/notifications/sms/delivery-status`
 2. **Method**: POST
 3. **Content-Type**: application/json
 4. **Authentication**: None (webhook endpoint is public)

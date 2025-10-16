@@ -54,7 +54,7 @@ app.use(securityHeaders);
 app.use(customSecurityHeaders);
 app.use(addEncryptionHeaders);
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? ['https://yourdomain.com'] : true,
+  origin: process.env.NODE_ENV === 'production' ? ['https://therapease.site'] : true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
