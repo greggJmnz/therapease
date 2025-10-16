@@ -125,7 +125,7 @@ ENCRYPTION_KEY=$ENCRYPTION_KEY
 SESSION_SECRET=$SESSION_SECRET
 
 # CORS Configuration
-CORS_ORIGIN=http://$DROPLET_IP:3000
+CORS_ORIGIN=https://therapease.site
 
 # SSL Configuration
 SSL_ENABLED=false
@@ -197,7 +197,7 @@ cat > /etc/nginx/sites-available/therapease << 'EOF'
 # API Server (Port 5000)
 server {
     listen 80;
-    server_name 167.71.199.133;
+    server_name api.therapease.site;
 
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
@@ -233,7 +233,7 @@ server {
 # Frontend (Static Files)
 server {
     listen 80 default_server;
-    server_name 167.71.199.133;
+    server_name therapease.site www.therapease.site;
 
     root /home/therapease/therapease/client/build;
     index index.html;
@@ -295,7 +295,7 @@ server {
 # Public Website (Port 8080)
 server {
     listen 8080;
-    server_name 167.71.199.133;
+    server_name www.therapease.site;
 
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
@@ -366,6 +366,6 @@ print_status "Environment template saved to: /home/therapease/.env.production.te
 print_status "PM2 ecosystem config saved to: /home/therapease/ecosystem.config.js"
 echo ""
 print_status "Access URLs:"
-print_status "Frontend: http://$DROPLET_IP"
-print_status "API: http://$DROPLET_IP/api"
-print_status "Public Website: http://$DROPLET_IP:8080"
+print_status "Frontend: https://therapease.site"
+print_status "API: https://api.therapease.site"
+print_status "Public Website: https://www.therapease.site"

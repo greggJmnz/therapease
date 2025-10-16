@@ -1,192 +1,163 @@
 # 🌐 TherapEase Domain Setup Guide
 
-## 🎯 Your Custom Domain: `therapease.site`
+This guide will help you configure your domain `therapease.site` to work with your DigitalOcean droplet.
 
-This guide will help you configure your custom domain `therapease.site` with DigitalOcean App Platform.
+## 📋 **Your Domain Configuration**
 
-## 📋 Domain Configuration Overview
+- **Main Domain**: therapease.site
+- **API Subdomain**: api.therapease.site  
+- **WWW Subdomain**: www.therapease.site
+- **Droplet IP**: 167.71.199.133
 
-### **Recommended Subdomain Structure:**
-- **Main App**: `https://therapease.site` (Frontend)
-- **API**: `https://api.therapease.site` (Backend API)
-- **Public Website**: `https://www.therapease.site` (Marketing site)
-
-## 🚀 Step 1: Configure Domain in DigitalOcean App Platform
-
-### **In your DigitalOcean App Platform dashboard:**
-
-1. **Go to your TherapEase app**
-2. **Click on "Settings" tab**
-3. **Click on "Domains" section**
-4. **Add your domains:**
-
-   **Add these domains:**
-   - `therapease.site` (Main domain)
-   - `api.therapease.site` (API subdomain)
-   - `www.therapease.site` (WWW subdomain)
-
-5. **DigitalOcean will automatically provision SSL certificates** for all domains
-
-## 🔧 Step 2: DNS Configuration
+## 🔧 **Step 1: Update DNS Records**
 
 ### **In your domain registrar (where you bought therapease.site):**
 
-**Add these DNS records:**
+Add these DNS records:
 
 ```
 Type: A
 Name: @
-Value: [Your DigitalOcean App Platform IP]
-TTL: 3600
+Value: 167.71.199.133
+TTL: 300
 
-Type: CNAME
-Name: api
-Value: [Your DigitalOcean App Platform URL]
-TTL: 3600
-
-Type: CNAME
+Type: A  
 Name: www
-Value: [Your DigitalOcean App Platform URL]
-TTL: 3600
-```
+Value: 167.71.199.133
+TTL: 300
 
-### **Alternative DNS Configuration (if using DigitalOcean DNS):**
-
-1. **Go to DigitalOcean DNS**
-2. **Add domain**: `therapease.site`
-3. **Add these records:**
-
-```
 Type: A
-Name: @
-Value: [Your App Platform IP]
-
-Type: CNAME
 Name: api
-Value: [Your App Platform URL]
-
-Type: CNAME
-Name: www
-Value: [Your App Platform URL]
+Value: 167.71.199.133
+TTL: 300
 ```
 
-## 🔄 Step 3: Update App Configuration
-
-### **The app configuration has been updated with your domain:**
-
-**Updated URLs:**
-- **Frontend**: `https://therapease.site`
-- **API**: `https://api.therapease.site`
-- **Public Website**: `https://www.therapease.site`
-
-**Updated Environment Variables:**
-- `CORS_ORIGIN`: `https://therapease.site`
-- `API_BASE_URL`: `https://api.therapease.site`
-- `REACT_APP_API_URL`: `https://api.therapease.site`
-
-## 📱 Step 4: Deploy Updated Configuration
-
-### **Push the updated configuration:**
+## 🚀 **Step 2: Update Nginx Configuration on Droplet**
 
 ```bash
-git add .
-git commit -m "Update configuration for therapease.site domain"
-git push origin main
+# Edit the Nginx configuration
+sudo nano /etc/nginx/sites-available/therapease
 ```
 
-### **Redeploy your app:**
-1. **Go to DigitalOcean App Platform**
-2. **Click "Actions" → "Force Rebuild"**
-3. **Wait for deployment to complete**
+**Update the server_name directives to:**
+```nginx
+# API Server
+server_name api.therapease.site;
 
-## 🔐 Step 5: SSL Certificate Verification
+# Frontend
+server_name therapease.site www.therapease.site;
 
-### **DigitalOcean automatically provides SSL certificates, but verify:**
+# Public Website  
+server_name www.therapease.site;
+```
 
-1. **Check SSL status** in your app dashboard
-2. **Test HTTPS access** to all domains:
-   - `https://therapease.site`
-   - `https://api.therapease.site`
-   - `https://www.therapease.site`
+## 🔒 **Step 3: Set Up SSL Certificates**
 
-## 🧪 Step 6: Test Your Application
+```bash
+# Install Certbot
+sudo apt install -y certbot python3-certbot-nginx
 
-### **Test all endpoints:**
+# Get SSL certificates
+sudo certbot --nginx -d therapease.site -d www.therapease.site -d api.therapease.site
 
-1. **Main Application**: Visit `https://therapease.site`
-2. **API Health Check**: Visit `https://api.therapease.site/health`
-3. **Public Website**: Visit `https://www.therapease.site`
+# Test automatic renewal
+sudo certbot renew --dry-run
+```
 
-### **Expected Results:**
-- ✅ All domains load with HTTPS
-- ✅ SSL certificates are valid
-- ✅ API responds correctly
-- ✅ Frontend connects to API
-- ✅ No CORS errors
+## ⚙️ **Step 4: Update Environment Variables**
 
-## 🔧 Step 7: Email Configuration (Optional)
+```bash
+# Edit the environment file
+nano server/.env.production
+```
 
-### **If you want to use therapease.site for emails:**
-
-**Update email settings:**
+**Update these values:**
 ```env
-EMAIL_FROM=noreply@therapease.site
-VAPID_SUBJECT=mailto:admin@therapease.site
+CORS_ORIGIN=https://therapease.site
+API_BASE_URL=https://api.therapease.site
+REACT_APP_API_URL=https://api.therapease.site
 ```
 
-## 📊 Step 8: Monitoring and Analytics
+## 🎯 **Step 5: Restart Services**
 
-### **Set up monitoring for your custom domain:**
+```bash
+# Test Nginx configuration
+sudo nginx -t
 
-1. **Google Analytics**: Add tracking code for `therapease.site`
-2. **DigitalOcean Monitoring**: Monitor app performance
-3. **SSL Monitoring**: Set up alerts for certificate expiration
+# Restart Nginx
+sudo systemctl restart nginx
 
-## 🚨 Troubleshooting
+# Restart PM2 processes
+pm2 restart all
+```
 
-### **Common Issues:**
+## 🧪 **Step 6: Test Your Domain**
 
-1. **DNS Propagation**: Wait 24-48 hours for DNS changes
-2. **SSL Certificate**: May take 10-15 minutes to provision
-3. **CORS Errors**: Verify environment variables are updated
-4. **Domain Not Loading**: Check DNS records and app status
+### **Test DNS Resolution:**
+```bash
+# Test domain resolution
+nslookup therapease.site
+nslookup api.therapease.site
+nslookup www.therapease.site
+```
 
-### **Debug Steps:**
+### **Test Application URLs:**
+- **Frontend**: https://therapease.site
+- **API**: https://api.therapease.site
+- **Public Website**: https://www.therapease.site
 
-1. **Check DNS propagation**: Use `nslookup therapease.site`
-2. **Test SSL**: Use SSL Labs SSL Test
-3. **Check app logs**: Review DigitalOcean app logs
-4. **Verify environment variables**: Ensure all URLs are updated
+## 📱 **Step 7: Update Client Configuration**
 
-## 🎉 Success Checklist
+If you have any hardcoded URLs in your client code, update them to use the domain:
 
-- [ ] Domain added to DigitalOcean App Platform
-- [ ] DNS records configured correctly
-- [ ] SSL certificates provisioned
-- [ ] App configuration updated
-- [ ] App redeployed successfully
-- [ ] All domains accessible via HTTPS
-- [ ] API endpoints responding
-- [ ] No CORS errors
-- [ ] Email configuration updated (if needed)
+```javascript
+// Update API endpoints
+const API_URL = 'https://api.therapease.site';
 
-## 🔗 Your Final URLs
+// Update CORS settings
+const CORS_ORIGIN = 'https://therapease.site';
+```
 
-After successful configuration:
+## 🔧 **Troubleshooting**
 
-- **Main App**: `https://therapease.site`
-- **API**: `https://api.therapease.site`
-- **Public Website**: `https://www.therapease.site`
-- **Admin Login**: `https://therapease.site/admin`
+### **DNS Not Working:**
+- Wait 5-10 minutes for DNS propagation
+- Check DNS records with: `nslookup therapease.site`
+- Verify records in your domain registrar
 
-## 💡 Pro Tips
+### **SSL Certificate Issues:**
+- Check certificate status: `sudo certbot certificates`
+- Renew certificates: `sudo certbot renew`
+- Check Nginx logs: `sudo tail -f /var/log/nginx/error.log`
 
-1. **Use HTTPS everywhere**: All traffic should be encrypted
-2. **Set up redirects**: Redirect HTTP to HTTPS
-3. **Monitor performance**: Use DigitalOcean monitoring
-4. **Backup regularly**: Set up automated backups
-5. **Update DNS TTL**: Lower TTL for faster changes
+### **Application Not Loading:**
+- Check PM2 status: `pm2 status`
+- Check PM2 logs: `pm2 logs`
+- Test API directly: `curl https://api.therapease.site/health`
+
+## 🎉 **Final Configuration**
+
+After completing all steps, your TherapEase application will be available at:
+
+- **Main Application**: https://therapease.site
+- **API Endpoints**: https://api.therapease.site
+- **Public Website**: https://www.therapease.site
+
+## 🔐 **Security Features Enabled**
+
+- ✅ SSL/TLS encryption
+- ✅ Security headers
+- ✅ CORS protection
+- ✅ Rate limiting
+- ✅ Firewall configuration
+
+## 📞 **Support**
+
+If you encounter issues:
+1. Check DNS propagation: https://dnschecker.org
+2. Verify SSL certificates: https://www.ssllabs.com/ssltest/
+3. Check application logs: `pm2 logs`
 
 ---
 
-**🎉 Congratulations! Your TherapEase application is now live on therapease.site!**
+**Your TherapEase application is now ready for production with your custom domain! 🚀**
