@@ -220,6 +220,11 @@ export const therapistAPI = {
   createSpecificObjective: (mainObjectiveId, objectiveData) => api.post(`/treatment-plans/main-objectives/${mainObjectiveId}/specific-objectives`, objectiveData),
   updateSpecificObjective: (id, objectiveData) => api.put(`/treatment-plans/specific-objectives/${id}`, objectiveData),
   deleteSpecificObjective: (id) => api.delete(`/treatment-plans/specific-objectives/${id}`),
+  
+  // AI PDF Records Storage
+  savePDFRecord: (data) => api.post('/ai/pdf-records', data),
+  getPDFRecords: (patientId) => api.get(`/ai/pdf-records/${patientId}`),
+  deletePDFRecord: (recordId) => api.delete(`/ai/pdf-records/${recordId}`),
 };
 
 // Patient API endpoints
@@ -274,6 +279,14 @@ export const patientAPI = {
 // AI API endpoints
 export const aiAPI = {
   analyzeAssessment: (data) => api.post('/ai/analyze-assessment', data),
+  
+  // AI Assessment Data Storage
+  saveAssessmentData: (data) => api.post('/ai/assessment-data', data),
+  getAssessmentData: (patientId) => api.get(`/ai/assessment-data/${patientId}`),
+  
+  // AI PDF Records Storage
+  savePDFRecord: (data) => api.post('/ai/pdf-records', data),
+  getPDFRecords: (patientId) => api.get(`/ai/pdf-records/${patientId}`),
 };
 
 // Generic API methods

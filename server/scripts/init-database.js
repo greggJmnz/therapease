@@ -338,6 +338,356 @@ const createTables = async (connection) => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
+  // AI Assessments table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS ai_assessments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      patientId INT NOT NULL,
+      therapistId INT NOT NULL,
+      interviewQuestions JSON,
+      observations TEXT,
+      insights JSON,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+      FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE KEY unique_patient_therapist (patientId, therapistId),
+      INDEX idx_patient (patientId),
+      INDEX idx_therapist (therapistId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // AI PDF Records table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS ai_pdf_records (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      patientId INT NOT NULL,
+      therapistId INT NOT NULL,
+      filename VARCHAR(255) NOT NULL,
+      type VARCHAR(100) DEFAULT 'AI Insights',
+      insights JSON,
+      assessmentData JSON,
+      model VARCHAR(50) DEFAULT 'gpt-4.1',
+      score INT DEFAULT 0,
+      \`usage\` JSON,
+      generatedAt TIMESTAMP NOT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+      FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_patient (patientId),
+      INDEX idx_therapist (therapistId),
+      INDEX idx_generated (generatedAt)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Sessions table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      patientId INT NOT NULL,
+      therapistId INT NOT NULL,
+      sessionDate DATE NOT NULL,
+      startTime TIME NOT NULL,
+      endTime TIME NOT NULL,
+      duration INT NOT NULL,
+      sessionType VARCHAR(100) NOT NULL,
+      status ENUM('scheduled', 'in-progress', 'completed', 'cancelled') NOT NULL DEFAULT 'scheduled',
+      objectives TEXT,
+      activities TEXT,
+      observations TEXT,
+      progress TEXT,
+      challenges TEXT,
+      nextSteps TEXT,
+      goals TEXT,
+      mood VARCHAR(50),
+      engagement VARCHAR(50),
+      notes TEXT,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+      FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Push Subscriptions table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL,
+      endpoint TEXT NOT NULL,
+      p256dh VARCHAR(255),
+      auth VARCHAR(255),
+      userAgent TEXT,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE KEY unique_user_endpoint (userId, endpoint(255))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Two-Factor Authentication codes table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS two_factor_codes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL,
+      code VARCHAR(6) NOT NULL,
+      expiresAt TIMESTAMP NOT NULL,
+      used BOOLEAN DEFAULT FALSE,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_user_expires (userId, expiresAt),
+      INDEX idx_code_expires (code, expiresAt, used)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // System settings table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      setting_key VARCHAR(100) UNIQUE NOT NULL,
+      setting_value TEXT,
+      setting_type ENUM('string', 'number', 'boolean', 'json') DEFAULT 'string',
+      description TEXT,
+      category VARCHAR(50) DEFAULT 'general',
+      is_public BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_category (category),
+      INDEX idx_public (is_public)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Working hours table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS working_hours (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT NOT NULL,
+      dayOfWeek ENUM('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday') NOT NULL,
+      startTime TIME NOT NULL,
+      endTime TIME NOT NULL,
+      isEnabled BOOLEAN DEFAULT TRUE,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE KEY unique_user_day (userId, dayOfWeek),
+      INDEX idx_user (userId),
+      INDEX idx_day (dayOfWeek)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Add missing columns to users table
+  try {
+    await connection.execute(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS twoFactorEnabled BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS twoFactorMethod ENUM('email', 'sms', 'push') DEFAULT 'email',
+      ADD COLUMN IF NOT EXISTS twoFactorEnabledAt TIMESTAMP NULL,
+      ADD COLUMN IF NOT EXISTS emailVerified BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS emailVerifiedAt TIMESTAMP NULL,
+      ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'
+    `);
+  } catch (error) {
+    // Ignore error if columns already exist
+    if (!error.message.includes('Duplicate column name')) {
+      console.log('Note: User columns may already exist');
+    }
+  }
+
+  // Add missing columns to daily_notes table
+  try {
+    await connection.execute(`
+      ALTER TABLE daily_notes 
+      ADD COLUMN IF NOT EXISTS content TEXT,
+      ADD COLUMN IF NOT EXISTS goals TEXT,
+      ADD COLUMN IF NOT EXISTS comments TEXT
+    `);
+  } catch (error) {
+    // Ignore error if columns already exist
+    if (!error.message.includes('Duplicate column name')) {
+      console.log('Note: Daily notes columns may already exist');
+    }
+  }
+
+  // Add missing columns to appointments table
+  try {
+    await connection.execute(`
+      ALTER TABLE appointments 
+      ADD COLUMN IF NOT EXISTS approvalStatus ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+      ADD COLUMN IF NOT EXISTS approvedBy INT NULL,
+      ADD COLUMN IF NOT EXISTS approvedAt TIMESTAMP NULL,
+      ADD COLUMN IF NOT EXISTS createdBy INT NULL
+    `);
+  } catch (error) {
+    // Ignore error if columns already exist
+    if (!error.message.includes('Duplicate column name')) {
+      console.log('Note: Appointment columns may already exist');
+    }
+  }
+
+  // Add foreign key constraints for appointments table
+  try {
+    await connection.execute(`
+      ALTER TABLE appointments 
+      ADD CONSTRAINT IF NOT EXISTS fk_appointments_approved_by 
+      FOREIGN KEY (approvedBy) REFERENCES users(id) ON DELETE SET NULL
+    `);
+  } catch (error) {
+    if (error.code === 'ER_DUP_KEYNAME') {
+      console.log('Foreign key for approvedBy already exists');
+    } else {
+      console.log('Note: Foreign key for approvedBy may already exist');
+    }
+  }
+
+  try {
+    await connection.execute(`
+      ALTER TABLE appointments 
+      ADD CONSTRAINT IF NOT EXISTS fk_appointments_created_by 
+      FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+    `);
+  } catch (error) {
+    if (error.code === 'ER_DUP_KEYNAME') {
+      console.log('Foreign key for createdBy already exists');
+    } else {
+      console.log('Note: Foreign key for createdBy may already exist');
+    }
+  }
+
+  // Add missing columns to notifications table
+  try {
+    await connection.execute(`
+      ALTER TABLE notifications 
+      ADD COLUMN IF NOT EXISTS relatedId INT,
+      ADD COLUMN IF NOT EXISTS smsMessageId VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS smsStatus ENUM('pending', 'sent', 'delivered', 'failed', 'error') DEFAULT NULL,
+      ADD COLUMN IF NOT EXISTS smsSentAt TIMESTAMP NULL,
+      ADD COLUMN IF NOT EXISTS updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `);
+  } catch (error) {
+    // Ignore error if columns already exist
+    if (!error.message.includes('Duplicate column name')) {
+      console.log('Note: Notification columns may already exist');
+    }
+  }
+
+  // Add missing columns to therapists table
+  try {
+    await connection.execute(`
+      ALTER TABLE therapists 
+      ADD COLUMN IF NOT EXISTS maxPatients INT DEFAULT 20,
+      ADD COLUMN IF NOT EXISTS isAcceptingPatients BOOLEAN DEFAULT TRUE
+    `);
+  } catch (error) {
+    // Ignore error if columns already exist
+    if (!error.message.includes('Duplicate column name')) {
+      console.log('Note: Therapist columns may already exist');
+    }
+  }
+
+  // Treatment Plans table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS treatment_plans (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      patientId INT NOT NULL,
+      therapistId INT NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      description TEXT,
+      status ENUM('draft', 'active', 'completed', 'cancelled') DEFAULT 'draft',
+      startDate DATE,
+      endDate DATE,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+      FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_patient (patientId),
+      INDEX idx_therapist (therapistId),
+      INDEX idx_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Main Objectives table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS main_objectives (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      treatmentPlanId INT NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      description TEXT,
+      priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
+      status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+      targetDate DATE,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (treatmentPlanId) REFERENCES treatment_plans(id) ON DELETE CASCADE,
+      INDEX idx_treatment_plan (treatmentPlanId),
+      INDEX idx_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Specific Objectives table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS specific_objectives (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      mainObjectiveId INT NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      description TEXT,
+      status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+      targetDate DATE,
+      completedDate DATE,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (mainObjectiveId) REFERENCES main_objectives(id) ON DELETE CASCADE,
+      INDEX idx_main_objective (mainObjectiveId),
+      INDEX idx_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Progress Reports table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS progress_reports (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      patientId INT NOT NULL,
+      therapistId INT NOT NULL,
+      reportDate DATE NOT NULL,
+      reportType ENUM('weekly', 'monthly', 'quarterly', 'annual', 'custom') DEFAULT 'monthly',
+      summary TEXT,
+      achievements TEXT,
+      challenges TEXT,
+      nextSteps TEXT,
+      recommendations TEXT,
+      status ENUM('draft', 'finalized', 'archived') DEFAULT 'draft',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+      FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_patient (patientId),
+      INDEX idx_therapist (therapistId),
+      INDEX idx_report_date (reportDate),
+      INDEX idx_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  // Compliance Audit Log table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS compliance_audit_log (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT,
+      action VARCHAR(255) NOT NULL,
+      tableName VARCHAR(100),
+      recordId INT,
+      oldValues JSON,
+      newValues JSON,
+      ipAddress VARCHAR(45),
+      userAgent TEXT,
+      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL,
+      INDEX idx_user (userId),
+      INDEX idx_action (action),
+      INDEX idx_table (tableName),
+      INDEX idx_timestamp (timestamp)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
   console.log('✅ All tables created successfully');
 };
 

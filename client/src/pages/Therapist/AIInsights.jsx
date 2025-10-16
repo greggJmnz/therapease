@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { Brain, TrendingUp, Lightbulb, Target, Clock, User, FileText, Save, Plus, Trash2, Eye, Download, BookOpen, Edit3, X, Activity, Users } from 'lucide-react';
+import { Brain, TrendingUp, Lightbulb, Target, Clock, User, FileText, Save, Plus, Trash2, Eye, Download, BookOpen, Edit3, X, Activity, Users, AlertTriangle } from 'lucide-react';
 import { therapistAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -23,6 +23,10 @@ const AIInsights = () => {
   // New state for assessment history modal
   const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+
+  // New state for AI insights view modal
+  const [selectedAIInsight, setSelectedAIInsight] = useState(null);
+  const [showAIInsightModal, setShowAIInsightModal] = useState(false);
 
   // Template management state
   const [templates, setTemplates] = useState([]);
@@ -84,7 +88,9 @@ const AIInsights = () => {
   // Load generated PDFs when patient changes
   useEffect(() => {
     if (selectedPatient) {
-      loadPatientPDFs();
+      loadPatientPDFsFromDatabase();
+    } else {
+      setAssessmentHistory([]);
     }
   }, [selectedPatient]);
 
@@ -1121,7 +1127,7 @@ The therapist retains full responsibility for all clinical decisions and patient
     }
   };
 
-  const generateWellStructuredCurrentAssessmentPDF = () => {
+  const generateWellStructuredCurrentAssessmentPDF = async () => {
     if (!selectedPatient) {
       toast.error('Please select a patient first');
       return;
@@ -1251,12 +1257,6 @@ The therapist retains full responsibility for all clinical decisions and patient
       console.log('Saving PDF with filename:', filename);
       pdf.save(filename);
 
-      // Save to history
-      savePDFToHistory({
-        filename: filename,
-        type: 'AI Insights'
-      });
-
       console.log('PDF saved successfully');
       toast.success('AI Insights PDF downloaded successfully!');
 
@@ -1267,7 +1267,7 @@ The therapist retains full responsibility for all clinical decisions and patient
   };
 
 
-  const generateCurrentAssessmentPDF = () => {
+  const generateCurrentAssessmentPDF = async () => {
     if (!selectedPatient) {
       toast.error('Please select a patient first');
       return;
@@ -1851,12 +1851,6 @@ The therapist retains full responsibility for all clinical decisions and patient
       // Save the PDF
       pdf.save(filename);
       
-      // Save to history
-      savePDFToHistory({
-        filename: filename,
-        type: 'AI Insights'
-      });
-      
       console.log('PDF saved successfully');
       toast.success('AI Insights PDF downloaded successfully!');
       
@@ -2063,46 +2057,284 @@ The therapist retains full responsibility for all clinical decisions and patient
     setAssessmentHistory(patientPDFs);
   };
 
-  // Save generated PDF to history
-  const savePDFToHistory = (pdfData) => {
-    const newPDF = {
-      id: Date.now(),
-      patientId: selectedPatient,
-      patientName: patients.find(p => p.id === parseInt(selectedPatient))?.name || 'Unknown Patient',
+  // Load PDF records from database for selected patient
+  const loadPatientPDFsFromDatabase = async () => {
+    if (!selectedPatient) return;
+    
+    try {
+      const response = await therapistAPI.getPDFRecords(selectedPatient);
+      if (response.data.success) {
+        const pdfRecords = response.data.data || [];
+        setAssessmentHistory(pdfRecords);
+      } else {
+        console.error('Failed to load PDF records:', response.data.error);
+        setAssessmentHistory([]);
+      }
+    } catch (error) {
+      console.error('Error loading PDF records from database:', error);
+      setAssessmentHistory([]);
+    }
+  };
+
+  // Save generated PDF to history (database)
+  const savePDFToHistory = async (pdfData, insightsData = null) => {
+    if (!selectedPatient) {
+      console.error('No patient selected for saving PDF');
+      return;
+    }
+
+    const therapistId = getTherapistId();
+    if (!therapistId) {
+      console.error('No therapist ID found');
+      return;
+    }
+
+    // Use provided insights data or fall back to current state
+    const insightsToSave = insightsData || insights;
+
+    const pdfRecord = {
+      patientId: parseInt(selectedPatient),
+      therapistId: parseInt(therapistId),
       filename: pdfData.filename,
       type: pdfData.type || 'AI Insights',
-      generatedAt: new Date().toISOString(),
-      insights: insights.length > 0 ? insights : [],
+      insights: insightsToSave.length > 0 ? insightsToSave : [],
       assessmentData: {
         questions: interviewQuestions ? interviewQuestions.filter(q => q.question.trim() !== '') : [],
-        observations: observations ? observations.trim() : ''
+        observations: observations ? observations.trim() : '',
+        summary: pdfData.summary || ''
       },
-      // Additional metadata
       model: pdfData.model || 'gpt-4.1',
       score: pdfData.score || 0,
       usage: pdfData.usage || null
     };
 
-    const updatedPDFs = [...generatedPDFs, newPDF];
-    setGeneratedPDFs(updatedPDFs);
-    
     try {
-      localStorage.setItem('generatedPDFs', JSON.stringify(updatedPDFs));
-      loadPatientPDFs(); // Refresh patient-specific PDFs
+      const response = await therapistAPI.savePDFRecord(pdfRecord);
+      if (response.data.success) {
+        console.log('PDF record saved to database successfully');
+        // Refresh the assessment history from database
+        await loadPatientPDFsFromDatabase();
+      } else {
+        console.error('Failed to save PDF record:', response.data.error);
+        toast.error('Failed to save PDF record to database');
+      }
     } catch (error) {
-      console.error('Error saving PDF to history:', error);
+      console.error('Error saving PDF to database:', error);
+      toast.error('Failed to save PDF record to database');
     }
   };
 
   // Download PDF from history
   const downloadPDFFromHistory = (pdfRecord) => {
-    // For now, we'll regenerate the PDF since we don't store the actual file
-    // In a real implementation, you might store the PDF blob or have a server endpoint
     if (pdfRecord.type === 'AI Insights') {
-      generateWellStructuredCurrentAssessmentPDF();
+      generatePDFFromStoredData(pdfRecord);
     } else {
       // Handle other PDF types if needed
       toast.info('PDF regeneration not available for this type');
+    }
+  };
+
+  // Helper function to format date without year
+  const formatDateWithoutYear = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  // Helper function to clean model name (remove date suffix)
+  const cleanModelName = (modelName) => {
+    if (!modelName) return 'GPT-4';
+    // Remove date patterns like "-2025-04-14" from model names
+    return modelName.replace(/-\d{4}-\d{2}-\d{2}$/, '');
+  };
+
+  // Delete PDF record from history
+  const deletePDFRecord = async (pdfRecord) => {
+    if (!pdfRecord || !pdfRecord.id) {
+      toast.error('Invalid record to delete');
+      return;
+    }
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this AI assessment record?\n\n"${pdfRecord.filename}"\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      // Call API to delete the record
+      const response = await therapistAPI.deletePDFRecord(pdfRecord.id);
+      
+      if (response.data.success) {
+        toast.success('AI assessment record deleted successfully');
+        // Refresh the assessment history
+        if (selectedPatient) {
+          await loadPatientPDFsFromDatabase();
+        }
+      } else {
+        toast.error(response.data.error || 'Failed to delete record');
+      }
+    } catch (error) {
+      console.error('Error deleting PDF record:', error);
+      toast.error('Failed to delete record. Please try again.');
+    }
+  };
+
+  // Generate PDF from stored AI insights data
+  const generatePDFFromStoredData = (pdfRecord) => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPosition = 20;
+
+      // Header
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('AI Assessment Insights Report', pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 15;
+
+      // Patient Information
+      const patient = patients.find(p => p.id === parseInt(selectedPatient));
+      if (patient) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Patient Information', 20, yPosition);
+        yPosition += 10;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Name: ${patient.name}`, 20, yPosition);
+        yPosition += 6;
+        doc.text(`Age: ${patient.age}`, 20, yPosition);
+        yPosition += 6;
+        doc.text(`Diagnosis: ${patient.diagnosis}`, 20, yPosition);
+        yPosition += 6;
+        doc.text(`Assessment Date: ${formatDateWithoutYear(pdfRecord.generatedAt)}`, 20, yPosition);
+        yPosition += 6;
+        doc.text(`AI Model: ${cleanModelName(pdfRecord.model)}`, 20, yPosition);
+        yPosition += 15;
+      }
+
+      // AI-Generated Insights
+      if (pdfRecord.insights && pdfRecord.insights.length > 0) {
+        const content = pdfRecord.insights[0]?.content || '';
+        
+        // Assessment Summary
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Assessment Summary', 20, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        const summaryMatch = content.match(/ASSESSMENT SUMMARY([\s\S]*?)(?=FUNCTIONAL ANALYSIS|$)/i);
+        if (summaryMatch) {
+          const summaryText = summaryMatch[1].trim();
+          const summaryLines = doc.splitTextToSize(summaryText, pageWidth - 40);
+          doc.text(summaryLines, 20, yPosition);
+          yPosition += summaryLines.length * 4 + 10;
+        }
+
+        // Check if we need a new page
+        if (yPosition > pageHeight - 50) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        // Functional Analysis
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Functional Analysis', 20, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        const functionalMatch = content.match(/FUNCTIONAL ANALYSIS([\s\S]*?)(?=CLINICAL INSIGHTS|TREATMENT RECOMMENDATIONS|$)/i);
+        if (functionalMatch) {
+          const functionalText = functionalMatch[1].trim();
+          const functionalLines = doc.splitTextToSize(functionalText, pageWidth - 40);
+          doc.text(functionalLines, 20, yPosition);
+          yPosition += functionalLines.length * 4 + 10;
+        }
+
+        // Check if we need a new page
+        if (yPosition > pageHeight - 50) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        // Clinical Insights
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Clinical Insights', 20, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        const clinicalMatch = content.match(/CLINICAL INSIGHTS([\s\S]*?)(?=TREATMENT RECOMMENDATIONS|$)/i);
+        if (clinicalMatch) {
+          const clinicalText = clinicalMatch[1].trim();
+          const clinicalLines = doc.splitTextToSize(clinicalText, pageWidth - 40);
+          doc.text(clinicalLines, 20, yPosition);
+          yPosition += clinicalLines.length * 4 + 10;
+        }
+
+        // Check if we need a new page
+        if (yPosition > pageHeight - 50) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        // Treatment Recommendations
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Treatment Recommendations', 20, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        const treatmentMatch = content.match(/TREATMENT RECOMMENDATIONS([\s\S]*?)(?=These recommendations are intended|$)/i);
+        if (treatmentMatch) {
+          const treatmentText = treatmentMatch[1].trim();
+          const treatmentLines = doc.splitTextToSize(treatmentText, pageWidth - 40);
+          doc.text(treatmentLines, 20, yPosition);
+          yPosition += treatmentLines.length * 4 + 10;
+        }
+      }
+
+      // Disclaimer
+      if (yPosition > pageHeight - 80) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 0, 0); // Red color
+      doc.text('Important Disclaimer', 20, yPosition);
+      yPosition += 8;
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0); // Black color
+      const disclaimerText = "The AI-generated insights contained in this report are intended for informational and decision-support purposes only. These insights should NOT be used directly for patient treatment without proper clinical evaluation and professional judgment. The therapist retains full responsibility for all clinical decisions and patient care.";
+      const disclaimerLines = doc.splitTextToSize(disclaimerText, pageWidth - 40);
+      doc.text(disclaimerLines, 20, yPosition);
+
+      // Save the PDF
+      const filename = pdfRecord.filename || `AI_Insights_${patient?.name?.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(filename);
+      
+      toast.success('AI Insights PDF downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF from stored data:', error);
+      toast.error('Failed to generate PDF from stored data');
     }
   };
 
@@ -2175,7 +2407,7 @@ The therapist retains full responsibility for all clinical decisions and patient
         setInsights(newInsights);
         toast.success('AI insights generated successfully using GPT-4.1!');
         
-        // Save to PDF history (this will also update the assessment history display)
+        // Save complete record to history
         const pdfData = {
           filename: `${patient.name.replace(/\s+/g, '_')}_AI_Insights_${new Date().toISOString().split('T')[0].replace(/-/g, '_')}.pdf`,
           type: 'AI Insights',
@@ -2184,7 +2416,7 @@ The therapist retains full responsibility for all clinical decisions and patient
           usage: result.data.usage
         };
         
-        savePDFToHistory(pdfData);
+        await savePDFToHistory(pdfData, newInsights);
         
       } else {
         throw new Error(result.message || 'Failed to generate insights');
@@ -2264,51 +2496,51 @@ The therapist retains full responsibility for all clinical decisions and patient
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="space-y-8">
+      <div className="space-y-4 sm:space-y-8 p-4 sm:p-0">
         {/* Modern AI-Themed Header */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 px-8 py-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div>
-                <h1 className="text-4xl font-bold text-white flex items-center gap-4">
-                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <Brain className="h-8 w-8 text-white" />
+          <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 px-4 sm:px-8 py-4 sm:py-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl sm:text-4xl font-bold text-white flex items-center gap-2 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-white/20 rounded-xl backdrop-blur-sm flex-shrink-0">
+                    <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  AI Insights
+                  <span className="truncate">AI Insights</span>
                 </h1>
-                <p className="mt-3 text-lg text-white/90">
+                <p className="mt-2 sm:mt-3 text-sm sm:text-lg text-white/90">
                   Create assessments and get AI-powered analysis for your patients
                 </p>
-                <div className="mt-4 flex items-center gap-4">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full backdrop-blur-sm">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-white font-medium">AI Service Active</span>
+                <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-2 sm:gap-4">
+                  <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-white/20 rounded-full backdrop-blur-sm">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-xs sm:text-sm text-white font-medium">AI Service Active</span>
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full backdrop-blur-sm">
-                    <Lightbulb className="h-4 w-4 text-yellow-300" />
-                    <span className="text-sm text-white font-medium">GPT-4 Powered</span>
+                  <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-white/20 rounded-full backdrop-blur-sm">
+                    <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-300" />
+                    <span className="text-xs sm:text-sm text-white font-medium">GPT-4 Powered</span>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row items-end gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4 w-full sm:w-auto">
                 {patientsLoading ? (
-                  <div className="flex items-center space-x-3 px-4 py-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                    <span className="text-white font-medium">Loading patients...</span>
+                  <div className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent"></div>
+                    <span className="text-white font-medium text-sm sm:text-base">Loading patients...</span>
                   </div>
                 ) : patientsError ? (
-                  <div className="px-4 py-3 bg-red-500/20 rounded-xl backdrop-blur-sm">
-                    <span className="text-red-100 font-medium">Failed to load patients</span>
+                  <div className="px-3 sm:px-4 py-2 sm:py-3 bg-red-500/20 rounded-xl backdrop-blur-sm">
+                    <span className="text-red-100 font-medium text-sm sm:text-base">Failed to load patients</span>
                   </div>
                 ) : (
-                  <div className="min-w-0 flex-1">
-                    <label className="block text-sm font-medium text-white mb-2">
+                  <div className="min-w-0 flex-1 sm:min-w-[280px]">
+                    <label className="block text-xs sm:text-sm font-medium text-white mb-1 sm:mb-2">
                       Select Patient
                     </label>
                     <select
                       value={selectedPatient}
                       onChange={(e) => setSelectedPatient(e.target.value)}
-                      className="w-full px-4 py-3 border border-white/30 rounded-xl text-sm focus:ring-2 focus:ring-white/50 focus:border-white/50 bg-white/10 backdrop-blur-sm text-white placeholder-white/70"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-white/30 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-white/50 focus:border-white/50 bg-white/10 backdrop-blur-sm text-white placeholder-white/70"
                     >
                       <option value="" className="text-gray-900">Select Patient</option>
                       {patients.map((patient) => (
@@ -2699,70 +2931,96 @@ The therapist retains full responsibility for all clinical decisions and patient
         {/* Modern AI Assessment History */}
         {selectedPatient && (
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <FileText className="h-8 w-8 text-white" />
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 sm:px-8 py-4 sm:py-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-white/20 rounded-xl backdrop-blur-sm flex-shrink-0">
+                  <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white">AI Assessment History</h2>
-                  <p className="text-white/90 mt-1">Previously generated AI assessments and insights for this patient</p>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-2xl font-bold text-white truncate">AI Assessment History</h2>
+                  <p className="text-white/90 mt-1 text-sm sm:text-base hidden sm:block">Previously generated AI assessments and insights for this patient</p>
+                  <p className="text-white/90 mt-1 text-xs sm:hidden">AI assessments and insights for this patient</p>
                 </div>
               </div>
             </div>
-            <div className="p-8">
+            <div className="p-4 sm:p-8">
           
               {assessmentHistory && assessmentHistory.length > 0 ? (
                 <div className="space-y-4">
                   {assessmentHistory.map((pdfRecord) => (
                     pdfRecord && (
-                    <div key={pdfRecord.id} className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                    <div key={pdfRecord.id} className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-2xl p-4 sm:p-6 hover:shadow-lg transition-all duration-200">
+                      {/* Mobile-first responsive layout */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        {/* Content section */}
+                        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
                           <div className="flex-shrink-0">
-                            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-                              <FileText className="h-6 w-6 text-white" />
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-semibold text-gray-900 truncate">
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                               {pdfRecord.filename}
                             </h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {pdfRecord.type} • Generated {new Date(pdfRecord.generatedAt).toLocaleDateString()}
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                              {pdfRecord.type} • Generated {formatDateWithoutYear(pdfRecord.generatedAt)}
                             </p>
-                            <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                                {pdfRecord.assessmentData?.questions?.length || 0} questions
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                                {pdfRecord.assessmentData?.observations?.length || 0} chars
-                              </span>
+                            {/* Responsive metadata - stack on mobile, flex on larger screens */}
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-500">
+                              {pdfRecord.assessmentData?.questions?.length > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                  {pdfRecord.assessmentData.questions.length} questions
+                                </span>
+                              )}
+                              {pdfRecord.assessmentData?.observations?.length > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                  {pdfRecord.assessmentData.observations.length} chars
+                                </span>
+                              )}
                               {pdfRecord.model && (
                                 <span className="flex items-center gap-1">
                                   <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
-                                  {pdfRecord.model.toUpperCase()}
-                                </span>
-                              )}
-                              {pdfRecord.score && (
-                                <span className="flex items-center gap-1">
-                                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-                                  Score: {pdfRecord.score}%
+                                  {cleanModelName(pdfRecord.model).toUpperCase()}
                                 </span>
                               )}
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        
+                        {/* Buttons section - responsive layout */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 w-full sm:w-auto">
+                          <button
+                            onClick={() => {
+                              setSelectedAIInsight(pdfRecord);
+                              setShowAIInsightModal(true);
+                            }}
+                            className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 border border-blue-300 shadow-sm text-xs sm:text-sm font-semibold rounded-xl text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 flex-1 sm:flex-none"
+                            title="View AI Insights"
+                          >
+                            <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <span className="hidden xs:inline">View</span>
+                            <span className="xs:hidden">View</span>
+                          </button>
                           <button
                             onClick={() => downloadPDFFromHistory(pdfRecord)}
-                            className="inline-flex items-center px-4 py-3 border border-gray-300 shadow-sm text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+                            className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 border border-green-300 shadow-sm text-xs sm:text-sm font-semibold rounded-xl text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 flex-1 sm:flex-none"
                             title="Download PDF"
                           >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
+                            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <span className="hidden xs:inline">Download</span>
+                            <span className="xs:hidden">Download</span>
+                          </button>
+                          <button
+                            onClick={() => deletePDFRecord(pdfRecord)}
+                            className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 border border-red-300 shadow-sm text-xs sm:text-sm font-semibold rounded-xl text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 flex-1 sm:flex-none"
+                            title="Delete Record"
+                          >
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            <span className="hidden xs:inline">Delete</span>
+                            <span className="xs:hidden">Delete</span>
                           </button>
                         </div>
                       </div>
@@ -3037,7 +3295,7 @@ The therapist retains full responsibility for all clinical decisions and patient
                       <div className="flex-1">
                         <h4 className="text-sm font-medium text-gray-900">{template.name}</h4>
                         <p className="text-xs text-gray-500">
-                          {template.questions.length} questions • {new Date(template.createdAt).toLocaleDateString()}
+                          {template.questions.length} questions • {formatDateWithoutYear(template.createdAt)}
                         </p>
                       </div>
                       <div className="flex space-x-1">
@@ -3067,6 +3325,257 @@ The therapist retains full responsibility for all clinical decisions and patient
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Insights View Modal */}
+      {showAIInsightModal && selectedAIInsight && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-2 sm:top-4 mx-auto p-4 sm:p-6 border w-11/12 max-w-6xl shadow-lg rounded-lg bg-white">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">AI Assessment Insights</h3>
+                <p className="text-gray-600 mt-1 text-sm sm:text-base truncate">{selectedAIInsight.filename}</p>
+              </div>
+              <button
+                onClick={() => setShowAIInsightModal(false)}
+                className="text-gray-500 hover:text-gray-700 p-2"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4 sm:space-y-8">
+              {/* Patient Information Section */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-200">
+                <h4 className="text-lg sm:text-xl font-semibold text-blue-900 mb-3 sm:mb-4 flex items-center gap-2">
+                  <User className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Patient Information
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="bg-white rounded-lg p-3 sm:p-4 border border-blue-100">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700">Patient Name</p>
+                    <p className="text-sm sm:text-lg font-semibold text-gray-900 truncate">
+                      {patients.find(p => p.id === parseInt(selectedPatient))?.name || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 sm:p-4 border border-blue-100">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700">Age</p>
+                    <p className="text-sm sm:text-lg font-semibold text-gray-900">
+                      {patients.find(p => p.id === parseInt(selectedPatient))?.age || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 sm:p-4 border border-blue-100">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700">Diagnosis</p>
+                    <p className="text-sm sm:text-lg font-semibold text-gray-900 truncate">
+                      {patients.find(p => p.id === parseInt(selectedPatient))?.diagnosis || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 sm:p-4 border border-blue-100">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700">Assessment Date</p>
+                    <p className="text-sm sm:text-lg font-semibold text-gray-900">
+                      {formatDateWithoutYear(selectedAIInsight.generatedAt)}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 sm:p-4 border border-blue-100">
+                    <p className="text-xs sm:text-sm font-medium text-gray-700">AI Model</p>
+                    <p className="text-sm sm:text-lg font-semibold text-gray-900">
+                      {cleanModelName(selectedAIInsight.model)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI-Generated Insights Sections */}
+              <div className="space-y-6">
+                <h4 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-purple-600" />
+                  AI-Generated Insights
+                </h4>
+
+                {/* Assessment Summary */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-green-600" />
+                    Assessment Summary
+                  </h5>
+                  <div className="prose max-w-none">
+                    {selectedAIInsight.insights && selectedAIInsight.insights.length > 0 ? (
+                      <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {(() => {
+                          const content = selectedAIInsight.insights[0]?.content || '';
+                          const summaryMatch = content.match(/ASSESSMENT SUMMARY([\s\S]*?)(?=FUNCTIONAL ANALYSIS|$)/i);
+                          return summaryMatch ? summaryMatch[1].trim() : 'No assessment summary available.';
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 leading-relaxed">
+                        No AI-generated assessment summary available for this record.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Functional Analysis */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-blue-600" />
+                    Functional Analysis
+                  </h5>
+                  <div className="prose max-w-none">
+                    {selectedAIInsight.insights && selectedAIInsight.insights.length > 0 ? (
+                      <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {(() => {
+                          const content = selectedAIInsight.insights[0]?.content || '';
+                          // Extract Functional Analysis section
+                          const functionalAnalysisMatch = content.match(/FUNCTIONAL ANALYSIS([\s\S]*?)(?=CLINICAL INSIGHTS|TREATMENT RECOMMENDATIONS|$)/i);
+                          return functionalAnalysisMatch ? functionalAnalysisMatch[1].trim() : 'No functional analysis available.';
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 leading-relaxed">
+                        No AI-generated functional analysis available for this record.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Clinical Insights */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-yellow-600" />
+                    Clinical Insights
+                  </h5>
+                  <div className="prose max-w-none">
+                    {selectedAIInsight.insights && selectedAIInsight.insights.length > 0 ? (
+                      <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {(() => {
+                          const content = selectedAIInsight.insights[0]?.content || '';
+                          // Extract Clinical Insights section
+                          const clinicalInsightsMatch = content.match(/CLINICAL INSIGHTS([\s\S]*?)(?=TREATMENT RECOMMENDATIONS|$)/i);
+                          return clinicalInsightsMatch ? clinicalInsightsMatch[1].trim() : 'No clinical insights available.';
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 leading-relaxed">
+                        No AI-generated clinical insights available for this record.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Treatment Recommendations */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    Treatment Recommendations
+                  </h5>
+                  <div className="prose max-w-none">
+                    {selectedAIInsight.insights && selectedAIInsight.insights.length > 0 ? (
+                      <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {(() => {
+                          const content = selectedAIInsight.insights[0]?.content || '';
+                          // Extract Treatment Recommendations section
+                          const treatmentMatch = content.match(/TREATMENT RECOMMENDATIONS([\s\S]*?)(?=These recommendations are intended|$)/i);
+                          return treatmentMatch ? treatmentMatch[1].trim() : 'No treatment recommendations available.';
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 leading-relaxed">
+                        No AI-generated treatment recommendations available for this record.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Original Assessment Data */}
+                {selectedAIInsight.assessmentData && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-indigo-600" />
+                      Original Assessment Data
+                    </h5>
+                    <div className="space-y-6">
+                      {/* Interview Questions */}
+                      {selectedAIInsight.assessmentData.questions && selectedAIInsight.assessmentData.questions.length > 0 && (
+                        <div>
+                          <h6 className="font-medium text-gray-800 mb-3">Interview Questions & Responses:</h6>
+                          <div className="space-y-3 max-h-60 overflow-y-auto">
+                            {selectedAIInsight.assessmentData.questions.map((q, index) => (
+                              <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <p className="font-medium text-gray-800 mb-2">Q{index + 1}: {q.question}</p>
+                                <p className="text-gray-700 text-sm">{q.answer}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Clinical Observations */}
+                      {selectedAIInsight.assessmentData.observations && (
+                        <div>
+                          <h6 className="font-medium text-gray-800 mb-3">Clinical Observations:</h6>
+                          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <p className="text-gray-700 whitespace-pre-line text-sm">
+                              {selectedAIInsight.assessmentData.observations}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Important Disclaimer */}
+              <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                <h5 className="text-lg font-semibold text-red-900 mb-4 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  Important Disclaimer
+                </h5>
+                <div className="space-y-3 text-red-800">
+                  <p className="font-medium">The AI-generated insights contained in this report are intended for informational and decision-support purposes only.</p>
+                  <p>These insights should <strong>NOT</strong> be used directly for patient treatment without proper clinical evaluation and professional judgment.</p>
+                  <div className="bg-white border border-red-200 rounded-lg p-4 mt-4">
+                    <h6 className="font-semibold text-red-900 mb-2">The AI insights can be used to:</h6>
+                    <ul className="list-disc list-inside space-y-1 text-red-700">
+                      <li>Support clinical decision-making processes</li>
+                      <li>Assist in creating initial evaluation documentation</li>
+                      <li>Provide suggestions for treatment plan development</li>
+                      <li>Offer additional perspectives for consideration</li>
+                    </ul>
+                  </div>
+                  <div className="bg-red-100 border border-red-300 rounded-lg p-4 mt-4">
+                    <p className="font-semibold text-red-900">
+                      IMPORTANT: These AI-generated insights provide a basis for decision-making; however, the final assessment and treatment plan must depend on the therapist's professional judgment, clinical expertise, and comprehensive patient evaluation.
+                    </p>
+                    <p className="text-red-800 mt-2">
+                      The therapist retains full responsibility for all clinical decisions and patient care.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowAIInsightModal(false)}
+                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  downloadPDFFromHistory(selectedAIInsight);
+                  setShowAIInsightModal(false);
+                }}
+                className="px-6 py-3 border border-transparent rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download PDF
+              </button>
             </div>
           </div>
         </div>

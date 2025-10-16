@@ -503,11 +503,327 @@ const getAvailableFilters = async () => {
   }
 };
 
+// Save AI assessment data (interview questions, observations, insights)
+const saveAIAssessmentData = async (req, res) => {
+  try {
+    const { patientId, interviewQuestions, observations, insights, therapistId } = req.body;
+
+    if (!patientId || !therapistId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Patient ID and Therapist ID are required'
+      });
+    }
+
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Save assessment data
+      const assessmentData = {
+        patientId: parseInt(patientId),
+        therapistId: parseInt(therapistId),
+        interviewQuestions: JSON.stringify(interviewQuestions || []),
+        observations: observations || '',
+        insights: JSON.stringify(insights || []),
+        timestamp: new Date().toISOString()
+      };
+
+      const insertSql = `
+        INSERT INTO ai_assessments (patientId, therapistId, interviewQuestions, observations, insights, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+        interviewQuestions = VALUES(interviewQuestions),
+        observations = VALUES(observations),
+        insights = VALUES(insights),
+        updatedAt = NOW()
+      `;
+
+      await connection.execute(insertSql, [
+        assessmentData.patientId,
+        assessmentData.therapistId,
+        assessmentData.interviewQuestions,
+        assessmentData.observations,
+        assessmentData.insights
+      ]);
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'AI assessment data saved successfully',
+        data: assessmentData
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Error saving AI assessment data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save AI assessment data'
+    });
+  }
+};
+
+// Get AI assessment data for a patient
+const getAIAssessmentData = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Patient ID is required'
+      });
+    }
+
+    const sql = `
+      SELECT 
+        id,
+        patientId,
+        therapistId,
+        interviewQuestions,
+        observations,
+        insights,
+        createdAt,
+        updatedAt
+      FROM ai_assessments 
+      WHERE patientId = ?
+      ORDER BY updatedAt DESC
+    `;
+
+    const assessments = await getAll(sql, [parseInt(patientId)]);
+
+    // Parse JSON fields (handle both string and object formats)
+    const parsedAssessments = assessments.map(assessment => ({
+      ...assessment,
+      interviewQuestions: typeof assessment.interviewQuestions === 'string' ? JSON.parse(assessment.interviewQuestions || '[]') : assessment.interviewQuestions || [],
+      insights: typeof assessment.insights === 'string' ? JSON.parse(assessment.insights || '[]') : assessment.insights || []
+    }));
+
+    res.json({
+      success: true,
+      data: parsedAssessments
+    });
+
+  } catch (error) {
+    console.error('Error getting AI assessment data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get AI assessment data'
+    });
+  }
+};
+
+// Save AI generated PDF record
+const saveAIPDFRecord = async (req, res) => {
+  try {
+    const { 
+      patientId, 
+      therapistId, 
+      filename, 
+      type, 
+      insights, 
+      assessmentData, 
+      model, 
+      score, 
+      usage 
+    } = req.body;
+
+    if (!patientId || !therapistId || !filename) {
+      return res.status(400).json({
+        success: false,
+        error: 'Patient ID, Therapist ID, and filename are required'
+      });
+    }
+
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      const pdfRecord = {
+        patientId: parseInt(patientId),
+        therapistId: parseInt(therapistId),
+        filename,
+        type: type || 'AI Insights',
+        insights: JSON.stringify(insights || []),
+        assessmentData: JSON.stringify(assessmentData || {}),
+        model: model || 'gpt-4.1',
+        score: score || 0,
+        usage: JSON.stringify(usage || null),
+        generatedAt: new Date().toISOString().replace('T', ' ').replace('Z', '')
+      };
+
+      const insertSql = `
+        INSERT INTO ai_pdf_records (patientId, therapistId, filename, type, insights, assessmentData, model, score, \`usage\`, generatedAt, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      `;
+
+      const result = await connection.execute(insertSql, [
+        pdfRecord.patientId,
+        pdfRecord.therapistId,
+        pdfRecord.filename,
+        pdfRecord.type,
+        pdfRecord.insights,
+        pdfRecord.assessmentData,
+        pdfRecord.model,
+        pdfRecord.score,
+        pdfRecord.usage,
+        pdfRecord.generatedAt
+      ]);
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'AI PDF record saved successfully',
+        data: {
+          id: result[0].insertId,
+          ...pdfRecord
+        }
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Error saving AI PDF record:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save AI PDF record'
+    });
+  }
+};
+
+// Get AI PDF records for a patient
+const getAIPDFRecords = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Patient ID is required'
+      });
+    }
+
+    const sql = `
+      SELECT 
+        apr.id,
+        apr.patientId,
+        apr.therapistId,
+        apr.filename,
+        apr.type,
+        apr.insights,
+        apr.assessmentData,
+        apr.model,
+        apr.score,
+        apr.\`usage\`,
+        apr.generatedAt,
+        apr.createdAt,
+        apr.updatedAt,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM ai_pdf_records apr
+      JOIN patients p ON apr.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE apr.patientId = ?
+      ORDER BY apr.generatedAt DESC
+    `;
+
+    const records = await getAll(sql, [parseInt(patientId)]);
+
+    // Parse JSON fields (handle both string and object formats)
+    const parsedRecords = records.map(record => ({
+      ...record,
+      insights: typeof record.insights === 'string' ? JSON.parse(record.insights || '[]') : record.insights || [],
+      assessmentData: typeof record.assessmentData === 'string' ? JSON.parse(record.assessmentData || '{}') : record.assessmentData || {},
+      usage: typeof record.usage === 'string' ? JSON.parse(record.usage || 'null') : record.usage || null
+    }));
+
+    res.json({
+      success: true,
+      data: parsedRecords
+    });
+
+  } catch (error) {
+    console.error('Error getting AI PDF records:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get AI PDF records'
+    });
+  }
+};
+
+// Delete AI PDF record
+const deleteAIPDFRecord = async (req, res) => {
+  try {
+    const { recordId } = req.params;
+    const therapistId = req.user.id;
+
+    if (!recordId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Record ID is required'
+      });
+    }
+
+    // First, verify the record exists and belongs to the therapist
+    const existingRecord = await getRow(
+      'SELECT id, therapistId, filename FROM ai_pdf_records WHERE id = ?',
+      [parseInt(recordId)]
+    );
+
+    if (!existingRecord) {
+      return res.status(404).json({
+        success: false,
+        error: 'AI PDF record not found'
+      });
+    }
+
+    if (existingRecord.therapistId !== therapistId) {
+      return res.status(403).json({
+        success: false,
+        error: 'You are not authorized to delete this record'
+      });
+    }
+
+    // Delete the record
+    await runQuery('DELETE FROM ai_pdf_records WHERE id = ?', [parseInt(recordId)]);
+
+    res.json({
+      success: true,
+      message: `AI PDF record "${existingRecord.filename}" deleted successfully`
+    });
+
+  } catch (error) {
+    console.error('Error deleting AI PDF record:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete AI PDF record'
+    });
+  }
+};
+
 module.exports = {
   getAssessmentHistory,
   getPatientAssessments,
   createAssessment,
   updateAssessment,
-  deleteAssessment
+  deleteAssessment,
+  saveAIAssessmentData,
+  getAIAssessmentData,
+  saveAIPDFRecord,
+  getAIPDFRecords,
+  deleteAIPDFRecord
 };
 

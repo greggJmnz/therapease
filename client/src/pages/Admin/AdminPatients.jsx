@@ -302,8 +302,7 @@ const AdminPatients = () => {
           // Patient-specific data
           patient: {
             diagnosis: editingPatient.patient?.diagnosis || '',
-            medicalHistory: editingPatient.patient?.medicalHistory || '',
-            status: editingPatient.status || 'active'
+            medicalHistory: editingPatient.patient?.medicalHistory || ''
           }
         };
 

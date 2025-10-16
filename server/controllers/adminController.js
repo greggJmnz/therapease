@@ -480,6 +480,11 @@ const updateUser = async (req, res) => {
         userUpdateParams.push(updateData.lastName);
       }
 
+      if (updateData.email !== undefined) {
+        userUpdateFields.push('email = ?');
+        userUpdateParams.push(updateData.email);
+      }
+
       if (updateData.phone !== undefined) {
         userUpdateFields.push('phone = ?');
         userUpdateParams.push(updateData.phone);
@@ -519,9 +524,9 @@ const updateUser = async (req, res) => {
           userUpdateParams.push(updateData.zipCode);
         }
 
-        if (updateData.country !== undefined) {
-          userUpdateFields.push('country = ?');
-          userUpdateParams.push(updateData.country);
+        if (updateData.status !== undefined) {
+          userUpdateFields.push('status = ?');
+          userUpdateParams.push(updateData.status);
         }
 
       // Update user if there are user fields to update
@@ -612,6 +617,7 @@ const updateUser = async (req, res) => {
           patientUpdateParams.push(updateData.patient.insuranceInfo);
         }
 
+
         if (patientUpdateFields.length > 0) {
           const updatePatientSql = `
             UPDATE patients 
@@ -627,8 +633,8 @@ const updateUser = async (req, res) => {
       // Commit transaction
       await connection.commit();
 
-      // Get updated user
-      const updatedUser = await getUserById({ params: { id: userId } }, res);
+      // Get updated user and return response
+      return await getUserById({ params: { id: userId } }, res);
 
     } catch (error) {
       // Rollback transaction on error

@@ -100,7 +100,8 @@ const createTables = async () => {
       await pool.execute(`
         ALTER TABLE users 
         ADD COLUMN IF NOT EXISTS emailVerified BOOLEAN DEFAULT FALSE,
-        ADD COLUMN IF NOT EXISTS emailVerifiedAt TIMESTAMP NULL
+        ADD COLUMN IF NOT EXISTS emailVerifiedAt TIMESTAMP NULL,
+        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'
       `);
     } catch (error) {
       // Ignore error if columns already exist
@@ -124,6 +125,49 @@ const createTables = async () => {
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // AI Assessments table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS ai_assessments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patientId INT NOT NULL,
+        therapistId INT NOT NULL,
+        interviewQuestions JSON,
+        observations TEXT,
+        insights JSON,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_patient_therapist (patientId, therapistId),
+        INDEX idx_patient (patientId),
+        INDEX idx_therapist (therapistId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // AI PDF Records table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS ai_pdf_records (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patientId INT NOT NULL,
+        therapistId INT NOT NULL,
+        filename VARCHAR(255) NOT NULL,
+        type VARCHAR(100) DEFAULT 'AI Insights',
+        insights JSON,
+        assessmentData JSON,
+        model VARCHAR(50) DEFAULT 'gpt-4.1',
+        score INT DEFAULT 0,
+        \`usage\` JSON,
+        generatedAt TIMESTAMP NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_patient (patientId),
+        INDEX idx_therapist (therapistId),
+        INDEX idx_generated (generatedAt)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
@@ -617,6 +661,109 @@ const createTables = async () => {
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Treatment Plans table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS treatment_plans (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patientId INT NOT NULL,
+        therapistId INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        status ENUM('draft', 'active', 'completed', 'cancelled') DEFAULT 'draft',
+        startDate DATE,
+        endDate DATE,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_patient (patientId),
+        INDEX idx_therapist (therapistId),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Main Objectives table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS main_objectives (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        treatmentPlanId INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
+        status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+        targetDate DATE,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (treatmentPlanId) REFERENCES treatment_plans(id) ON DELETE CASCADE,
+        INDEX idx_treatment_plan (treatmentPlanId),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Specific Objectives table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS specific_objectives (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        mainObjectiveId INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+        targetDate DATE,
+        completedDate DATE,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (mainObjectiveId) REFERENCES main_objectives(id) ON DELETE CASCADE,
+        INDEX idx_main_objective (mainObjectiveId),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Progress Reports table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS progress_reports (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patientId INT NOT NULL,
+        therapistId INT NOT NULL,
+        reportDate DATE NOT NULL,
+        reportType ENUM('weekly', 'monthly', 'quarterly', 'annual', 'custom') DEFAULT 'monthly',
+        summary TEXT,
+        achievements TEXT,
+        challenges TEXT,
+        nextSteps TEXT,
+        recommendations TEXT,
+        status ENUM('draft', 'finalized', 'archived') DEFAULT 'draft',
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_patient (patientId),
+        INDEX idx_therapist (therapistId),
+        INDEX idx_report_date (reportDate),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Compliance Audit Log table
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS compliance_audit_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT,
+        action VARCHAR(255) NOT NULL,
+        tableName VARCHAR(100),
+        recordId INT,
+        oldValues JSON,
+        newValues JSON,
+        ipAddress VARCHAR(45),
+        userAgent TEXT,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_user (userId),
+        INDEX idx_action (action),
+        INDEX idx_table (tableName),
+        INDEX idx_timestamp (timestamp)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 

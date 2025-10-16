@@ -3,6 +3,13 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/authMiddleware');
 const { body, validationResult } = require('express-validator');
 const gptService = require('../../ai/services/gptService');
+const { 
+  saveAIAssessmentData, 
+  getAIAssessmentData, 
+  saveAIPDFRecord, 
+  getAIPDFRecords,
+  deleteAIPDFRecord
+} = require('../controllers/assessmentController');
 
 // Apply authentication to all AI routes
 router.use(authenticateToken);
@@ -120,5 +127,31 @@ router.get('/health', async (req, res) => {
     });
   }
 });
+
+// AI Assessment Data Storage Routes
+router.post('/assessment-data', [
+  body('patientId').isInt().withMessage('Patient ID is required'),
+  body('therapistId').isInt().withMessage('Therapist ID is required'),
+  body('interviewQuestions').optional().isArray().withMessage('Interview questions must be an array'),
+  body('observations').optional().isString().withMessage('Observations must be a string'),
+  body('insights').optional().isArray().withMessage('Insights must be an array'),
+], saveAIAssessmentData);
+
+router.get('/assessment-data/:patientId', getAIAssessmentData);
+
+router.post('/pdf-records', [
+  body('patientId').isInt().withMessage('Patient ID is required'),
+  body('therapistId').isInt().withMessage('Therapist ID is required'),
+  body('filename').isString().withMessage('Filename is required'),
+  body('type').optional().isString().withMessage('Type must be a string'),
+  body('insights').optional().isArray().withMessage('Insights must be an array'),
+  body('assessmentData').optional().isObject().withMessage('Assessment data must be an object'),
+  body('model').optional().isString().withMessage('Model must be a string'),
+  body('score').optional().isInt().withMessage('Score must be an integer'),
+  body('usage').optional().isObject().withMessage('Usage must be an object'),
+], saveAIPDFRecord);
+
+router.get('/pdf-records/:patientId', getAIPDFRecords);
+router.delete('/pdf-records/:recordId', deleteAIPDFRecord);
 
 module.exports = router;
