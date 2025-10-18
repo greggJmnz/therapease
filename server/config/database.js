@@ -1037,7 +1037,7 @@ const setupEnvironmentConfig = () => {
     // Create basic .env template if no example exists
     envContent = `# TherapEase Environment Configuration
 # Database Configuration
-DB_HOST=localhost
+DB_HOST=127.0.0.1
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=therapease
@@ -1063,7 +1063,7 @@ SSL_KEY_PATH=./server/certs/server.key
 SSL_CERT_PATH=./server/certs/server.crt
 
 # CORS Configuration
-CORS_ORIGIN=http://localhost:3000
+CORS_ORIGIN=https://therapease.site
 
 # Email Configuration
 EMAIL_ENABLED=false
@@ -1089,7 +1089,7 @@ VAPID_SUBJECT=mailto:admin@therapease.com
 OPENAI_API_KEY=
 
 # API Base URL
-API_BASE_URL=http://localhost:5000
+API_BASE_URL=https://api.therapease.site
 `;
   }
   
@@ -1125,7 +1125,7 @@ const setupSSLCertificates = () => {
   const success = generateSSLCertificates(keyPath, certPath, {
     keySize: 4096,
     days: 365,
-    subject: '/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=localhost'
+    subject: '/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=therapease.site'
   });
   
   if (!success) {

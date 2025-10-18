@@ -74,7 +74,7 @@ const generateSelfSignedCert = () => {
   const success = generateSSLCertificates(keyPath, certPath, {
     keySize: 4096,
     days: 365,
-    subject: '/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=localhost'
+    subject: '/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=therapease.site'
   });
   
   if (success) {
@@ -158,7 +158,7 @@ const securityHeaders = (req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https: http://localhost:*; connect-src 'self'; font-src 'self' https://cdnjs.cloudflare.com");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https: http://therapease.site:* https://api.therapease.site:* https://www.therapease.site:*; connect-src 'self'; font-src 'self' https://cdnjs.cloudflare.com");
   
   next();
 };
