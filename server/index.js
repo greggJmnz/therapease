@@ -91,6 +91,25 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Test database connection
+app.get('/test-db', async (req, res) => {
+  try {
+    const { getRow } = require('./config/database');
+    const result = await getRow('SELECT 1 as test');
+    res.json({ 
+      success: true, 
+      message: 'Database connection working',
+      result: result
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Database connection failed',
+      message: error.message
+    });
+  }
+});
+
 // SSL Health check endpoint
 app.get('/health/ssl', sslHealthCheck);
 
@@ -130,6 +149,15 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve root-level assets
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Test auth route
+app.get('/api/auth/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Auth route is working',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // API routes
 app.use('/api/auth', authRoutes);
