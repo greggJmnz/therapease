@@ -147,8 +147,8 @@ const createHTTPSServer = (app) => {
 
 // Security headers middleware
 const securityHeaders = (req, res, next) => {
-  // HTTPS enforcement
-  if (req.header('x-forwarded-proto') !== 'https' && process.env.NODE_ENV === 'production') {
+  // HTTPS enforcement - only redirect if SSL is explicitly enabled
+  if (req.header('x-forwarded-proto') !== 'https' && process.env.NODE_ENV === 'production' && process.env.SSL_ENABLED === 'true') {
     return res.redirect(301, `https://${req.header('host')}${req.url}`);
   }
   
