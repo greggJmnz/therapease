@@ -703,7 +703,7 @@ const Login = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="text-xs text-gray-600 font-mono whitespace-nowrap">
-                  admin@therapease.com / Admin123!@#
+                  admin@therapease.com / SecureAdmin2024!@#$
                 </div>
                 <div className="p-1 rounded-md bg-blue-100 group-hover:bg-blue-200 transition-colors">
                   {copiedAccount === 'Admin' ? (

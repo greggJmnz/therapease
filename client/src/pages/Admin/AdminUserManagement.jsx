@@ -367,7 +367,7 @@ const AdminUserManagement = () => {
                 // Auto-login as admin for testing
                 const loginData = {
                   email: 'admin@therapease.com',
-                  password: 'Admin123!@#'
+                  password: 'SecureAdmin2024!@#$'
                 };
                 
                 fetch('/api/auth/login', {
