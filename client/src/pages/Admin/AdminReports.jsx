@@ -108,9 +108,7 @@ const AdminReports = () => {
   
   // Try multiple data extraction paths
   let extractedStats = null;
-  if (dashboardData?.data?.data?.stats) {
-    extractedStats = dashboardData.data.data.stats;
-  } else if (dashboardData?.data?.stats) {
+  if (dashboardData?.data?.stats) {
     extractedStats = dashboardData.data.stats;
   } else if (dashboardData?.stats) {
     extractedStats = dashboardData.stats;
@@ -119,21 +117,21 @@ const AdminReports = () => {
   const stats = extractedStats || fallbackStats;
   
 
-  // Extract real data from APIs (data is nested one level deeper)
-  const userGrowth = dashboardData?.data?.data?.userGrowth || [];
-  const appointmentTrends = dashboardData?.data?.data?.appointmentTrends || [];
-  const assessmentTrends = dashboardData?.data?.data?.assessmentTrends || [];
-  let appointmentStats = dashboardData?.data?.data?.appointmentStats || [];
-  const assessmentStats = dashboardData?.data?.data?.assessmentStats || [];
-  const systemHealth = dashboardData?.data?.data?.systemHealth || {};
-  const recentUsers = dashboardData?.data?.data?.recentUsers || [];
-  const analytics = dashboardData?.data?.data?.analytics || {};
+  // Extract real data from APIs
+  const userGrowth = dashboardData?.data?.userGrowth || [];
+  const appointmentTrends = dashboardData?.data?.appointmentTrends || [];
+  const assessmentTrends = dashboardData?.data?.assessmentTrends || [];
+  let appointmentStats = dashboardData?.data?.appointmentStats || [];
+  const assessmentStats = dashboardData?.data?.assessmentStats || [];
+  const systemHealth = dashboardData?.data?.systemHealth || {};
+  const recentUsers = dashboardData?.data?.recentUsers || [];
+  const analytics = dashboardData?.data?.analytics || {};
   
   
-  // Extract growth trends data from reports API (data is nested one level deeper)
-  const reportsUserTrends = reportsData?.data?.data?.userTrends || [];
-  const reportsMonthlyTrends = reportsData?.data?.data?.monthlyTrends || [];
-  const reportsAssessmentTrends = reportsData?.data?.data?.assessmentTrends || [];
+  // Extract growth trends data from reports API
+  const reportsUserTrends = reportsData?.data?.userTrends || [];
+  const reportsMonthlyTrends = reportsData?.data?.monthlyTrends || [];
+  const reportsAssessmentTrends = reportsData?.data?.assessmentTrends || [];
   const reportsDailyTrends = reportsData?.data?.dailyTrends || [];
   
   

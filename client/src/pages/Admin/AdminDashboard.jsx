@@ -134,7 +134,7 @@ const AdminDashboard = () => {
   );
 
   // Extract data from API responses
-  const correctStats = dashboardData?.data?.data?.stats || dashboardData?.data?.stats || {};
+  const correctStats = dashboardData?.data?.stats || {};
   
   const dashboardStats = {
     totalPatients: correctStats.totalPatients || 0,
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
   };
 
 
-  const patients = (patientsData?.data?.data?.users || [])
+  const patients = (patientsData?.data?.users || [])
     .filter(user => user.role === 'patient')
     .map(patient => ({
       id: patient.id,
@@ -162,7 +162,7 @@ const AdminDashboard = () => {
       progress: patient.patient?.progress || 0,
     }));
 
-  const therapists = (therapistsData?.data?.data?.users || [])
+  const therapists = (therapistsData?.data?.users || [])
     .filter(user => user.role === 'therapist')
     .map(therapist => ({
       id: therapist.id,

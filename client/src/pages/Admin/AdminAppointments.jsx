@@ -112,7 +112,7 @@ const AdminAppointments = () => {
 
   // Extract and enhance appointments from API response
   const allAppointments = useMemo(() => {
-    const rawAppointments = appointmentsData?.data?.data?.appointments || [];
+    const rawAppointments = appointmentsData?.data?.appointments || [];
     
     return rawAppointments
       .filter(appointment => {
