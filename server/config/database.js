@@ -23,7 +23,7 @@ require('dotenv').config({ path: joinPaths(__dirname, '../../.env') });
 
 // Database configuration with Windows compatibility
 const dbConfig = {
-  host: getEnvVar('DB_HOST', 'localhost'),
+  host: getEnvVar('DB_HOST', '127.0.0.1'),
   user: getEnvVar('DB_USER', 'root'),
   password: getEnvVar('DB_PASSWORD', ''),
   database: getEnvVar('DB_NAME', 'therapease'),
@@ -1209,7 +1209,7 @@ const createDatabase = async () => {
   try {
     // Connect to MySQL server (without specifying database)
     connection = await mysql.createConnection({
-      host: getEnvVar('DB_HOST', 'localhost'),
+      host: getEnvVar('DB_HOST', '127.0.0.1'),
       user: getEnvVar('DB_USER', 'root'),
       password: getEnvVar('DB_PASSWORD', ''),
       port: parseInt(getEnvVar('DB_PORT', '3306'))
