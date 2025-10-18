@@ -6,9 +6,14 @@ module.exports = {
       cwd: '/home/therapease/therapease',
       env: {
         NODE_ENV: 'production',
-        PORT: 5000
+        PORT: 5000,
+        DB_HOST: '127.0.0.1',
+        DB_USER: 'therapease_user',
+        DB_PASSWORD: 'TherapEase2025!@#',
+        DB_NAME: 'therapease_db',
+        DB_TYPE: 'mysql',
+        DB_PORT: 3306
       },
-      env_file: '/home/therapease/.env',
       instances: 1,
       exec_mode: 'fork',
       watch: false,
