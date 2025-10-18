@@ -3,7 +3,7 @@
 
 class NotificationService {
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || '/api';
+    this.baseURL = '/api';
   }
 
   // Get auth token from localStorage
