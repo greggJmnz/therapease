@@ -8,7 +8,7 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 5000
       },
-      env_file: './server/.env.production',
+      env_file: '/home/therapease/.env',
       instances: 1,
       exec_mode: 'fork',
       watch: false,
