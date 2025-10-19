@@ -34,6 +34,8 @@ class WebSocketService {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       wsUrl = `${protocol}//${window.location.host}/ws?token=${token}`;
     }
+    
+    console.log('🔌 WebSocket connecting to:', wsUrl);
 
     try {
       this.ws = new WebSocket(wsUrl);

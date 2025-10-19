@@ -20,19 +20,29 @@ class WebSocketService {
   }
 
   verifyClient(info) {
+    console.log('🔍 WebSocket verifyClient called:', {
+      url: info.req.url,
+      headers: info.req.headers,
+      host: info.req.headers.host
+    });
+    
     const url = new URL(info.req.url, `http://${info.req.headers.host}`);
     const token = url.searchParams.get('token');
     
+    console.log('🔍 WebSocket token:', token ? 'present' : 'missing');
+    
     if (!token) {
+      console.log('❌ WebSocket connection rejected: No token');
       return false;
     }
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       info.req.user = decoded;
+      console.log('✅ WebSocket token verified for user:', decoded.userId);
       return true;
     } catch (error) {
-      console.error('WebSocket token verification failed:', error.message);
+      console.error('❌ WebSocket token verification failed:', error.message);
       return false;
     }
   }
