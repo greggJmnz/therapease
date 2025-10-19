@@ -1,17 +1,10 @@
 import axios from 'axios';
 
 // Create axios instance with base configuration
-// In production, use the API subdomain; in development, use relative URL
+// In production, use relative URL with Nginx proxy; in development, use relative URL
 const getApiBaseUrl = () => {
-  // Force production API subdomain if we're on therapease.site domain
-  if (window.location.hostname === 'therapease.site' || 
-      window.location.hostname === 'www.therapease.site' || 
-      process.env.NODE_ENV === 'production') {
-    // In production, use the API subdomain
-    return 'https://api.therapease.site';
-  }
-  // Use environment variable if available, otherwise fallback to relative URL
-  return process.env.REACT_APP_API_URL || '/api';
+  // Always use relative URL to work with Nginx proxy
+  return '/api';
 };
 
 const api = axios.create({
