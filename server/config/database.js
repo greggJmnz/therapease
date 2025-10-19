@@ -146,6 +146,20 @@ const createTables = async () => {
       }
     }
 
+    // Add missing columns to notifications table if they don't exist
+    try {
+      await pool.execute(`
+        ALTER TABLE notifications 
+        ADD COLUMN IF NOT EXISTS priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium'
+      `);
+      console.log('✅ Notifications table columns updated successfully');
+    } catch (error) {
+      // Ignore error if columns already exist
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Notifications priority column may already exist');
+      }
+    }
+
     // AI Assessments table
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS ai_assessments (
