@@ -115,7 +115,7 @@ export const adminAPI = {
   updateSystemSettings: (settingsData) => api.put('/admin/system-settings', settingsData),
   
   // Public maintenance status check
-  getMaintenanceStatus: () => api.get(`/maintenance-status?_t=${Date.now()}`),
+  getMaintenanceStatus: () => api.get(`/api/maintenance-status?_t=${Date.now()}`),
   
   // Profile management
   getProfile: () => api.get(`/admin/profile?_t=${Date.now()}`),
