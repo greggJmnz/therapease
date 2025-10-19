@@ -371,7 +371,10 @@ const getUserById = async (req, res) => {
         t.availability,
         p.diagnosis,
         p.medicalHistory,
-        p.goals
+        p.goals,
+        p.emergencyContact,
+        p.insuranceInfo,
+        p.status as patientStatus
       FROM users u
       LEFT JOIN therapists t ON u.id = t.userId
       LEFT JOIN patients p ON u.id = p.userId

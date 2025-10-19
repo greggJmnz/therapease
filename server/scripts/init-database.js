@@ -485,7 +485,9 @@ const createTables = async (connection) => {
       ADD COLUMN IF NOT EXISTS twoFactorEnabledAt TIMESTAMP NULL,
       ADD COLUMN IF NOT EXISTS emailVerified BOOLEAN DEFAULT FALSE,
       ADD COLUMN IF NOT EXISTS emailVerifiedAt TIMESTAMP NULL,
-      ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'
+      ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
+      ADD COLUMN IF NOT EXISTS country VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS profileImage VARCHAR(500)
     `);
   } catch (error) {
     // Ignore error if columns already exist
@@ -506,6 +508,21 @@ const createTables = async (connection) => {
     // Ignore error if columns already exist
     if (!error.message.includes('Duplicate column name')) {
       console.log('Note: Daily notes columns may already exist');
+    }
+  }
+
+  // Add missing columns to patients table
+  try {
+    await connection.execute(`
+      ALTER TABLE patients 
+      ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'discharged') DEFAULT 'active',
+      ADD COLUMN IF NOT EXISTS emergencyContact TEXT,
+      ADD COLUMN IF NOT EXISTS insuranceInfo TEXT
+    `);
+  } catch (error) {
+    // Ignore error if columns already exist
+    if (!error.message.includes('Duplicate column name')) {
+      console.log('Note: Patient columns may already exist');
     }
   }
 
@@ -576,7 +593,8 @@ const createTables = async (connection) => {
     await connection.execute(`
       ALTER TABLE therapists 
       ADD COLUMN IF NOT EXISTS maxPatients INT DEFAULT 20,
-      ADD COLUMN IF NOT EXISTS isAcceptingPatients BOOLEAN DEFAULT TRUE
+      ADD COLUMN IF NOT EXISTS isAcceptingPatients BOOLEAN DEFAULT TRUE,
+      ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'
     `);
   } catch (error) {
     // Ignore error if columns already exist

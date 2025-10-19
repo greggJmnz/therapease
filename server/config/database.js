@@ -99,6 +99,9 @@ const createTables = async () => {
     try {
       await pool.execute(`
         ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS twoFactorEnabled BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS twoFactorMethod ENUM('email', 'sms', 'push') DEFAULT 'email',
+        ADD COLUMN IF NOT EXISTS twoFactorEnabledAt TIMESTAMP NULL,
         ADD COLUMN IF NOT EXISTS emailVerified BOOLEAN DEFAULT FALSE,
         ADD COLUMN IF NOT EXISTS emailVerifiedAt TIMESTAMP NULL,
         ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
@@ -143,6 +146,38 @@ const createTables = async () => {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
         console.log('Note: Patient status column may already exist');
+      }
+    }
+
+    // Add missing columns to patients table if they don't exist
+    try {
+      await pool.execute(`
+        ALTER TABLE patients 
+        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'discharged') DEFAULT 'active',
+        ADD COLUMN IF NOT EXISTS emergencyContact TEXT,
+        ADD COLUMN IF NOT EXISTS insuranceInfo TEXT
+      `);
+      console.log('✅ Patients table columns updated successfully');
+    } catch (error) {
+      // Ignore error if columns already exist
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Patient columns may already exist');
+      }
+    }
+
+    // Add missing columns to therapists table if they don't exist
+    try {
+      await pool.execute(`
+        ALTER TABLE therapists 
+        ADD COLUMN IF NOT EXISTS maxPatients INT DEFAULT 20,
+        ADD COLUMN IF NOT EXISTS isAcceptingPatients BOOLEAN DEFAULT TRUE,
+        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'
+      `);
+      console.log('✅ Therapists table columns updated successfully');
+    } catch (error) {
+      // Ignore error if columns already exist
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Therapist columns may already exist');
       }
     }
 

@@ -20,6 +20,8 @@ const getProfile = async (req, res) => {
         u.city,
         u.state,
         u.zipCode,
+        u.country,
+        u.profileImage,
         u.createdAt,
         u.updatedAt,
         t.id as therapistId,
@@ -30,7 +32,8 @@ const getProfile = async (req, res) => {
         t.certifications,
         t.availability,
         t.maxPatients,
-        t.isAcceptingPatients
+        t.isAcceptingPatients,
+        t.status as therapistStatus
       FROM users u
       LEFT JOIN therapists t ON u.id = t.userId
       WHERE u.id = ?
