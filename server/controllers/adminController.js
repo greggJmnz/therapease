@@ -1146,7 +1146,6 @@ const getNotifications = async (req, res) => {
         n.title,
         n.message,
         n.isRead,
-        n.priority,
         n.createdAt,
         u.firstName,
         u.lastName
@@ -1182,7 +1181,7 @@ const getNotifications = async (req, res) => {
         type: notification.type,
         title: notification.title,
         message: notification.message,
-        priority: notification.priority || 'medium', // Use actual priority from database
+        priority: 'medium', // Default priority since column doesn't exist
         read: notification.isRead === 1,
         user: notification.firstName ? `${notification.firstName} ${notification.lastName}` : null,
         createdAt: notification.createdAt,
