@@ -18,8 +18,18 @@ class WebSocketService {
     }
 
     this.isConnecting = true;
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws?token=${token}`;
+    
+    // Determine WebSocket URL based on environment
+    let wsUrl;
+    if (process.env.NODE_ENV === 'production') {
+      // In production, use the API subdomain
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${protocol}//api.therapease.site/ws?token=${token}`;
+    } else {
+      // In development, use the current host
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${protocol}//${window.location.host}/ws?token=${token}`;
+    }
 
     try {
       this.ws = new WebSocket(wsUrl);
