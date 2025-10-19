@@ -282,6 +282,31 @@ app.get('/api/test-admin-users', async (req, res) => {
   }
 });
 
+// Test database columns
+app.get('/api/test-columns', async (req, res) => {
+  try {
+    const { getAll } = require('./config/database');
+    
+    // Check users table columns
+    const usersColumns = await getAll('DESCRIBE users');
+    const therapistsColumns = await getAll('DESCRIBE therapists');
+    const patientsColumns = await getAll('DESCRIBE patients');
+    
+    res.json({
+      success: true,
+      users: usersColumns.map(col => col.Field),
+      therapists: therapistsColumns.map(col => col.Field),
+      patients: patientsColumns.map(col => col.Field)
+    });
+  } catch (error) {
+    console.error('Test columns error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 
