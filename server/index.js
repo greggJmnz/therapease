@@ -184,6 +184,37 @@ app.post('/api/test-notification', async (req, res) => {
   }
 });
 
+// Test database tables
+app.get('/api/test-tables', async (req, res) => {
+  try {
+    const { getAll } = require('./config/database');
+    
+    // Check if tables exist
+    const tables = await getAll('SHOW TABLES');
+    const tableNames = tables.map(t => Object.values(t)[0]);
+    
+    // Check specific tables
+    const checks = {
+      users: tableNames.includes('users'),
+      therapists: tableNames.includes('therapists'),
+      patients: tableNames.includes('patients'),
+      notifications: tableNames.includes('notifications')
+    };
+    
+    res.json({
+      success: true,
+      tables: tableNames,
+      checks
+    });
+  } catch (error) {
+    console.error('Test tables error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 
