@@ -248,7 +248,6 @@ app.get('/api/test-admin-users', async (req, res) => {
         p.diagnosis,
         p.medicalHistory,
         p.goals,
-        p.status as patientStatus,
         p.therapistId,
         (SELECT CONCAT(u2.firstName, ' ', u2.lastName) FROM users u2 WHERE u2.id = p.therapistId) as therapistName,
         (SELECT COUNT(*) FROM patients pt WHERE pt.therapistId = t.userId) as patientCount
