@@ -215,6 +215,74 @@ app.get('/api/test-tables', async (req, res) => {
   }
 });
 
+// Test admin users query
+app.get('/api/test-admin-users', async (req, res) => {
+  try {
+    const { getAll } = require('./config/database');
+    
+    // Test the exact query from getUsers function
+    const sql = `
+      SELECT 
+        u.id,
+        u.email,
+        u.role,
+        u.firstName,
+        u.lastName,
+        u.phone,
+        u.dateOfBirth,
+        u.gender,
+        u.address,
+        u.city,
+        u.state,
+        u.zipCode,
+        u.status,
+        u.createdAt,
+        u.updatedAt,
+        t.licenseNumber,
+        t.specialization,
+        t.yearsOfExperience,
+        t.education,
+        t.certifications,
+        t.availability,
+        p.id as patientId,
+        p.diagnosis,
+        p.medicalHistory,
+        p.goals,
+        p.status as patientStatus,
+        p.therapistId,
+        (SELECT CONCAT(u2.firstName, ' ', u2.lastName) FROM users u2 WHERE u2.id = p.therapistId) as therapistName,
+        (SELECT COUNT(*) FROM patients pt WHERE pt.therapistId = t.userId) as patientCount
+      FROM users u
+      LEFT JOIN therapists t ON u.id = t.userId
+      LEFT JOIN patients p ON u.id = p.userId
+      ORDER BY u.createdAt DESC
+      LIMIT 5 OFFSET 0
+    `;
+    
+    const users = await getAll(sql);
+    
+    res.json({
+      success: true,
+      count: users.length,
+      users: users.map(user => ({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName
+      }))
+    });
+  } catch (error) {
+    console.error('Test admin users error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
+  }
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 
