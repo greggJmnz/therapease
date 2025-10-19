@@ -276,7 +276,7 @@ const getUsers = async (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    const queryParams = [...params, parseInt(limit), offset];
+    const queryParams = [...params, parseInt(limit), parseInt(offset)];
     const users = await getAll(sql, queryParams);
 
     // Format user data
@@ -1592,7 +1592,7 @@ const getAllUsers = async (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    const queryParams = [...params, parseInt(limit), offset];
+    const queryParams = [...params, parseInt(limit), parseInt(offset)];
     const users = await getAll(sql, queryParams);
 
     // Format user data
