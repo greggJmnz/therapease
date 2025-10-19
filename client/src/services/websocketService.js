@@ -21,7 +21,11 @@ class WebSocketService {
     
     // Determine WebSocket URL based on environment
     let wsUrl;
-    if (process.env.NODE_ENV === 'production') {
+    
+    // Force production API subdomain if we're on therapease.site domain
+    if (window.location.hostname === 'therapease.site' || 
+        window.location.hostname === 'www.therapease.site' || 
+        process.env.NODE_ENV === 'production') {
       // In production, use the API subdomain
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       wsUrl = `${protocol}//api.therapease.site/ws?token=${token}`;

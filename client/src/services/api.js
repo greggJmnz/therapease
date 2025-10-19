@@ -3,8 +3,10 @@ import axios from 'axios';
 // Create axios instance with base configuration
 // In production, use the API subdomain; in development, use relative URL
 const getApiBaseUrl = () => {
-  // Check if we're in production
-  if (process.env.NODE_ENV === 'production') {
+  // Force production API subdomain if we're on therapease.site domain
+  if (window.location.hostname === 'therapease.site' || 
+      window.location.hostname === 'www.therapease.site' || 
+      process.env.NODE_ENV === 'production') {
     // In production, use the API subdomain
     return 'https://api.therapease.site';
   }
