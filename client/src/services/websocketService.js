@@ -23,16 +23,24 @@ class WebSocketService {
     let wsUrl;
     
     // Force production API subdomain if we're on therapease.site domain
+    console.log('🔍 WebSocket debug info:', {
+      hostname: window.location.hostname,
+      protocol: window.location.protocol,
+      nodeEnv: process.env.NODE_ENV
+    });
+    
     if (window.location.hostname === 'therapease.site' || 
         window.location.hostname === 'www.therapease.site' || 
         process.env.NODE_ENV === 'production') {
       // In production, use the API subdomain
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       wsUrl = `${protocol}//api.therapease.site/ws?token=${token}`;
+      console.log('🔌 Using API subdomain for WebSocket');
     } else {
       // In development, use the current host
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       wsUrl = `${protocol}//${window.location.host}/ws?token=${token}`;
+      console.log('🔌 Using current host for WebSocket');
     }
     
     console.log('🔌 WebSocket connecting to:', wsUrl);
