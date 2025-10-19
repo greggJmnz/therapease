@@ -95,18 +95,20 @@ const createTables = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
-    // Add email verification fields to users table if they don't exist
+    // Add missing columns to users table if they don't exist
     try {
       await pool.execute(`
         ALTER TABLE users 
         ADD COLUMN IF NOT EXISTS emailVerified BOOLEAN DEFAULT FALSE,
         ADD COLUMN IF NOT EXISTS emailVerifiedAt TIMESTAMP NULL,
-        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'
+        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
+        ADD COLUMN IF NOT EXISTS country VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS profileImage VARCHAR(500)
       `);
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
-        console.log('Note: Email verification columns may already exist');
+        console.log('Note: Additional columns may already exist');
       }
     }
 
@@ -121,12 +123,26 @@ const createTables = async () => {
         therapistId INT,
         emergencyContact TEXT,
         insuranceInfo TEXT,
+        status ENUM('active', 'inactive', 'discharged') DEFAULT 'active',
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Add missing columns to patients table if they don't exist
+    try {
+      await pool.execute(`
+        ALTER TABLE patients 
+        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'discharged') DEFAULT 'active'
+      `);
+    } catch (error) {
+      // Ignore error if columns already exist
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Patient status column may already exist');
+      }
+    }
 
     // AI Assessments table
     await pool.execute(`
@@ -184,11 +200,25 @@ const createTables = async () => {
         availability TEXT,
         maxPatients INT DEFAULT 20,
         isAcceptingPatients BOOLEAN DEFAULT TRUE,
+        status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Add missing columns to therapists table if they don't exist
+    try {
+      await pool.execute(`
+        ALTER TABLE therapists 
+        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'
+      `);
+    } catch (error) {
+      // Ignore error if columns already exist
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Therapist status column may already exist');
+      }
+    }
 
     // Assessments table
     await pool.execute(`

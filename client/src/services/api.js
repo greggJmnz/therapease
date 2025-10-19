@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: '/api', // Use relative URL with proxy
+  baseURL: process.env.REACT_APP_API_URL || '/api', // Use environment variable or fallback to relative URL
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
