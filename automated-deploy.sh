@@ -154,7 +154,7 @@ ADMIN_PASSWORD=$ADMIN_PASSWORD
 API_BASE_URL=https://api.$DOMAIN
 
 # Client Configuration
-REACT_APP_API_URL=https://api.$DOMAIN
+REACT_APP_API_URL=https://api.$DOMAIN/api
 REACT_APP_VAPID_PUBLIC_KEY=your_vapid_public_key
 EOF
 

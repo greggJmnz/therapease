@@ -151,7 +151,7 @@ echo ""
 echo "Update these variables:"
 echo "CORS_ORIGIN=https://$DOMAIN"
 echo "API_BASE_URL=https://$API_DOMAIN"
-echo "REACT_APP_API_URL=https://$API_DOMAIN"
+echo "REACT_APP_API_URL=https://$API_DOMAIN/api"
 echo ""
 
 print_header "Restart Services"

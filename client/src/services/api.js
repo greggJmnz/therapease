@@ -1,9 +1,13 @@
 import axios from 'axios';
 
 // Create axios instance with base configuration
-// In production, use relative URL with Nginx proxy; in development, use relative URL
+// Use environment variable if available, otherwise fallback to relative URL
 const getApiBaseUrl = () => {
-  // Always use relative URL to work with Nginx proxy
+  // Check if REACT_APP_API_URL is set (production)
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  // Fallback to relative URL for development
   return '/api';
 };
 
