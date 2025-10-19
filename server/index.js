@@ -13,7 +13,11 @@ const {
 const websocketService = require('./services/websocketService');
 const { checkMaintenanceMode, checkPublicMaintenanceMode } = require('./middleware/maintenanceMiddleware');
 const { validateEnvironmentSecurity, securityHeaders: customSecurityHeaders, checkEnvironmentExposure } = require('./middleware/securityMiddleware');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+// Load environment variables - use .env.production in production, .env in development
+const envFile = process.env.NODE_ENV === 'production' 
+  ? path.join(__dirname, '.env.production')
+  : path.join(__dirname, '../.env');
+require('dotenv').config({ path: envFile });
 
 // Import database configuration using the loader
 const loadDatabase = require('./config/database-loader');

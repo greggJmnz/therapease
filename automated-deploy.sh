@@ -160,6 +160,10 @@ EOF
 
 chown therapease:therapease /home/therapease/.env.production
 
+# Copy environment file to server directory
+cp /home/therapease/.env.production /home/therapease/therapease/server/.env.production
+chown therapease:therapease /home/therapease/therapease/server/.env.production
+
 print_header "Step 9: Create PM2 Ecosystem Configuration"
 cat > /home/therapease/ecosystem.config.js << 'EOF'
 module.exports = {
