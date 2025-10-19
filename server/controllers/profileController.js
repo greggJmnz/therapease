@@ -19,7 +19,6 @@ const getUpdatedProfileData = async (userId, userRole) => {
         u.city,
         u.state,
         u.zipCode,
-        u.country,
         u.createdAt,
         u.updatedAt
       FROM users u
@@ -135,8 +134,6 @@ const getProfile = async (req, res) => {
         u.city,
         u.state,
         u.zipCode,
-        u.country,
-        u.profileImage,
         u.createdAt,
         u.updatedAt
       FROM users u
