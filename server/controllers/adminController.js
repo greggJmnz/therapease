@@ -252,7 +252,6 @@ const getUsers = async (req, res) => {
         u.city,
         u.state,
         u.zipCode,
-        u.profileImage,
         u.status,
         u.createdAt,
         u.updatedAt,
@@ -296,7 +295,6 @@ const getUsers = async (req, res) => {
         city: user.city,
         state: user.state,
         zipCode: user.zipCode,
-        profileImage: user.profileImage,
         status: user.status,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
@@ -1468,7 +1466,6 @@ const getTherapists = async (req, res) => {
         t.education,
         t.certifications,
         t.availability,
-        t.status as therapistStatus,
         t.maxPatients,
         t.isAcceptingPatients,
         (SELECT COUNT(DISTINCT pta.patientId) FROM patient_therapist_assignments pta WHERE pta.therapistId = t.userId AND pta.status = 'active') as patientCount
@@ -1504,7 +1501,7 @@ const getTherapists = async (req, res) => {
         education: therapist.education,
         certifications: therapist.certifications,
         availability: therapist.availability,
-        status: therapist.therapistStatus || 'active', // Include therapist-specific status
+        status: 'active', // Default status since t.status column doesn't exist
         maxPatients: therapist.maxPatients || 20,
         isAcceptingPatients: therapist.isAcceptingPatients !== false
       },
@@ -1850,7 +1847,6 @@ const getAvailableTherapists = async (req, res) => {
         u.lastName,
         u.email,
         u.phone,
-        u.profileImage,
         t.id as therapistId,
         t.licenseNumber,
         t.specialization,
@@ -1894,7 +1890,6 @@ const getAvailableTherapists = async (req, res) => {
       name: `${therapist.firstName} ${therapist.lastName}`,
       email: therapist.email,
       phone: therapist.phone,
-      profileImage: therapist.profileImage,
       specialization: therapist.specialization,
       yearsOfExperience: therapist.yearsOfExperience,
       availability: therapist.availability,
