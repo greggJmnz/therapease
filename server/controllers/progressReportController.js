@@ -95,8 +95,8 @@ const uploadProgressReport = async (req, res) => {
         
         // Create notification directly
         const notificationSql = `
-          INSERT INTO notifications (userId, title, message, type, relatedId, priority)
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO notifications (userId, title, message, type, relatedId)
+          VALUES (?, ?, ?, ?, ?)
         `;
         
         const notificationResult = await runQuery(notificationSql, [
@@ -104,8 +104,7 @@ const uploadProgressReport = async (req, res) => {
           notificationTitle,
           notificationMessage,
           'progress_report',
-          result.insertId,
-          'high'
+          result.insertId
         ]);
         
         console.log('✅ Notification created for patient with ID:', notificationResult.insertId);

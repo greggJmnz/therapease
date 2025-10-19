@@ -294,11 +294,11 @@ const createNotification = async (userId, title, message, type = 'system', optio
   try {
     const priority = options.priority || 'medium';
     const insertSql = `
-      INSERT INTO notifications (userId, title, message, type, relatedId, priority)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO notifications (userId, title, message, type, relatedId)
+      VALUES (?, ?, ?, ?, ?)
     `;
 
-    const result = await runQuery(insertSql, [userId, title, message, type, options.relatedId || null, priority]);
+    const result = await runQuery(insertSql, [userId, title, message, type, options.relatedId || null]);
     const notificationId = result.insertId;
 
     // Send SMS if requested and user has phone number

@@ -2337,8 +2337,8 @@ const completeOnboarding = async (req, res) => {
       
       for (const admin of adminUsers) {
         const adminNotificationSql = `
-          INSERT INTO notifications (userId, type, title, message, priority, createdAt)
-          VALUES (?, 'admin_notification', 'New User Onboarding Complete', ?, 'high', NOW())
+          INSERT INTO notifications (userId, type, title, message, createdAt)
+          VALUES (?, 'admin_notification', 'New User Onboarding Complete', ?, NOW())
         `;
         
         const adminMessage = `New ${userDetails.role} user ${userDetails.firstName} ${userDetails.lastName} (${userDetails.email}) has completed their onboarding process and is ready for therapist assignment.`;
