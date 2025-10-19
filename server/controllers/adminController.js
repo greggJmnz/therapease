@@ -209,7 +209,9 @@ const getDashboard = async (req, res) => {
 const getUsers = async (req, res) => {
   try {
     const { page = 1, limit = 20, role, search, status } = req.query;
-    const offset = (page - 1) * limit;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
 
     // Build WHERE clause
     let whereConditions = [];
@@ -276,7 +278,7 @@ const getUsers = async (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    const queryParams = [...params, parseInt(limit), parseInt(offset)];
+    const queryParams = [...params, limitNum, offset];
     const users = await getAll(sql, queryParams);
 
     // Format user data
@@ -1526,7 +1528,9 @@ const getTherapists = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const { page = 1, limit = 100, role, search, status } = req.query;
-    const offset = (page - 1) * limit;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
 
     // Build WHERE clause
     let whereConditions = [];
@@ -1592,7 +1596,7 @@ const getAllUsers = async (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    const queryParams = [...params, parseInt(limit), parseInt(offset)];
+    const queryParams = [...params, limitNum, offset];
     const users = await getAll(sql, queryParams);
 
     // Format user data
