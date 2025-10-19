@@ -105,6 +105,7 @@ const createTables = async () => {
         ADD COLUMN IF NOT EXISTS country VARCHAR(100),
         ADD COLUMN IF NOT EXISTS profileImage VARCHAR(500)
       `);
+      console.log('✅ Users table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
@@ -137,6 +138,7 @@ const createTables = async () => {
         ALTER TABLE patients 
         ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'discharged') DEFAULT 'active'
       `);
+      console.log('✅ Patients table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
@@ -213,6 +215,7 @@ const createTables = async () => {
         ALTER TABLE therapists 
         ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'
       `);
+      console.log('✅ Therapists table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
