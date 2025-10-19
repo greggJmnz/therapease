@@ -159,6 +159,31 @@ app.get('/api/auth/test', (req, res) => {
   });
 });
 
+// Test notification creation
+app.post('/api/test-notification', async (req, res) => {
+  try {
+    const { getRow, runQuery } = require('./config/database');
+    
+    // Create a test notification for admin user (ID 2)
+    const result = await runQuery(
+      'INSERT INTO notifications (userId, title, message, type, createdAt) VALUES (?, ?, ?, ?, ?)',
+      [2, 'Test Notification', 'This is a test notification', 'system', new Date()]
+    );
+    
+    res.json({
+      success: true,
+      message: 'Test notification created',
+      notificationId: result.insertId
+    });
+  } catch (error) {
+    console.error('Test notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 
