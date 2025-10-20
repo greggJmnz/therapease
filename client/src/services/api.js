@@ -56,21 +56,21 @@ api.interceptors.response.use(
 // Auth API endpoints
 export const authAPI = {
   login: (credentials) => {
-    return api.post('/api/auth/login', credentials);
+    return api.post('/auth/login', credentials);
   },
-  loginWith2FA: (data) => api.post('/api/auth/login-2fa', data),
-  register: (userData) => api.post('/api/auth/register', userData),
-  verify: () => api.get(`/api/auth/verify?_t=${Date.now()}`),
-  changePassword: (data) => api.post('/api/auth/change-password', data),
-  forgotPassword: (email) => api.post('/api/auth/forgot-password', { email }),
-  resetPassword: (data) => api.post('/api/auth/reset-password', data),
+  loginWith2FA: (data) => api.post('/auth/login-2fa', data),
+  register: (userData) => api.post('/auth/register', userData),
+  verify: () => api.get(`/auth/verify?_t=${Date.now()}`),
+  changePassword: (data) => api.post('/auth/change-password', data),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
   // 2FA endpoints
-  send2FACode: (data) => api.post('/api/auth/2fa/send-code', data),
-  verify2FACode: (data) => api.post('/api/auth/2fa/verify-code', data),
-  get2FAStatus: () => api.get('/api/auth/2fa/status'),
-  enable2FA: (password) => api.post('/api/auth/2fa/enable', { password }),
-  verify2FASetup: (code) => api.post('/api/auth/2fa/verify-setup', { code }),
-  disable2FA: (password) => api.post('/api/auth/2fa/disable', { password }),
+  send2FACode: (data) => api.post('/auth/2fa/send-code', data),
+  verify2FACode: (data) => api.post('/auth/2fa/verify-code', data),
+  get2FAStatus: () => api.get('/auth/2fa/status'),
+  enable2FA: (password) => api.post('/auth/2fa/enable', { password }),
+  verify2FASetup: (code) => api.post('/auth/2fa/verify-setup', { code }),
+  disable2FA: (password) => api.post('/auth/2fa/disable', { password }),
 };
 
 // Admin API endpoints
