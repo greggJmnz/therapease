@@ -352,12 +352,18 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler (exclude WebSocket path)
+// WebSocket route handler (must be before catch-all)
+app.get('/ws', (req, res) => {
+  // This should not be reached in normal operation
+  // WebSocket service should handle the upgrade
+  res.status(426).json({ 
+    error: 'Upgrade Required', 
+    message: 'This endpoint requires WebSocket upgrade' 
+  });
+});
+
+// 404 handler
 app.use('*', (req, res) => {
-  // Skip WebSocket path - let WebSocket service handle it
-  if (req.path === '/ws') {
-    return;
-  }
   res.status(404).json({ error: 'Route not found' });
 });
 
