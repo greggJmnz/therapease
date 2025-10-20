@@ -149,6 +149,16 @@ app.get('/api/maintenance-status', async (req, res) => {
   }
 });
 
+// WebSocket route handler (must be before static file serving)
+app.get('/ws', (req, res) => {
+  // This should not be reached in normal operation
+  // WebSocket service should handle the upgrade
+  res.status(426).json({ 
+    error: 'Upgrade Required', 
+    message: 'This endpoint requires WebSocket upgrade' 
+  });
+});
+
 // Serve static files from public-website directory
 app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
 
@@ -352,16 +362,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// WebSocket route handler (must be before catch-all)
-app.get('/ws', (req, res) => {
-  // This should not be reached in normal operation
-  // WebSocket service should handle the upgrade
-  res.status(426).json({ 
-    error: 'Upgrade Required', 
-    message: 'This endpoint requires WebSocket upgrade' 
-  });
-});
-
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
@@ -375,12 +375,13 @@ const server = http.createServer(app);
 websocketService.initialize(server);
 
 // Start server
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 TherapEase API server running on port ${PORT}`);
   console.log(`🌐 HTTP mode (SSL disabled for development)`);
   console.log(`📊 Database: ${dbType}`);
   console.log(`🔐 Encryption: AES-256-GCM`);
   console.log(`🌐 WebSocket service initialized`);
+  console.log(`🔗 Server accessible on all interfaces (0.0.0.0:${PORT})`);
 });
 
 module.exports = app;
