@@ -162,13 +162,13 @@ app.all('/ws', (req, res) => {
   const updatedContent = fs.readFileSync(serverFile, 'utf8');
   
   const wsDefinitiveExists = updatedContent.includes("app.all('/ws'");
-  const wsGetExists = updatedContent.includes("app.get('/ws'");
-  const wsUseExists = updatedContent.includes("app.use('/ws'");
+  const wsGetExistsAfter = updatedContent.includes("app.get('/ws'");
+  const wsUseExistsAfter = updatedContent.includes("app.use('/ws'");
   const errorHandlingExists = updatedContent.includes('app.use((err, req, res, next) => {');
   
   console.log(`   Definitive WebSocket route: ${wsDefinitiveExists ? '✅' : '❌'}`);
-  console.log(`   WebSocket GET route: ${wsGetExists ? '✅' : '❌'}`);
-  console.log(`   WebSocket middleware: ${wsUseExists ? '✅' : '❌'}`);
+  console.log(`   WebSocket GET route: ${wsGetExistsAfter ? '✅' : '❌'}`);
+  console.log(`   WebSocket middleware: ${wsUseExistsAfter ? '✅' : '❌'}`);
   console.log(`   Error handling: ${errorHandlingExists ? '✅' : '❌'}`);
   
   if (wsDefinitiveExists) {
