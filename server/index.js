@@ -352,8 +352,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
+// 404 handler (exclude WebSocket path)
 app.use('*', (req, res) => {
+  // Skip WebSocket path - let WebSocket service handle it
+  if (req.path === '/ws') {
+    return;
+  }
   res.status(404).json({ error: 'Route not found' });
 });
 
