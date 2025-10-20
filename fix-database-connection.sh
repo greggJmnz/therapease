@@ -44,23 +44,39 @@ else
     sleep 3
 fi
 
-# 3. Check MySQL root access
+# 3. Check MySQL root access and setup database
 print_status "Testing MySQL root access..."
-if mysql -u root -e "SELECT 1;" >/dev/null 2>&1; then
+if mysql -u root -p"TherapEase2025!@#" -e "SELECT 1;" >/dev/null 2>&1; then
     print_status "✅ MySQL root access is working"
+    
+    # Create database and user
+    print_status "Setting up MySQL database..."
+    mysql -u root -p"TherapEase2025!@#" -e "
+    CREATE DATABASE IF NOT EXISTS therapease_db;
+    CREATE USER IF NOT EXISTS 'therapease_user'@'localhost' IDENTIFIED BY 'TherapEase2025!@#';
+    GRANT ALL PRIVILEGES ON therapease_db.* TO 'therapease_user'@'localhost';
+    FLUSH PRIVILEGES;
+    SHOW DATABASES;
+    " && print_status "✅ Database and user created successfully"
 else
-    print_warning "MySQL root access failed. This is normal if root requires password."
+    print_warning "MySQL root access failed. Trying to connect with password..."
+    if mysql -u root -p"TherapEase2025!@#" -e "SELECT 1;" 2>/dev/null; then
+        print_status "✅ MySQL root access working with password"
+    else
+        print_error "❌ Cannot connect to MySQL. Please check MySQL installation and password."
+        exit 1
+    fi
 fi
 
-# 4. Create a proper database configuration for SQLite (recommended for now)
-print_status "Setting up SQLite configuration (recommended for quick fix)..."
+# 4. Create a proper database configuration for MySQL
+print_status "Setting up MySQL configuration with provided password..."
 
-# Update .env.production to use SQLite
+# Update .env.production to use MySQL
 cat > .env.production << 'EOF'
 # TherapEase Production Environment Configuration
 
-# Database Configuration - Using SQLite for simplicity
-DB_TYPE=sqlite
+# Database Configuration - Using MySQL
+DB_TYPE=mysql
 DB_HOST=localhost
 DB_USER=therapease_user
 DB_PASSWORD=TherapEase2025!@#
@@ -115,13 +131,16 @@ sed -i "s/your_jwt_secret_here/$JWT_SECRET/g" .env.production
 sed -i "s/your_encryption_key_here/$ENCRYPTION_KEY/g" .env.production
 sed -i "s/your_session_secret_here/$SESSION_SECRET/g" .env.production
 
-print_status "✅ Updated .env.production to use SQLite"
+print_status "✅ Updated .env.production to use MySQL"
 
-# 5. Initialize SQLite database
-print_status "Initializing SQLite database..."
-if [ ! -f "therapease.db" ]; then
-    print_status "Creating SQLite database..."
+# 5. Initialize MySQL database
+print_status "Initializing MySQL database..."
+print_status "Testing database connection with new user..."
+if mysql -u therapease_user -p"TherapEase2025!@#" -e "USE therapease_db; SELECT 1;" >/dev/null 2>&1; then
+    print_status "✅ Database connection working with therapease_user"
+    
     # Run the database setup script
+    print_status "Running database initialization..."
     node -e "
     const { initializeDatabase } = require('./scripts/setup-database');
     initializeDatabase().then(() => {
@@ -133,7 +152,19 @@ if [ ! -f "therapease.db" ]; then
     });
     " || print_warning "Database initialization script not found, will be created on first run"
 else
-    print_status "✅ SQLite database already exists"
+    print_error "❌ Cannot connect to database with therapease_user"
+    print_status "Trying to create tables manually..."
+    # Create basic tables if needed
+    mysql -u therapease_user -p"TherapEase2025!@#" therapease_db -e "
+    CREATE TABLE IF NOT EXISTS system_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(255) UNIQUE NOT NULL,
+        setting_value TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
+    INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES ('maintenance_mode', 'false');
+    " && print_status "✅ Basic tables created"
 fi
 
 # 6. Restart PM2 with new configuration
