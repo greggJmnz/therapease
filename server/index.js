@@ -64,8 +64,10 @@ app.use(cors({
     'https://api.therapease.site'
   ] : true,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Data-Protection', 'X-Content-Encryption'],
+  exposedHeaders: ['X-Data-Protection', 'X-Content-Encryption'],
+  optionsSuccessStatus: 200
 }));
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
@@ -121,6 +123,15 @@ app.get('/test-db', async (req, res) => {
 // SSL Health check endpoint
 app.get('/health/ssl', sslHealthCheck);
 
+// Handle CORS preflight for maintenance status
+app.options('/api/maintenance-status', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
 // Public maintenance status endpoint (no auth required)
 app.get('/api/maintenance-status', async (req, res) => {
   try {
@@ -131,6 +142,10 @@ app.get('/api/maintenance-status', async (req, res) => {
     );
 
     const isMaintenanceMode = maintenanceSetting && maintenanceSetting.setting_value === 'true';
+
+    // Set CORS headers explicitly for this endpoint
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
 
     res.json({
       success: true,
