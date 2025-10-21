@@ -2,12 +2,11 @@ class WebSocketService {
   constructor() {
     this.ws = null;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 1; // Only 1 attempt to prevent long loading
-    this.reconnectInterval = 2000; // Faster timeout
+    this.maxReconnectAttempts = 3;
+    this.reconnectInterval = 5000;
     this.listeners = new Map();
     this.isConnecting = false;
     this.lastToken = null;
-    this.connectionTimeout = null;
   }
 
   connect(token) {
@@ -42,22 +41,13 @@ class WebSocketService {
       wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
       console.log('🔌 Using localhost for WebSocket');
     } else {
-      // Production environment - ALWAYS use port 5000 for emergency server
+      // Production environment
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      wsUrl = `${protocol}//${window.location.hostname}:5000/ws?token=${token}`;
-      console.log('🔌 Using production host with port 5000 for WebSocket');
+      wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
+      console.log('🔌 Using current host for WebSocket');
     }
     
     console.log('🔌 WebSocket connecting to:', wsUrl);
-    
-    // Set connection timeout to prevent long waits
-    this.connectionTimeout = setTimeout(() => {
-      if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
-        console.log('🔌 WebSocket connection timeout, closing...');
-        this.ws.close();
-        this.isConnecting = false;
-      }
-    }, 3000); // 3 second timeout
     
     try {
       this.ws = new WebSocket(wsUrl);
@@ -67,9 +57,6 @@ class WebSocketService {
         this.isConnecting = false;
         this.reconnectAttempts = 0;
         this.connectionState = 'connected';
-        if (this.connectionTimeout) {
-          clearTimeout(this.connectionTimeout);
-        }
       };
       
       this.ws.onmessage = (event) => {
@@ -85,15 +72,9 @@ class WebSocketService {
         console.log(`🔌 WebSocket disconnected: ${event.code}`);
         this.isConnecting = false;
         this.connectionState = 'disconnected';
-        if (this.connectionTimeout) {
-          clearTimeout(this.connectionTimeout);
-        }
         
-        // Only attempt reconnection if it's not a normal closure and we haven't exceeded max attempts
         if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.scheduleReconnect(token);
-        } else {
-          console.log('🔌 WebSocket connection failed, continuing without WebSocket');
         }
       };
       
@@ -101,21 +82,11 @@ class WebSocketService {
         console.log('🔌 WebSocket error:', error);
         this.isConnecting = false;
         this.connectionState = 'error';
-        if (this.connectionTimeout) {
-          clearTimeout(this.connectionTimeout);
-        }
-        
-        // Don't attempt reconnection on error - just log it and continue
-        console.log('🔌 WebSocket connection failed, but continuing without WebSocket');
       };
 
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
       this.isConnecting = false;
-      if (this.connectionTimeout) {
-        clearTimeout(this.connectionTimeout);
-      }
-      console.log('🔌 WebSocket connection failed, but continuing without WebSocket');
     }
   }
 
@@ -126,7 +97,7 @@ class WebSocketService {
     }
     
     this.reconnectAttempts++;
-    const delay = 2000; // Fixed 2 second delay
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
     
     console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`);
     
@@ -141,9 +112,6 @@ class WebSocketService {
     if (this.ws) {
       this.ws.close(1000, 'Client disconnecting');
       this.ws = null;
-    }
-    if (this.connectionTimeout) {
-      clearTimeout(this.connectionTimeout);
     }
     this.reconnectAttempts = this.maxReconnectAttempts;
   }
