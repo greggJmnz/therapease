@@ -2,10 +2,11 @@ class WebSocketService {
   constructor() {
     this.ws = null;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
+    this.maxReconnectAttempts = 3; // Reduced from 5 to 3
     this.reconnectInterval = 5000;
     this.listeners = new Map();
     this.isConnecting = false;
+    this.lastToken = null; // Store last token to prevent auth loops
   }
 
   connect(token) {
@@ -17,7 +18,14 @@ class WebSocketService {
       return;
     }
 
+    // Prevent reconnection with the same token if it failed before
+    if (this.lastToken === token && this.reconnectAttempts > 0) {
+      console.log('🔌 Skipping WebSocket connection - same token that failed before');
+      return;
+    }
+
     this.isConnecting = true;
+    this.lastToken = token;
     
     // Determine WebSocket URL based on environment
     let wsUrl;
@@ -78,12 +86,21 @@ class WebSocketService {
   }
 
   scheduleReconnect(token) {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('🔌 Max reconnection attempts reached, stopping reconnection');
+      return;
+    }
+    
     this.reconnectAttempts++;
-    console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${this.reconnectInterval}ms`);
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000); // Exponential backoff, max 30s
+    
+    console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`);
     
     setTimeout(() => {
-      this.connect(token);
-    }, this.reconnectInterval);
+      if (this.reconnectAttempts <= this.maxReconnectAttempts) {
+        this.connect(token);
+      }
+    }, delay);
   }
 
   disconnect() {
