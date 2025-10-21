@@ -23,6 +23,14 @@ export const AuthProvider = ({ children }) => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // Listen for custom logout events from API interceptor
+    const handleLogoutEvent = (event) => {
+      console.log('🔐 Received logout event:', event.detail);
+      logout();
+    };
+    
+    window.addEventListener('auth:logout', handleLogoutEvent);
+    
     const initializeAuth = async () => {
       const storedToken = localStorage.getItem('token');
       const storedUser = localStorage.getItem('user');
@@ -60,6 +68,10 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
+    
+    return () => {
+      window.removeEventListener('auth:logout', handleLogoutEvent);
+    };
   }, []);
 
   // Clear cache when user changes

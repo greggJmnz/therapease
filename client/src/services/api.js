@@ -42,12 +42,22 @@ api.interceptors.response.use(
   (error) => {
     console.error('API: Response interceptor error:', error);
     if (error.response?.status === 401) {
-      // Token expired or invalid, redirect to login
+      // Token expired or invalid, clear storage but don't redirect automatically
+      // Let the AuthContext handle the logout logic to prevent page reloads
+      console.log('🔐 Token expired, clearing storage...');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('userRole');
       localStorage.removeItem('userId');
-      window.location.href = '/auth/login';
+      
+      // Only redirect if not already on login page and not in the middle of a request
+      if (window.location.pathname !== '/auth/login' && !error.config?.url?.includes('/auth/verify')) {
+        // Use custom event to trigger logout in AuthContext instead of direct redirect
+        // This prevents full page reload and maintains React state
+        window.dispatchEvent(new CustomEvent('auth:logout', { 
+          detail: { reason: 'token_expired', error: error.response?.data } 
+        }));
+      }
     }
     return Promise.reject(error);
   }
