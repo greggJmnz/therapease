@@ -132,37 +132,7 @@ app.options('/api/maintenance-status', (req, res) => {
   res.status(200).end();
 });
 
-// Public maintenance status endpoint (no auth required)
-app.get('/api/maintenance-status', async (req, res) => {
-  try {
-    const { getRow } = require('./config/database');
-    const maintenanceSetting = await getRow(
-      'SELECT setting_value FROM system_settings WHERE setting_key = ?',
-      ['maintenance_mode']
-    );
-
-    const isMaintenanceMode = maintenanceSetting && maintenanceSetting.setting_value === 'true';
-
-    // Set CORS headers explicitly for this endpoint
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
-
-    res.json({
-      success: true,
-      maintenanceMode: isMaintenanceMode,
-      message: isMaintenanceMode 
-        ? 'System is currently under maintenance. Please try again later.'
-        : 'System is operational'
-    });
-
-  } catch (error) {
-    console.error('Error fetching maintenance status:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch maintenance status'
-    });
-  }
-});
+// Public maintenance status endpoint moved to adminRoutes.js
 
 // WebSocket route handler (must be before static file serving)
 app.get('/ws', (req, res) => {
@@ -343,27 +313,25 @@ app.get('/api/test-columns', async (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 
-// Apply maintenance middleware to non-admin routes
-app.use('/api/therapist', checkMaintenanceMode);
-app.use('/api/patient', checkMaintenanceMode);
-app.use('/api/ai', checkMaintenanceMode);
-app.use('/api/notifications', checkMaintenanceMode);
-app.use('/api/notifications/sms', checkMaintenanceMode);
-app.use('/api/treatment-plans', checkMaintenanceMode);
-app.use('/api/home-exercises', checkMaintenanceMode);
-app.use('/api/progress-reports', checkMaintenanceMode);
-
 // Admin routes (no maintenance mode check - admins can always access)
 app.use('/api/admin', adminRoutes);
 
 // Other routes with maintenance mode check
+app.use('/api/therapist', checkMaintenanceMode);
 app.use('/api/therapist', therapistRoutes);
+app.use('/api/patient', checkMaintenanceMode);
 app.use('/api/patient', patientRoutes);
+app.use('/api/ai', checkMaintenanceMode);
 app.use('/api/ai', aiRoutes);
+app.use('/api/notifications', checkMaintenanceMode);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/notifications/sms', checkMaintenanceMode);
 app.use('/api/notifications/sms', smsRoutes);
+app.use('/api/treatment-plans', checkMaintenanceMode);
 app.use('/api/treatment-plans', treatmentPlanRoutes);
+app.use('/api/home-exercises', checkMaintenanceMode);
 app.use('/api/home-exercises', homeExerciseRoutes);
+app.use('/api/progress-reports', checkMaintenanceMode);
 app.use('/api/progress-reports', progressReportRoutes);
 
 // Error handling middleware
