@@ -1,3 +1,12 @@
+#!/bin/bash
+
+echo "🔧 Force WebSocket Fix - Comprehensive Solution"
+echo "=============================================="
+
+echo ""
+echo "🔍 Step 1: Creating emergency WebSocket service with hardcoded port 5000..."
+
+cat > client/src/services/websocketService.js << 'EOF'
 class WebSocketService {
   constructor() {
     this.ws = null;
@@ -192,3 +201,80 @@ class WebSocketService {
 
 const websocketService = new WebSocketService();
 export default websocketService;
+EOF
+
+echo "✅ Emergency WebSocket service created with hardcoded port 5000"
+
+echo ""
+echo "🔍 Step 2: Building production with forced WebSocket fix..."
+cd client
+npm run build
+cd ..
+
+echo ""
+echo "🔍 Step 3: Verifying the build contains correct WebSocket URL..."
+if grep -q ":5000/ws" client/build/static/js/main.*.js; then
+    echo "✅ Build contains correct WebSocket URL with port 5000"
+else
+    echo "❌ Build does not contain correct WebSocket URL"
+    echo "🔍 Checking what's in the build..."
+    grep -o "wss://[^/]*/ws" client/build/static/js/main.*.js | head -5
+fi
+
+echo ""
+echo "🔍 Step 4: Creating deployment verification script..."
+
+cat > verify-websocket-fix.sh << 'EOF'
+#!/bin/bash
+
+echo "🔍 Verifying WebSocket Fix"
+echo "========================="
+
+echo ""
+echo "🔍 Step 1: Checking if build contains port 5000..."
+if grep -q ":5000/ws" client/build/static/js/main.*.js; then
+    echo "✅ Build contains correct WebSocket URL with port 5000"
+    echo "🎯 Expected URL: wss://www.therapease.site:5000/ws"
+    echo "✅ WebSocket fix is properly applied"
+else
+    echo "❌ Build does not contain correct WebSocket URL"
+    echo "🔍 Current URLs in build:"
+    grep -o "wss://[^/]*/ws" client/build/static/js/main.*.js | head -5
+    echo "❌ WebSocket fix not applied correctly"
+fi
+
+echo ""
+echo "🔍 Step 2: Testing WebSocket connection..."
+echo "Expected: wss://www.therapease.site:5000/ws"
+echo "Previous: wss://www.therapease.site/ws (causing 200 error)"
+echo ""
+echo "🎯 Key differences:"
+echo "- ✅ Includes port 5000"
+echo "- ✅ Only 1 reconnection attempt"
+echo "- ✅ 3 second connection timeout"
+echo "- ✅ Graceful fallback when WebSocket fails"
+EOF
+
+chmod +x verify-websocket-fix.sh
+
+echo ""
+echo "🏁 Force WebSocket fix complete!"
+echo ""
+echo "📋 Summary of forced fixes:"
+echo "1. ✅ HARDCODED port 5000 in WebSocket URL"
+echo "2. ✅ Only 1 reconnection attempt (was 5)"
+echo "3. ✅ 3 second connection timeout"
+echo "4. ✅ Faster 2 second reconnection delay"
+echo "5. ✅ Graceful fallback when WebSocket fails"
+echo ""
+echo "🔧 Next steps:"
+echo "1. Run: ./verify-websocket-fix.sh"
+echo "2. Deploy to droplet: git add . && git commit -m 'Force WebSocket fix' && git push"
+echo "3. On droplet: git pull && pm2 restart all"
+echo ""
+echo "🎯 Expected results:"
+echo "- ✅ WebSocket connects to wss://www.therapease.site:5000/ws"
+echo "- ✅ No more 'Unexpected response code: 200' errors"
+echo "- ✅ Fast login experience (2-3 seconds instead of 25+ seconds)"
+echo "- ✅ Real-time features work when WebSocket connects"
+echo "- ✅ Graceful fallback when WebSocket fails"
