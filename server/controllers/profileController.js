@@ -226,6 +226,9 @@ const getProfile = async (req, res) => {
 // Update user profile
 const updateProfile = async (req, res) => {
   try {
+    console.log('Profile update data:', updateData);
+    console.log('User ID:', userId);
+    console.log('User Role:', userRole);
     const userId = req.user.userId;
     const userRole = req.user.role;
     const updateData = req.body;
@@ -496,6 +499,9 @@ const updateProfile = async (req, res) => {
 // Change password
 const changePassword = async (req, res) => {
   try {
+    console.log('Password change attempt for user:', userId);
+    console.log('Current password provided:', !!currentPassword);
+    console.log('New password length:', newPassword?.length);
     const userId = req.user.userId;
     const { currentPassword, newPassword } = req.body;
 

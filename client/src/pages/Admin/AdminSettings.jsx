@@ -332,8 +332,8 @@ const AdminSettings = () => {
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters long');
+    if (passwordData.newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters long');
       return;
     }
 
