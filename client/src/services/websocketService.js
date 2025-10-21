@@ -41,10 +41,10 @@ class WebSocketService {
       wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
       console.log('🔌 Using localhost for WebSocket');
     } else {
-      // Production environment
+      // Production environment - FIXED: Include port 5000 for emergency server
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
-      console.log('🔌 Using current host for WebSocket');
+      wsUrl = `${protocol}//${window.location.hostname}:5000/ws?token=${token}`;
+      console.log('🔌 Using production host with port 5000 for WebSocket');
     }
     
     console.log('🔌 WebSocket connecting to:', wsUrl);
@@ -82,11 +82,15 @@ class WebSocketService {
         console.log('🔌 WebSocket error:', error);
         this.isConnecting = false;
         this.connectionState = 'error';
+        
+        // Don't attempt reconnection on error - just log it and continue
+        console.log('🔌 WebSocket connection failed, but continuing without WebSocket');
       };
 
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
       this.isConnecting = false;
+      console.log('🔌 WebSocket connection failed, but continuing without WebSocket');
     }
   }
 
