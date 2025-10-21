@@ -2,7 +2,7 @@ class WebSocketService {
   constructor() {
     this.ws = null;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 3;
+    this.maxReconnectAttempts = 1; // Reduced to prevent aggressive reconnections
     this.reconnectInterval = 5000;
     this.listeners = new Map();
     this.isConnecting = false;
