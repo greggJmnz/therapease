@@ -28,7 +28,7 @@ class WebSocketService {
     this.isConnecting = true;
     this.lastToken = token;
     
-    // HARDCODED FIX: Always use port 5000 for production
+    // Dynamic WebSocket URL construction
     let wsUrl;
     
     console.log('🔍 WebSocket debug info:', {
@@ -42,11 +42,18 @@ class WebSocketService {
       wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
       console.log('🔌 Using localhost for WebSocket');
     } else {
-      // Production environment - HARDCODED: Always use port 5000
+      // Production environment - Smart port detection
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      // FORCE port 5000 - this is the key fix
-      wsUrl = `${protocol}//${window.location.hostname}:5000/ws?token=${token}`;
-      console.log('🔌 FORCED: Using production host with port 5000 for WebSocket');
+      
+      // Check if we're on therapease.site domain and use port 5000 for emergency server
+      if (window.location.hostname.includes('therapease.site')) {
+        wsUrl = `${protocol}//${window.location.hostname}:5000/ws?token=${token}`;
+        console.log('🔌 Using therapease.site with port 5000 for WebSocket (emergency server)');
+      } else {
+        // For other production domains, try standard ports first
+        wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
+        console.log('🔌 Using standard production WebSocket URL');
+      }
     }
     
     console.log('🔌 WebSocket connecting to:', wsUrl);
@@ -104,6 +111,11 @@ class WebSocketService {
         this.connectionState = 'error';
         if (this.connectionTimeout) {
           clearTimeout(this.connectionTimeout);
+        }
+        
+        // Log the specific error for debugging
+        if (error.target && error.target.readyState === WebSocket.CLOSED) {
+          console.log('🔌 WebSocket connection closed unexpectedly');
         }
         
         // Don't attempt reconnection on error - just log it and continue
@@ -187,6 +199,30 @@ class WebSocketService {
         callbacks.splice(index, 1);
       }
     }
+  }
+
+  // Configuration method for different environments
+  configure(options = {}) {
+    if (options.maxReconnectAttempts !== undefined) {
+      this.maxReconnectAttempts = options.maxReconnectAttempts;
+    }
+    if (options.reconnectInterval !== undefined) {
+      this.reconnectInterval = options.reconnectInterval;
+    }
+    console.log('🔌 WebSocket service configured:', {
+      maxReconnectAttempts: this.maxReconnectAttempts,
+      reconnectInterval: this.reconnectInterval
+    });
+  }
+
+  // Method to get connection status
+  getConnectionStatus() {
+    return {
+      connected: this.ws && this.ws.readyState === WebSocket.OPEN,
+      connecting: this.isConnecting,
+      reconnectAttempts: this.reconnectAttempts,
+      maxReconnectAttempts: this.maxReconnectAttempts
+    };
   }
 }
 
