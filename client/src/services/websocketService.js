@@ -2,11 +2,11 @@ class WebSocketService {
   constructor() {
     this.ws = null;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 3; // Reduced from 5 to 3
+    this.maxReconnectAttempts = 3;
     this.reconnectInterval = 5000;
     this.listeners = new Map();
     this.isConnecting = false;
-    this.lastToken = null; // Store last token to prevent auth loops
+    this.lastToken = null;
   }
 
   connect(token) {
@@ -36,47 +36,52 @@ class WebSocketService {
       nodeEnv: process.env.NODE_ENV
     });
     
-    // Always use the current host for WebSocket connections
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    wsUrl = `${protocol}//${window.location.host}/ws?token=${token}`;
-    console.log('🔌 Using current host for WebSocket');
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      // Development environment
+      wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
+      console.log('🔌 Using localhost for WebSocket');
+    } else {
+      // Production environment
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
+      console.log('🔌 Using current host for WebSocket');
+    }
     
     console.log('🔌 WebSocket connecting to:', wsUrl);
-
+    
     try {
       this.ws = new WebSocket(wsUrl);
-
+      
       this.ws.onopen = () => {
         console.log('🔌 WebSocket connected');
         this.isConnecting = false;
         this.reconnectAttempts = 0;
-        this.emit('connection', { status: 'connected' });
+        this.connectionState = 'connected';
       };
-
+      
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           this.handleMessage(data);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error('WebSocket message parsing error:', error);
         }
       };
-
+      
       this.ws.onclose = (event) => {
-        console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+        console.log(`🔌 WebSocket disconnected: ${event.code}`);
         this.isConnecting = false;
-        this.emit('connection', { status: 'disconnected' });
+        this.connectionState = 'disconnected';
         
-        // Attempt to reconnect if not a normal closure
         if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.scheduleReconnect(token);
         }
       };
-
+      
       this.ws.onerror = (error) => {
-        console.error('🔌 WebSocket error:', error);
+        console.log('🔌 WebSocket error:', error);
         this.isConnecting = false;
-        this.emit('connection', { status: 'error', error });
+        this.connectionState = 'error';
       };
 
     } catch (error) {
@@ -92,7 +97,7 @@ class WebSocketService {
     }
     
     this.reconnectAttempts++;
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000); // Exponential backoff, max 30s
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
     
     console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`);
     
@@ -108,7 +113,7 @@ class WebSocketService {
       this.ws.close(1000, 'Client disconnecting');
       this.ws = null;
     }
-    this.reconnectAttempts = this.maxReconnectAttempts; // Prevent reconnection
+    this.reconnectAttempts = this.maxReconnectAttempts;
   }
 
   send(message) {
@@ -120,99 +125,37 @@ class WebSocketService {
   }
 
   handleMessage(data) {
-    const { type, data: payload } = data;
+    const { type, payload } = data;
     
-    // Emit specific event types
-    this.emit(type, payload);
-    
-    // Emit generic message event
-    this.emit('message', data);
-  }
-
-  // Event system
-  on(event, callback) {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, []);
+    if (this.listeners.has(type)) {
+      const callbacks = this.listeners.get(type);
+      callbacks.forEach(callback => {
+        try {
+          callback(payload);
+        } catch (error) {
+          console.error('WebSocket callback error:', error);
+        }
+      });
     }
-    this.listeners.get(event).push(callback);
   }
 
-  off(event, callback) {
-    if (this.listeners.has(event)) {
-      const callbacks = this.listeners.get(event);
+  on(eventType, callback) {
+    if (!this.listeners.has(eventType)) {
+      this.listeners.set(eventType, []);
+    }
+    this.listeners.get(eventType).push(callback);
+  }
+
+  off(eventType, callback) {
+    if (this.listeners.has(eventType)) {
+      const callbacks = this.listeners.get(eventType);
       const index = callbacks.indexOf(callback);
       if (index > -1) {
         callbacks.splice(index, 1);
       }
     }
   }
-
-  emit(event, data) {
-    if (this.listeners.has(event)) {
-      this.listeners.get(event).forEach(callback => {
-        try {
-          callback(data);
-        } catch (error) {
-          console.error(`Error in WebSocket event handler for ${event}:`, error);
-        }
-      });
-    }
-  }
-
-  // Convenience methods for common operations
-  joinRoom(roomName) {
-    this.send({
-      type: 'join_room',
-      payload: { room: roomName }
-    });
-  }
-
-  leaveRoom(roomName) {
-    this.send({
-      type: 'leave_room',
-      payload: { room: roomName }
-    });
-  }
-
-  subscribeToPatient(patientId) {
-    this.send({
-      type: 'subscribe_patient',
-      payload: { patientId }
-    });
-  }
-
-  unsubscribeFromPatient(patientId) {
-    this.send({
-      type: 'unsubscribe_patient',
-      payload: { patientId }
-    });
-  }
-
-  // Check connection status
-  isConnected() {
-    return this.ws && this.ws.readyState === WebSocket.OPEN;
-  }
-
-  // Get connection state
-  getConnectionState() {
-    if (!this.ws) return 'disconnected';
-    
-    switch (this.ws.readyState) {
-      case WebSocket.CONNECTING:
-        return 'connecting';
-      case WebSocket.OPEN:
-        return 'connected';
-      case WebSocket.CLOSING:
-        return 'closing';
-      case WebSocket.CLOSED:
-        return 'disconnected';
-      default:
-        return 'unknown';
-    }
-  }
 }
 
-// Create singleton instance
 const websocketService = new WebSocketService();
-
 export default websocketService;
