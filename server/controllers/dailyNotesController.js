@@ -196,10 +196,13 @@ const createDailyNote = async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
+    // Convert ISO date to YYYY-MM-DD format for database
+    const formattedSessionDate = new Date(sessionDate).toISOString().split('T')[0];
+    
     const insertParams = [
       parseInt(patientId),
       therapistId,
-      sessionDate,
+      formattedSessionDate,
       sessionDuration || null,
       content || null,
       activities || null,
@@ -270,7 +273,9 @@ const updateDailyNote = async (req, res) => {
 
     if (updateData.sessionDate !== undefined) {
       updateFields.push('sessionDate = ?');
-      updateParams.push(updateData.sessionDate);
+      // Convert ISO date to YYYY-MM-DD format for database
+      const sessionDate = new Date(updateData.sessionDate).toISOString().split('T')[0];
+      updateParams.push(sessionDate);
     }
 
     if (updateData.sessionDuration !== undefined) {

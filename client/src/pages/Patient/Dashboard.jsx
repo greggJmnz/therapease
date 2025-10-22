@@ -194,7 +194,7 @@ const PatientDashboard = () => {
 
       {/* Quick Actions Section */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="actions-grid">
           <Link
             to="/patient/appointments"
@@ -246,7 +246,7 @@ const PatientDashboard = () => {
             <div className="px-4 py-3 border-b border-blue-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Upcoming Sessions</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Upcoming Sessions</h3>
                   <p className="text-xs text-gray-600">Your scheduled therapy sessions</p>
                 </div>
                 <Link
@@ -306,7 +306,7 @@ const PatientDashboard = () => {
             <div className="px-4 py-3 border-b border-emerald-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Recent Progress</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Recent Progress</h3>
                   <p className="text-xs text-gray-600">Your latest progress tracking entries</p>
                 </div>
                 <Link

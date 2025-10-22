@@ -547,6 +547,61 @@
   overflow-y: visible !important;
   position: relative; /* Ensure positioning context */
   -webkit-overflow-scrolling: touch;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+/* Classic Table Design for Admin Patients */
+.patients-table-container .bg-gray-50 {
+  background: #374151 !important;
+  border-bottom: 2px solid #1f2937 !important;
+}
+
+.patients-table-container .bg-gray-50 .text-gray-500 {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Status Badge Styling - Solid Colors with White Text */
+.patients-table-container .px-2 {
+  padding: 0.375rem 0.75rem !important;
+  border-radius: 0.375rem !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Status Colors - Solid Backgrounds */
+.patients-table-container .bg-green-100 {
+  background: #059669 !important;
+  color: white !important;
+}
+
+.patients-table-container .bg-blue-100 {
+  background: #2563eb !important;
+  color: white !important;
+}
+
+.patients-table-container .bg-yellow-100 {
+  background: #d97706 !important;
+  color: white !important;
+}
+
+.patients-table-container .bg-red-100 {
+  background: #dc2626 !important;
+  color: white !important;
+}
+
+.patients-table-container .bg-gray-100 {
+  background: #6b7280 !important;
+  color: white !important;
+}
+
+/* Table Row Hover Effects */
+.patients-table-container .hover\:bg-gray-50:hover {
+  background: #f3f4f6 !important;
 }
 
 /* Table - Ensure proper positioning context and minimum width for horizontal scrolling */

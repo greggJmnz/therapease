@@ -110,24 +110,24 @@ const HomeExercises = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Home Exercise Program</h1>
-        <p className="mt-2 text-sm text-gray-700">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Home Exercise Program</h1>
+        <p className="mt-2 text-xs sm:text-sm text-gray-700">
           Complete your daily exercises to support your therapy progress
         </p>
       </div>
 
       {/* Exercise Stats */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-4">
         <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Target className="h-6 w-6 text-blue-400" />
+          <div className="p-3 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
+              <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
+                <Target className="h-4 w-4 sm:h-6 sm:w-6 text-blue-400" />
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Exercises</dt>
-                  <dd className="text-lg font-medium text-gray-900">{exercises.length}</dd>
+                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Total</dt>
+                  <dd className="text-sm sm:text-lg font-medium text-gray-900">{exercises.length}</dd>
                 </dl>
               </div>
             </div>
@@ -135,15 +135,15 @@ const HomeExercises = () => {
         </div>
 
         <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CheckCircle className="h-6 w-6 text-green-400" />
+          <div className="p-3 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
+              <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
+                <CheckCircle className="h-4 w-4 sm:h-6 sm:w-6 text-green-400" />
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Completed Today</dt>
-                  <dd className="text-lg font-medium text-gray-900">
+                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Completed</dt>
+                  <dd className="text-sm sm:text-lg font-medium text-gray-900">
                     {exercises.filter(e => e.isCompleted).length}
                   </dd>
                 </dl>
@@ -153,15 +153,15 @@ const HomeExercises = () => {
         </div>
 
         <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <TrendingUp className="h-6 w-6 text-orange-400" />
+          <div className="p-3 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
+              <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
+                <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-orange-400" />
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Avg Progress</dt>
-                  <dd className="text-lg font-medium text-gray-900">
+                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Progress</dt>
+                  <dd className="text-sm sm:text-lg font-medium text-gray-900">
                     {Math.round(exercises.reduce((sum, e) => sum + e.progress, 0) / exercises.length)}%
                   </dd>
                 </dl>
@@ -171,15 +171,15 @@ const HomeExercises = () => {
         </div>
 
         <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Award className="h-6 w-6 text-purple-400" />
+          <div className="p-3 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
+              <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
+                <Award className="h-4 w-4 sm:h-6 sm:w-6 text-purple-400" />
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Best Streak</dt>
-                  <dd className="text-lg font-medium text-gray-900">
+                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Streak</dt>
+                  <dd className="text-sm sm:text-lg font-medium text-gray-900">
                     {Math.max(...exercises.map(e => e.streak))}
                   </dd>
                 </dl>

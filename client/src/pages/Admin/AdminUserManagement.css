@@ -172,18 +172,19 @@
 }
 
 .users-table thead {
-  background: #f9fafb;
+  background: #374151 !important;
 }
 
 .users-table th {
   padding: 1rem 0.75rem;
   text-align: left;
   font-weight: 600;
-  color: #374151;
+  color: white !important;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
+  border-bottom: 2px solid #1f2937 !important;
 }
 
 /* Center align the Actions column header */
@@ -218,6 +219,54 @@
 .users-table th:nth-child(5),
 .users-table td:nth-child(5) {
   padding: 1rem 0.25rem 1rem 0.75rem;
+}
+
+/* Classic Table Design for Admin User Management */
+.users-table-container {
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+/* Status Badge Styling - Solid Colors with White Text */
+.users-table-container .px-2 {
+  padding: 0.375rem 0.75rem !important;
+  border-radius: 0.375rem !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Status Colors - Solid Backgrounds */
+.users-table-container .bg-green-100 {
+  background: #059669 !important;
+  color: white !important;
+}
+
+.users-table-container .bg-blue-100 {
+  background: #2563eb !important;
+  color: white !important;
+}
+
+.users-table-container .bg-yellow-100 {
+  background: #d97706 !important;
+  color: white !important;
+}
+
+.users-table-container .bg-red-100 {
+  background: #dc2626 !important;
+  color: white !important;
+}
+
+.users-table-container .bg-gray-100 {
+  background: #6b7280 !important;
+  color: white !important;
+}
+
+/* Table Row Hover Effects */
+.users-table-container .hover\:bg-gray-50:hover {
+  background: #f3f4f6 !important;
 }
 
 .users-table th:nth-child(6),

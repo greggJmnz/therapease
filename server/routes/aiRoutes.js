@@ -36,11 +36,11 @@ router.post('/analyze-assessment', [
     // Add assessment type to assessment data
     const enhancedAssessmentData = { ...assessmentData, assessmentType };
 
-        const analysis = await gptService.analyzeAssessmentData(patientData, enhancedAssessmentData, {
-          model: 'gpt-4.1', // Using GPT-4.1 for faster, more efficient, and more accurate responses
-          maxTokens: 2500,
-          temperature: 0.6,
-        });
+    const analysis = await gptService.analyzeAssessmentData(patientData, enhancedAssessmentData, {
+      model: 'gpt-4.1',
+      maxTokens: 2500,
+      temperature: 0.6,
+    });
 
     if (analysis.success) {
       res.json({

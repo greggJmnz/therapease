@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Bell, Settings as SettingsIcon, Eye, EyeOff, Smartphone, Monitor, Globe, Heart, Lock, Save, RefreshCw, Activity, Calendar, Download, Trash2, ChevronDown, Shield, KeyRound, ArrowLeft } from 'lucide-react';
+import { User, Bell, Settings as SettingsIcon, Eye, EyeOff, Smartphone, Monitor, Globe, Heart, Lock, RefreshCw, Activity, Calendar, Download, Trash2, ChevronDown, Shield, KeyRound, ArrowLeft } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { patientAPI, authAPI } from '../../services/api';
 import ProfileForm from '../../components/Profile/ProfileForm';
@@ -22,11 +22,11 @@ const Settings = () => {
     'twoFactorStatus',
     authAPI.get2FAStatus,
     {
-      staleTime: 0, // Always refetch when invalidated
-      cacheTime: 0, // Don't cache the result
-      refetchOnMount: true,
-      refetchOnWindowFocus: true,
-      retry: 3,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
       retryDelay: 1000
     }
   );
@@ -53,7 +53,6 @@ const Settings = () => {
     progressUpdates: true,
     assessmentResults: true,
     homeExerciseReminders: true,
-    systemUpdates: false,
     emailNotifications: true,
     smsNotifications: false,
     pushNotifications: true
@@ -135,10 +134,17 @@ const Settings = () => {
   );
 
   const handleNotificationChange = (setting, value) => {
-    setNotificationSettings(prev => ({
-      ...prev,
+    const newNotificationSettings = {
+      ...notificationSettings,
       [setting]: value
-    }));
+    };
+    
+    setNotificationSettings(newNotificationSettings);
+    
+    // Automatically save notification changes
+    updateSettingsMutation.mutate({
+      notifications: newNotificationSettings
+    });
   };
 
 
@@ -149,11 +155,6 @@ const Settings = () => {
     }));
   };
 
-  const handleSaveSettings = () => {
-    updateSettingsMutation.mutate({
-      notifications: notificationSettings
-    });
-  };
 
   const handlePasswordSubmit = () => {
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
@@ -290,7 +291,6 @@ const Settings = () => {
           <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Layout:</span>
               <button
                 onClick={() => setNavigationType('top')}
                 className={`px-3 py-1 text-sm rounded-lg transition-all duration-200 ${
@@ -485,23 +485,6 @@ const Settings = () => {
                       <Activity className="h-5 w-5 mr-2 text-green-600" />
                       System Notifications
                     </h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
-                        <div>
-                          <h4 className="font-medium text-gray-900">System Updates</h4>
-                          <p className="text-sm text-gray-500">Notifications about app updates and maintenance</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={notificationSettings.systemUpdates}
-                            onChange={(e) => handleNotificationChange('systemUpdates', e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                    </div>
                   </div>
 
                   {/* Delivery Methods */}
@@ -681,30 +664,6 @@ const Settings = () => {
               </div>
             )}
 
-            {/* Save Button - Only show for non-profile tabs */}
-            {activeTab !== 'profile' && (
-              <div className="px-8 py-6 bg-gray-50 border-t border-gray-200">
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleSaveSettings}
-                    disabled={updateSettingsMutation.isLoading}
-                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {updateSettingsMutation.isLoading ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

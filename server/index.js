@@ -132,7 +132,9 @@ app.options('/api/maintenance-status', (req, res) => {
   res.status(200).end();
 });
 
-// Public maintenance status endpoint moved to adminRoutes.js
+// Public maintenance status endpoint
+const systemSettingsController = require('./controllers/systemSettingsController');
+app.get('/api/maintenance-status', systemSettingsController.getMaintenanceStatus);
 
 // WebSocket route handler (must be before static file serving)
 app.get('/ws', (req, res) => {
@@ -357,6 +359,10 @@ const server = http.createServer(app);
 // Initialize WebSocket service
 websocketService.initialize(server);
 
+// Initialize notification schedulers
+const { initializeNotificationSchedulers } = require('./scripts/notificationScheduler');
+initializeNotificationSchedulers();
+
 // Start server
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 TherapEase API server running on port ${PORT}`);
@@ -364,6 +370,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`📊 Database: ${dbType}`);
   console.log(`🔐 Encryption: AES-256-GCM`);
   console.log(`🌐 WebSocket service initialized`);
+  console.log(`🔔 Notification schedulers initialized`);
   console.log(`🔗 Server accessible on all interfaces (0.0.0.0:${PORT})`);
 });
 

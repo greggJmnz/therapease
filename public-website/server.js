@@ -2,14 +2,14 @@ const express = require('express');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || process.env.PUBLIC_PORT || 8000;
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '../client/build')));
+// Serve static files from the public-website directory
+app.use(express.static(path.join(__dirname)));
 
-// Handle React routing
+// Serve the main index.html for all routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {

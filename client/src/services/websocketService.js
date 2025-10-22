@@ -21,7 +21,6 @@ class WebSocketService {
 
     // Prevent reconnection with the same token if it failed before
     if (this.lastToken === token && this.reconnectAttempts > 0) {
-      console.log('🔌 Skipping WebSocket connection - same token that failed before');
       return;
     }
 
@@ -31,16 +30,9 @@ class WebSocketService {
     // Dynamic WebSocket URL construction
     let wsUrl;
     
-    console.log('🔍 WebSocket debug info:', {
-      hostname: window.location.hostname,
-      protocol: window.location.protocol,
-      nodeEnv: process.env.NODE_ENV
-    });
-    
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       // Development environment
       wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
-      console.log('🔌 Using localhost for WebSocket');
     } else {
       // Production environment - Smart port detection
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -48,20 +40,15 @@ class WebSocketService {
       // Check if we're on therapease.site domain and use port 5000 for emergency server
       if (window.location.hostname.includes('therapease.site')) {
         wsUrl = `${protocol}//${window.location.hostname}:5000/ws?token=${token}`;
-        console.log('🔌 Using therapease.site with port 5000 for WebSocket (emergency server)');
       } else {
         // For other production domains, try standard ports first
         wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
-        console.log('🔌 Using standard production WebSocket URL');
       }
     }
-    
-    console.log('🔌 WebSocket connecting to:', wsUrl);
     
     // Set connection timeout to prevent long waits
     this.connectionTimeout = setTimeout(() => {
       if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
-        console.log('🔌 WebSocket connection timeout, closing...');
         this.ws.close();
         this.isConnecting = false;
       }
@@ -71,7 +58,6 @@ class WebSocketService {
       this.ws = new WebSocket(wsUrl);
       
       this.ws.onopen = () => {
-        console.log('🔌 WebSocket connected');
         this.isConnecting = false;
         this.reconnectAttempts = 0;
         this.connectionState = 'connected';
@@ -90,7 +76,6 @@ class WebSocketService {
       };
       
       this.ws.onclose = (event) => {
-        console.log(`🔌 WebSocket disconnected: ${event.code}`);
         this.isConnecting = false;
         this.connectionState = 'disconnected';
         if (this.connectionTimeout) {
@@ -100,26 +85,15 @@ class WebSocketService {
         // Only attempt reconnection if it's not a normal closure and we haven't exceeded max attempts
         if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.scheduleReconnect(token);
-        } else {
-          console.log('🔌 WebSocket connection failed, continuing without WebSocket');
         }
       };
       
       this.ws.onerror = (error) => {
-        console.log('🔌 WebSocket error:', error);
         this.isConnecting = false;
         this.connectionState = 'error';
         if (this.connectionTimeout) {
           clearTimeout(this.connectionTimeout);
         }
-        
-        // Log the specific error for debugging
-        if (error.target && error.target.readyState === WebSocket.CLOSED) {
-          console.log('🔌 WebSocket connection closed unexpectedly');
-        }
-        
-        // Don't attempt reconnection on error - just log it and continue
-        console.log('🔌 WebSocket connection failed, but continuing without WebSocket');
       };
 
     } catch (error) {
@@ -128,20 +102,16 @@ class WebSocketService {
       if (this.connectionTimeout) {
         clearTimeout(this.connectionTimeout);
       }
-      console.log('🔌 WebSocket connection failed, but continuing without WebSocket');
     }
   }
 
   scheduleReconnect(token) {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log('🔌 Max reconnection attempts reached, stopping reconnection');
       return;
     }
     
     this.reconnectAttempts++;
     const delay = 2000; // Fixed 2 second delay
-    
-    console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`);
     
     setTimeout(() => {
       if (this.reconnectAttempts <= this.maxReconnectAttempts) {
@@ -209,10 +179,6 @@ class WebSocketService {
     if (options.reconnectInterval !== undefined) {
       this.reconnectInterval = options.reconnectInterval;
     }
-    console.log('🔌 WebSocket service configured:', {
-      maxReconnectAttempts: this.maxReconnectAttempts,
-      reconnectInterval: this.reconnectInterval
-    });
   }
 
   // Method to get connection status

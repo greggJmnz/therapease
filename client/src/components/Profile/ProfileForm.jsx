@@ -37,10 +37,10 @@ const ProfileForm = ({ userRole, apiService }) => {
   const { data: profileData, isLoading, error, refetch } = useQuery({
     queryKey: [`${userRole}Profile`],
     queryFn: () => apiService.getProfile(),
-    staleTime: 0,
-    cacheTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 3,
     retryDelay: 1000,
     enabled: !!(apiService && apiService.getProfile) // Only run if apiService is valid
@@ -721,7 +721,7 @@ const ProfileForm = ({ userRole, apiService }) => {
                 <input
                 type={showPassword ? 'text' : 'password'}
                   name="currentPassword"
-                  value={passwordData.currentPassword}
+                  value={passwordData.currentPassword || ''}
                   onChange={handlePasswordChange}
                 className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="Enter current password"
@@ -749,7 +749,7 @@ const ProfileForm = ({ userRole, apiService }) => {
                 <input
                   type={showNewPassword ? 'text' : 'password'}
                   name="newPassword"
-                  value={passwordData.newPassword}
+                  value={passwordData.newPassword || ''}
                   onChange={handlePasswordChange}
                   className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   placeholder="Enter new password"
@@ -776,7 +776,7 @@ const ProfileForm = ({ userRole, apiService }) => {
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
-                  value={passwordData.confirmPassword}
+                  value={passwordData.confirmPassword || ''}
                   onChange={handlePasswordChange}
                   className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   placeholder="Confirm new password"

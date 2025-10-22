@@ -106,9 +106,13 @@ const AdminReports = () => {
   
   const fallbackStats = generateFallbackStats();
   
-  // Try multiple data extraction paths
+  // Try multiple data extraction paths - prioritize reports data over dashboard data
   let extractedStats = null;
-  if (dashboardData?.data?.stats) {
+  if (reportsData?.data?.summary) {
+    extractedStats = reportsData.data.summary;
+  } else if (dashboardData?.data?.data?.stats) {
+    extractedStats = dashboardData.data.data.stats;
+  } else if (dashboardData?.data?.stats) {
     extractedStats = dashboardData.data.stats;
   } else if (dashboardData?.stats) {
     extractedStats = dashboardData.stats;
@@ -117,15 +121,15 @@ const AdminReports = () => {
   const stats = extractedStats || fallbackStats;
   
 
-  // Extract real data from APIs
-  const userGrowth = dashboardData?.data?.userGrowth || [];
-  const appointmentTrends = dashboardData?.data?.appointmentTrends || [];
-  const assessmentTrends = dashboardData?.data?.assessmentTrends || [];
-  let appointmentStats = dashboardData?.data?.appointmentStats || [];
-  const assessmentStats = dashboardData?.data?.assessmentStats || [];
-  const systemHealth = dashboardData?.data?.systemHealth || {};
-  const recentUsers = dashboardData?.data?.recentUsers || [];
-  const analytics = dashboardData?.data?.analytics || {};
+  // Extract real data from APIs - prioritize reports data
+  const userGrowth = dashboardData?.data?.data?.userGrowth || dashboardData?.data?.userGrowth || [];
+  const appointmentTrends = dashboardData?.data?.data?.appointmentTrends || dashboardData?.data?.appointmentTrends || [];
+  const assessmentTrends = dashboardData?.data?.data?.assessmentTrends || dashboardData?.data?.assessmentTrends || [];
+  let appointmentStats = reportsData?.data?.appointmentStats || dashboardData?.data?.data?.appointmentStats || dashboardData?.data?.appointmentStats || [];
+  const assessmentStats = dashboardData?.data?.data?.assessmentStats || dashboardData?.data?.assessmentStats || [];
+  const systemHealth = dashboardData?.data?.data?.systemHealth || dashboardData?.data?.systemHealth || {};
+  const recentUsers = dashboardData?.data?.data?.recentUsers || dashboardData?.data?.recentUsers || [];
+  const analytics = dashboardData?.data?.data?.analytics || dashboardData?.data?.analytics || {};
   
   
   // Extract growth trends data from reports API
@@ -135,9 +139,9 @@ const AdminReports = () => {
   const reportsDailyTrends = reportsData?.data?.dailyTrends || [];
   
   
-  // Fallback to reports data if dashboard doesn't have appointment stats
-  if (!appointmentStats || appointmentStats.length === 0) {
-    appointmentStats = reportsData?.data?.appointmentStats || [];
+  // Use reports data for appointment stats (reports API is more reliable)
+  if (reportsData?.data?.appointmentStats && reportsData.data.appointmentStats.length > 0) {
+    appointmentStats = reportsData.data.appointmentStats;
   }
   
   // Process appointments data directly to generate statistics

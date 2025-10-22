@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, User, Bell, Save, Users, Clock, RefreshCw, Server, Lock, Mail, Globe, Eye, EyeOff, Smartphone, Monitor, ChevronDown, Shield } from 'lucide-react';
+import { Settings, User, Bell, Users, Clock, RefreshCw, Server, Lock, Mail, Globe, Eye, EyeOff, Smartphone, Monitor, ChevronDown, Shield, KeyRound } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { adminAPI, authAPI } from '../../services/api';
 import { useSystemSettings } from '../../context/SystemSettingsContext';
@@ -30,18 +30,23 @@ const AdminSettings = () => {
     'systemSettings',
     adminAPI.getSystemSettings,
     {
-      onSuccess: (data) => {
-        if (data?.data) {
-          setSystemSettings(prev => ({
-            ...prev,
-            ...data.data.general,
-            ...data.data.registration,
-            ...data.data.security
-          }));
-          setNotificationSettings(prev => ({
-            ...prev,
-            ...data.data.notifications
-          }));
+      onSuccess: (response) => {
+        if (response?.data?.data) {
+          const newSystemSettings = {
+            ...systemSettings,
+            ...response.data.data.general,
+            ...response.data.data.registration,
+            ...response.data.data.security
+          };
+          setSystemSettings(newSystemSettings);
+          
+          const newNotificationSettings = {
+            ...notificationSettings,
+            ...response.data.data.notifications
+          };
+          setNotificationSettings(newNotificationSettings);
+          
+          setDataLoaded(true);
         }
       },
       onError: (error) => {
@@ -55,24 +60,11 @@ const AdminSettings = () => {
     'twoFactorStatus',
     authAPI.get2FAStatus,
     {
-      onSuccess: (data) => {
-        console.log('2FA Status fetched:', data);
-        // Handle nested data structure: data.data.data.enabled
-        const enabledValue = data?.data?.data?.enabled ?? data?.data?.enabled;
-        if (enabledValue !== undefined) {
-          const enabled = Boolean(enabledValue);
-          console.log('Setting 2FA state in onSuccess:', enabled, 'original:', enabledValue);
-          setTwoFactorEnabled(enabled);
-        }
-      },
-      onError: (error) => {
-        console.error('Error fetching 2FA status:', error);
-      },
-      staleTime: 0, // Always refetch when invalidated
-      cacheTime: 0, // Don't cache the result
-      refetchOnMount: true,
-      refetchOnWindowFocus: true,
-      retry: 3,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
       retryDelay: 1000
     }
   );
@@ -83,7 +75,6 @@ const AdminSettings = () => {
     const enabledValue = twoFactorStatus?.data?.data?.enabled ?? twoFactorStatus?.data?.enabled;
     if (enabledValue !== undefined) {
       const enabled = Boolean(enabledValue);
-      console.log('Updating 2FA state from data:', enabled, 'original:', enabledValue);
       setTwoFactorEnabled(enabled);
     }
   }, [twoFactorStatus]);
@@ -91,6 +82,7 @@ const AdminSettings = () => {
   const [systemSettings, setSystemSettings] = useState({
     systemName: 'TherapEase',
     maintenanceMode: false,
+    maintenanceDuration: '2 hours',
     sessionTimeout: 30,
     allowRegistration: true,
     requireEmailVerification: true,
@@ -98,6 +90,8 @@ const AdminSettings = () => {
     maxLoginAttempts: 5,
     notificationFrequency: 'immediate'
   });
+  
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const [notificationSettings, setNotificationSettings] = useState({
     systemAlerts: true,
@@ -150,29 +144,66 @@ const AdminSettings = () => {
     };
   }, []);
 
-  // Sync local state with context state
+  // Sync local state with context state (only if data hasn't been loaded from API yet)
   useEffect(() => {
-    if (contextSettings && contextSettings.systemName) {
-      setSystemSettings(prev => ({
-        ...prev,
+    // Only sync with context if API data hasn't loaded yet AND context has complete data
+    if (!dataLoaded && contextSettings && contextSettings.systemName && 
+        contextSettings.allowRegistration !== undefined && 
+        contextSettings.requireEmailVerification !== undefined) {
+      const newSettings = {
+        ...systemSettings,
         systemName: contextSettings.systemName,
         sessionTimeout: contextSettings.sessionTimeout,
-        maintenanceMode: contextSettings.maintenanceMode
-      }));
+        maintenanceMode: contextSettings.maintenanceMode,
+        maintenanceDuration: contextSettings.maintenanceDuration,
+        allowRegistration: contextSettings.allowRegistration,
+        requireEmailVerification: contextSettings.requireEmailVerification,
+        passwordComplexity: contextSettings.passwordComplexity,
+        maxLoginAttempts: contextSettings.maxLoginAttempts,
+        notificationFrequency: contextSettings.notificationFrequency
+      };
+      setSystemSettings(newSettings);
     }
-  }, [contextSettings]);
+  }, [contextSettings, dataLoaded]);
 
   // Update settings mutation
   const updateSettingsMutation = useMutation(
     (settings) => adminAPI.updateSystemSettings(settings),
     {
-      onSuccess: async () => {
-        // Immediately update the context with the new settings
-        updateSystemSettings({
-          systemName: systemSettings.systemName,
-          sessionTimeout: systemSettings.sessionTimeout,
-          maintenanceMode: systemSettings.maintenanceMode
-        });
+      onSuccess: async (response) => {
+        // Update the local systemSettings state with all settings from the API response
+        if (response?.data?.data) {
+          const newSettings = {
+            ...systemSettings,
+            ...response.data.data.general,
+            ...response.data.data.registration,
+            ...response.data.data.security
+          };
+          setSystemSettings(newSettings);
+        }
+        
+        // Update the context with the new settings from the API response
+        if (response?.data?.data?.general) {
+          updateSystemSettings({
+            systemName: response.data.data.general.systemName,
+            sessionTimeout: response.data.data.general.sessionTimeout,
+            maintenanceMode: response.data.data.general.maintenanceMode,
+            maintenanceDuration: response.data.data.general.maintenanceDuration,
+            allowRegistration: response.data.data.registration?.allowRegistration,
+            requireEmailVerification: response.data.data.registration?.requireEmailVerification,
+            passwordComplexity: response.data.data.security?.passwordComplexity,
+            maxLoginAttempts: response.data.data.security?.maxLoginAttempts,
+            notificationFrequency: response.data.data.security?.notificationFrequency
+          });
+        }
+        
+        // Update notification settings from the API response
+        if (response?.data?.data?.notifications) {
+          setNotificationSettings(prev => ({
+            ...prev,
+            ...response.data.data.notifications
+          }));
+        }
         
         // Small delay to ensure backend has processed the update
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -182,6 +213,18 @@ const AdminSettings = () => {
         await queryClient.refetchQueries('systemSettings');
         // Also refresh the system settings context
         await refreshSystemSettings();
+        
+        // Broadcast maintenance mode changes to other tabs/windows
+        if (response?.data?.data?.general?.maintenanceMode !== undefined) {
+          localStorage.setItem('maintenanceMode', response.data.data.general.maintenanceMode.toString());
+          // Trigger storage event for other tabs
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'maintenanceMode',
+            newValue: response.data.data.general.maintenanceMode.toString(),
+            oldValue: localStorage.getItem('maintenanceMode')
+          }));
+        }
+        
         toast.success('System settings updated successfully');
       },
       onError: (error) => {
@@ -211,17 +254,72 @@ const AdminSettings = () => {
   );
 
   const handleSystemChange = (field, value) => {
-    setSystemSettings(prev => ({
-      ...prev,
+    // Special validation for maintenance mode
+    if (field === 'maintenanceMode' && value === true) {
+      // Check if maintenance duration is set before enabling maintenance mode
+      if (!systemSettings.maintenanceDuration || systemSettings.maintenanceDuration.trim() === '') {
+        toast.error('Please set the expected maintenance duration before enabling maintenance mode');
+        return; // Don't enable maintenance mode
+      }
+    }
+
+    const newSettings = {
+      ...systemSettings,
       [field]: value
-    }));
+    };
+    
+    setSystemSettings(newSettings);
+    
+    // Automatically save changes for toggles and immediate settings
+    if (['allowRegistration', 'requireEmailVerification', 'maintenanceMode', 'passwordComplexity', 'maxLoginAttempts', 'notificationFrequency'].includes(field)) {
+      const mutationData = {
+        general: {
+          systemName: newSettings.systemName,
+          maintenanceMode: newSettings.maintenanceMode,
+          maintenanceDuration: newSettings.maintenanceDuration,
+          sessionTimeout: newSettings.sessionTimeout
+        },
+        registration: {
+          allowRegistration: newSettings.allowRegistration,
+          requireEmailVerification: newSettings.requireEmailVerification
+        },
+        security: {
+          passwordComplexity: newSettings.passwordComplexity,
+          maxLoginAttempts: newSettings.maxLoginAttempts,
+          notificationFrequency: newSettings.notificationFrequency
+        }
+      };
+      updateSettingsMutation.mutate(mutationData);
+    }
   };
 
   const handleNotificationChange = (setting, value) => {
-    setNotificationSettings(prev => ({
-      ...prev,
+    const newNotificationSettings = {
+      ...notificationSettings,
       [setting]: value
-    }));
+    };
+    
+    setNotificationSettings(newNotificationSettings);
+    
+    // Automatically save notification changes
+    updateSettingsMutation.mutate({
+      general: {
+        systemName: systemSettings.systemName,
+        maintenanceMode: systemSettings.maintenanceMode,
+        maintenanceDuration: systemSettings.maintenanceDuration,
+        sessionTimeout: systemSettings.sessionTimeout
+      },
+      registration: {
+        allowRegistration: systemSettings.allowRegistration,
+        requireEmailVerification: systemSettings.requireEmailVerification
+      },
+      security: {
+        passwordComplexity: systemSettings.passwordComplexity,
+        maxLoginAttempts: systemSettings.maxLoginAttempts,
+        notificationFrequency: systemSettings.notificationFrequency
+      },
+      notifications: newNotificationSettings
+    });
   };
 
 
@@ -313,13 +411,6 @@ const AdminSettings = () => {
     }
   };
 
-  const handleSaveSettings = () => {
-    // Only save system and notification settings, not password
-    updateSettingsMutation.mutate({
-      general: systemSettings,
-      notifications: notificationSettings
-    });
-  };
 
   const handlePasswordSubmit = () => {
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
@@ -375,7 +466,6 @@ const AdminSettings = () => {
           <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Layout:</span>
               <button
                 onClick={() => setNavigationType('top')}
                 className={`px-3 py-1 text-sm rounded-lg transition-all duration-200 ${
@@ -545,7 +635,7 @@ const AdminSettings = () => {
                           </label>
                           <input
                             type="text"
-                            value={systemSettings.systemName}
+                            value={systemSettings.systemName || ''}
                             onChange={(e) => handleSystemChange('systemName', e.target.value)}
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
@@ -556,7 +646,7 @@ const AdminSettings = () => {
                           </label>
                           <input
                             type="number"
-                            value={systemSettings.sessionTimeout}
+                            value={systemSettings.sessionTimeout || 30}
                             onChange={(e) => handleSystemChange('sessionTimeout', parseInt(e.target.value))}
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
@@ -579,7 +669,7 @@ const AdminSettings = () => {
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input
                               type="checkbox"
-                              checked={systemSettings.allowRegistration}
+                              checked={systemSettings.allowRegistration || false}
                               onChange={(e) => handleSystemChange('allowRegistration', e.target.checked)}
                               className="sr-only peer"
                             />
@@ -594,7 +684,7 @@ const AdminSettings = () => {
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input
                               type="checkbox"
-                              checked={systemSettings.requireEmailVerification}
+                              checked={systemSettings.requireEmailVerification || false}
                               onChange={(e) => handleSystemChange('requireEmailVerification', e.target.checked)}
                               className="sr-only peer"
                             />
@@ -618,12 +708,50 @@ const AdminSettings = () => {
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={systemSettings.maintenanceMode}
+                            checked={systemSettings.maintenanceMode || false}
                             onChange={(e) => handleSystemChange('maintenanceMode', e.target.checked)}
                             className="sr-only peer"
                           />
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
                         </label>
+                      </div>
+                      
+                      {/* Maintenance Duration - Always visible and required */}
+                      <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
+                        <div>
+                          <label htmlFor="maintenanceDuration" className="block text-sm font-medium text-gray-700 mb-2">
+                            Expected Duration <span className="text-red-500">*</span>
+                          </label>
+                          <p className="text-sm text-gray-500 mb-3">
+                            {systemSettings.maintenanceMode 
+                              ? 'How long will maintenance mode be active?' 
+                              : 'Set the expected duration before enabling maintenance mode'
+                            }
+                          </p>
+                          <input
+                            type="text"
+                            id="maintenanceDuration"
+                            value={systemSettings.maintenanceDuration || ''}
+                            onChange={(e) => handleSystemChange('maintenanceDuration', e.target.value)}
+                            placeholder="e.g., 2 hours, 30 minutes, 1 day"
+                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                              !systemSettings.maintenanceDuration || systemSettings.maintenanceDuration.trim() === '' 
+                                ? 'border-red-300 bg-red-50' 
+                                : 'border-gray-300'
+                            }`}
+                          />
+                          <p className="text-xs text-gray-400 mt-1">
+                            {systemSettings.maintenanceMode 
+                              ? 'This will be displayed to users during maintenance'
+                              : 'Required before enabling maintenance mode'
+                            }
+                          </p>
+                          {(!systemSettings.maintenanceDuration || systemSettings.maintenanceDuration.trim() === '') && (
+                            <p className="text-xs text-red-500 mt-1">
+                              ⚠️ Duration is required to enable maintenance mode
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -660,7 +788,7 @@ const AdminSettings = () => {
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={notificationSettings[setting.key]}
+                                checked={notificationSettings[setting.key] || false}
                                 onChange={(e) => handleNotificationChange(setting.key, e.target.checked)}
                                 className="sr-only peer"
                               />
@@ -696,7 +824,7 @@ const AdminSettings = () => {
                               <label className="relative inline-flex items-center cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={notificationSettings[setting.key]}
+                                  checked={notificationSettings[setting.key] || false}
                                   onChange={(e) => handleNotificationChange(setting.key, e.target.checked)}
                                   className="sr-only peer"
                                 />
@@ -735,7 +863,7 @@ const AdminSettings = () => {
                           <div className="relative">
                             <input
                               type={showPassword ? 'text' : 'password'}
-                              value={passwordData.currentPassword}
+                              value={passwordData.currentPassword || ''}
                               onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
                               className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                               placeholder="Enter current password"
@@ -760,7 +888,7 @@ const AdminSettings = () => {
                           <div className="relative">
                             <input
                               type={showNewPassword ? 'text' : 'password'}
-                              value={passwordData.newPassword}
+                              value={passwordData.newPassword || ''}
                               onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
                               className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                               placeholder="Enter new password"
@@ -784,7 +912,7 @@ const AdminSettings = () => {
                           </label>
                           <input
                             type="password"
-                            value={passwordData.confirmPassword}
+                            value={passwordData.confirmPassword || ''}
                             onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                             placeholder="Confirm new password"
@@ -803,7 +931,7 @@ const AdminSettings = () => {
                               </>
                             ) : (
                               <>
-                                <Save className="h-4 w-4 mr-2" />
+                                <KeyRound className="h-4 w-4 mr-2" />
                                 Update Password
                               </>
                             )}
@@ -824,7 +952,7 @@ const AdminSettings = () => {
                             Password Complexity
                           </label>
                           <select
-                            value={systemSettings.passwordComplexity}
+                            value={systemSettings.passwordComplexity || 'medium'}
                             onChange={(e) => handleSystemChange('passwordComplexity', e.target.value)}
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           >
@@ -839,7 +967,7 @@ const AdminSettings = () => {
                           </label>
                           <input
                             type="number"
-                            value={systemSettings.maxLoginAttempts}
+                            value={systemSettings.maxLoginAttempts || 5}
                             onChange={(e) => handleSystemChange('maxLoginAttempts', parseInt(e.target.value))}
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                           />
@@ -862,7 +990,7 @@ const AdminSettings = () => {
                           <div className="flex items-center space-x-2">
                             <input
                               type="number"
-                              value={systemSettings.sessionTimeout}
+                              value={systemSettings.sessionTimeout || 30}
                               onChange={(e) => handleSystemChange('sessionTimeout', parseInt(e.target.value))}
                               className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
@@ -893,7 +1021,7 @@ const AdminSettings = () => {
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={twoFactorEnabled}
+                            checked={twoFactorEnabled || false}
                             onChange={handle2FAToggle}
                             disabled={twoFactorLoading}
                             className="sr-only peer"
@@ -917,7 +1045,7 @@ const AdminSettings = () => {
                             </label>
                             <input
                               type="password"
-                              value={twoFactorPassword}
+                              value={twoFactorPassword || ''}
                               onChange={(e) => setTwoFactorPassword(e.target.value)}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               placeholder="Enter your password"
@@ -959,7 +1087,7 @@ const AdminSettings = () => {
                             </label>
                             <input
                               type="text"
-                              value={twoFactorCode}
+                              value={twoFactorCode || ''}
                               onChange={(e) => setTwoFactorCode(e.target.value)}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg tracking-widest"
                               placeholder="000000"
@@ -1002,7 +1130,7 @@ const AdminSettings = () => {
                             </label>
                             <input
                               type="password"
-                              value={twoFactorPassword}
+                              value={twoFactorPassword || ''}
                               onChange={(e) => setTwoFactorPassword(e.target.value)}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               placeholder="Enter your password"
@@ -1033,30 +1161,6 @@ const AdminSettings = () => {
                 </div>
               )}
 
-              {/* Save Button - Only show for non-profile tabs */}
-              {activeTab !== 'profile' && (
-                <div className="px-8 py-6 bg-gray-50 border-t border-gray-200">
-                  <div className="flex justify-end">
-                    <button
-                      onClick={handleSaveSettings}
-                      disabled={updateSettingsMutation.isLoading}
-                      className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {updateSettingsMutation.isLoading ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          Save Changes
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
           </div>
         </div>
       </div>

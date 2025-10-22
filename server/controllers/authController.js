@@ -596,8 +596,8 @@ const changePassword = async (req, res) => {
       });
     }
 
-    // Get user ID from request (in real app, get from JWT token)
-    const userId = 2; // Hardcoded for now, should come from JWT token
+    // Get user ID from JWT token
+    const userId = req.user?.id || req.user?.userId;
 
     // Get current user
     const user = await getRow('SELECT id, password FROM users WHERE id = ?', [userId]);

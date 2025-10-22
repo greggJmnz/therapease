@@ -1,7 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Wrench, Clock, RefreshCw, Mail } from 'lucide-react';
 
 const MaintenancePage = () => {
+  const [maintenanceDuration, setMaintenanceDuration] = useState('2 hours');
+  
+  // Fetch maintenance duration from API
+  useEffect(() => {
+    const fetchMaintenanceDuration = async () => {
+      try {
+        const response = await fetch('/api/maintenance-status');
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.data?.maintenanceDuration) {
+            setMaintenanceDuration(data.data.maintenanceDuration);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch maintenance duration, using default');
+      }
+    };
+    
+    fetchMaintenanceDuration();
+  }, []);
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
@@ -47,7 +68,9 @@ const MaintenancePage = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Expected Duration</span>
-                  <span className="text-gray-900 font-medium">30-60 minutes</span>
+                  <span className="text-gray-900 font-medium">
+                    {maintenanceDuration || '30-60 minutes'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Last Updated</span>

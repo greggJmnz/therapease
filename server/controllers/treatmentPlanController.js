@@ -594,6 +594,36 @@ const updateSpecificObjective = async (req, res) => {
       WHERE id = ?
     `, updateValues);
 
+    // Check if objective was marked as completed and create notification for patient
+    if (isCompleted === true) {
+      try {
+        // Get patient and therapist information for notification
+        const objectiveData = await getRow(`
+          SELECT 
+            so.title as objectiveTitle,
+            tp.patientId,
+            CONCAT(u.firstName, ' ', u.lastName) as therapistName
+          FROM specific_objectives so
+          JOIN main_objectives mo ON so.mainObjectiveId = mo.id
+          JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+          JOIN users u ON tp.therapistId = u.id
+          WHERE so.id = ?
+        `, [id]);
+
+        if (objectiveData) {
+          const notificationController = require('./notificationController');
+          await notificationController.createProgressUpdateNotificationForPatient(
+            objectiveData.patientId,
+            objectiveData.objectiveTitle,
+            objectiveData.therapistName
+          );
+        }
+      } catch (notificationError) {
+        console.error('Progress update notification creation error:', notificationError);
+        // Continue without notifications if there's an error
+      }
+    }
+
     // Get the main objective ID for this specific objective
     const specificObjectiveData = await getRow(`
       SELECT mainObjectiveId FROM specific_objectives WHERE id = ?

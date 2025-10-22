@@ -2801,7 +2801,7 @@ The therapist retains full responsibility for all clinical decisions and patient
 
                   <button
                     onClick={clearAssessmentData}
-                    className="inline-flex items-center justify-center px-8 py-4 border border-gray-300 text-sm font-semibold rounded-xl shadow-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 touch-target"
+                    className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 touch-target"
                   >
                     <Trash2 className="h-5 w-5 mr-3" />
                     Clear
@@ -2810,7 +2810,7 @@ The therapist retains full responsibility for all clinical decisions and patient
                   <button
                     onClick={generateWellStructuredCurrentAssessmentPDF}
                     disabled={insights.length === 0 || !selectedPatient}
-                    className="inline-flex items-center justify-center px-8 py-4 border border-red-300 text-sm font-semibold rounded-xl shadow-lg text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-target"
+                    className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-target"
                     title={insights.length === 0 ? "Generate insights first to download PDF" : !selectedPatient ? "Select a patient first" : "Download AI Insights PDF"}
                   >
                     <Download className="h-5 w-5 mr-3" />
@@ -2997,7 +2997,7 @@ The therapist retains full responsibility for all clinical decisions and patient
                               setSelectedAIInsight(pdfRecord);
                               setShowAIInsightModal(true);
                             }}
-                            className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 border border-blue-300 shadow-sm text-xs sm:text-sm font-semibold rounded-xl text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 flex-1 sm:flex-none"
+                            className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 border border-transparent shadow-sm text-xs sm:text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 flex-1 sm:flex-none"
                             title="View AI Insights"
                           >
                             <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -3006,7 +3006,7 @@ The therapist retains full responsibility for all clinical decisions and patient
                           </button>
                           <button
                             onClick={() => downloadPDFFromHistory(pdfRecord)}
-                            className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 border border-green-300 shadow-sm text-xs sm:text-sm font-semibold rounded-xl text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 flex-1 sm:flex-none"
+                            className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 border border-transparent shadow-sm text-xs sm:text-sm font-semibold rounded-xl text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 flex-1 sm:flex-none"
                             title="Download PDF"
                           >
                             <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -3015,7 +3015,7 @@ The therapist retains full responsibility for all clinical decisions and patient
                           </button>
                           <button
                             onClick={() => deletePDFRecord(pdfRecord)}
-                            className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 border border-red-300 shadow-sm text-xs sm:text-sm font-semibold rounded-xl text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 flex-1 sm:flex-none"
+                            className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 border border-transparent shadow-sm text-xs sm:text-sm font-semibold rounded-xl text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 flex-1 sm:flex-none"
                             title="Delete Record"
                           >
                             <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -3562,7 +3562,7 @@ The therapist retains full responsibility for all clinical decisions and patient
             <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
               <button
                 onClick={() => setShowAIInsightModal(false)}
-                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                className="px-6 py-3 border border-transparent rounded-lg text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
               >
                 Close
               </button>

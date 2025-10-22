@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Bell, Settings as SettingsIcon, Clock, MapPin, Globe, Lock, Calendar, Smartphone, Monitor, Save, RefreshCw, Users, ChevronDown, Eye, EyeOff, Download, Trash2, Shield, KeyRound, ArrowLeft } from 'lucide-react';
+import { User, Bell, Settings as SettingsIcon, Clock, MapPin, Globe, Lock, Calendar, Smartphone, Monitor, RefreshCw, Users, ChevronDown, Eye, EyeOff, Download, Trash2, Shield, KeyRound, ArrowLeft } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { therapistAPI, authAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -42,11 +42,11 @@ const TherapistSettings = () => {
       onError: (error) => {
         console.error('Error fetching 2FA status:', error);
       },
-      staleTime: 0, // Always refetch when invalidated
-      cacheTime: 0, // Don't cache the result
-      refetchOnMount: true,
-      refetchOnWindowFocus: true,
-      retry: 3,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
       retryDelay: 1000
     }
   );
@@ -188,10 +188,18 @@ const TherapistSettings = () => {
   );
 
   const handleNotificationChange = (setting, value) => {
-    setNotificationSettings(prev => ({
-      ...prev,
+    const newNotificationSettings = {
+      ...notificationSettings,
       [setting]: value
-    }));
+    };
+    
+    setNotificationSettings(newNotificationSettings);
+    
+    // Automatically save notification changes
+    updateSettingsMutation.mutate({
+      notifications: newNotificationSettings,
+      workingHours: workingHours
+    });
   };
 
   const handleWorkingHoursChange = (day, field, value) => {
@@ -213,26 +221,6 @@ const TherapistSettings = () => {
     }));
   };
 
-  const handleSaveSettings = () => {
-    // Sanitize working hours to ensure no undefined values
-    const sanitizedWorkingHours = {};
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    
-    days.forEach(day => {
-      const dayData = workingHours[day];
-      sanitizedWorkingHours[day] = {
-        start: dayData?.start || '09:00',
-        end: dayData?.end || '17:00',
-        enabled: Boolean(dayData?.enabled) // Convert to boolean
-      };
-    });
-
-    const settingsData = {
-      notifications: notificationSettings,
-      workingHours: sanitizedWorkingHours
-    };
-    updateSettingsMutation.mutate(settingsData);
-  };
 
   const handlePasswordSubmit = () => {
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
@@ -379,7 +367,6 @@ const TherapistSettings = () => {
           <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Layout:</span>
               <button
                 onClick={() => setNavigationType('top')}
                 className={`px-3 py-1 text-sm rounded-lg transition-all duration-200 ${
@@ -802,30 +789,6 @@ const TherapistSettings = () => {
                 </div>
               )}
 
-              {/* Save Button - Only show for non-profile tabs */}
-              {activeTab !== 'profile' && (
-                <div className="px-8 py-6 bg-gray-50 border-t border-gray-200">
-                  <div className="flex justify-end">
-                    <button
-                      onClick={handleSaveSettings}
-                      disabled={updateSettingsMutation.isLoading}
-                      className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {updateSettingsMutation.isLoading ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          Save Changes
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
           </div>
         </div>
       </div>

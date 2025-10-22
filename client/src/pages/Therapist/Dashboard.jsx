@@ -31,10 +31,10 @@ const TherapistDashboard = () => {
         toast.error('Failed to load dashboard data');
         console.error('Error fetching dashboard:', error);
       },
-      staleTime: 0, // Force fresh data
-      cacheTime: 0, // Don't cache
-      refetchOnMount: true,
-      refetchOnWindowFocus: true
+      staleTime: 2 * 60 * 1000, // 2 minutes
+      cacheTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false
     }
   );
 
@@ -421,24 +421,6 @@ const TherapistDashboard = () => {
         </div>
       )}
 
-      {/* Monthly Trends */}
-      {trends.monthlyAppointments && trends.monthlyAppointments.length > 0 && (
-        <div className="mt-8 bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Monthly Appointments</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {trends.monthlyAppointments.slice(0, 6).map((month, index) => (
-                <div key={index} className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{month.appointmentCount}</div>
-                  <div className="text-sm text-gray-500">
-                    {new Date(2024, month.month - 1).toLocaleDateString('en-US', { month: 'short' })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
 
       {/* Alerts */}

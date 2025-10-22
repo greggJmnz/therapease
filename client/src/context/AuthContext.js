@@ -74,6 +74,55 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  // Auto-refresh token to maintain session
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+
+    let refreshInterval;
+    let lastActivity = Date.now();
+
+    // Track user activity
+    const updateActivity = () => {
+      lastActivity = Date.now();
+    };
+
+    // Add event listeners for user activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      document.addEventListener(event, updateActivity, true);
+    });
+
+    // Refresh token every 30 minutes, but only if user has been active
+    refreshInterval = setInterval(async () => {
+      const now = Date.now();
+      const timeSinceActivity = now - lastActivity;
+      
+      // Only refresh if user has been active in the last 5 minutes
+      if (timeSinceActivity < 5 * 60 * 1000) {
+        try {
+          // Verify token to refresh session
+          const response = await authAPI.verify();
+          if (response.data.success) {
+            console.log('🔄 Token refreshed successfully');
+          } else {
+            console.log('🔄 Token refresh failed, logging out');
+            logout();
+          }
+        } catch (error) {
+          console.log('🔄 Token refresh error, logging out:', error);
+          logout();
+        }
+      }
+    }, 30 * 60 * 1000); // Check every 30 minutes
+
+    return () => {
+      clearInterval(refreshInterval);
+      events.forEach(event => {
+        document.removeEventListener(event, updateActivity, true);
+      });
+    };
+  }, [isAuthenticated, token]);
+
   // Clear cache when user changes
   useEffect(() => {
     if (user) {

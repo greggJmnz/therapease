@@ -266,8 +266,8 @@ const PatientOnboarding = () => {
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Welcome to TherapEase</h1>
-              <p className="text-gray-600 mt-1">Let's get your account set up in just a few steps</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Welcome to TherapEase</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">Let's get your account set up in just a few steps</p>
             </div>
             <div className="text-sm text-gray-500">
               Step {currentStep} of {totalSteps}
@@ -284,16 +284,16 @@ const PatientOnboarding = () => {
               <AlertTriangle className="h-6 w-6 text-amber-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-amber-900 mb-2">
+              <h3 className="text-base sm:text-lg font-semibold text-amber-900 mb-2">
                 Important: Occupational Therapy Referral Form Required
               </h3>
-              <p className="text-amber-800 text-sm">
+              <p className="text-amber-800 text-xs sm:text-sm">
                 To be eligible for assessment and to become a patient at TherapEase, you must have or present your 
                 <strong> Occupational Therapy Referral Form</strong> from a qualified healthcare provider. 
                 This form is required to ensure proper medical oversight and to provide you with the most appropriate 
                 occupational therapy services.
               </p>
-              <p className="text-amber-800 text-sm mt-2">
+              <p className="text-amber-800 text-xs sm:text-sm mt-2">
                 Please ensure you have this referral form available before proceeding with the onboarding process.
               </p>
             </div>

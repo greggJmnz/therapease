@@ -280,13 +280,7 @@ const createAppointment = async (req, res) => {
       const notificationController = require('./notificationController');
       
       // Create notification for patient
-      await notificationController.createNotification(
-        newAppointment.patientUserId,
-        'Appointment Scheduled',
-        `Your ${type} appointment with ${newAppointment.therapistName} has been scheduled for ${appointmentDate} at ${formatTime12Hour(startTime)}`,
-        'appointment',
-        { relatedId: appointmentId }
-      );
+      await notificationController.createAppointmentCreationNotificationForPatient(appointmentId);
 
       // Create notification for therapist
       await notificationController.createNotification(

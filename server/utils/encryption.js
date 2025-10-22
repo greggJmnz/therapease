@@ -96,8 +96,8 @@ const decryptField = (encryptedValue) => {
       return decrypt(encryptedValue);
     } catch (error) {
       console.error(`Decryption failed for value: ${encryptedValue}, error: ${error.message}`);
-      // If decryption fails, return empty string for notes or original value for other fields
-      return '';
+      // If decryption fails, return a more user-friendly message
+      return 'Data unavailable - please contact support if this persists';
     }
   }
   

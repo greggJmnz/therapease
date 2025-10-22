@@ -77,6 +77,9 @@ const AdminDashboard = () => {
       retry: 3,
       onError: (error) => {
         console.error('Error fetching dashboard data:', error);
+      },
+      onSuccess: (data) => {
+        // Dashboard data loaded successfully
       }
     }
   );
@@ -134,7 +137,9 @@ const AdminDashboard = () => {
   );
 
   // Extract data from API responses
-  const correctStats = dashboardData?.data?.stats || {};
+  // The API returns {success: true, data: {stats: {...}}}
+  // But Axios wraps it in {data: {success: true, data: {stats: {...}}}}
+  const correctStats = dashboardData?.data?.data?.stats || dashboardData?.data?.stats || {};
   
   const dashboardStats = {
     totalPatients: correctStats.totalPatients || 0,
@@ -145,6 +150,7 @@ const AdminDashboard = () => {
     totalDailyNotes: correctStats.totalDailyNotes || 0,
     totalProgressEntries: correctStats.totalProgressEntries || 0
   };
+  
 
 
   const patients = (patientsData?.data?.users || [])
@@ -191,6 +197,7 @@ const AdminDashboard = () => {
   const generatePatientGrowthData = () => {
     // Use actual user growth data from API if available
     const userGrowth = dashboardData?.data?.data?.userGrowth || dashboardData?.data?.userGrowth || [];
+    
     
     if (userGrowth.length > 0) {
       // Process user growth data to show patient growth over time
@@ -243,11 +250,13 @@ const AdminDashboard = () => {
     // Use actual appointment stats from API if available
     const appointmentStats = dashboardData?.data?.data?.appointmentStats || dashboardData?.data?.appointmentStats || [];
     
+    
     if (appointmentStats.length > 0) {
-      return appointmentStats.map(stat => ({
+      const processedStats = appointmentStats.map(stat => ({
         status: stat.status.charAt(0).toUpperCase() + stat.status.slice(1),
         count: stat.count
       }));
+      return processedStats;
     }
     
     // Fallback to calculated data if API data not available
@@ -267,12 +276,16 @@ const AdminDashboard = () => {
 
 
   const generateUserDistributionData = () => {
-    return [
+    const distributionData = [
       { name: 'Patients', value: dashboardStats.totalPatients || 0, color: '#3B82F6' },
       { name: 'Therapists', value: dashboardStats.totalTherapists || 0, color: '#10B981' },
       { name: 'Admins', value: dashboardStats.totalAdmins || 0, color: '#8B5CF6' }
     ].filter(item => item.value > 0);
+    
+    
+    return distributionData;
   };
+
 
 
   // Loading state
@@ -387,6 +400,7 @@ const AdminDashboard = () => {
             </span>
           </div>
         </div>
+        
 
         <div className="stat-card">
           <div className="stat-icon therapists">

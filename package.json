@@ -21,7 +21,6 @@
     "db:init": "cd server && npm run db:init",
     "db:seed": "cd server && npm run db:seed",
     "db:reset": "cd server && npm run db:init && npm run db:seed",
-    "postinstall": "npm run setup",
     "test": "cd server && npm test",
     "test:client": "cd client && npm test",
     "lint": "cd client && npm run lint",

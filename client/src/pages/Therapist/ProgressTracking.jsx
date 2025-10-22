@@ -27,6 +27,7 @@ import { therapistAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import InitialsAvatar from '../../components/InitialsAvatar';
+import CommentModal from '../../components/CommentModal';
 
 const ProgressTracking = () => {
   const { user } = useAuth();
@@ -41,6 +42,14 @@ const ProgressTracking = () => {
   const [editingMainObjective, setEditingMainObjective] = useState(null);
   const [editingSpecificObjective, setEditingSpecificObjective] = useState(null);
   const [editingTreatmentPlan, setEditingTreatmentPlan] = useState(null);
+  
+  // Comment Modal states
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [commentModalData, setCommentModalData] = useState({
+    objectiveId: null,
+    objectiveTitle: '',
+    currentComment: ''
+  });
   
   // Progress Report states
   const [showUploadReport, setShowUploadReport] = useState(false);
@@ -518,6 +527,32 @@ const ProgressTracking = () => {
     });
   };
 
+  // Comment Modal handlers
+  const handleOpenCommentModal = (objectiveId, objectiveTitle, currentComment = '') => {
+    setCommentModalData({
+      objectiveId,
+      objectiveTitle,
+      currentComment
+    });
+    setShowCommentModal(true);
+  };
+
+  const handleCloseCommentModal = () => {
+    setShowCommentModal(false);
+    setCommentModalData({
+      objectiveId: null,
+      objectiveTitle: '',
+      currentComment: ''
+    });
+  };
+
+  const handleSaveComment = (comment) => {
+    if (commentModalData.objectiveId) {
+      handleUpdateSpecificObjective(commentModalData.objectiveId, comment);
+      handleCloseCommentModal();
+    }
+  };
+
   // Edit handlers
   const handleEditMainObjective = (mainObjective) => {
     setEditingMainObjective(mainObjective.id);
@@ -735,8 +770,8 @@ const ProgressTracking = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Progress Tracking</h1>
-          <p className="text-gray-600">Monitor and manage patient treatment plans and progress</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Progress Tracking</h1>
+          <p className="text-sm sm:text-base text-gray-600">Monitor and manage patient treatment plans and progress</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <button
@@ -834,7 +869,7 @@ const ProgressTracking = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-blue-600">Active Plans</p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
                         {treatmentPlansList?.length || 0}
                     </p>
                   </div>
@@ -846,7 +881,7 @@ const ProgressTracking = () => {
                   <div className="flex items-center justify-between">
                           <div>
                       <p className="text-sm font-medium text-green-600">Overall Progress</p>
-                      <p className={`text-2xl font-bold ${getProgressColor((() => {
+                      <p className={`text-lg sm:text-xl lg:text-2xl font-bold ${getProgressColor((() => {
                         // Calculate overall progress as average of all treatment plans for this patient
                         if (!treatmentPlansList || !Array.isArray(treatmentPlansList) || treatmentPlansList.length === 0) return 0;
                         const totalProgress = treatmentPlansList.reduce((sum, plan) => sum + parseFloat(plan.overallProgress || 0), 0);
@@ -868,7 +903,7 @@ const ProgressTracking = () => {
                   <div className="flex items-center justify-between">
                           <div>
                       <p className="text-sm font-medium text-purple-600">Completed Objectives</p>
-                      <p className="text-2xl font-bold text-gray-900">
+                      <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
                         {(() => {
                           // Calculate total completed objectives from planDetails if available, otherwise from treatmentPlansList
                           if (planDetails?.data?.data?.mainObjectives) {
@@ -1018,7 +1053,7 @@ const ProgressTracking = () => {
                             </div>
                             <div className="flex items-center space-x-4">
                               <div className="text-right">
-                                <div className={`text-2xl font-bold ${getProgressColor(parseFloat(plan.overallProgress || 0))}`}>
+                                <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${getProgressColor(parseFloat(plan.overallProgress || 0))}`}>
                                   {parseFloat(plan.overallProgress || 0).toFixed(1)}%
                                 </div>
                                 <div className="text-sm text-gray-500">Progress</div>
@@ -1311,16 +1346,11 @@ const ProgressTracking = () => {
                                           <Trash2 size={16} className="text-red-500" />
                                         </button>
                 <button
-                  onClick={() => {
-                                            const newRemarks = prompt('Enter remarks:', specificObj.remarks || '');
-                                            if (newRemarks !== null) {
-                                              handleUpdateSpecificObjective(specificObj.id, newRemarks);
-                                            }
-                                          }}
-                                          className="p-2 hover:bg-gray-100 rounded-lg touch-target"
-                                          title="Add remarks"
-                                        >
-                                          <MessageSquare size={16} className="text-gray-500" />
+                  onClick={() => handleOpenCommentModal(specificObj.id, specificObj.title, specificObj.remarks || '')}
+                  className="p-2 hover:bg-gray-100 rounded-lg touch-target"
+                  title="Add remarks"
+                >
+                  <MessageSquare size={16} className="text-gray-500" />
                 </button>
               </div>
                                     </div>
@@ -1547,7 +1577,7 @@ const ProgressTracking = () => {
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center">
-                          <div className={`text-3xl font-bold ${getProgressColor(parseFloat(selectedPlan?.overallProgress || 0))}`}>
+                          <div className={`text-xl sm:text-2xl lg:text-3xl font-bold ${getProgressColor(parseFloat(selectedPlan?.overallProgress || 0))}`}>
                             {parseFloat(selectedPlan?.overallProgress || 0).toFixed(1)}%
                           </div>
                           <div className="text-sm text-gray-500">Complete</div>
@@ -1943,6 +1973,16 @@ const ProgressTracking = () => {
           </div>
         </div>
       )}
+
+      {/* Comment Modal */}
+      <CommentModal
+        isOpen={showCommentModal}
+        onClose={handleCloseCommentModal}
+        onSave={handleSaveComment}
+        initialComment={commentModalData.currentComment}
+        objectiveTitle={commentModalData.objectiveTitle}
+        isLoading={updateSpecificObjectiveMutation.isLoading}
+      />
     </div>
   );
 };

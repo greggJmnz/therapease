@@ -52,8 +52,8 @@ const TherapistLayout = () => {
     {
       enabled: user?.role === 'therapist' && !!user?.id,
       refetchOnWindowFocus: true,
-      staleTime: 0, // Always fetch fresh data
-      cacheTime: 0, // Don't cache the data
+      staleTime: 1 * 60 * 1000, // 1 minute - reduced for better responsiveness
+      cacheTime: 5 * 60 * 1000, // 5 minutes - reduced cache time
       retry: 3, // Retry failed requests
       retryDelay: 1000, // Wait 1 second between retries
     }
@@ -67,6 +67,34 @@ const TherapistLayout = () => {
       refetchOnboardingStatus();
     }
   }, [user?.id, queryClient, refetchOnboardingStatus]);
+
+  // Listen for maintenance mode changes and refresh onboarding status
+  useEffect(() => {
+    const handleMaintenanceModeChange = () => {
+      // When maintenance mode is disabled, refresh onboarding status
+      queryClient.invalidateQueries(['therapistOnboardingStatus', user?.id]);
+      refetchOnboardingStatus();
+    };
+
+    // Listen for storage events (when maintenance mode changes in another tab)
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'maintenanceMode' && e.newValue === 'false') {
+        handleMaintenanceModeChange();
+      }
+    });
+
+    // Also listen for focus events to refresh when user returns to tab
+    const handleFocus = () => {
+      refetchOnboardingStatus();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('storage', handleMaintenanceModeChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [queryClient, refetchOnboardingStatus, user?.id]);
 
   // Handle navigation based on onboarding status
   useEffect(() => {
@@ -231,7 +259,7 @@ const TherapistLayout = () => {
               })}
             <div className="tools-section">
               <h4>Tools</h4>
-              <Link to="/therapist/settings" className="nav-link" title="Account and system settings">
+              <Link to="/therapist/settings" className="nav-link" title="Account and system settings" onClick={() => setSidebarOpen(false)}>
                   <div className="nav-link-content">
                     <Settings size={20} />
                     <div className="nav-link-text">
@@ -240,7 +268,7 @@ const TherapistLayout = () => {
                     </div>
                   </div>
                 </Link>
-                <Link to="/therapist/help" className="nav-link" title="Help and support resources">
+                <Link to="/therapist/help" className="nav-link" title="Help and support resources" onClick={() => setSidebarOpen(false)}>
                   <div className="nav-link-content">
                     <HelpCircle size={20} />
                     <div className="nav-link-text">
@@ -414,6 +442,18 @@ const TherapistLayout = () => {
                 <Menu size={20} />
               </button>
             )}
+
+            <div className="header-logo-section">
+              <div className="system-logo">
+                <div className="logo-icon">
+                  <i className="fas fa-heart-pulse"></i>
+                </div>
+              </div>
+              <div className="system-name">
+                <span className="system-title">{systemName || 'TherapEase'}</span>
+                <span className="portal-type">Therapist Portal</span>
+              </div>
+            </div>
 
             <div className="breadcrumb">
               <span className="breadcrumb-main">Therapist Portal</span>

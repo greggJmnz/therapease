@@ -1181,6 +1181,14 @@ const getDailyNotes = async (req, res) => {
     const decryptedNotes = notes.map(note => {
       const decryptedNote = decryptSensitiveFields(note, ['content', 'activities', 'observations', 'progress', 'challenges', 'nextSteps', 'goals']);
       
+      // Handle specific fields that might have decryption issues
+      if (decryptedNote.activities === 'Data unavailable - please contact support if this persists') {
+        decryptedNote.activities = 'Activities data is temporarily unavailable. Please contact your therapist for assistance.';
+      }
+      if (decryptedNote.nextSteps === 'Data unavailable - please contact support if this persists') {
+        decryptedNote.nextSteps = 'Next steps data is temporarily unavailable. Please contact your therapist for assistance.';
+      }
+      
       // Parse comments from JSON string or initialize empty array
       let comments = [];
       try {
@@ -1550,9 +1558,30 @@ const getHomeExercises = async (req, res) => {
       ORDER BY assignedDate DESC
     `, [patient.id]);
 
+    // Parse JSON fields for equipment and instructions
+    const parseJsonField = (field) => {
+      if (!field) return [];
+      if (Array.isArray(field)) return field;
+      if (typeof field === 'string') {
+        try {
+          return JSON.parse(field);
+        } catch (error) {
+          console.error('Error parsing JSON field:', error);
+          return [];
+        }
+      }
+      return [];
+    };
+
+    const parsedExercises = exercises.map(exercise => ({
+      ...exercise,
+      equipment: parseJsonField(exercise.equipment),
+      instructions: parseJsonField(exercise.instructions)
+    }));
+
     res.json({
       success: true,
-      data: exercises
+      data: parsedExercises
     });
 
   } catch (error) {

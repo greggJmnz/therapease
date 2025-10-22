@@ -41,6 +41,7 @@ api.interceptors.response.use(
   },
   (error) => {
     console.error('API: Response interceptor error:', error);
+    
     if (error.response?.status === 401) {
       // Token expired or invalid, clear storage but don't redirect automatically
       // Let the AuthContext handle the logout logic to prevent page reloads

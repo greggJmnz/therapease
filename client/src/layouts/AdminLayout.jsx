@@ -44,10 +44,8 @@ const AdminLayout = () => {
   );
 
   // Calculate unread count from notifications data
-  // Note: axios response has data.data structure, so we need notificationsData.data.data.notifications
-  const unreadCount = notificationsData?.data?.data?.notifications?.filter(notification => 
-    notification.read === 0 || notification.isRead === false
-  ).length || 0;
+  // Note: axios response has data.data structure, so we need notificationsData.data.data.unreadCount
+  const unreadCount = notificationsData?.data?.data?.unreadCount || 0;
 
 
   // Check screen size on mount and resize with improved mobile detection
@@ -145,11 +143,11 @@ const AdminLayout = () => {
             })}
             <div className="tools-section">
               <h4>Tools</h4>
-              <Link to="/admin/settings" className="nav-link">
+              <Link to="/admin/settings" className="nav-link" onClick={() => setSidebarOpen(false)}>
                 <Settings size={20} />
                 Settings
               </Link>
-              <Link to="/admin/help" className="nav-link">
+              <Link to="/admin/help" className="nav-link" onClick={() => setSidebarOpen(false)}>
                 <HelpCircle size={20} />
                 Help Center
               </Link>
@@ -290,22 +288,36 @@ const AdminLayout = () => {
       {/* Main content */}
       <main className="main-content">
         <div className="content-header">
-          {isMobile && (
-            <button
-              type="button"
-              className="mobile-menu-btn touch-target"
-              onClick={() => setSidebarOpen(true)}
-              title="Open Menu"
-              aria-label="Open navigation menu"
-            >
-              <Menu size={20} />
-            </button>
-          )}
-          
-          <div className="breadcrumb">
-            <span>Admin</span>
-            <span>/</span>
-            <span>{getCurrentSectionName()}</span>
+          <div className="header-left">
+            {isMobile && (
+              <button
+                type="button"
+                className="mobile-menu-btn touch-target"
+                onClick={() => setSidebarOpen(true)}
+                title="Open Menu"
+                aria-label="Open navigation menu"
+              >
+                <Menu size={20} />
+              </button>
+            )}
+            
+            <div className="header-logo-section">
+              <div className="system-logo">
+                <div className="logo-icon">
+                  <i className="fas fa-heart-pulse"></i>
+                </div>
+              </div>
+              <div className="system-name">
+                <span className="system-title">{systemName || 'TherapEase'}</span>
+                <span className="portal-type">Admin Portal</span>
+              </div>
+            </div>
+            
+            <div className="breadcrumb">
+              <span className="breadcrumb-main">Admin</span>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-current">{getCurrentSectionName()}</span>
+            </div>
           </div>
           
           <div className="header-actions">

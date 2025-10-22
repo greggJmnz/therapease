@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, CheckCircle, AlertCircle, Info, Calendar, Users, FileText, TrendingUp } from 'lucide-react';
+import { X, Bell, CheckCircle, AlertCircle, Info, Calendar, Users, FileText, TrendingUp, Target } from 'lucide-react';
 import { useWebSocketEvent } from '../hooks/useWebSocket';
 
 const RealtimeNotification = () => {
@@ -177,13 +177,19 @@ const RealtimeNotification = () => {
   const getIcon = (type) => {
     switch (type) {
       case 'appointment':
+      case 'appointment_created':
+      case 'appointment_reminder':
         return <Calendar className="h-4 w-4" />;
       case 'patient':
         return <Users className="h-4 w-4" />;
       case 'daily_note':
         return <FileText className="h-4 w-4" />;
       case 'progress':
+      case 'progress_update':
         return <TrendingUp className="h-4 w-4" />;
+      case 'exercise_assignment':
+      case 'exercise_reminder':
+        return <Target className="h-4 w-4" />;
       default:
         return <Bell className="h-4 w-4" />;
     }

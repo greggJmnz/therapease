@@ -436,6 +436,176 @@ const createProgressReviewNotification = async (patientId, area) => {
   }
 };
 
+// Create appointment reminder notification for patient (day before)
+const createAppointmentReminderForPatient = async (appointmentId) => {
+  try {
+    // Get appointment details with patient information
+    const appointmentSql = `
+      SELECT 
+        a.appointmentDate,
+        a.startTime,
+        a.type,
+        a.patientId,
+        p.userId as patientUserId,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        CONCAT(t.firstName, ' ', t.lastName) as therapistName
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      JOIN users t ON a.therapistId = t.id
+      WHERE a.id = ?
+    `;
+
+    const appointment = await getRow(appointmentSql, [appointmentId]);
+    if (!appointment) return null;
+
+    const appointmentDate = new Date(appointment.appointmentDate);
+    const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const formattedTime = new Date(`2000-01-01T${appointment.startTime}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    const title = 'Appointment Reminder';
+    const message = `Reminder: You have a ${appointment.type} appointment with ${appointment.therapistName} tomorrow (${formattedDate}) at ${formattedTime}. Please arrive 10 minutes early.`;
+    const type = 'appointment_reminder';
+
+    return await createNotification(appointment.patientUserId, title, message, type, {
+      relatedId: appointmentId,
+      priority: 'high'
+    });
+
+  } catch (error) {
+    console.error('Create appointment reminder for patient error:', error);
+    return null;
+  }
+};
+
+// Create progress update notification for patient when therapist completes objectives
+const createProgressUpdateNotificationForPatient = async (patientId, objectiveTitle, therapistName) => {
+  try {
+    // Get patient user ID
+    const patientSql = `
+      SELECT p.userId
+      FROM patients p
+      WHERE p.id = ?
+    `;
+
+    const patient = await getRow(patientSql, [patientId]);
+    if (!patient) return null;
+
+    const title = 'Progress Update';
+    const message = `Great news! Your therapist ${therapistName} has marked "${objectiveTitle}" as completed. Keep up the excellent work!`;
+    const type = 'progress_update';
+
+    return await createNotification(patient.userId, title, message, type, {
+      priority: 'medium'
+    });
+
+  } catch (error) {
+    console.error('Create progress update notification for patient error:', error);
+    return null;
+  }
+};
+
+// Create exercise reminder notification for patient when therapist creates exercise
+const createExerciseReminderNotificationForPatient = async (exerciseId) => {
+  try {
+    // Get exercise details with patient information
+    const exerciseSql = `
+      SELECT 
+        he.title,
+        he.description,
+        he.difficulty,
+        he.dueDate,
+        p.userId as patientUserId,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        CONCAT(t.firstName, ' ', t.lastName) as therapistName
+      FROM home_exercises he
+      JOIN patients p ON he.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      JOIN users t ON he.therapistId = t.id
+      WHERE he.id = ?
+    `;
+
+    const exercise = await getRow(exerciseSql, [exerciseId]);
+    if (!exercise) return null;
+
+    const dueDateText = exercise.dueDate ? 
+      ` (due by ${new Date(exercise.dueDate).toLocaleDateString()})` : '';
+
+    const title = 'New Exercise Assigned';
+    const message = `Your therapist ${exercise.therapistName} has assigned you a new ${exercise.difficulty.toLowerCase()} exercise: "${exercise.title}"${dueDateText}. Check your home exercises section to get started!`;
+    const type = 'exercise_assignment';
+
+    return await createNotification(exercise.patientUserId, title, message, type, {
+      relatedId: exerciseId,
+      priority: 'medium'
+    });
+
+  } catch (error) {
+    console.error('Create exercise reminder notification for patient error:', error);
+    return null;
+  }
+};
+
+// Create appointment creation notification for patient (immediate)
+const createAppointmentCreationNotificationForPatient = async (appointmentId) => {
+  try {
+    // Get appointment details with patient information
+    const appointmentSql = `
+      SELECT 
+        a.appointmentDate,
+        a.startTime,
+        a.type,
+        a.patientId,
+        p.userId as patientUserId,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        CONCAT(t.firstName, ' ', t.lastName) as therapistName
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      JOIN users t ON a.therapistId = t.id
+      WHERE a.id = ?
+    `;
+
+    const appointment = await getRow(appointmentSql, [appointmentId]);
+    if (!appointment) return null;
+
+    const appointmentDate = new Date(appointment.appointmentDate);
+    const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const formattedTime = new Date(`2000-01-01T${appointment.startTime}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    const title = 'Appointment Scheduled';
+    const message = `Your ${appointment.type} appointment with ${appointment.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before.`;
+    const type = 'appointment_created';
+
+    return await createNotification(appointment.patientUserId, title, message, type, {
+      relatedId: appointmentId,
+      priority: 'high'
+    });
+
+  } catch (error) {
+    console.error('Create appointment creation notification for patient error:', error);
+    return null;
+  }
+};
+
 // Get notification statistics
 const getNotificationStats = async (req, res) => {
   try {
@@ -802,6 +972,10 @@ module.exports = {
   createAppointmentReminder,
   createAssessmentDueNotification,
   createProgressReviewNotification,
+  createAppointmentReminderForPatient,
+  createProgressUpdateNotificationForPatient,
+  createExerciseReminderNotificationForPatient,
+  createAppointmentCreationNotificationForPatient,
   getNotificationStats,
   sendSMSNotification,
   getSMSDeliveryStatus,

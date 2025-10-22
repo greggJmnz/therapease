@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { Plus, FileText, Calendar, User, Edit, Eye, Trash2, MessageSquare, Send, MoreVertical, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, FileText, Calendar, User, Edit, Eye, Trash2, MessageSquare, Send, MoreVertical, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { therapistAPI } from '../../services/api';
 import { useRealtimeData } from '../../hooks/useWebSocket';
 import { useAuth } from '../../context/AuthContext';
@@ -291,9 +291,16 @@ const DailyNotes = () => {
 
   const handleEdit = (note) => {
     setEditingNote(note);
+    // Format date for HTML date input (YYYY-MM-DD)
+    const formattedDate = note.sessionDate ? 
+      (note.sessionDate.includes('T') ? 
+        note.sessionDate.split('T')[0] : 
+        note.sessionDate) : 
+      '';
+    
     setFormData({
       patientId: note.patientId.toString(),
-      sessionDate: note.sessionDate,
+      sessionDate: formattedDate,
       content: note.content,
       activities: note.activities || '',
       goals: note.goals || '',
@@ -365,19 +372,19 @@ const DailyNotes = () => {
           <div className="py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Daily Notes
                 </h1>
-                <p className="mt-3 text-lg text-gray-600">
+                <p className="mt-3 text-sm sm:text-base lg:text-lg text-gray-600">
                   Document therapy sessions and track patient progress
                 </p>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="text-right">
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
                     {selectedPatient ? selectedPatient.name : 'No patient selected'}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs sm:text-sm text-gray-500">
                     {selectedPatient ? `${notes.length} notes` : 'Select a patient to begin'}
                   </p>
                 </div>
@@ -626,60 +633,69 @@ const DailyNotes = () => {
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {notes.map((note) => (
-              <div key={note.id} className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <div key={note.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
                 <div className="p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-start space-x-4">
                       <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
-                          <FileText className="h-6 w-6 text-white" />
+                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-white" />
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                             {note.patientName}
                           </h3>
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 self-start">
-                            {note.sessionDate}
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 self-start">
+                            {new Date(note.sessionDate).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              timeZone: 'UTC'
+                            })}
                           </span>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 gap-1 sm:gap-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-600 gap-1 sm:gap-4">
                           <div className="flex items-center">
-                            <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                            {note.sessionDate}
+                            <Calendar className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-500" />
+                            {new Date(note.sessionDate).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              timeZone: 'UTC'
+                            })}
                           </div>
                           {note.sessionDuration && (
-                            <>
-                              <span className="hidden sm:inline mx-2">•</span>
-                              <span className="sm:inline">{note.sessionDuration} min</span>
-                            </>
+                            <div className="flex items-center">
+                              <Clock className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-500" />
+                              {note.sessionDuration} min
+                            </div>
                           )}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <button
                         onClick={() => setSelectedNote(selectedNote?.id === note.id ? null : note)}
-                        className="inline-flex items-center justify-center px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 touch-target"
+                        className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                       >
                         <Eye className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">{selectedNote?.id === note.id ? 'Hide' : 'View Note'}</span>
-                        <span className="sm:hidden">{selectedNote?.id === note.id ? 'Hide' : 'View'}</span>
+                        {selectedNote?.id === note.id ? 'Hide' : 'View Note'}
                       </button>
                       <button
                         onClick={() => handleEdit(note)}
-                        className="inline-flex items-center justify-center px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 touch-target"
+                        className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                       >
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(note.id)}
-                        className="inline-flex items-center justify-center px-4 py-3 border border-red-300 shadow-sm text-sm font-medium rounded-xl text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 touch-target"
+                        className="inline-flex items-center justify-center px-3 py-2 border border-red-300 text-sm font-medium rounded text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
@@ -688,58 +704,58 @@ const DailyNotes = () => {
                   </div>
                 </div>
 
-                {/* Modern Expanded Note Details */}
+                {/* Classic Expanded Note Details */}
                 {selectedNote?.id === note.id && (
-                  <div className="border-t border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100">
-                    <div className="p-8 space-y-6">
+                  <div className="border-t border-gray-200 bg-gray-50">
+                    <div className="p-6 space-y-4">
                       {note.content && (
                         <div>
-                          <h4 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                            <FileText className="h-5 w-5 text-blue-600" />
+                          <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-blue-600" />
                             Session Summary
                           </h4>
-                          <p className="text-sm text-gray-600 leading-relaxed bg-white p-6 rounded-xl border border-gray-200 shadow-sm">{note.content}</p>
+                          <p className="text-sm text-gray-700 leading-relaxed bg-white p-4 rounded border border-gray-200">{note.content}</p>
                         </div>
                       )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {note.activities && (
-                          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                            <h4 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                              <Calendar className="h-5 w-5 text-green-600" />
+                          <div className="bg-white p-4 rounded border border-gray-200">
+                            <h4 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-green-600" />
                               Activities Performed
                             </h4>
-                            <p className="text-sm text-gray-600 leading-relaxed">{note.activities}</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{note.activities}</p>
                           </div>
                         )}
 
                         {note.goals && (
-                          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                            <h4 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                              <User className="h-5 w-5 text-purple-600" />
+                          <div className="bg-white p-4 rounded border border-gray-200">
+                            <h4 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                              <User className="h-4 w-4 text-purple-600" />
                               Goals Addressed
                             </h4>
-                            <p className="text-sm text-gray-600 leading-relaxed">{note.goals}</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">{note.goals}</p>
                           </div>
                         )}
                       </div>
 
                       {note.nextSteps && (
-                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-200 shadow-sm">
-                          <h4 className="text-lg font-semibold text-blue-700 mb-3 flex items-center gap-2">
-                            <Plus className="h-5 w-5 text-blue-600" />
+                        <div className="bg-blue-50 p-4 rounded border border-blue-200">
+                          <h4 className="text-base font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                            <Plus className="h-4 w-4 text-blue-600" />
                             Next Steps
                           </h4>
-                          <p className="text-sm text-blue-600 leading-relaxed">{note.nextSteps}</p>
+                          <p className="text-sm text-blue-800 leading-relaxed">{note.nextSteps}</p>
                         </div>
                       )}
 
                       {(note.observations || note.progress || note.challenges || note.mood || note.engagement) && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {note.observations && (
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                              <h4 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <Eye className="h-5 w-5 text-orange-600" />
+                            <div className="bg-white p-4 rounded border border-gray-200">
+                              <h4 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                <Eye className="h-4 w-4 text-orange-600" />
                                 Observations
                               </h4>
                               <p className="text-sm text-gray-600 leading-relaxed">{note.observations}</p>
@@ -747,29 +763,29 @@ const DailyNotes = () => {
                           )}
 
                           {note.progress && (
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                              <h4 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <Plus className="h-5 w-5 text-green-600" />
+                            <div className="bg-white p-4 rounded border border-gray-200">
+                              <h4 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                <Plus className="h-4 w-4 text-green-600" />
                                 Progress
                               </h4>
-                              <p className="text-sm text-gray-600 leading-relaxed">{note.progress}</p>
+                              <p className="text-sm text-gray-700 leading-relaxed">{note.progress}</p>
                             </div>
                           )}
 
                           {note.challenges && (
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                              <h4 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <Trash2 className="h-5 w-5 text-red-600" />
+                            <div className="bg-white p-4 rounded border border-gray-200">
+                              <h4 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                <Trash2 className="h-4 w-4 text-red-600" />
                                 Challenges
                               </h4>
-                              <p className="text-sm text-gray-600 leading-relaxed">{note.challenges}</p>
+                              <p className="text-sm text-gray-700 leading-relaxed">{note.challenges}</p>
                             </div>
                           )}
 
                           {(note.mood || note.engagement) && (
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                              <h4 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <User className="h-5 w-5 text-indigo-600" />
+                            <div className="bg-white p-4 rounded border border-gray-200">
+                              <h4 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                                <User className="h-4 w-4 text-indigo-600" />
                                 Session Metrics
                               </h4>
                               <div className="space-y-3">

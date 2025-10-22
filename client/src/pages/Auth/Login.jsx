@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Lock, Mail, LogIn, Shield, CheckCircle, AlertCircle, Copy, Check, Clock, UserCheck, FileText, KeyRound, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, LogIn, CheckCircle, AlertCircle, Clock, UserCheck, FileText, KeyRound, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import ModernInput from '../../components/ModernInput';
@@ -15,7 +15,6 @@ const Login = () => {
   const [passwordValue, setPasswordValue] = useState('');
   const [emailValid, setEmailValid] = useState(null);
   const [passwordValid, setPasswordValid] = useState(null);
-  const [copiedAccount, setCopiedAccount] = useState(null);
   const [loginError, setLoginError] = useState('');
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -93,18 +92,6 @@ const Login = () => {
       setPasswordValid(null);
     }
   }, [watchedPassword, loginError]);
-
-  // Copy to clipboard function
-  const copyToClipboard = async (text, accountType) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedAccount(accountType);
-      toast.success(`${accountType} credentials copied!`);
-      setTimeout(() => setCopiedAccount(null), 2000);
-    } catch (err) {
-      toast.error('Failed to copy credentials');
-    }
-  };
 
   const onSubmit = async (data) => {
     // Check if account is locked
@@ -683,137 +670,6 @@ const Login = () => {
           )}
         </div>
 
-        {/* Demo Account Information */}
-        <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Shield className="h-5 w-5 text-blue-600" />
-            </div>
-            <h3 className="text-sm font-semibold text-blue-900">Demo Accounts</h3>
-          </div>
-          <div className="space-y-3">
-            {/* Admin Account */}
-            <div 
-              className="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-blue-100 hover:bg-white/80 hover:border-blue-200 transition-all duration-200 cursor-pointer group"
-              onClick={() => copyToClipboard('admin@therapease.com', 'Admin')}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
-                <span className="text-sm font-medium text-gray-700">Admin</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-xs text-gray-600 font-mono whitespace-nowrap">
-                  admin@therapease.com / SecureAdmin2024!@#$
-                </div>
-                <div className="p-1 rounded-md bg-blue-100 group-hover:bg-blue-200 transition-colors">
-                  {copiedAccount === 'Admin' ? (
-                    <Check className="h-3 w-3 text-green-600" />
-                  ) : (
-                    <Copy className="h-3 w-3 text-blue-600" />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Therapist Account */}
-            <div 
-              className="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-blue-100 hover:bg-white/80 hover:border-blue-200 transition-all duration-200 cursor-pointer group"
-              onClick={() => copyToClipboard('dr.aleli.ong@therapease.com', 'Therapist')}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
-                <span className="text-sm font-medium text-gray-700">Therapist</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-xs text-gray-600 font-mono whitespace-nowrap">
-                  dr.aleli.ong@therapease.com / therapist123
-                </div>
-                <div className="p-1 rounded-md bg-blue-100 group-hover:bg-blue-200 transition-colors">
-                  {copiedAccount === 'Therapist' ? (
-                    <Check className="h-3 w-3 text-green-600" />
-                  ) : (
-                    <Copy className="h-3 w-3 text-blue-600" />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Patient Account */}
-            <div 
-              className="flex items-center justify-between p-3 bg-white/60 rounded-xl border border-blue-100 hover:bg-white/80 hover:border-blue-200 transition-all duration-200 cursor-pointer group"
-              onClick={() => copyToClipboard('alexandra.santos@email.com', 'Patient')}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
-                <span className="text-sm font-medium text-gray-700">Patient</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="text-xs text-gray-600 font-mono whitespace-nowrap">
-                  alexandra.santos@email.com / patient123
-                </div>
-                <div className="p-1 rounded-md bg-blue-100 group-hover:bg-blue-200 transition-colors">
-                  {copiedAccount === 'Patient' ? (
-                    <Check className="h-3 w-3 text-green-600" />
-                  ) : (
-                    <Copy className="h-3 w-3 text-blue-600" />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Demo Accounts */}
-            <div className="pt-2 border-t border-blue-100">
-              <p className="text-xs text-blue-700 font-medium mb-2">More Demo Accounts:</p>
-              <p className="text-xs text-blue-600 mb-2">All therapists use: therapist123 | All patients use: patient123</p>
-              
-              {/* Additional Therapist */}
-              <div 
-                className="flex items-center justify-between p-2 bg-white/40 rounded-lg border border-blue-50 hover:bg-white/60 hover:border-blue-100 transition-all duration-200 cursor-pointer group mb-2"
-                onClick={() => copyToClipboard('dr.juan.cruz@therapease.com', 'Therapist 2')}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-green-400 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
-                  <span className="text-xs font-medium text-gray-600">Dr. Juan Cruz</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="text-xs text-gray-500 font-mono">
-                    dr.juan.cruz@therapease.com
-                  </div>
-                  <div className="p-0.5 rounded bg-blue-50 group-hover:bg-blue-100 transition-colors">
-                    {copiedAccount === 'Therapist 2' ? (
-                      <Check className="h-2.5 w-2.5 text-green-500" />
-                    ) : (
-                      <Copy className="h-2.5 w-2.5 text-blue-500" />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Patient */}
-              <div 
-                className="flex items-center justify-between p-2 bg-white/40 rounded-lg border border-blue-50 hover:bg-white/60 hover:border-blue-100 transition-all duration-200 cursor-pointer group"
-                onClick={() => copyToClipboard('marcus.delacruz@email.com', 'Patient 2')}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full group-hover:scale-125 transition-transform duration-200"></div>
-                  <span className="text-xs font-medium text-gray-600">Marcus Dela Cruz</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="text-xs text-gray-500 font-mono">
-                    marcus.delacruz@email.com
-                  </div>
-                  <div className="p-0.5 rounded bg-blue-50 group-hover:bg-blue-100 transition-colors">
-                    {copiedAccount === 'Patient 2' ? (
-                      <Check className="h-2.5 w-2.5 text-green-500" />
-                    ) : (
-                      <Copy className="h-2.5 w-2.5 text-blue-500" />
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Terms and Conditions Modal */}

@@ -1,4 +1,4 @@
-const { getAll, getOne, runQuery } = require('../config/database');
+const { getAll, getOne, getRow, runQuery, getConnection } = require('../config/database');
 const { decryptSensitiveFields } = require('../utils/encryption');
 
 // Helper function to convert 24-hour time to 12-hour format
@@ -49,7 +49,7 @@ const getDashboard = async (req, res) => {
         (SELECT COUNT(*) FROM progress_tracking) as totalProgressEntries
     `;
 
-    const [statsResult] = await getAll(statsSql);
+    const statsResult = await getRow(statsSql);
     const stats = statsResult;
 
     // Get recent user registrations
@@ -78,7 +78,7 @@ const getDashboard = async (req, res) => {
         (SELECT COUNT(*) FROM progress_tracking WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newProgressEntriesThisWeek
     `;
 
-    const [systemHealthResult] = await getAll(systemHealthSql);
+    const systemHealthResult = await getRow(systemHealthSql);
     const systemHealth = systemHealthResult;
 
     // Get user growth over time (last 12 months for better coverage)
@@ -159,7 +159,7 @@ const getDashboard = async (req, res) => {
         (SELECT COUNT(*) FROM daily_notes WHERE sessionDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as sessionsThisMonth
     `;
 
-    const [analyticsResult] = await getAll(analyticsSql);
+    const analyticsResult = await getRow(analyticsSql);
     const analytics = analyticsResult;
 
     // Calculate key performance indicators
@@ -1076,13 +1076,7 @@ const createAppointment = async (req, res) => {
       );
 
       // Create notification for patient
-      await notificationController.createNotification(
-        patient.userId, // Use patient user ID
-        'Appointment Scheduled',
-        `Your ${type} appointment with ${therapist.therapistName} has been scheduled for ${date} at ${formatTime12Hour(time)}`,
-        'appointment',
-        { relatedId: appointmentId }
-      );
+      await notificationController.createAppointmentCreationNotificationForPatient(appointmentId);
 
       // Create notification for admin (get all admin users)
       const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
@@ -1190,11 +1184,22 @@ const getNotifications = async (req, res) => {
       };
     });
 
+    // Get unread count
+    const unreadSql = `
+      SELECT COUNT(*) as unread
+      FROM notifications n
+      WHERE n.userId = ? AND n.isRead = 0
+    `;
+
+    const [unreadResult] = await getAll(unreadSql, [adminUserId]);
+    const unreadCount = unreadResult.unread;
+
     res.json({
       success: true,
       data: {
         notifications: formattedNotifications,
-        total: formattedNotifications.length
+        total: formattedNotifications.length,
+        unreadCount
       }
     });
   } catch (error) {
@@ -1842,7 +1847,7 @@ const updateUserStatus = async (req, res) => {
 const getAvailableTherapists = async (req, res) => {
   try {
     const { patientId } = req.query;
-
+    
     // Get therapists with their current patient count and capacity
     const sql = `
       SELECT 
@@ -1936,7 +1941,7 @@ const assignTherapistToPatient = async (req, res) => {
       SELECT p.id, p.userId, p.therapistId, CONCAT(u.firstName, ' ', u.lastName) as patientName
       FROM patients p
       JOIN users u ON p.userId = u.id
-      WHERE p.userId = ?
+      WHERE p.id = ?
     `;
     
     const patient = await getRow(patientSql, [parseInt(patientId)]);
@@ -2123,7 +2128,7 @@ const unassignTherapistFromPatient = async (req, res) => {
       SELECT p.id, p.userId, CONCAT(u.firstName, ' ', u.lastName) as patientName
       FROM patients p
       JOIN users u ON p.userId = u.id
-      WHERE p.userId = ?
+      WHERE p.id = ?
     `;
     
     const patient = await getRow(patientSql, [parseInt(patientId)]);
@@ -3065,14 +3070,15 @@ const getPatientsWithAssignments = async (req, res) => {
         (SELECT CONCAT(u2.firstName, ' ', u2.lastName) FROM users u2 WHERE u2.id = p.therapistId) as primaryTherapistName
       FROM patients p
       JOIN users u ON p.userId = u.id
-      WHERE u.role = 'patient' AND u.status = 'active'
+      WHERE u.role = 'patient'
       ORDER BY u.firstName, u.lastName
     `;
 
     const patients = await getAll(sql);
 
-    // Get therapist assignments for each patient
+    // Get therapist assignments for each patient (including primary therapist)
     const patientsWithAssignments = await Promise.all(patients.map(async (patient) => {
+      // Get assigned therapists from patient_therapist_assignments table
       const assignmentSql = `
         SELECT 
           pta.id,
@@ -3096,9 +3102,36 @@ const getPatientsWithAssignments = async (req, res) => {
       
       const assignments = await getAll(assignmentSql, [patient.id]);
       
+      // If patient has a primary therapist in the patients table, add it to assignments
+      let allAssignments = [...assignments];
+      if (patient.primaryTherapistId && patient.primaryTherapistName) {
+        // Check if primary therapist is already in assignments
+        const hasPrimaryInAssignments = assignments.some(assignment => 
+          assignment.therapistId === patient.primaryTherapistId && assignment.assignmentType === 'primary'
+        );
+        
+        if (!hasPrimaryInAssignments) {
+          // Add primary therapist to assignments
+          allAssignments.unshift({
+            id: `primary-${patient.id}`,
+            assignmentType: 'primary',
+            assignedAt: patient.createdAt,
+            assignmentStatus: 'active',
+            notes: 'Primary therapist',
+            therapistId: patient.primaryTherapistId,
+            firstName: patient.primaryTherapistName.split(' ')[0],
+            lastName: patient.primaryTherapistName.split(' ')[1] || '',
+            email: '',
+            specialization: '',
+            yearsOfExperience: 0,
+            therapistName: patient.primaryTherapistName
+          });
+        }
+      }
+      
       return {
         ...patient,
-        therapistAssignments: assignments
+        therapistAssignments: allAssignments
       };
     }));
 

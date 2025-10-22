@@ -226,12 +226,13 @@ const getProfile = async (req, res) => {
 // Update user profile
 const updateProfile = async (req, res) => {
   try {
-    console.log('Profile update data:', updateData);
-    console.log('User ID:', userId);
-    console.log('User Role:', userRole);
     const userId = req.user.userId;
     const userRole = req.user.role;
     const updateData = req.body;
+    
+    console.log('Profile update data:', updateData);
+    console.log('User ID:', userId);
+    console.log('User Role:', userRole);
     
 
     // Validate required fields
@@ -499,11 +500,12 @@ const updateProfile = async (req, res) => {
 // Change password
 const changePassword = async (req, res) => {
   try {
+    const userId = req.user.userId;
+    const { currentPassword, newPassword } = req.body;
+    
     console.log('Password change attempt for user:', userId);
     console.log('Current password provided:', !!currentPassword);
     console.log('New password length:', newPassword?.length);
-    const userId = req.user.userId;
-    const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({

@@ -110,8 +110,8 @@ const PatientHelp = () => {
         <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
           <HelpCircle size={40} className="text-white" />
         </div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">How can we help you?</h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">How can we help you?</h1>
+        <p className="text-sm sm:text-base lg:text-xl text-gray-600 max-w-2xl mx-auto">
           Find answers to common questions, get support, and learn how to make the most of your TherapEase patient portal for pediatric occupational therapy.
         </p>
       </div>
@@ -125,14 +125,14 @@ const PatientHelp = () => {
             placeholder="Search for help topics..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-lg"
+            className="w-full pl-12 pr-4 py-3 sm:py-4 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm sm:text-base lg:text-lg"
           />
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="mb-16">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Quick Actions</h2>
+        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-8 text-center">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action, index) => (
             <button

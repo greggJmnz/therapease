@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from 'react-query';
 import { adminAPI } from '../services/api';
 import { useAuth } from './AuthContext';
 
-const SystemSettingsContext = createContext();
+export const SystemSettingsContext = createContext();
 
 export const useSystemSettings = () => {
   const context = useContext(SystemSettingsContext);
@@ -19,7 +19,8 @@ export const SystemSettingsProvider = ({ children }) => {
   const [systemSettings, setSystemSettings] = useState({
     systemName: 'TherapEase',
     sessionTimeout: 30,
-    maintenanceMode: false
+    maintenanceMode: false,
+    maintenanceDuration: '2 hours'
   });
 
   // Only fetch system settings for admin users
@@ -36,7 +37,8 @@ export const SystemSettingsProvider = ({ children }) => {
           const newSettings = {
             systemName: data.data.general.systemName || 'TherapEase',
             sessionTimeout: data.data.general.sessionTimeout || 30,
-            maintenanceMode: data.data.general.maintenanceMode || false
+            maintenanceMode: data.data.general.maintenanceMode || false,
+            maintenanceDuration: data.data.general.maintenanceDuration || '2 hours'
           };
           setSystemSettings(prev => ({
             ...prev,
@@ -56,7 +58,8 @@ export const SystemSettingsProvider = ({ children }) => {
       staleTime: 30 * 1000, // 30 seconds - reasonable cache time for system settings
       cacheTime: 5 * 60 * 1000, // 5 minutes
       refetchOnWindowFocus: true, // Refetch when window gains focus
-      retry: 1
+      retry: false, // Don't retry on error to avoid repeated 403 errors
+      retryOnMount: false // Don't retry when component mounts
     }
   );
 

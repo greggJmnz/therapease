@@ -4,7 +4,7 @@ const otPromptTemplates = require('../prompts/otPromptTemplates');
 
 class GPTService {
   constructor() {
-    this.model = 'gpt-4.1'; // Using GPT-4.1 for faster, more efficient, and more accurate responses
+    this.model = 'gpt-4.1'; // Using GPT-4.1 for superior analysis quality
     this.maxTokens = 2500;
     this.temperature = 0.7;
   }

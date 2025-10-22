@@ -38,16 +38,39 @@
   padding: 24px 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   align-items: center;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
   box-shadow: 
     0 4px 20px rgba(0, 0, 0, 0.08),
     0 2px 4px -1px rgba(0, 0, 0, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   z-index: 10;
-  overflow: hidden;
-  clip-path: inset(0 0 0 0);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  padding-bottom: 40px;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .sidebar-header {
@@ -126,32 +149,34 @@
 }
 
 .sidebar-nav {
-  flex: 1;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 0 24px;
-  overflow: hidden;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .nav-link {
   width: 100%;
-  padding: 16px 20px;
+  padding: 18px 24px;
   display: flex;
   align-items: center;
   cursor: pointer;
   color: var(--medium-gray);
   text-decoration: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin: 2px 0;
+  margin: 4px 0;
   border-radius: 16px;
   font-weight: 500;
   position: relative;
   overflow: hidden;
   max-width: calc(100% - 4px);
   box-sizing: border-box;
+  min-height: 56px;
 }
 
 .nav-link-content {
@@ -242,7 +267,7 @@
   margin-top: 24px;
   padding: 24px 24px 0;
   border-top: 1px solid rgba(226, 232, 240, 0.6);
-  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .tools-section h4 {
@@ -346,10 +371,13 @@
   backdrop-filter: blur(20px);
   border-right: 1px solid rgba(226, 232, 240, 0.8);
   padding: 24px;
+  padding-bottom: 40px;
   transform: translateX(-100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .mobile-sidebar.open .mobile-sidebar-content {
@@ -408,15 +436,20 @@
 .mobile-sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .mobile-sidebar-nav .nav-link {
   width: 100%;
-  padding: 16px 20px;
+  padding: 18px 24px;
   border-radius: 16px;
   font-weight: 500;
   transition: all 0.2s ease;
+  margin: 3px 0;
+  min-height: 56px;
 }
 
 .mobile-sidebar-nav .nav-link-content {
@@ -476,8 +509,9 @@
   gap: 12px;
   padding: 16px 24px;
   border-top: 1px solid rgba(226, 232, 240, 0.6);
-  margin-top: auto;
+  margin-top: 24px;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .profile-main {
@@ -674,8 +708,8 @@
   display: none;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   color: #64748b;
@@ -696,6 +730,8 @@
   overflow: hidden;
   position: relative;
   padding: 24px;
+  margin-left: 280px;
+  min-height: 100vh;
 }
 
 .main-content::before {
@@ -714,20 +750,93 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
-  padding: 24px 0;
+  margin-bottom: 16px;
+  padding: 8px 16px;
   border-bottom: 1px solid rgba(226, 232, 240, 0.6);
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 20px 24px;
-  margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: none;
+  border-radius: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  box-shadow: none;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 12px;
+  border-bottom: none;
+}
+
+/* Header Logo Section Styles */
+.header-logo-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 12px;
+}
+
+/* Hide logo section on desktop */
+@media (min-width: 1201px) {
+  .header-logo-section {
+    display: none;
+  }
+}
+
+.system-logo {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  color: #10b981;
+  font-size: 16px;
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+.logo-icon i {
+  color: #10b981;
+  font-size: 16px;
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+.system-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.system-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.2;
+}
+
+.portal-type {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Adjust header-left gap on desktop when logo is hidden */
+@media (min-width: 1201px) {
+  .header-left {
+    gap: 8px;
+  }
 }
 
 .breadcrumb {
@@ -757,8 +866,10 @@
 /* Header Actions */
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
+  flex-shrink: 0;
+  justify-content: flex-end;
 }
 
 .btn-secondary {
@@ -778,6 +889,8 @@
   backdrop-filter: blur(10px);
   position: relative;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btn-secondary:hover {
@@ -812,30 +925,157 @@
   flex: 1;
   overflow-y: auto;
   padding: 0;
+  max-height: calc(100vh - 120px);
+  overflow-x: hidden;
+}
+
+/* Content optimization for better space usage */
+.page-content > * {
+  margin-bottom: 8px;
+}
+
+.page-content > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Tablet and Mobile Content Optimization */
+@media (max-width: 1024px) {
+  .page-content {
+    max-height: calc(100vh - 80px);
+    padding: 0;
+    margin: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    max-height: calc(100vh - 60px);
+    padding: 0;
+    margin: 0;
+  }
+  
+  /* Optimize content spacing for mobile */
+  .page-content > * {
+    margin-bottom: 4px;
+  }
+  
+  .page-content > *:last-child {
+    margin-bottom: 0;
+  }
 }
 
 /* Enhanced Responsive Design */
 @media (max-width: 1200px) {
   .sidebar {
     width: 260px;
+    position: fixed;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    padding-bottom: 40px;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  /* Ensure consistent sidebar spacing across all screen sizes */
+  .sidebar-nav {
+    gap: 16px;
+  }
+  
+  .nav-link {
+    margin: 10px 0;
+  }
+  
+  .tools-section {
+    margin-top: 32px;
+    padding: 32px 24px 0;
+  }
+  
+  /* Consistent scrollbar styling for all screen sizes */
+  .main-content::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .main-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+  
+  .main-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  
+  .main-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
   }
   
   .main-content {
-    padding: 20px;
+    margin-left: 0;
+    width: 100%;
+    padding: 8px;
   }
   
   .content-header {
-    padding: 16px 20px;
-    margin-bottom: 20px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: transparent;
+    backdrop-filter: none;
+    border-bottom: none;
   }
   
   .header-actions {
+    gap: 6px;
+  }
+  
+  /* Header logo section responsive styles for tablet */
+  .header-logo-section {
     gap: 8px;
+    margin-right: 12px;
+  }
+  
+  .system-logo {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .logo-icon {
+    font-size: 16px;
+  }
+  
+  .logo-icon i {
+    font-size: 16px;
+    color: #10b981;
+    animation: heartbeat 2s ease-in-out infinite;
+  }
+  
+  .system-title {
+    font-size: 14px;
+  }
+  
+  .portal-type {
+    font-size: 11px;
   }
   
   .btn-secondary {
-    padding: 10px 16px;
-    font-size: 13px;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 50%;
+    min-width: 44px;
+    width: 44px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Add margin to settings button to prevent overflow */
+  .header-actions .btn-secondary:last-child {
+    margin-right: 8px;
   }
 }
 
@@ -844,12 +1084,134 @@
     display: none;
   }
   
+  /* Dashboard button responsiveness for tablet */
+  .welcome-actions .btn-secondary,
+  .dashboard-actions .btn-secondary,
+  .patient-actions .btn-secondary,
+  .therapist-actions .btn-secondary {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    min-width: auto !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    border-radius: 8px !important;
+    gap: 8px !important;
+  }
+  
+  .welcome-actions .btn-secondary span,
+  .dashboard-actions .btn-secondary span,
+  .patient-actions .btn-secondary span,
+  .therapist-actions .btn-secondary span {
+    display: inline !important;
+  }
+  
+  /* Dashboard action containers responsiveness */
+  .welcome-actions,
+  .dashboard-actions,
+  .patient-actions,
+  .therapist-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  
+  .welcome-actions .btn-secondary,
+  .dashboard-actions .btn-secondary,
+  .patient-actions .btn-secondary,
+  .therapist-actions .btn-secondary {
+    flex: 1;
+    min-width: 140px;
+  }
+  
+  /* Mobile sidebar improvements for all screen sizes */
+  .mobile-sidebar-content {
+    padding-bottom: 40px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  .mobile-sidebar-content::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .mobile-sidebar-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+  
+  .mobile-sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  
+  .mobile-sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+  
+  .mobile-sidebar-nav {
+    gap: 10px;
+  }
+  
+  /* Consistent button sizing for all sidebar buttons */
+  .mobile-sidebar-nav .nav-link {
+    padding: 16px 20px;
+    margin: 2px 0;
+    border-radius: 12px;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+  }
+  
+  .mobile-sidebar-nav .nav-link-content {
+    gap: 12px;
+  }
+  
+  .mobile-sidebar-nav .nav-link-name {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .mobile-sidebar-nav .nav-link-description {
+    font-size: 12px;
+    opacity: 0.7;
+  }
+  
+  /* Tablet scrollbar improvements */
+  .main-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .main-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+  
+  .main-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+  
+  .main-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+  
   .mobile-menu-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .main-content {
-    padding: 16px;
+    padding: 4px;
+    margin-left: 0;
+    width: 100%;
   }
   
   .main-content::before {
@@ -857,27 +1219,60 @@
   }
   
   .content-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 16px 20px;
-    margin-bottom: 16px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+    position: static;
+    top: auto;
+    z-index: 5;
   }
   
   .header-left {
-    width: 100%;
-    justify-content: space-between;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
   }
   
   .header-actions {
-    width: 100%;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    justify-content: flex-end;
+  }
+  
+  .btn-secondary {
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+    min-width: 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    border-radius: 50% !important;
+  }
+  
+  /* Add margin to settings button to prevent overflow */
+  .header-actions .btn-secondary:last-child {
+    margin-right: 8px;
+  }
+  
+  .btn-secondary span {
+    display: none;
   }
   
   .breadcrumb {
-    font-size: 13px;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
   }
   
   .breadcrumb-main,
@@ -901,41 +1296,193 @@
 @media (max-width: 768px) {
   .mobile-sidebar-content {
     width: 280px;
+    padding-bottom: 40px;
+  }
+  
+  /* Dashboard button responsiveness for mobile */
+  .welcome-actions .btn-secondary,
+  .dashboard-actions .btn-secondary,
+  .patient-actions .btn-secondary,
+  .therapist-actions .btn-secondary {
+    padding: 14px 20px !important;
+    font-size: 15px !important;
+    min-width: auto !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    border-radius: 8px !important;
+    gap: 8px !important;
+  }
+  
+  .welcome-actions .btn-secondary span,
+  .dashboard-actions .btn-secondary span,
+  .patient-actions .btn-secondary span,
+  .therapist-actions .btn-secondary span {
+    display: inline !important;
+  }
+  
+  /* Dashboard action containers for mobile */
+  .welcome-actions,
+  .dashboard-actions,
+  .patient-actions,
+  .therapist-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  
+  .welcome-actions .btn-secondary,
+  .dashboard-actions .btn-secondary,
+  .patient-actions .btn-secondary,
+  .therapist-actions .btn-secondary {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  /* Enhanced mobile sidebar spacing */
+  .mobile-sidebar-nav {
+    gap: 12px;
+  }
+  
+  .mobile-sidebar-nav .nav-link {
+    margin: 2px 0;
+    padding: 14px 18px;
+    border-radius: 12px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+  }
+  
+  .mobile-sidebar-nav .nav-link-content {
+    gap: 12px;
+  }
+  
+  .mobile-sidebar-nav .nav-link-name {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .mobile-sidebar-nav .nav-link-description {
+    font-size: 12px;
+    opacity: 0.7;
+  }
+  
+  /* Mobile scrollbar improvements */
+  .main-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .main-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+  
+  .main-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+  
+  .main-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
   }
   
   .main-content {
-    padding: 12px;
+    padding: 2px;
   }
   
   .content-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 12px 16px;
-    margin-bottom: 12px;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 4px 6px !important;
+    margin-bottom: 6px !important;
+    display: flex !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 5 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border-bottom: none !important;
   }
   
   .header-left {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-    flex-direction: column;
+    flex: 1;
+    display: flex;
+    align-items: center;
     gap: 8px;
+    min-width: 0;
   }
   
-  .btn-secondary {
-    width: 100%;
-    justify-content: center;
-    padding: 12px 16px;
+  /* Header logo section responsive styles for mobile */
+  .header-logo-section {
+    gap: 6px;
+    margin-right: 8px;
+  }
+  
+  .system-logo {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .logo-icon {
     font-size: 14px;
   }
   
-  .breadcrumb {
+  .logo-icon i {
+    font-size: 14px;
+    color: #10b981;
+    animation: heartbeat 2s ease-in-out infinite;
+  }
+  
+  .system-title {
     font-size: 12px;
+  }
+  
+  .portal-type {
+    font-size: 10px;
+  }
+  
+  .header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+  }
+  
+  .btn-secondary {
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+    min-width: 36px !important;
+    width: 36px !important;
+    height: 28px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    border-radius: 8px !important;
+    border: none !important;
+    background: transparent !important;
+    font-weight: bold !important;
+  }
+  
+  .btn-secondary span {
+    display: none;
+  }
+  
+  .breadcrumb {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
   }
   
   .breadcrumb-main,
@@ -960,7 +1507,10 @@
   }
   
   .mobile-menu-btn {
-    padding: 8px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   /* Enhanced mobile sidebar */
@@ -3805,9 +4355,12 @@ textarea:focus {
   
   /* Mobile menu button improvements */
   .mobile-menu-btn {
-    padding: 10px;
-    min-width: 44px;
-    min-height: 44px;
+    padding: 6px;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   /* Touch-friendly button sizing */
@@ -3815,6 +4368,15 @@ textarea:focus {
   .btn-secondary {
     min-height: 44px;
     min-width: 44px;
+  }
+  
+  /* Override for header buttons on mobile */
+  .content-header .btn-secondary {
+    min-height: 28px !important;
+    min-width: 36px !important;
+    width: 36px !important;
+    height: 28px !important;
+    padding: 6px 8px !important;
   }
   
   /* Improved modal sizing for mobile */
@@ -3832,12 +4394,51 @@ textarea:focus {
 /* Additional mobile responsive styles for very small screens */
 @media (max-width: 360px) {
   .main-content {
-    padding: 8px;
+    padding: 1px;
   }
   
   .content-header {
-    padding: 8px 12px;
-    margin-bottom: 8px;
+    padding: 2px 4px !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .page-content {
+    max-height: calc(100vh - 50px);
+    padding: 0;
+    margin: 0;
+  }
+  
+  /* Small mobile sidebar improvements */
+  .mobile-sidebar-content {
+    padding-bottom: 40px;
+  }
+  
+  .mobile-sidebar-nav {
+    gap: 14px;
+  }
+  
+  .mobile-sidebar-nav .nav-link {
+    margin: 6px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+  }
+  
+  .mobile-sidebar-nav .nav-link-content {
+    gap: 12px;
+  }
+  
+  .mobile-sidebar-nav .nav-link-name {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .mobile-sidebar-nav .nav-link-description {
+    font-size: 12px;
+    opacity: 0.7;
   }
   
   .breadcrumb {
@@ -4032,6 +4633,19 @@ textarea:focus {
   .nav-link {
     min-height: 44px;
     padding: 12px 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+  }
+  
+  .mobile-sidebar-nav .nav-link {
+    min-height: 44px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
   }
   
   .btn-primary,

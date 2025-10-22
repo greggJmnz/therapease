@@ -7,7 +7,6 @@ import {
   MapPin, 
   Plus, 
   X,
-  Search,
   Eye,
   CheckCircle,
   AlertCircle,
@@ -37,9 +36,6 @@ const Appointments = () => {
 
   // State for view management (same as therapist/admin appointments)
   const [currentView, setCurrentView] = useState('list'); // 'list' or 'calendar'
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('asc');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -171,28 +167,9 @@ const Appointments = () => {
     });
   }, [appointmentsData, assignedTherapist]);
 
-  // Filtered and sorted appointments (same logic as therapist/admin)
+  // Sorted appointments (removed search and filter functionality)
   const filteredAppointments = useMemo(() => {
     let filtered = allAppointments;
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(appointment =>
-        appointment.therapist.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.reason.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(appointment => appointment.status === statusFilter);
-    }
-
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(appointment => appointment.type === typeFilter);
-    }
 
     // Sorting
     filtered.sort((a, b) => {
@@ -216,7 +193,7 @@ const Appointments = () => {
     });
 
     return filtered;
-  }, [allAppointments, searchTerm, statusFilter, typeFilter, sortBy, sortOrder]);
+  }, [allAppointments, sortBy, sortOrder]);
 
   // Convert appointments to calendar events
   const calendarEvents = useMemo(() => {
@@ -542,7 +519,6 @@ const Appointments = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* View Toggle */}
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">View:</span>
               <div className="flex bg-gray-100 rounded-lg p-1">
                 <button
                   onClick={() => setCurrentView('calendar')}
@@ -569,47 +545,6 @@ const Appointments = () => {
               </div>
             </div>
 
-            {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="Search appointments..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
-                />
-              </div>
-
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Status</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-
-              {/* Type Filter */}
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Types</option>
-                <option value="session">Therapy Session</option>
-                <option value="consultation">Consultation</option>
-                <option value="assessment">Assessment</option>
-                <option value="follow-up">Follow-up</option>
-                <option value="emergency">Emergency</option>
-              </select>
-            </div>
           </div>
       </div>
 
@@ -783,8 +718,8 @@ const Appointments = () => {
             {/* Scrollable Table Container */}
             <div className="patient-appointments-table-container overflow-x-auto overflow-y-visible">
               {/* Table Header */}
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700 min-w-[800px]">
+              <div className="bg-gray-50 px-3 py-3 sm:px-6 sm:py-4 border-b border-gray-200">
+                <div className="grid grid-cols-9 gap-2 sm:gap-4 text-xs sm:text-sm font-medium text-gray-700 min-w-[400px] sm:min-w-[600px]">
                   <div className="col-span-3 flex items-center gap-2">
                     <button
                       onClick={() => handleSort('date')}
@@ -818,44 +753,41 @@ const Appointments = () => {
                       )}
                     </button>
                   </div>
-                  <div className="col-span-3 text-center">Actions</div>
                 </div>
               </div>
 
               {/* Table Body */}
-              <div className="divide-y divide-gray-200 min-w-[800px]">
+              <div className="divide-y divide-gray-200 min-w-[400px] sm:min-w-[600px]">
               {filteredAppointments.length === 0 ? (
                 <div className="px-6 py-12 text-center">
                   <Calendar className="mx-auto h-12 w-12 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No appointments found</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-                      ? 'Try adjusting your search or filter criteria.'
-                      : 'Get started by booking your first appointment.'}
+                    Get started by booking your first appointment.
                   </p>
                 </div>
               ) : (
                 filteredAppointments.map((appointment) => (
                   <div 
                     key={appointment.id} 
-                    className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="px-3 py-3 sm:px-6 sm:py-4 hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => handleViewAppointment(appointment)}
                   >
-                    <div className="grid grid-cols-12 gap-4 items-center">
+                    <div className="grid grid-cols-9 gap-2 sm:gap-4 items-center">
                       {/* Date & Time */}
                       <div className="col-span-3">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-xs sm:text-sm font-medium text-gray-900">
                               {appointment.dateTime.toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
                                 year: 'numeric'
                               })}
                             </div>
-                            <div className="text-sm text-gray-600 flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
+                            <div className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
+                              <Clock className="h-2 w-2 sm:h-3 sm:w-3" />
                               {formatTime12Hour(appointment.time)} ({appointment.duration} min)
                             </div>
                           </div>
@@ -864,13 +796,13 @@ const Appointments = () => {
 
                       {/* Therapist & Type */}
                       <div className="col-span-3">
-                        <div className="flex items-center gap-2">
-                          <Stethoscope className="h-4 w-4 text-gray-400" />
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <Stethoscope className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-xs sm:text-sm font-medium text-gray-900">
                               {appointment.therapist}
                     </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600">
                               {getTypeIcon(appointment.type)}
                               <span className="capitalize">
                                 {appointment.type.replace('-', ' ')}
@@ -882,32 +814,18 @@ const Appointments = () => {
 
                       {/* Status */}
                       <div className="col-span-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
                           {getStatusIcon(appointment.status)}
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(appointment.status)}`}>
+                          <span className={`px-1 py-0.5 sm:px-2 sm:py-1 rounded-full text-xs font-medium border ${getStatusColor(appointment.status)}`}>
                             {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 mt-0.5 sm:mt-1">
                           {appointment.isToday && 'Today'}
                           {appointment.isUpcoming && !appointment.isToday && 'Upcoming'}
                           {appointment.isPast && 'Past'}
                         </div>
                       </div>
-
-                      {/* Actions */}
-                      <div className="col-span-3 flex justify-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewAppointment(appointment);
-                          }}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="View Details"
-                        >
-                          <Eye size={16} />
-                        </button>
-                  </div>
                 </div>
               </div>
                 ))
@@ -935,7 +853,7 @@ const Appointments = () => {
               showQuickActions={false}
               showSearch={false}
               showFilters={false}
-              className="border-0"
+              className="border-0 mobile-compact-calendar"
             />
           </div>
         )}

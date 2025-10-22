@@ -1,5 +1,20 @@
 const { runQuery, getRow, getAll } = require('../config/database');
 const websocketService = require('../services/websocketService');
+
+// Helper function to safely parse JSON fields
+const parseJsonField = (field) => {
+  if (!field) return [];
+  if (Array.isArray(field)) return field;
+  if (typeof field === 'string') {
+    try {
+      return JSON.parse(field);
+    } catch (error) {
+      console.error('Error parsing JSON field:', error);
+      return [];
+    }
+  }
+  return [];
+};
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -66,9 +81,16 @@ const getTherapistExercises = async (req, res) => {
 
     const exercises = await runQuery(query, [therapistId]);
 
+    // Parse JSON fields for equipment and instructions
+    const parsedExercises = exercises.map(exercise => ({
+      ...exercise,
+      equipment: parseJsonField(exercise.equipment),
+      instructions: parseJsonField(exercise.instructions)
+    }));
+
     res.json({
       success: true,
-      data: exercises
+      data: parsedExercises
     });
   } catch (error) {
     console.error('Error fetching therapist exercises:', error);
@@ -119,9 +141,16 @@ const getPatientExercises = async (req, res) => {
 
     const exercises = await runQuery(query, [actualPatientId]);
 
+    // Parse JSON fields for equipment and instructions
+    const parsedExercises = exercises.map(exercise => ({
+      ...exercise,
+      equipment: parseJsonField(exercise.equipment),
+      instructions: parseJsonField(exercise.instructions)
+    }));
+
     res.json({
       success: true,
-      data: exercises
+      data: parsedExercises
     });
   } catch (error) {
     console.error('Error fetching patient exercises:', error);
@@ -190,12 +219,28 @@ const createExercise = async (req, res) => {
 
     const exercise = await getRow(getExerciseQuery, [exerciseId]);
 
+    // Parse JSON fields for equipment and instructions
+    const parsedExercise = {
+      ...exercise,
+      equipment: parseJsonField(exercise.equipment),
+      instructions: parseJsonField(exercise.instructions)
+    };
+
+    // Create notification for patient
+    try {
+      const notificationController = require('./notificationController');
+      await notificationController.createExerciseReminderNotificationForPatient(exerciseId);
+    } catch (notificationError) {
+      console.error('Exercise notification creation error:', notificationError);
+      // Continue without notifications if there's an error
+    }
+
     // Broadcast home exercise change
-    websocketService.broadcastHomeExerciseChange(exercise, 'created');
+    websocketService.broadcastHomeExerciseChange(parsedExercise, 'created');
 
     res.status(201).json({
       success: true,
-      data: exercise,
+      data: parsedExercise,
       message: 'Exercise created successfully'
     });
   } catch (error) {
@@ -262,12 +307,19 @@ const updateExercise = async (req, res) => {
       return res.status(404).json({ error: 'Exercise not found' });
     }
 
+    // Parse JSON fields for equipment and instructions
+    const parsedExercise = {
+      ...exercise,
+      equipment: parseJsonField(exercise.equipment),
+      instructions: parseJsonField(exercise.instructions)
+    };
+
     // Broadcast home exercise change
-    websocketService.broadcastHomeExerciseChange(exercise, 'updated');
+    websocketService.broadcastHomeExerciseChange(parsedExercise, 'updated');
 
     res.json({
       success: true,
-      data: exercise,
+      data: parsedExercise,
       message: 'Exercise updated successfully'
     });
   } catch (error) {

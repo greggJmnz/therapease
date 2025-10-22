@@ -8,7 +8,8 @@ import {
   Target, 
   AlertCircle, 
   Info,
-  CheckCircle
+  CheckCircle,
+  TrendingUp
 } from 'lucide-react';
 import { useWebSocketEvent } from '../hooks/useWebSocket';
 
@@ -115,12 +116,18 @@ const RealtimeNotificationToast = () => {
   const getIcon = (type) => {
     switch (type) {
       case 'appointment':
+      case 'appointment_created':
+      case 'appointment_reminder':
         return <Calendar className="h-5 w-5" />;
       case 'patient':
         return <User className="h-5 w-5" />;
       case 'assessment':
         return <FileText className="h-5 w-5" />;
       case 'progress':
+      case 'progress_update':
+        return <TrendingUp className="h-5 w-5" />;
+      case 'exercise_assignment':
+      case 'exercise_reminder':
         return <Target className="h-5 w-5" />;
       case 'system':
         return <Info className="h-5 w-5" />;
@@ -132,13 +139,19 @@ const RealtimeNotificationToast = () => {
   const getTypeColor = (type) => {
     switch (type) {
       case 'appointment':
+      case 'appointment_created':
+      case 'appointment_reminder':
         return 'bg-blue-50 border-blue-200 text-blue-800';
       case 'patient':
         return 'bg-pink-50 border-pink-200 text-pink-800';
       case 'assessment':
         return 'bg-green-50 border-green-200 text-green-800';
       case 'progress':
+      case 'progress_update':
         return 'bg-orange-50 border-orange-200 text-orange-800';
+      case 'exercise_assignment':
+      case 'exercise_reminder':
+        return 'bg-purple-50 border-purple-200 text-purple-800';
       case 'system':
         return 'bg-gray-50 border-gray-200 text-gray-800';
       default:

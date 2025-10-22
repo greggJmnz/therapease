@@ -51,8 +51,8 @@ const PatientLayout = () => {
     {
       enabled: user?.role === 'patient',
       refetchOnWindowFocus: true,
-      staleTime: 0, // Always fetch fresh data
-      cacheTime: 0, // Don't cache the data
+      staleTime: 1 * 60 * 1000, // 1 minute - reduced for better responsiveness
+      cacheTime: 5 * 60 * 1000, // 5 minutes - reduced cache time
     }
   );
 
@@ -64,6 +64,34 @@ const PatientLayout = () => {
       refetchOnboardingStatus();
     }
   }, [user?.id, queryClient, refetchOnboardingStatus]);
+
+  // Listen for maintenance mode changes and refresh onboarding status
+  useEffect(() => {
+    const handleMaintenanceModeChange = () => {
+      // When maintenance mode is disabled, refresh onboarding status
+      queryClient.invalidateQueries('patientOnboardingStatus');
+      refetchOnboardingStatus();
+    };
+
+    // Listen for storage events (when maintenance mode changes in another tab)
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'maintenanceMode' && e.newValue === 'false') {
+        handleMaintenanceModeChange();
+      }
+    });
+
+    // Also listen for focus events to refresh when user returns to tab
+    const handleFocus = () => {
+      refetchOnboardingStatus();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('storage', handleMaintenanceModeChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [queryClient, refetchOnboardingStatus]);
 
 
   // Handle navigation based on onboarding status
@@ -204,7 +232,7 @@ const PatientLayout = () => {
             })}
             <div className="tools-section">
               <h4>Tools</h4>
-              <Link to="/patient/settings" className="nav-link" title="Account and system settings">
+              <Link to="/patient/settings" className="nav-link" title="Account and system settings" onClick={() => setSidebarOpen(false)}>
                 <div className="nav-link-content">
                   <Settings size={20} />
                   <div className="nav-link-text">
@@ -213,7 +241,7 @@ const PatientLayout = () => {
                   </div>
                 </div>
               </Link>
-              <Link to="/patient/help" className="nav-link" title="Help and support resources">
+              <Link to="/patient/help" className="nav-link" title="Help and support resources" onClick={() => setSidebarOpen(false)}>
                 <div className="nav-link-content">
                   <HelpCircle size={20} />
                   <div className="nav-link-text">
@@ -385,6 +413,18 @@ const PatientLayout = () => {
                 <Menu size={20} />
               </button>
             )}
+
+            <div className="header-logo-section">
+              <div className="system-logo">
+                <div className="logo-icon">
+                  <i className="fas fa-heart-pulse"></i>
+                </div>
+              </div>
+              <div className="system-name">
+                <span className="system-title">{systemName || 'TherapEase'}</span>
+                <span className="portal-type">Patient Portal</span>
+              </div>
+            </div>
 
             <div className="breadcrumb">
               <span className="breadcrumb-main">Patient Portal</span>

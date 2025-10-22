@@ -69,7 +69,7 @@ const AdminPatients = () => {
       if (response.data.success) {
         setPatientTherapists(prev => ({
           ...prev,
-          [patientId]: response.data.therapists || []
+          [patientId]: response.data.data?.therapists || []
         }));
       }
     } catch (error) {
@@ -80,12 +80,14 @@ const AdminPatients = () => {
   // Fetch patients data from API
   const { data: patientsData, isLoading, error, refetch } = useQuery(
     'adminPatients',
-    adminAPI.getPatients,
+    adminAPI.getPatientsWithAssignments,
     {
       refetchOnWindowFocus: true,
       refetchOnMount: true,
-      staleTime: 0,
-      cacheTime: 0,
+      staleTime: 0, // Always consider data stale to ensure fresh fetch
+      cacheTime: 5 * 60 * 1000, // 5 minutes
+      retry: 3,
+      retryDelay: 1000,
       onError: (error) => {
         toast.error('Failed to load patients data');
         console.error('Error fetching patients:', error);
@@ -93,13 +95,18 @@ const AdminPatients = () => {
     }
   );
 
+  // Force refetch when component mounts to ensure fresh data
+  useEffect(() => {
+    refetch();
+  }, []);
+
   // Load patient therapists when patients data is available
   useEffect(() => {
-    if (patientsData?.data?.users) {
-      const patients = patientsData.data.users.filter(user => user.role === 'patient');
+    if (patientsData?.data?.data?.patients || patientsData?.data?.patients) {
+      const patients = patientsData.data.data?.patients || patientsData.data.patients || [];
       patients.forEach(patient => {
-        if (patient.patient?.id) {
-          fetchPatientTherapists(patient.patient.id);
+        if (patient.id) {
+          fetchPatientTherapists(patient.id);
         }
       });
     }
@@ -177,12 +184,16 @@ const AdminPatients = () => {
   }
   
 
-  // Extract patients from API response (admin API has double nesting)
-  const patients = (patientsData?.data?.data?.users || [])
-    .filter(user => user.role === 'patient')
+  // Extract patients from API response (getPatientsWithAssignments returns patients directly)
+  const patients = (patientsData?.data?.data?.patients || patientsData?.data?.patients || [])
     .map(patient => {
+      // Check if patient has therapist assignments
+      const hasAssignments = patient.therapistAssignments && patient.therapistAssignments.length > 0;
+      const primaryTherapist = patient.therapistAssignments?.find(t => t.assignmentType === 'primary');
+      
       return {
         id: patient.id,
+        userId: patient.userId,
         firstName: patient.firstName,
         lastName: patient.lastName,
         email: patient.email,
@@ -194,17 +205,27 @@ const AdminPatients = () => {
         state: patient.state || 'N/A',
         zipCode: patient.zipCode || 'N/A',
         country: patient.country || 'N/A',
-        // Access patient-specific data from nested patient object
-        diagnosis: patient.patient?.diagnosis || 'N/A',
-        medicalHistory: patient.patient?.medicalHistory || 'N/A',
-        goals: patient.patient?.goals || 'N/A',
-        therapistId: patient.patient?.therapistId || null,
-        therapistName: patient.therapistName || (patient.patient?.therapistId ? 'Assigned' : 'Not assigned'),
-        status: patient.patient?.status || patient.status || 'active', // Use patient status first, fallback to user status
+        // Patient-specific data
+        diagnosis: patient.diagnosis || 'N/A',
+        medicalHistory: patient.medicalHistory || 'N/A',
+        goals: patient.goals || 'N/A',
+        therapistId: patient.primaryTherapistId || null,
+        therapistName: primaryTherapist?.therapistName || (patient.primaryTherapistName || 'Not assigned'),
+        status: patient.status || 'active',
         createdAt: patient.createdAt,
         updatedAt: patient.updatedAt,
         profileImage: patient.profileImage || null,
-        patient: patient.patient || {}
+        // Include therapist assignments for detailed view
+        therapistAssignments: patient.therapistAssignments || [],
+        isAssigned: hasAssignments,
+        patient: {
+          id: patient.id,
+          diagnosis: patient.diagnosis,
+          medicalHistory: patient.medicalHistory,
+          goals: patient.goals,
+          status: patient.status,
+          therapistId: patient.primaryTherapistId
+        }
       };
     });
 
@@ -2129,7 +2150,7 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
         const response = await adminAPI.getPatientTherapists(patient.patient?.id);
         
         if (response.data.success) {
-          setAssignedTherapists(response.data.therapists || []);
+          setAssignedTherapists(response.data.data?.therapists || []);
         } else {
           console.error('Failed to load assigned therapists:', response.data.error);
         }
@@ -2152,7 +2173,7 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
         console.log('Available therapists:', response.data);
         
         if (response.data.success) {
-          setTherapists(response.data.therapists || []);
+          setTherapists(response.data.data?.therapists || []);
         } else {
           toast.error('Failed to load available therapists');
         }
@@ -2432,7 +2453,8 @@ const AddTherapistContent = ({ patient, onAssignmentSuccess }) => {
       try {
         const response = await adminAPI.getPatientTherapists(patient.patient?.id);
         if (response.data.success) {
-          const hasPrimary = response.data.therapists.some(t => t.assignmentType === 'primary');
+          const therapists = response.data.data?.therapists || [];
+          const hasPrimary = therapists.some(t => t.assignmentType === 'primary');
           setHasPrimaryTherapist(hasPrimary);
         }
       } catch (error) {
@@ -2454,7 +2476,7 @@ const AddTherapistContent = ({ patient, onAssignmentSuccess }) => {
         console.log('Available therapists:', response.data);
         
         if (response.data.success) {
-          setTherapists(response.data.therapists || []);
+          setTherapists(response.data.data?.therapists || []);
         } else {
           toast.error('Failed to load available therapists');
         }

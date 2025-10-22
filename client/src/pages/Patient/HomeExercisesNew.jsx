@@ -212,8 +212,8 @@ const HomeExercisesNew = () => {
               <Dumbbell className="h-8 w-8 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Home Exercises</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">Home Exercises</h1>
+              <p className="text-sm sm:text-base lg:text-lg text-gray-600 mt-2 font-medium">
                 Complete your assigned exercises and submit proof of completion
               </p>
             </div>
@@ -223,63 +223,63 @@ const HomeExercisesNew = () => {
         <div className="space-y-8">
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Dumbbell className="h-6 w-6 text-blue-600" />
+          <div className="grid grid-cols-4 gap-2 sm:gap-4 lg:gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-2 sm:p-4 lg:p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
+                <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
+                  <div className="p-1 sm:p-2 bg-blue-100 rounded-lg">
+                    <Dumbbell className="h-3 w-3 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-600" />
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Exercises</p>
-                  <p className="text-2xl font-bold text-gray-900">{exercises.length}</p>
+                <div className="sm:ml-3 lg:ml-4">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-600 uppercase tracking-wide">Total</p>
+                  <p className="text-sm sm:text-xl lg:text-3xl font-extrabold text-gray-900">{exercises.length}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-2 sm:p-4 lg:p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
+                <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
+                  <div className="p-1 sm:p-2 bg-green-100 rounded-lg">
+                    <CheckCircle className="h-3 w-3 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-green-600" />
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="sm:ml-3 lg:ml-4">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-600 uppercase tracking-wide">Completed</p>
+                  <p className="text-sm sm:text-xl lg:text-3xl font-extrabold text-gray-900">
                     {exercises.filter(e => e.status === 'completed').length}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <Clock className="h-6 w-6 text-yellow-600" />
+            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-2 sm:p-4 lg:p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
+                <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
+                  <div className="p-1 sm:p-2 bg-yellow-100 rounded-lg">
+                    <Clock className="h-3 w-3 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-yellow-600" />
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">In Progress</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="sm:ml-3 lg:ml-4">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-600 uppercase tracking-wide">In Progress</p>
+                  <p className="text-sm sm:text-xl lg:text-3xl font-extrabold text-gray-900">
                     {exercises.filter(e => e.status === 'in_progress').length}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <AlertCircle className="h-6 w-6 text-red-600" />
+            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-2 sm:p-4 lg:p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
+                <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
+                  <div className="p-1 sm:p-2 bg-red-100 rounded-lg">
+                    <AlertCircle className="h-3 w-3 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-red-600" />
                   </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Overdue</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="sm:ml-3 lg:ml-4">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-600 uppercase tracking-wide">Overdue</p>
+                  <p className="text-sm sm:text-xl lg:text-3xl font-extrabold text-gray-900">
                     {exercises.filter(e => e.status === 'overdue').length}
                   </p>
                 </div>
@@ -306,91 +306,95 @@ const HomeExercisesNew = () => {
             </div>
           ) : (
             exercises.map((exercise) => (
-              <div key={exercise.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4 flex-1">
-                    <div className="flex-shrink-0">
-                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center shadow-sm">
-                        <Dumbbell className="h-7 w-7 text-blue-600" />
-                      </div>
+              <div key={exercise.id} className="p-3 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                  <div className="flex-shrink-0 mx-auto sm:mx-0">
+                    <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center shadow-sm">
+                      <Dumbbell className="h-5 w-5 sm:h-7 sm:w-7 text-blue-600" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-3">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">
-                            {exercise.title}
-                          </h3>
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(exercise.status)}`}>
-                            {exercise.status.replace('_', ' ')}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => toggleExerciseExpansion(exercise.id)}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                        >
-                          {expandedExercises.has(exercise.id) ? (
-                            <ChevronUp className="h-5 w-5 text-gray-500" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 text-gray-500" />
-                          )}
-                        </button>
-                      </div>
-                      
-                      <div className="flex flex-wrap items-center gap-3 mb-3">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <User className="h-4 w-4 mr-1.5 text-gray-400" />
-                          <span>Dr. {exercise.therapistFirstName} {exercise.therapistLastName}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Clock className="h-4 w-4 mr-1.5 text-gray-400" />
-                          <span>{exercise.duration} min</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
-                          <span>{exercise.frequency}</span>
-                        </div>
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getDifficultyColor(exercise.difficulty)}`}>
-                          {exercise.difficulty}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                        <h3 className="text-base sm:text-xl font-bold text-gray-900 truncate tracking-wide">
+                          {exercise.title}
+                        </h3>
+                        <span className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium self-start ${getStatusColor(exercise.status)}`}>
+                          {exercise.status.replace('_', ' ')}
                         </span>
                       </div>
-                      
-                      <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                        {exercise.description}
-                      </p>
-                      
-                      {exercise.dueDate && (
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
-                          <span>Due: {new Date(exercise.dueDate).toLocaleDateString()}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-col items-end space-y-3">
-                    <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => handleViewProofs(exercise)}
-                        className="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                        onClick={() => toggleExerciseExpansion(exercise.id)}
+                        className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 touch-target self-start sm:self-auto"
                       >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Proofs ({exercise.proofCount || 0})
+                        {expandedExercises.has(exercise.id) ? (
+                          <>
+                            <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-0" />
+                            <span className="sm:hidden">Less</span>
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-0" />
+                            <span className="sm:hidden">More</span>
+                          </>
+                        )}
                       </button>
-                      
-                      {exercise.status !== 'completed' && (
-                        <button
-                          onClick={() => {
-                            setSelectedExercise(exercise);
-                            setShowSubmitModal(true);
-                          }}
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 transform hover:scale-105"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Submit Proof
-                        </button>
-                      )}
                     </div>
+                    
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                        <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 text-gray-400" />
+                        <span className="truncate">Dr. {exercise.therapistFirstName} {exercise.therapistLastName}</span>
+                      </div>
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 text-gray-400" />
+                        <span>{exercise.duration} min</span>
+                      </div>
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 text-gray-400" />
+                        <span>{exercise.frequency}</span>
+                      </div>
+                      <span className={`inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-1 rounded-full text-xs font-medium ${getDifficultyColor(exercise.difficulty)}`}>
+                        {exercise.difficulty}
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm sm:text-base text-gray-700 mb-2 sm:mb-3 leading-relaxed font-medium line-clamp-2">
+                      {exercise.description}
+                    </p>
+                    
+                    {exercise.dueDate && (
+                      <div className="flex items-center text-xs sm:text-sm text-gray-500 mb-2">
+                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 text-gray-400" />
+                        <span>Due: {new Date(exercise.dueDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
                   </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-3 sm:mt-4">
+                  <button
+                    onClick={() => handleViewProofs(exercise)}
+                    className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 shadow-sm text-xs sm:text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 touch-target w-full sm:w-auto"
+                  >
+                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">View Proofs ({exercise.proofCount || 0})</span>
+                    <span className="sm:hidden">Proofs ({exercise.proofCount || 0})</span>
+                  </button>
+                  
+                  {exercise.status !== 'completed' && (
+                    <button
+                      onClick={() => {
+                        setSelectedExercise(exercise);
+                        setShowSubmitModal(true);
+                      }}
+                      className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 transform hover:scale-105 touch-target w-full sm:w-auto"
+                    >
+                      <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Submit Proof</span>
+                      <span className="sm:hidden">Submit</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Expanded Details */}

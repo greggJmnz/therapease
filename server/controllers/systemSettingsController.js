@@ -25,6 +25,7 @@ const getSystemSettings = async (req, res) => {
       general: {
         systemName: 'TherapEase',
         maintenanceMode: false,
+        maintenanceDuration: '2 hours',
         sessionTimeout: 30
       },
       registration: {
@@ -78,6 +79,9 @@ const getSystemSettings = async (req, res) => {
           break;
         case 'maintenance_mode':
           organizedSettings.general.maintenanceMode = value;
+          break;
+        case 'maintenance_duration':
+          organizedSettings.general.maintenanceDuration = value;
           break;
         case 'session_timeout':
           organizedSettings.general.sessionTimeout = value;
@@ -139,25 +143,75 @@ const getSystemSettings = async (req, res) => {
 const updateSystemSettings = async (req, res) => {
   try {
     const { general, notifications } = req.body;
+    
+    // Validate maintenance mode requirements
+    if (general && general.maintenanceMode === true) {
+      if (!general.maintenanceDuration || general.maintenanceDuration.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          error: 'Maintenance duration is required before enabling maintenance mode'
+        });
+      }
+    }
+    
     const connection = await getConnection();
     
     await connection.beginTransaction();
 
     try {
-      // Update system settings
+      // Update general settings
       if (general) {
-        const systemMappings = [
+        const generalMappings = [
           { key: 'system_name', value: general.systemName, type: 'string' },
           { key: 'maintenance_mode', value: general.maintenanceMode, type: 'boolean' },
-          { key: 'session_timeout', value: general.sessionTimeout, type: 'number' },
-          { key: 'allow_registration', value: general.allowRegistration, type: 'boolean' },
-          { key: 'require_email_verification', value: general.requireEmailVerification, type: 'boolean' },
-          { key: 'password_complexity', value: general.passwordComplexity, type: 'string' },
-          { key: 'max_login_attempts', value: general.maxLoginAttempts, type: 'number' },
-          { key: 'notification_frequency', value: general.notificationFrequency, type: 'string' }
+          { key: 'maintenance_duration', value: general.maintenanceDuration, type: 'string' },
+          { key: 'session_timeout', value: general.sessionTimeout, type: 'number' }
         ];
 
-        for (const mapping of systemMappings) {
+        for (const mapping of generalMappings) {
+          if (mapping.value !== undefined) {
+            await connection.execute(`
+              INSERT INTO system_settings (setting_key, setting_value, setting_type, updated_at)
+              VALUES (?, ?, ?, NOW())
+              ON DUPLICATE KEY UPDATE
+                setting_value = VALUES(setting_value),
+                setting_type = VALUES(setting_type),
+                updated_at = NOW()
+            `, [mapping.key, String(mapping.value), mapping.type]);
+          }
+        }
+      }
+
+      // Update registration settings
+      if (req.body.registration) {
+        const registrationMappings = [
+          { key: 'allow_registration', value: req.body.registration.allowRegistration, type: 'boolean' },
+          { key: 'require_email_verification', value: req.body.registration.requireEmailVerification, type: 'boolean' }
+        ];
+
+        for (const mapping of registrationMappings) {
+          if (mapping.value !== undefined) {
+            await connection.execute(`
+              INSERT INTO system_settings (setting_key, setting_value, setting_type, updated_at)
+              VALUES (?, ?, ?, NOW())
+              ON DUPLICATE KEY UPDATE
+                setting_value = VALUES(setting_value),
+                setting_type = VALUES(setting_type),
+                updated_at = NOW()
+            `, [mapping.key, String(mapping.value), mapping.type]);
+          }
+        }
+      }
+
+      // Update security settings
+      if (req.body.security) {
+        const securityMappings = [
+          { key: 'password_complexity', value: req.body.security.passwordComplexity, type: 'string' },
+          { key: 'max_login_attempts', value: req.body.security.maxLoginAttempts, type: 'number' },
+          { key: 'notification_frequency', value: req.body.security.notificationFrequency, type: 'string' }
+        ];
+
+        for (const mapping of securityMappings) {
           if (mapping.value !== undefined) {
             await connection.execute(`
               INSERT INTO system_settings (setting_key, setting_value, setting_type, updated_at)
@@ -221,6 +275,7 @@ const updateSystemSettings = async (req, res) => {
         general: {
           systemName: 'TherapEase',
           maintenanceMode: false,
+          maintenanceDuration: '2 hours',
           sessionTimeout: 30
         },
         registration: {
@@ -274,6 +329,9 @@ const updateSystemSettings = async (req, res) => {
             break;
           case 'maintenance_mode':
             organizedSettings.general.maintenanceMode = value;
+            break;
+          case 'maintenance_duration':
+            organizedSettings.general.maintenanceDuration = value;
             break;
           case 'session_timeout':
             organizedSettings.general.sessionTimeout = value;
@@ -401,19 +459,23 @@ const getPublicSystemSettings = async (req, res) => {
 // Get maintenance mode status (public endpoint)
 const getMaintenanceStatus = async (req, res) => {
   try {
-    const maintenanceSetting = await getRow(
-      'SELECT setting_value FROM system_settings WHERE setting_key = ?',
-      ['maintenance_mode']
-    );
+    const [maintenanceSetting, durationSetting] = await Promise.all([
+      getRow('SELECT setting_value FROM system_settings WHERE setting_key = ?', ['maintenance_mode']),
+      getRow('SELECT setting_value FROM system_settings WHERE setting_key = ?', ['maintenance_duration'])
+    ]);
 
     const isMaintenanceMode = maintenanceSetting && maintenanceSetting.setting_value === 'true';
+    const maintenanceDuration = durationSetting?.setting_value || '2 hours';
 
     res.json({
       success: true,
-      maintenanceMode: isMaintenanceMode,
-      message: isMaintenanceMode 
-        ? 'System is currently under maintenance. Please try again later.'
-        : 'System is operational'
+      data: {
+        maintenanceMode: isMaintenanceMode,
+        maintenanceDuration: maintenanceDuration,
+        message: isMaintenanceMode 
+          ? 'System is currently under maintenance. Please try again later.'
+          : 'System is operational'
+      }
     });
 
   } catch (error) {

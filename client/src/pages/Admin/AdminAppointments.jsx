@@ -112,7 +112,7 @@ const AdminAppointments = () => {
 
   // Extract and enhance appointments from API response
   const allAppointments = useMemo(() => {
-    const rawAppointments = appointmentsData?.data?.appointments || [];
+    const rawAppointments = appointmentsData?.data?.data?.appointments || appointmentsData?.data?.appointments || [];
     
     return rawAppointments
       .filter(appointment => {
@@ -346,8 +346,6 @@ const AdminAppointments = () => {
       
       const calendarType = typeMapping[appointment.type] || 'fine-motor-skills';
       
-      console.log(`Processing appointment: ${appointment.patientName} - ${appointment.type} (${appointment.status}) -> ${calendarType}`);
-    
     return {
         id: appointment.id,
         title: `${appointment.patientName} - ${appointment.type}`,
@@ -367,7 +365,7 @@ const AdminAppointments = () => {
           isToday: appointment.isToday
       }
     };
-  });
+    });
     
     return events;
   }, [allAppointments]);
@@ -975,7 +973,7 @@ const AdminAppointments = () => {
 
               {/* Table Body */}
               <div className="divide-y divide-gray-200 min-w-[800px]">
-              {filteredAppointments.length === 0 ? (
+              {currentAppointments.length === 0 ? (
                 <div className="p-12 text-center">
                   <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No appointments found</h3>
