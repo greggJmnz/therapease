@@ -142,4 +142,4 @@ console.log('- Keep dependencies updated');
 console.log('- Use environment-specific configuration files');
 
 console.log('\n🚨 If you had exposed credentials, revoke them immediately!');
-console.log('   See ENVIRONMENT_SECURITY_GUIDE.md for detailed instructions.');
+console.log('   Check the main README.md for security setup instructions.');
