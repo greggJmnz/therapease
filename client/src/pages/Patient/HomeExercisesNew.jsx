@@ -24,12 +24,14 @@ import { patientAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useRealtimeData } from '../../hooks/useWebSocket';
 import FullScreenImageViewer from '../../components/FullScreenImageViewer';
+import ExerciseDetailsModal from '../../components/ExerciseDetailsModal';
 import toast from 'react-hot-toast';
 
 const HomeExercisesNew = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [submissionType, setSubmissionType] = useState('text');
   const [submissionContent, setSubmissionContent] = useState('');
@@ -154,6 +156,11 @@ const HomeExercisesNew = () => {
       newExpanded.add(exerciseId);
     }
     setExpandedExercises(newExpanded);
+  };
+
+  const handleViewDetails = (exercise) => {
+    setSelectedExercise(exercise);
+    setShowDetailsModal(true);
   };
 
   const getStatusColor = (status) => {
@@ -324,20 +331,12 @@ const HomeExercisesNew = () => {
                         </span>
                       </div>
                       <button
-                        onClick={() => toggleExerciseExpansion(exercise.id)}
-                        className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 touch-target self-start sm:self-auto"
+                        onClick={() => handleViewDetails(exercise)}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 touch-target"
                       >
-                        {expandedExercises.has(exercise.id) ? (
-                          <>
-                            <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-0" />
-                            <span className="sm:hidden">Less</span>
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-0" />
-                            <span className="sm:hidden">More</span>
-                          </>
-                        )}
+                        <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">View Details</span>
+                        <span className="sm:hidden">Details</span>
                       </button>
                     </div>
                     
@@ -397,80 +396,6 @@ const HomeExercisesNew = () => {
                   )}
                 </div>
 
-                {/* Expanded Details */}
-                {expandedExercises.has(exercise.id) && (
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Exercise Instructions */}
-                      {exercise.instructions && Array.isArray(exercise.instructions) && exercise.instructions.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                            <FileText className="h-4 w-4 mr-2 text-blue-600" />
-                            Instructions
-                          </h4>
-                          <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
-                            {exercise.instructions.map((instruction, index) => (
-                              <li key={index} className="leading-relaxed">{instruction}</li>
-                            ))}
-                          </ol>
-                        </div>
-                      )}
-
-                      {/* Equipment */}
-                      {exercise.equipment && Array.isArray(exercise.equipment) && exercise.equipment.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                            <Target className="h-4 w-4 mr-2 text-green-600" />
-                            Equipment Needed
-                          </h4>
-                          <div className="flex flex-wrap gap-2 bg-gray-50 p-4 rounded-lg">
-                            {exercise.equipment.map((item, index) => (
-                              <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Additional Details */}
-                      <div className="md:col-span-2">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                          <Calendar className="h-4 w-4 mr-2 text-purple-600" />
-                          Exercise Details
-                        </h4>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-700">Category:</span>
-                              <span className="ml-2 text-gray-600">{exercise.category || 'General'}</span>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Assigned Date:</span>
-                              <span className="ml-2 text-gray-600">
-                                {new Date(exercise.assignedDate).toLocaleDateString()}
-                              </span>
-                            </div>
-                            {exercise.streak > 0 && (
-                              <div>
-                                <span className="font-medium text-gray-700">Streak:</span>
-                                <span className="ml-2 text-gray-600">{exercise.streak} days</span>
-                              </div>
-                            )}
-                            {exercise.lastCompleted && (
-                              <div>
-                                <span className="font-medium text-gray-700">Last Completed:</span>
-                                <span className="ml-2 text-gray-600">
-                                  {new Date(exercise.lastCompleted).toLocaleDateString()}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             ))
           )}
@@ -698,6 +623,12 @@ const HomeExercisesNew = () => {
       )}
 
       {/* Full Screen Image Viewer */}
+      <ExerciseDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        exercise={selectedExercise}
+      />
+
       <FullScreenImageViewer
         isOpen={fullScreenImage.isOpen}
         onClose={() => setFullScreenImage({ isOpen: false, url: '', fileName: '' })}

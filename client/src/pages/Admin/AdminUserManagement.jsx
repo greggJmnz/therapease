@@ -74,11 +74,21 @@ const AdminUserManagement = () => {
 
   // Filter and search functionality
   const filteredUsers = users.filter(user => {
+    if (!searchTerm.trim()) {
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+      const matchesStatus = statusFilter === 'all' || (user.status || 'active') === statusFilter;
+      return matchesRole && matchesStatus;
+    }
+    
+    const searchLower = searchTerm.toLowerCase().trim();
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase().trim();
+    
     const matchesSearch = 
-      user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone?.toLowerCase().includes(searchTerm.toLowerCase());
+      user.firstName?.toLowerCase().includes(searchLower) ||
+      user.lastName?.toLowerCase().includes(searchLower) ||
+      fullName.includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower) ||
+      user.phone?.toLowerCase().includes(searchLower);
     
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const matchesStatus = statusFilter === 'all' || (user.status || 'active') === statusFilter;
@@ -535,54 +545,53 @@ const AdminUserManagement = () => {
 
 
 
-      {/* Content */}
-      <div className="admin-content">
-        {/* Search and Filter */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  placeholder="Search users by name, email, or phone..."
-                  value={searchTerm}
-                  onChange={handleSearch}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+      {/* Search and Filter Section */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search users by name, email, or phone..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          
+          <div className="flex gap-4">
+            <div className="flex flex-col">
+              <select
+                value={roleFilter}
+                onChange={handleRoleFilter}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Roles</option>
+                <option value="admin">Admins</option>
+                <option value="therapist">Therapists</option>
+                <option value="patient">Patients</option>
+              </select>
             </div>
             
-            <div className="flex gap-4">
-              <div className="flex flex-col">
-                <select
-                  value={roleFilter}
-                  onChange={handleRoleFilter}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Roles</option>
-                  <option value="admin">Admins</option>
-                  <option value="therapist">Therapists</option>
-                  <option value="patient">Patients</option>
-                </select>
-              </div>
-              
-              <div className="flex flex-col">
-                <select
-                  value={statusFilter}
-                  onChange={handleStatusFilter}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
+            <div className="flex flex-col">
+              <select
+                value={statusFilter}
+                onChange={handleStatusFilter}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Users Table */}
+      {/* Users Table Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="users-table-container">
           {filteredUsers.length === 0 ? (
             <div className="empty-state">

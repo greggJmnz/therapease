@@ -111,8 +111,8 @@ const TherapistHelpCenter = () => {
         <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
           <HelpCircle size={40} className="text-white" />
         </div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">How can we help you?</h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <h1 className="text-xl font-bold text-gray-900 mb-4">How can we help you?</h1>
+        <p className="text-sm text-gray-600 max-w-2xl mx-auto">
           Find answers to common questions, get support, and learn how to make the most of your TherapEase therapist portal for pediatric occupational therapy practice.
         </p>
             </div>

@@ -190,9 +190,10 @@ const authorizeResourceOwner = (resourceType, resourceIdField = 'id') => {
           // Therapists can access progress entries for their patients
           if (req.user.role === 'therapist') {
             const progress = await getRow(`
-              SELECT pt.id FROM progress_tracking pt
-              JOIN patients p ON pt.patientId = p.id
-              WHERE pt.id = ? AND p.therapistId = ?
+              SELECT mo.id FROM main_objectives mo
+              JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+              JOIN patients p ON tp.patientId = p.id
+              WHERE mo.id = ? AND p.therapistId = ?
             `, [resourceId, req.user.id]);
             isOwner = !!progress;
           }

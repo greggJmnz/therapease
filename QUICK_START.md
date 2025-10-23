@@ -99,7 +99,7 @@ npm run dev
 | appointments | Scheduling | 15 |
 | notifications | System alerts | 10 |
 | home_exercises | Exercise assignments | 0 |
-| progress_tracking | Outcome measurement | 0 |
+| main_objectives | Treatment plan objectives | 0 |
 
 ## 🛠️ Available Scripts
 

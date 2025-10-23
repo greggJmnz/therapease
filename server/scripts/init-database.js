@@ -185,25 +185,11 @@ const createTables = async (connection) => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
-  // Progress Tracking table
-  await connection.execute(`
-    CREATE TABLE IF NOT EXISTS progress_tracking (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      patientId INT NOT NULL,
-      assessmentId INT,
-      area VARCHAR(100) NOT NULL,
-      baselineScore INT,
-      currentScore INT,
-      targetScore INT,
-      progressNotes TEXT,
-      measurementDate DATE NOT NULL,
-      nextReviewDate DATE,
-      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
-      FOREIGN KEY (assessmentId) REFERENCES assessments(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
+  // Note: progress_tracking table removed - using treatment plan progress tracking instead
+  // Progress tracking is now handled through:
+  // - treatment_plans table (overall progress)
+  // - main_objectives table (objective progress) 
+  // - specific_objectives table (task completion)
 
   // Home Exercises table
   await connection.execute(`

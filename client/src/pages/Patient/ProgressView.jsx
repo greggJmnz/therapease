@@ -236,9 +236,14 @@ const ProgressView = () => {
         <div className="mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex-1">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">My Progress</h1>
-                <p className="text-gray-600 text-sm sm:text-base lg:text-lg">Track your therapy progress and objectives</p>
+              <div className="flex items-center space-x-4 flex-1">
+                <div className="p-3 bg-gradient-to-r from-green-600 to-blue-600 rounded-xl">
+                  <Target className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900 mb-2">My Progress</h1>
+                  <p className="text-sm text-gray-600">Track your therapy progress and objectives</p>
+                </div>
               </div>
               <div className="mt-6 lg:mt-0 lg:ml-8">
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 text-center">
@@ -354,32 +359,32 @@ const ProgressView = () => {
             </div>
           </div>
           
-          {/* Overall Stats Summary */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-xl">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 mb-1">
+            {/* Overall Stats Summary */}
+            <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="text-base sm:text-lg lg:text-xl font-bold text-blue-600 mb-1">
                 {overallStats.totalMainObjectives}
               </div>
-              <div className="text-xs sm:text-sm font-medium text-blue-800">Total Main Objectives</div>
+              <div className="text-xs font-medium text-blue-800 leading-tight">Total Main Objectives</div>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-xl">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 mb-1">
+            <div className="text-center p-3 sm:p-4 bg-green-50 rounded-xl border border-green-100">
+              <div className="text-base sm:text-lg lg:text-xl font-bold text-green-600 mb-1">
                 {overallStats.totalSpecificObjectives}
               </div>
-              <div className="text-xs sm:text-sm font-medium text-green-800">Total Specific Objectives</div>
+              <div className="text-xs font-medium text-green-800 leading-tight">Total Specific Objectives</div>
             </div>
-            <div className="text-center p-4 bg-emerald-50 rounded-xl">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600 mb-1">
+            <div className="text-center p-3 sm:p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+              <div className="text-base sm:text-lg lg:text-xl font-bold text-emerald-600 mb-1">
                 {overallStats.totalCompletedObjectives}
               </div>
-              <div className="text-xs sm:text-sm font-medium text-emerald-800">Completed Objectives</div>
+              <div className="text-xs font-medium text-emerald-800 leading-tight">Completed Objectives</div>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-xl">
-              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600 mb-1">
+            <div className="text-center p-3 sm:p-4 bg-purple-50 rounded-xl border border-purple-100">
+              <div className="text-base sm:text-lg lg:text-xl font-bold text-purple-600 mb-1">
                 {overallStats.activePlans}
               </div>
-              <div className="text-xs sm:text-sm font-medium text-purple-800">Active Plans</div>
-        </div>
+              <div className="text-xs font-medium text-purple-800 leading-tight">Active Plans</div>
+            </div>
       </div>
         </div>
 

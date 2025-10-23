@@ -32,7 +32,7 @@ const NotificationList = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [viewMode, setViewMode] = useState('card'); // 'card' or 'compact'
+  const [viewMode, setViewMode] = useState('compact'); // 'card' or 'compact'
 
   // Filter notifications
   const filteredNotifications = notifications.filter(notification => {
@@ -86,46 +86,53 @@ const NotificationList = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-          <p className="mt-1 text-sm text-gray-600">{subtitle}</p>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          {unreadCount > 0 && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-              {unreadCount} unread
-            </span>
-          )}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
+              <Bell className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{title}</h1>
+              <p className="mt-1 text-sm sm:text-base text-gray-600">{subtitle}</p>
+            </div>
+          </div>
           
-          {showBulkActions && (
-            <>
-              {onDeleteAll && totalCount > 0 && (
-                <button
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
-                      onDeleteAll();
-                    }
-                  }}
-                  disabled={isDeletingAll}
-                  className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-                >
-                  {isDeletingAll ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Deleting...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete all
-                    </>
-                  )}
-                </button>
-              )}
-            </>
-          )}
+          <div className="flex items-center space-x-3">
+            {unreadCount > 0 && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 border border-red-200">
+                {unreadCount} unread
+              </span>
+            )}
+            
+            {showBulkActions && (
+              <>
+                {onDeleteAll && totalCount > 0 && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
+                        onDeleteAll();
+                      }
+                    }}
+                    disabled={isDeletingAll}
+                    className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                  >
+                    {isDeletingAll ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete all
+                      </>
+                    )}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 

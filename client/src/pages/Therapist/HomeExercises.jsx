@@ -28,6 +28,7 @@ import { therapistAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useRealtimeData } from '../../hooks/useWebSocket';
 import FullScreenImageViewer from '../../components/FullScreenImageViewer';
+import ExerciseDetailsModal from '../../components/ExerciseDetailsModal';
 import toast from 'react-hot-toast';
 
 const HomeExercises = () => {
@@ -35,6 +36,7 @@ const HomeExercises = () => {
   const queryClient = useQueryClient();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showProofModal, setShowProofModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [selectedProofs, setSelectedProofs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -267,6 +269,11 @@ const HomeExercises = () => {
     setExpandedExercises(newExpanded);
   };
 
+  const handleViewDetails = (exercise) => {
+    setSelectedExercise(exercise);
+    setShowDetailsModal(true);
+  };
+
   const handleReviewProof = (proofId, status, feedback) => {
     reviewProofMutation.mutate({
       proofId,
@@ -321,8 +328,8 @@ const HomeExercises = () => {
                 <Dumbbell className="h-8 w-8 text-green-600" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">Home Exercises</h1>
-                <p className="text-sm sm:text-base lg:text-lg text-gray-600 mt-2 font-medium">
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Home Exercises</h1>
+                <p className="text-sm text-gray-600 mt-2 font-medium">
                   Assign and manage home exercises for your patients
                 </p>
               </div>
@@ -344,69 +351,69 @@ const HomeExercises = () => {
         <div className="space-y-8">
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-4 gap-2 sm:gap-4 lg:gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-2 sm:p-4 lg:p-6 hover:shadow-md transition-shadow duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
-                <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
-                  <div className="p-1 sm:p-2 bg-blue-100 rounded-lg">
-                    <Dumbbell className="h-3 w-3 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-600" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Dumbbell className="h-4 w-4 text-blue-600" />
                   </div>
                 </div>
-                <div className="sm:ml-3 lg:ml-4">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-600 uppercase tracking-wide">Total</p>
-                  <p className="text-sm sm:text-xl lg:text-3xl font-extrabold text-gray-900">{exercises.length}</p>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Total</p>
+                  <p className="text-lg font-bold text-gray-900">{exercises.length}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-2 sm:p-4 lg:p-6 hover:shadow-md transition-shadow duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
-                <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
-                  <div className="p-1 sm:p-2 bg-green-100 rounded-lg">
-                    <CheckCircle className="h-3 w-3 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-green-600" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
                   </div>
                 </div>
-                <div className="sm:ml-3 lg:ml-4">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-600 uppercase tracking-wide">Completed</p>
-                  <p className="text-sm sm:text-xl lg:text-3xl font-extrabold text-gray-900">
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Completed</p>
+                  <p className="text-lg font-bold text-gray-900">
                     {exercises.filter(e => e.status === 'completed').length}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-2 sm:p-4 lg:p-6 hover:shadow-md transition-shadow duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
-                <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
-                  <div className="p-1 sm:p-2 bg-yellow-100 rounded-lg">
-                    <Clock className="h-3 w-3 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-yellow-600" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <Clock className="h-4 w-4 text-yellow-600" />
                   </div>
                 </div>
-                <div className="sm:ml-3 lg:ml-4">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-600 uppercase tracking-wide">In Progress</p>
-                  <p className="text-sm sm:text-xl lg:text-3xl font-extrabold text-gray-900">
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">In Progress</p>
+                  <p className="text-lg font-bold text-gray-900">
                     {exercises.filter(e => e.status === 'in_progress').length}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-2 sm:p-4 lg:p-6 hover:shadow-md transition-shadow duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center text-center sm:text-left">
-                <div className="flex-shrink-0 mx-auto sm:mx-0 mb-1 sm:mb-0">
-                  <div className="p-1 sm:p-2 bg-red-100 rounded-lg">
-                    <AlertCircle className="h-3 w-3 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-red-600" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
                   </div>
                 </div>
-                <div className="sm:ml-3 lg:ml-4">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-600 uppercase tracking-wide">Overdue</p>
-                  <p className="text-sm sm:text-xl lg:text-3xl font-extrabold text-gray-900">
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Overdue</p>
+                  <p className="text-lg font-bold text-gray-900">
                     {exercises.filter(e => e.status === 'overdue').length}
                   </p>
                 </div>
               </div>
             </div>
-      </div>
+          </div>
 
           {/* Filters */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
@@ -486,20 +493,12 @@ const HomeExercises = () => {
                       </span>
                     </div>
                     <button
-                      onClick={() => toggleExerciseExpansion(exercise.id)}
-                      className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 touch-target self-start sm:self-auto"
+                      onClick={() => handleViewDetails(exercise)}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 touch-target"
                     >
-                      {expandedExercises.has(exercise.id) ? (
-                        <>
-                          <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-0" />
-                          <span className="sm:hidden">Less</span>
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-0" />
-                          <span className="sm:hidden">More</span>
-                        </>
-                      )}
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">View Details</span>
+                      <span className="sm:hidden">Details</span>
                     </button>
                   </div>
                   
@@ -551,84 +550,6 @@ const HomeExercises = () => {
                 </button>
               </div>
 
-              {/* Expanded Details */}
-              {expandedExercises.has(exercise.id) && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Exercise Instructions */}
-                    {exercise.instructions && Array.isArray(exercise.instructions) && exercise.instructions.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                          <FileText className="h-4 w-4 mr-2 text-blue-600" />
-                          Instructions
-                        </h4>
-                        <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
-                          {exercise.instructions.map((instruction, index) => (
-                            <li key={index} className="leading-relaxed">{instruction}</li>
-                          ))}
-                        </ol>
-                      </div>
-                    )}
-
-                    {/* Equipment */}
-                    {exercise.equipment && Array.isArray(exercise.equipment) && exercise.equipment.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                          <Target className="h-4 w-4 mr-2 text-green-600" />
-                          Equipment Needed
-                        </h4>
-                        <div className="flex flex-wrap gap-2 bg-gray-50 p-4 rounded-lg">
-                          {exercise.equipment.map((item, index) => (
-                            <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              {item}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Additional Details */}
-                    <div className="md:col-span-2">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-purple-600" />
-                        Exercise Details
-                      </h4>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="font-medium text-gray-700">Assigned Date:</span>
-                            <span className="ml-2 text-gray-600">
-                              {new Date(exercise.assignedDate).toLocaleDateString()}
-                            </span>
-                          </div>
-                          {exercise.streak > 0 && (
-                            <div>
-                              <span className="font-medium text-gray-700">Streak:</span>
-                              <span className="ml-2 text-gray-600">{exercise.streak} days</span>
-                            </div>
-                          )}
-                          {exercise.lastCompleted && (
-                            <div>
-                              <span className="font-medium text-gray-700">Last Completed:</span>
-                              <span className="ml-2 text-gray-600">
-                                {new Date(exercise.lastCompleted).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
-                          {exercise.dueDate && (
-                            <div>
-                              <span className="font-medium text-gray-700">Due Date:</span>
-                              <span className="ml-2 text-gray-600">
-                                {new Date(exercise.dueDate).toLocaleDateString()}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           ))}
           </div>
@@ -984,6 +905,12 @@ const HomeExercises = () => {
       )}
 
       {/* Full Screen Image Viewer */}
+      <ExerciseDetailsModal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        exercise={selectedExercise}
+      />
+
       <FullScreenImageViewer
         isOpen={fullScreenImage.isOpen}
         onClose={() => setFullScreenImage({ isOpen: false, url: '', fileName: '' })}

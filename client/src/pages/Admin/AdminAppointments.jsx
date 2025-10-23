@@ -163,12 +163,13 @@ const AdminAppointments = () => {
     let filtered = allAppointments;
 
     // Search filter
-    if (searchTerm) {
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
       filtered = filtered.filter(appointment =>
-        appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.therapistName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.reason.toLowerCase().includes(searchTerm.toLowerCase())
+        appointment.patientName.toLowerCase().includes(searchLower) ||
+        appointment.therapistName.toLowerCase().includes(searchLower) ||
+        appointment.type.toLowerCase().includes(searchLower) ||
+        appointment.reason.toLowerCase().includes(searchLower)
       );
     }
 
@@ -684,18 +685,18 @@ const AdminAppointments = () => {
       case 'session':
       case 'therapy':
       case 'Regular Session':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
+        return 'bg-pink-500 text-white border-pink-600';
       case 'consultation':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-orange-500 text-white border-orange-600';
       case 'assessment':
       case 'evaluation':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-500 text-white border-green-600';
       case 'follow-up':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-yellow-500 text-white border-yellow-600';
       case 'emergency':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-500 text-white border-red-600';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-500 text-white border-gray-600';
     }
   };
 

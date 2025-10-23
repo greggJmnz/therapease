@@ -498,55 +498,59 @@ const Appointments = () => {
         {/* Header Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Schedule</h1>
-              <p className="text-gray-600 mt-1">Book and manage your therapy sessions</p>
+        <div className="flex items-center space-x-4">
+          <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
+            <Calendar className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">My Schedule</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Book and manage your therapy sessions</p>
+          </div>
         </div>
             <div className="flex items-center gap-3">
         <button
           onClick={() => setShowBookingForm(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+          className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all font-medium flex items-center gap-2 shadow-sm hover:shadow-md text-sm sm:text-base"
         >
-                <Plus size={20} />
-          Book Session
+          <Plus size={18} className="sm:w-5 sm:h-5" />
+          <span className="hidden sm:inline">Book Session</span>
+          <span className="sm:hidden">Book</span>
         </button>
             </div>
           </div>
         </div>
 
-        {/* View Toggle and Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            {/* View Toggle */}
-            <div className="flex items-center gap-2">
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setCurrentView('calendar')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                    currentView === 'calendar' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Grid3X3 size={16} />
-                  Calendar View
-                </button>
-                <button
-                  onClick={() => setCurrentView('list')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                    currentView === 'list' 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <List size={16} />
-                  List View
-                </button>
-              </div>
+        {/* View Toggle */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+          <div className="flex items-center justify-center">
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setCurrentView('calendar')}
+                className={`px-3 py-2 sm:px-4 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                  currentView === 'calendar' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Grid3X3 size={16} />
+                <span className="hidden sm:inline">Calendar View</span>
+                <span className="sm:hidden">Calendar</span>
+              </button>
+              <button
+                onClick={() => setCurrentView('list')}
+                className={`px-3 py-2 sm:px-4 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                  currentView === 'list' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <List size={16} />
+                <span className="hidden sm:inline">List View</span>
+                <span className="sm:hidden">List</span>
+              </button>
             </div>
-
           </div>
-      </div>
+        </div>
 
       {/* Enhanced Booking Form Modal */}
       {showBookingForm && (

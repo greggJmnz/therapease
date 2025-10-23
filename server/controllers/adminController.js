@@ -46,7 +46,7 @@ const getDashboard = async (req, res) => {
         (SELECT COUNT(*) FROM assessments) as totalAssessments,
         (SELECT COUNT(*) FROM appointments) as totalAppointments,
         (SELECT COUNT(*) FROM daily_notes) as totalDailyNotes,
-        (SELECT COUNT(*) FROM progress_tracking) as totalProgressEntries
+        (SELECT COUNT(*) FROM main_objectives) as totalProgressEntries
     `;
 
     const statsResult = await getRow(statsSql);
@@ -75,7 +75,7 @@ const getDashboard = async (req, res) => {
         (SELECT COUNT(*) FROM assessments WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newAssessmentsThisWeek,
         (SELECT COUNT(*) FROM appointments WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newAppointmentsThisWeek,
         (SELECT COUNT(*) FROM daily_notes WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newDailyNotesThisWeek,
-        (SELECT COUNT(*) FROM progress_tracking WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newProgressEntriesThisWeek
+        (SELECT COUNT(*) FROM main_objectives WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newProgressEntriesThisWeek
     `;
 
     const systemHealthResult = await getRow(systemHealthSql);
@@ -1416,22 +1416,22 @@ const getPatientProgress = async (req, res) => {
 
     const sql = `
       SELECT 
-        pt.id,
-        pt.area,
-        pt.baselineScore,
-        pt.currentScore,
-        pt.targetScore,
-        pt.progressNotes,
-        pt.measurementDate,
-        pt.nextReviewDate,
-        pt.createdAt,
-        pt.updatedAt,
-        a.title as assessmentTitle
-      FROM progress_tracking pt
-      LEFT JOIN assessments a ON pt.assessmentId = a.id
-      JOIN patients p ON pt.patientId = p.id
-      WHERE p.userId = ?
-      ORDER BY pt.measurementDate DESC
+        mo.id,
+        mo.title as area,
+        NULL as baselineScore,
+        mo.progress as currentScore,
+        100 as targetScore,
+        mo.description as progressNotes,
+        mo.updatedAt as measurementDate,
+        mo.targetDate as nextReviewDate,
+        mo.createdAt,
+        mo.updatedAt,
+        tp.title as assessmentTitle
+      FROM main_objectives mo
+      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+      JOIN patients p ON tp.patientId = p.id
+      WHERE p.userId = ? AND tp.status = 'active'
+      ORDER BY mo.updatedAt DESC
     `;
 
     const progress = await getAll(sql, [parseInt(patientId)]);

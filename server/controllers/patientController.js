@@ -690,12 +690,18 @@ const getDashboard = async (req, res) => {
       LIMIT 5
     `, [patient.id]);
 
-    // Get recent progress entries
+    // Get recent progress entries from treatment plans
     const progress = await getAll(`
-      SELECT area, currentScore, targetScore, measurementDate, progressNotes
-      FROM progress_tracking
-      WHERE patientId = ?
-      ORDER BY measurementDate DESC
+      SELECT 
+        mo.title as area,
+        mo.progress as currentScore,
+        100 as targetScore,
+        mo.updatedAt as measurementDate,
+        mo.description as progressNotes
+      FROM main_objectives mo
+      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+      WHERE tp.patientId = ? AND tp.status = 'active'
+      ORDER BY mo.updatedAt DESC
       LIMIT 5
     `, [patient.id]);
 

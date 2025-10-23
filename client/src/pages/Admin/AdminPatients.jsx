@@ -260,10 +260,19 @@ const AdminPatients = () => {
 
   // Filter and search functionality
   const filteredPatients = patients.filter(patient => {
+    if (!searchTerm.trim()) {
+      const matchesStatus = filterStatus === 'all' || (patient.status || 'active') === filterStatus;
+      return matchesStatus;
+    }
+    
+    const searchLower = searchTerm.toLowerCase().trim();
+    const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.toLowerCase().trim();
+    
     const matchesSearch = 
-      patient.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      patient.firstName?.toLowerCase().includes(searchLower) ||
+      patient.lastName?.toLowerCase().includes(searchLower) ||
+      fullName.includes(searchLower) ||
+      patient.email?.toLowerCase().includes(searchLower);
     
     const matchesStatus = filterStatus === 'all' || (patient.status || 'active') === filterStatus;
     

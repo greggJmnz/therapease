@@ -214,31 +214,16 @@ CREATE TABLE appointments (
 - `INDEX (therapistId, appointmentDate)` - For therapist schedule
 - `INDEX (status, appointmentDate)` - For status queries
 
-### 7. Progress Tracking Table
-**Purpose**: Outcome measurement and goal tracking
+### 7. Progress Tracking System
+**Purpose**: Outcome measurement and goal tracking through treatment plans
 
-```sql
-CREATE TABLE progress_tracking (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  patientId INT NOT NULL,
-  therapistId INT NOT NULL,
-  trackingDate DATE NOT NULL,
-  baselineScores JSON,
-  currentScores JSON,
-  targetScores JSON,
-  progressNotes TEXT,
-  aiInsights TEXT,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
-  FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
-);
-```
+**Note**: The old `progress_tracking` table has been removed. Progress tracking is now handled through the treatment plan system:
 
-**Indexes**:
-- `PRIMARY KEY (id)`
-- `INDEX (patientId, trackingDate)` - For patient progress history
-- `INDEX (therapistId, trackingDate)` - For therapist progress tracking
+- **Treatment Plans Table**: Overall progress tracking
+- **Main Objectives Table**: Objective-level progress tracking  
+- **Specific Objectives Table**: Task-level completion tracking
+
+This provides a more structured and comprehensive approach to progress tracking that aligns with clinical practice.
 
 ### 8. Notifications Table
 **Purpose**: System alerts and user communications

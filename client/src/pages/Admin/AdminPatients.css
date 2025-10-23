@@ -609,6 +609,22 @@
   position: relative;
   overflow: visible !important; /* Allow dropdowns to extend beyond table */
   min-width: 800px; /* Ensure table has minimum width to trigger horizontal scroll */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Improved font styling for better readability */
+.patients-table th {
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.075em;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.patients-table td {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 500;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Enhanced Responsive Design */

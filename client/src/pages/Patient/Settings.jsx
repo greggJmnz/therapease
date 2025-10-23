@@ -274,42 +274,44 @@ const Settings = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <SettingsIcon className="h-8 w-8 text-blue-600" />
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
+            <div className="p-2 sm:p-3 bg-blue-100 rounded-xl">
+              <SettingsIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-              <p className="text-gray-600 mt-1">Manage your account and therapy preferences</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Settings</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">Manage your account and therapy preferences</p>
             </div>
           </div>
         </div>
 
         {/* Navigation Toggle */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Settings</h2>
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <button
                 onClick={() => setNavigationType('top')}
-                className={`px-3 py-1 text-sm rounded-lg transition-all duration-200 ${
+                className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-lg transition-all duration-200 ${
                   navigationType === 'top' 
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                Top Navigation
+                <span className="hidden sm:inline">Top Navigation</span>
+                <span className="sm:hidden">Top</span>
               </button>
               <button
                 onClick={() => setNavigationType('dropdown')}
-                className={`px-3 py-1 text-sm rounded-lg transition-all duration-200 ${
+                className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-lg transition-all duration-200 ${
                   navigationType === 'dropdown' 
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                Dropdown Menu
+                <span className="hidden sm:inline">Dropdown Menu</span>
+                <span className="sm:hidden">Menu</span>
               </button>
             </div>
           </div>
@@ -317,33 +319,33 @@ const Settings = () => {
 
         {/* Top Navigation */}
         {navigationType === 'top' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-8">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Settings Categories</h3>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-6 sm:mb-8">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Settings Categories</h3>
             </div>
-            <nav className="flex flex-wrap gap-2 p-6">
+            <nav className="flex flex-wrap gap-2 p-4 sm:p-6">
               {navigationTabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-3 px-6 py-4 rounded-xl transition-all duration-200 ${
+                    className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-6 py-3 sm:py-4 rounded-xl transition-all duration-200 ${
                       activeTab === tab.id
                         ? 'bg-blue-50 border-2 border-blue-200 text-blue-700'
                         : 'hover:bg-gray-50 text-gray-700 hover:text-gray-900 border-2 border-transparent'
                     }`}
                   >
-                    <div className={`p-2 rounded-lg ${
+                    <div className={`p-1.5 sm:p-2 rounded-lg ${
                       activeTab === tab.id ? 'bg-blue-100' : 'bg-gray-100'
                     }`}>
-                      <Icon className={`h-5 w-5 ${
+                      <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${
                         activeTab === tab.id ? 'text-blue-600' : 'text-gray-500'
                       }`} />
                     </div>
                     <div className="text-left">
-                      <div className="font-medium">{tab.name}</div>
-                      <div className="text-sm text-gray-500 hidden sm:block">{tab.description}</div>
+                      <div className="font-medium text-sm sm:text-base">{tab.name}</div>
+                      <div className="text-xs sm:text-sm text-gray-500 hidden sm:block">{tab.description}</div>
                     </div>
                   </button>
                 );
@@ -354,34 +356,34 @@ const Settings = () => {
 
         {/* Dropdown Navigation */}
         {navigationType === 'dropdown' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-8">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Settings Categories</h3>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-6 sm:mb-8">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Settings Categories</h3>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl hover:bg-gray-100 transition-all duration-200"
+                  className="w-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-xl hover:bg-gray-100 transition-all duration-200"
                 >
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 sm:space-x-3">
                     {(() => {
                       const activeTabData = navigationTabs.find(tab => tab.id === activeTab);
                       const Icon = activeTabData?.icon || User;
                       return (
                         <>
-                          <div className="p-2 rounded-lg bg-blue-100">
-                            <Icon className="h-5 w-5 text-blue-600" />
+                          <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100">
+                            <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                           </div>
                           <div className="text-left">
-                            <div className="font-medium text-gray-900">{activeTabData?.name || 'Select Category'}</div>
-                            <div className="text-sm text-gray-500">{activeTabData?.description || 'Choose a settings category'}</div>
+                            <div className="font-medium text-sm sm:text-base text-gray-900">{activeTabData?.name || 'Select Category'}</div>
+                            <div className="text-xs sm:text-sm text-gray-500">{activeTabData?.description || 'Choose a settings category'}</div>
                           </div>
                         </>
                       );
                     })()}
                   </div>
-                  <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${
+                  <ChevronDown className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-400 transition-transform duration-200 ${
                     showDropdown ? 'rotate-180' : ''
                   }`} />
                 </button>
@@ -397,22 +399,22 @@ const Settings = () => {
                             setActiveTab(tab.id);
                             setShowDropdown(false);
                           }}
-                          className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-all duration-200 ${
+                          className={`w-full flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 text-left hover:bg-gray-50 transition-all duration-200 ${
                             activeTab === tab.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                           } ${tab.id === navigationTabs[0].id ? 'rounded-t-xl' : ''} ${
                             tab.id === navigationTabs[navigationTabs.length - 1].id ? 'rounded-b-xl' : ''
                           }`}
                         >
-                          <div className={`p-2 rounded-lg ${
+                          <div className={`p-1.5 sm:p-2 rounded-lg ${
                             activeTab === tab.id ? 'bg-blue-100' : 'bg-gray-100'
                           }`}>
-                            <Icon className={`h-5 w-5 ${
+                            <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${
                               activeTab === tab.id ? 'text-blue-600' : 'text-gray-500'
                             }`} />
                           </div>
                           <div>
-                            <div className="font-medium">{tab.name}</div>
-                            <div className="text-sm text-gray-500">{tab.description}</div>
+                            <div className="font-medium text-sm sm:text-base">{tab.name}</div>
+                            <div className="text-xs sm:text-sm text-gray-500">{tab.description}</div>
                           </div>
                         </button>
                       );
@@ -429,10 +431,10 @@ const Settings = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-              <div className="p-8">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile Information</h2>
-                  <p className="text-gray-600">Update your personal information and contact details</p>
+              <div className="p-4 sm:p-6 lg:p-8">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">Profile Information</h2>
+                  <p className="text-sm sm:text-base text-gray-600">Update your personal information and contact details</p>
                 </div>
                 <ProfileForm userRole="patient" apiService={patientAPI} />
               </div>
@@ -440,39 +442,39 @@ const Settings = () => {
 
             {/* Notifications Tab */}
             {activeTab === 'notifications' && (
-              <div className="p-8">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Notification Settings</h2>
-                  <p className="text-gray-600">Configure how you receive notifications about your therapy</p>
+              <div className="p-4 sm:p-6 lg:p-8">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">Notification Settings</h2>
+                  <p className="text-sm sm:text-base text-gray-600">Configure how you receive notifications about your therapy</p>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* Therapy Notifications */}
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Heart className="h-5 w-5 mr-2 text-blue-600" />
+                  <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                      <Heart className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600" />
                       Therapy Notifications
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {[
                         { key: 'appointmentReminders', label: 'Appointment Reminders', description: 'Reminders for upcoming therapy sessions' },
                         { key: 'progressUpdates', label: 'Progress Updates', description: 'Updates about your therapy progress' },
                         { key: 'assessmentResults', label: 'Assessment Results', description: 'Notifications when assessment results are available' },
                         { key: 'homeExerciseReminders', label: 'Exercise Reminders', description: 'Reminders for home exercises and activities' }
                       ].map((setting) => (
-                        <div key={setting.key} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
-                          <div>
-                            <h4 className="font-medium text-gray-900">{setting.label}</h4>
-                            <p className="text-sm text-gray-500">{setting.description}</p>
+                        <div key={setting.key} className="flex items-center justify-between p-3 sm:p-4 bg-white rounded-lg border border-gray-200">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm sm:text-base text-gray-900">{setting.label}</h4>
+                            <p className="text-xs sm:text-sm text-gray-500">{setting.description}</p>
                           </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
+                          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-2">
                             <input
                               type="checkbox"
                               checked={notificationSettings[setting.key]}
                               onChange={(e) => handleNotificationChange(setting.key, e.target.checked)}
                               className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <div className="w-9 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                           </label>
                         </div>
                       ))}
@@ -480,20 +482,20 @@ const Settings = () => {
                   </div>
 
                   {/* System Notifications */}
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Activity className="h-5 w-5 mr-2 text-green-600" />
+                  <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                      <Activity className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600" />
                       System Notifications
                     </h3>
                   </div>
 
                   {/* Delivery Methods */}
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Globe className="h-5 w-5 mr-2 text-purple-600" />
+                  <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                      <Globe className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-purple-600" />
                       Delivery Methods
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {[
                         { key: 'emailNotifications', label: 'Email Notifications', description: 'Receive notifications via email', icon: Globe },
                         { key: 'smsNotifications', label: 'SMS Notifications', description: 'Receive notifications via SMS', icon: Smartphone },
@@ -501,22 +503,22 @@ const Settings = () => {
                       ].map((setting) => {
                         const Icon = setting.icon;
                         return (
-                          <div key={setting.key} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
-                            <div className="flex items-center space-x-3">
-                              <Icon className="h-5 w-5 text-gray-500" />
-                              <div>
-                                <h4 className="font-medium text-gray-900">{setting.label}</h4>
-                                <p className="text-sm text-gray-500">{setting.description}</p>
+                          <div key={setting.key} className="flex items-center justify-between p-3 sm:p-4 bg-white rounded-lg border border-gray-200">
+                            <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                              <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <h4 className="font-medium text-sm sm:text-base text-gray-900">{setting.label}</h4>
+                                <p className="text-xs sm:text-sm text-gray-500">{setting.description}</p>
                               </div>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
+                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-2">
                               <input
                                 type="checkbox"
                                 checked={notificationSettings[setting.key]}
                                 onChange={(e) => handleNotificationChange(setting.key, e.target.checked)}
                                 className="sr-only peer"
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              <div className="w-9 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                           </div>
                         );
@@ -530,20 +532,20 @@ const Settings = () => {
 
             {/* Security Tab */}
             {activeTab === 'security' && (
-              <div className="p-8">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Security Settings</h2>
-                  <p className="text-gray-600">Manage your account security and password</p>
+              <div className="p-4 sm:p-6 lg:p-8">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2">Security Settings</h2>
+                  <p className="text-sm sm:text-base text-gray-600">Manage your account security and password</p>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* Password Change */}
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Lock className="h-5 w-5 mr-2 text-red-600" />
+                  <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                      <Lock className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-red-600" />
                       Change Password
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Current Password
@@ -553,7 +555,7 @@ const Settings = () => {
                             type={showPassword ? 'text' : 'password'}
                             value={passwordData.currentPassword}
                             onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
-                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base"
                             placeholder="Enter current password"
                           />
                           <button
@@ -562,9 +564,9 @@ const Settings = () => {
                             className="absolute inset-y-0 right-0 pr-3 flex items-center"
                           >
                             {showPassword ? (
-                              <EyeOff className="h-5 w-5 text-gray-400" />
+                              <EyeOff className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                             ) : (
-                              <Eye className="h-5 w-5 text-gray-400" />
+                              <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                             )}
                           </button>
                         </div>
@@ -578,7 +580,7 @@ const Settings = () => {
                             type={showNewPassword ? 'text' : 'password'}
                             value={passwordData.newPassword}
                             onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
-                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base"
                             placeholder="Enter new password"
                           />
                           <button
@@ -587,9 +589,9 @@ const Settings = () => {
                             className="absolute inset-y-0 right-0 pr-3 flex items-center"
                           >
                             {showNewPassword ? (
-                              <EyeOff className="h-5 w-5 text-gray-400" />
+                              <EyeOff className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                             ) : (
-                              <Eye className="h-5 w-5 text-gray-400" />
+                              <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                             )}
                           </button>
                         </div>
@@ -602,17 +604,17 @@ const Settings = () => {
                           type="password"
                           value={passwordData.confirmPassword}
                           onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base"
                           placeholder="Confirm new password"
                         />
                       </div>
                       
                       {/* Password Change Button */}
-                      <div className="pt-4">
+                      <div className="pt-3 sm:pt-4">
                         <button
                           onClick={handlePasswordSubmit}
                           disabled={changePasswordMutation.isLoading}
-                          className="w-full bg-red-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                          className="w-full bg-red-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
                         >
                           {changePasswordMutation.isLoading ? (
                             <>
@@ -631,24 +633,24 @@ const Settings = () => {
                   </div>
 
                   {/* Two-Factor Authentication */}
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Shield className="h-5 w-5 mr-2 text-purple-600" />
+                  <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                      <Shield className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-purple-600" />
                       Two-Factor Authentication
                     </h3>
-                    <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
-                      <div>
-                        <h4 className="font-medium text-gray-900">
+                    <div className="flex items-center justify-between p-3 sm:p-4 bg-white rounded-lg border border-gray-200">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm sm:text-base text-gray-900">
                           {twoFactorEnabled ? '2FA Enabled' : 'Enable 2FA'}
                         </h4>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs sm:text-sm text-gray-500">
                           {twoFactorEnabled 
                             ? 'Two-factor authentication is active on your account' 
                             : 'Add an extra layer of security to your account'
                           }
                         </p>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
+                      <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-2">
                         <input
                           type="checkbox"
                           className="sr-only peer"
@@ -656,7 +658,7 @@ const Settings = () => {
                           onChange={handle2FAToggle}
                           disabled={twoFactorLoading}
                         />
-                        <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${twoFactorLoading ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                        <div className={`w-9 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-blue-600 ${twoFactorLoading ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                       </label>
                     </div>
                   </div>
@@ -671,20 +673,20 @@ const Settings = () => {
       {/* 2FA Setup Modal */}
       {show2FASetup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="text-center mb-6">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-                <Shield className="h-6 w-6 text-blue-600" />
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6">
+            <div className="text-center mb-4 sm:mb-6">
+              <div className="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100 mb-3 sm:mb-4">
+                <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                 Enable Two-Factor Authentication
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 Enter your password to enable 2FA. A verification code will be sent to your email.
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <label htmlFor="2fa-password" className="block text-sm font-medium text-gray-700 mb-2">
                   Current Password
@@ -694,26 +696,26 @@ const Settings = () => {
                   type="password"
                   value={twoFactorPassword}
                   onChange={(e) => setTwoFactorPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                   placeholder="Enter your password"
                 />
               </div>
             </div>
 
-            <div className="flex space-x-3 mt-6">
+            <div className="flex space-x-2 sm:space-x-3 mt-4 sm:mt-6">
               <button
                 onClick={() => {
                   setShow2FASetup(false);
                   setTwoFactorPassword('');
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={handleEnable2FA}
                 disabled={twoFactorLoading || !twoFactorPassword}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 {twoFactorLoading ? 'Enabling...' : 'Enable 2FA'}
               </button>
@@ -725,20 +727,20 @@ const Settings = () => {
       {/* 2FA Verification Modal */}
       {show2FAVerify && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="text-center mb-6">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                <KeyRound className="h-6 w-6 text-green-600" />
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6">
+            <div className="text-center mb-4 sm:mb-6">
+              <div className="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-green-100 mb-3 sm:mb-4">
+                <KeyRound className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                 Verify Setup Code
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 Enter the 6-digit code sent to your email to complete 2FA setup.
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <label htmlFor="2fa-code" className="block text-sm font-medium text-gray-700 mb-2">
                   Verification Code
@@ -751,27 +753,27 @@ const Settings = () => {
                     const value = e.target.value.replace(/\D/g, '').slice(0, 6);
                     setTwoFactorCode(value);
                   }}
-                  className="w-full px-3 py-2 text-center text-2xl font-mono tracking-widest border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 sm:py-2 text-center text-xl sm:text-2xl font-mono tracking-widest border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="000000"
                   maxLength={6}
                 />
               </div>
             </div>
 
-            <div className="flex space-x-3 mt-6">
+            <div className="flex space-x-2 sm:space-x-3 mt-4 sm:mt-6">
               <button
                 onClick={() => {
                   setTwoFactorCode('');
                   setShow2FAVerify(false);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={handleVerify2FASetup}
                 disabled={twoFactorLoading || twoFactorCode.length !== 6}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 {twoFactorLoading ? 'Verifying...' : 'Verify & Enable'}
               </button>
@@ -783,20 +785,20 @@ const Settings = () => {
       {/* 2FA Disable Modal */}
       {show2FADisable && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="text-center mb-6">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <Shield className="h-6 w-6 text-red-600" />
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6">
+            <div className="text-center mb-4 sm:mb-6">
+              <div className="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-red-100 mb-3 sm:mb-4">
+                <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                 Disable Two-Factor Authentication
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600">
                 Enter your password to disable 2FA. This will make your account less secure.
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <label htmlFor="disable-2fa-password" className="block text-sm font-medium text-gray-700 mb-2">
                   Current Password
@@ -806,26 +808,26 @@ const Settings = () => {
                   type="password"
                   value={twoFactorPassword}
                   onChange={(e) => setTwoFactorPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                   placeholder="Enter your password"
                 />
               </div>
             </div>
 
-            <div className="flex space-x-3 mt-6">
+            <div className="flex space-x-2 sm:space-x-3 mt-4 sm:mt-6">
               <button
                 onClick={() => {
                   setShow2FADisable(false);
                   setTwoFactorPassword('');
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDisable2FA}
                 disabled={twoFactorLoading || !twoFactorPassword}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 {twoFactorLoading ? 'Disabling...' : 'Disable 2FA'}
               </button>

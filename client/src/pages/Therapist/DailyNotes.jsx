@@ -367,15 +367,15 @@ const DailyNotes = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Modern Header */}
-      <div className="bg-white shadow-xl border-b border-gray-200">
+      <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Daily Notes
                 </h1>
-                <p className="mt-3 text-sm sm:text-base lg:text-lg text-gray-600">
+                <p className="mt-3 text-sm text-gray-600">
                   Document therapy sessions and track patient progress
                 </p>
               </div>
@@ -391,7 +391,7 @@ const DailyNotes = () => {
                 <button
                   onClick={handleCreateNote}
                   disabled={!selectedPatientId}
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   <Plus className="h-5 w-5 mr-2" />
                   New Note
@@ -404,7 +404,7 @@ const DailyNotes = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Modern Patient Selection Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 mb-8 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
             <h2 className="text-xl font-semibold text-white flex items-center gap-3">
               <User className="h-6 w-6" />
@@ -436,7 +436,7 @@ const DailyNotes = () => {
               <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-sm">
                       <User className="h-6 w-6 text-white" />
                     </div>
                   </div>
@@ -456,7 +456,7 @@ const DailyNotes = () => {
 
         {/* Modern Create/Edit Note Form */}
         {showForm && (
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 mb-8 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
             <div className="bg-gradient-to-r from-green-600 to-blue-600 px-6 py-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-white flex items-center gap-3">
@@ -481,7 +481,7 @@ const DailyNotes = () => {
                   <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-200">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-sm">
                           <User className="h-6 w-6 text-white" />
                         </div>
                       </div>
@@ -590,7 +590,7 @@ const DailyNotes = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-3 border border-transparent rounded-xl shadow-lg text-sm font-medium text-white bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                    className="px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
                   >
                     {editingNote ? 'Update Note' : 'Create Note'}
                   </button>
@@ -602,7 +602,7 @@ const DailyNotes = () => {
 
         {/* Modern Notes List */}
         {!selectedPatientId ? (
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
             <div className="text-center py-20">
               <div className="w-20 h-20 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
                 <FileText className="h-10 w-10 text-gray-400" />
@@ -614,7 +614,7 @@ const DailyNotes = () => {
             </div>
           </div>
         ) : notes.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
             <div className="text-center py-20">
               <div className="w-20 h-20 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <FileText className="h-10 w-10 text-blue-600" />
@@ -625,7 +625,7 @@ const DailyNotes = () => {
               </p>
               <button
                 onClick={handleCreateNote}
-                className="inline-flex items-center px-8 py-4 border border-transparent shadow-lg text-lg font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                className="inline-flex items-center px-8 py-4 border border-transparent shadow-sm text-lg font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
               >
                 <Plus className="h-5 w-5 mr-3" />
                 Create First Note
@@ -895,7 +895,7 @@ const DailyNotes = () => {
                                         <MoreVertical className="h-4 w-4 text-gray-400" />
                                       </button>
                                       {showCommentMenu === comment.id && (
-                                        <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                                        <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-sm z-10 min-w-[120px]">
                                           <button
                                             onClick={() => {
                                               handleEditComment(note.id, comment);

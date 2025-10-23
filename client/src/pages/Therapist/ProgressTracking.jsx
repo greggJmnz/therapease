@@ -768,49 +768,62 @@ const ProgressTracking = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Progress Tracking</h1>
-          <p className="text-sm sm:text-base text-gray-600">Monitor and manage patient treatment plans and progress</p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex items-center space-x-4">
+          <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
+            <Target className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Progress Tracking</h1>
+            <p className="text-sm text-gray-600 mt-1">Monitor and manage patient treatment plans and progress</p>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={() => setShowCreatePlan(true)}
-            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 touch-target"
-          >
-            <Plus size={20} />
-            <span className="hidden sm:inline">New Treatment Plan</span>
-            <span className="sm:hidden">New Plan</span>
-          </button>
-        </div>
+      </div>
+      
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          onClick={() => setShowCreatePlan(true)}
+          className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transition-all duration-200 touch-target"
+        >
+          <Plus size={20} />
+          <span className="hidden sm:inline">New Treatment Plan</span>
+          <span className="sm:hidden">New Plan</span>
+        </button>
       </div>
 
       {/* Patient Selection */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Select Patient</h2>
-          <select
-            value={selectedPatient?.id || ''}
-            onChange={(e) => {
-            const patient = patients.find(p => p.id === parseInt(e.target.value));
-            setSelectedPatient(patient);
-            setActiveTab('overview');
-          }}
-          className="w-full max-w-md border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm hover:border-gray-400 transition-colors duration-200"
-          >
-            <option value="">Choose a patient...</option>
-            {patients.map((patient) => (
-              <option key={patient.id} value={patient.id}>
-              {patient.firstName} {patient.lastName}
-              </option>
-            ))}
-          </select>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Select Patient</h2>
+            <p className="text-sm text-gray-600">Choose a patient to view their progress and treatment plans</p>
+          </div>
+          <div className="w-full sm:w-auto sm:min-w-[300px]">
+            <select
+              value={selectedPatient?.id || ''}
+              onChange={(e) => {
+                const patient = patients.find(p => p.id === parseInt(e.target.value));
+                setSelectedPatient(patient);
+                setActiveTab('overview');
+              }}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm hover:border-gray-400 transition-colors duration-200 text-sm"
+            >
+              <option value="">Choose a patient...</option>
+              {patients.map((patient) => (
+                <option key={patient.id} value={patient.id}>
+                  {patient.firstName} {patient.lastName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {selectedPatient && (
         <>
           {/* Tabs */}
-          <div className="border-b border-gray-200 bg-white rounded-t-xl">
-            <nav className="-mb-px flex flex-wrap gap-2 sm:gap-8 px-4 sm:px-0">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+            <nav className="flex flex-wrap gap-1 p-1">
               {[
                 { id: 'overview', name: 'Overview', icon: BarChart3 },
                 { id: 'treatment-plans', name: 'Treatment Plans', icon: FileText },
@@ -820,11 +833,11 @@ const ProgressTracking = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 py-3 px-2 sm:px-1 border-b-2 font-medium text-sm touch-target transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 bg-blue-50 rounded-t-lg'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50 rounded-t-lg'
-                  }`}
+                    className={`flex items-center space-x-2 py-2 px-4 rounded-lg font-medium text-sm touch-target transition-all duration-200 ${
+                      activeTab === tab.id
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
                 >
                   <tab.icon size={18} />
                   <span className="hidden sm:inline">{tab.name}</span>
@@ -838,7 +851,7 @@ const ProgressTracking = () => {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Patient Info */}
-              <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
                 <InitialsAvatar 
                   name={`${selectedPatient.firstName} ${selectedPatient.lastName}`}
@@ -949,7 +962,7 @@ const ProgressTracking = () => {
           {activeTab === 'treatment-plans' && (
             <div className="space-y-6">
               {/* Treatment Plans List */}
-              <div className="bg-white rounded-lg shadow">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold">Treatment Plans</h3>
@@ -1098,7 +1111,7 @@ const ProgressTracking = () => {
 
               {/* Selected Plan Details */}
               {selectedPlan && planDetails && (
-                <div className="bg-white rounded-lg shadow">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                   <div className="px-6 py-4 border-b border-gray-200">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold">{selectedPlan.title}</h3>
@@ -1371,7 +1384,7 @@ const ProgressTracking = () => {
           {activeTab === 'progress-reports' && (
             <div className="space-y-6">
               {/* Upload Section */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <Upload className="h-5 w-5 text-blue-600" />
@@ -1474,7 +1487,7 @@ const ProgressTracking = () => {
               </div>
 
               {/* Reports List */}
-              <div className="bg-white rounded-lg shadow">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <FolderOpen className="h-5 w-5 text-blue-600" />
@@ -1539,7 +1552,7 @@ const ProgressTracking = () => {
           {activeTab === 'charts' && (
             <div className="space-y-6">
               {!selectedPlan ? (
-                <div className="bg-white rounded-lg shadow p-12 text-center">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                   <BarChart3 size={64} className="mx-auto mb-4 text-gray-300" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No Treatment Plan Selected</h3>
                   <p className="text-gray-600 mb-4">Please select a treatment plan to view progress charts.</p>
@@ -1550,7 +1563,7 @@ const ProgressTracking = () => {
                   {/* Progress Charts */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Overall Progress Ring Chart */}
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold mb-4">Overall Progress</h3>
                   <div className="flex items-center justify-center">
                     <div className="relative w-48 h-48">
@@ -1588,7 +1601,7 @@ const ProgressTracking = () => {
                 </div>
 
                 {/* Objectives Breakdown */}
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold mb-4">Objectives Breakdown</h3>
                   <div className="space-y-4">
                     {(() => {
@@ -1664,7 +1677,7 @@ const ProgressTracking = () => {
               {/* Additional Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Main Objectives Progress by Category */}
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold mb-4">Progress by Category</h3>
                   <div className="space-y-3">
                     {(() => {
@@ -1724,7 +1737,7 @@ const ProgressTracking = () => {
                 </div>
 
                 {/* Timeline Progress */}
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold mb-4">Progress Timeline</h3>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">

@@ -438,11 +438,18 @@ const TherapistPatients = () => {
   return (
     <div className="therapist-patients p-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Patient Management</h1>
-        <p className="text-gray-600">
-          Manage your patients, track progress, and coordinate care effectively
-        </p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex items-center space-x-4">
+          <div className="p-3 bg-blue-100 rounded-xl">
+            <Users className="h-8 w-8 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Patient Management</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Manage your patients, track progress, and coordinate care effectively
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Tab Navigation */}

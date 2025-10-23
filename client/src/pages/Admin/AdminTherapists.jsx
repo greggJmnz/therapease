@@ -92,9 +92,9 @@ const AdminTherapists = () => {
 
   // Filter therapists based on search term
   const therapists = allTherapists.filter(therapist => {
-    if (!searchTerm) return true;
+    if (!searchTerm.trim()) return true;
     
-    const searchLower = searchTerm.toLowerCase();
+    const searchLower = searchTerm.toLowerCase().trim();
     return (
       therapist.name.toLowerCase().includes(searchLower) ||
       therapist.email.toLowerCase().includes(searchLower) ||

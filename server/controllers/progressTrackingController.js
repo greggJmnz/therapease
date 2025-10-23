@@ -8,27 +8,27 @@ const getProgressTracking = async (req, res) => {
     const { page = 1, limit = 20, patientId, area, dateFrom, dateTo } = req.query;
     const offset = (page - 1) * limit;
 
-    // Build WHERE clause
+    // Build WHERE clause for treatment plan progress
     let whereConditions = ['p.therapistId = ?'];
     let params = [therapistId];
 
     if (patientId) {
-      whereConditions.push('pt.patientId = ?');
+      whereConditions.push('tp.patientId = ?');
       params.push(parseInt(patientId));
     }
 
     if (area) {
-      whereConditions.push('pt.area = ?');
-      params.push(area);
+      whereConditions.push('mo.title LIKE ?');
+      params.push(`%${area}%`);
     }
 
     if (dateFrom) {
-      whereConditions.push('pt.measurementDate >= ?');
+      whereConditions.push('mo.updatedAt >= ?');
       params.push(dateFrom);
     }
 
     if (dateTo) {
-      whereConditions.push('pt.measurementDate <= ?');
+      whereConditions.push('mo.updatedAt <= ?');
       params.push(dateTo);
     }
 
@@ -37,38 +37,39 @@ const getProgressTracking = async (req, res) => {
     // Get total count
     const countSql = `
       SELECT COUNT(*) as total
-      FROM progress_tracking pt
-      JOIN patients p ON pt.patientId = p.id
+      FROM main_objectives mo
+      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+      JOIN patients p ON tp.patientId = p.id
       ${whereClause}
     `;
     
     const countResult = await getAll(countSql, params);
     const total = countResult[0].total;
 
-    // Get progress tracking with patient info
+    // Get progress tracking with patient info from treatment plans
     const sql = `
       SELECT 
-        pt.id,
-        pt.patientId,
-        pt.assessmentId,
-        pt.area,
-        pt.baselineScore,
-        pt.currentScore,
-        pt.targetScore,
-        pt.progressNotes,
-        pt.measurementDate,
-        pt.nextReviewDate,
-        pt.createdAt,
-        pt.updatedAt,
+        mo.id,
+        tp.patientId,
+        NULL as assessmentId,
+        mo.title as area,
+        NULL as baselineScore,
+        mo.progress as currentScore,
+        100 as targetScore,
+        mo.description as progressNotes,
+        mo.updatedAt as measurementDate,
+        mo.targetDate as nextReviewDate,
+        mo.createdAt,
+        mo.updatedAt,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
         p.diagnosis,
-        a.title as assessmentTitle
-      FROM progress_tracking pt
-      JOIN patients p ON pt.patientId = p.id
+        tp.title as assessmentTitle
+      FROM main_objectives mo
+      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+      JOIN patients p ON tp.patientId = p.id
       JOIN users u ON p.userId = u.id
-      LEFT JOIN assessments a ON pt.assessmentId = a.id
       ${whereClause}
-      ORDER BY pt.measurementDate DESC, pt.createdAt DESC
+      ORDER BY mo.updatedAt DESC, mo.createdAt DESC
       LIMIT ? OFFSET ?
     `;
 

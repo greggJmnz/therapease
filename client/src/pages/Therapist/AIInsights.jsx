@@ -2433,29 +2433,29 @@ The therapist retains full responsibility for all clinical decisions and patient
   const getInsightIcon = (type) => {
     switch (type) {
       case 'assessment-summary':
-        return <FileText className="h-6 w-6 text-purple-600" />;
+        return <FileText className="h-4 w-4 sm:h-6 sm:w-6 text-purple-600" />;
       case 'functional-analysis':
-        return <Activity className="h-6 w-6 text-blue-600" />;
+        return <Activity className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />;
       case 'clinical-insights':
-        return <Brain className="h-6 w-6 text-indigo-600" />;
+        return <Brain className="h-4 w-4 sm:h-6 sm:w-6 text-indigo-600" />;
       case 'treatment-recommendations':
-        return <Target className="h-6 w-6 text-green-600" />;
+        return <Target className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />;
       case 'assessment-analysis':
-        return <FileText className="h-6 w-6 text-purple-600" />;
+        return <FileText className="h-4 w-4 sm:h-6 sm:w-6 text-purple-600" />;
       case 'treatment-planning':
-        return <Target className="h-6 w-6 text-green-600" />;
+        return <Target className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />;
       case 'progress-monitoring':
-        return <TrendingUp className="h-6 w-6 text-orange-600" />;
+        return <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-orange-600" />;
       case 'family-guidance':
-        return <Users className="h-6 w-6 text-pink-600" />;
+        return <Users className="h-4 w-4 sm:h-6 sm:w-6 text-pink-600" />;
       case 'progress-analysis':
-        return <TrendingUp className="h-6 w-6 text-blue-600" />;
+        return <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />;
       case 'treatment-suggestions':
-        return <Target className="h-6 w-6 text-green-600" />;
+        return <Target className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />;
       case 'home-program':
-        return <Lightbulb className="h-6 w-6 text-yellow-600" />;
+        return <Lightbulb className="h-4 w-4 sm:h-6 sm:w-6 text-yellow-600" />;
       default:
-        return <Brain className="h-6 w-6 text-purple-600" />;
+        return <Brain className="h-4 w-4 sm:h-6 sm:w-6 text-purple-600" />;
     }
   };
 
@@ -2496,19 +2496,19 @@ The therapist retains full responsibility for all clinical decisions and patient
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="space-y-4 sm:space-y-8 p-4 sm:p-0">
+      <div className="space-y-4 sm:space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         {/* Modern AI-Themed Header */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 px-4 sm:px-8 py-4 sm:py-6">
+          <div className="bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 px-4 sm:px-8 py-4 sm:py-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
               <div className="min-w-0 flex-1">
-                <h1 className="text-2xl sm:text-4xl font-bold text-white flex items-center gap-2 sm:gap-4">
+                <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-4">
                   <div className="p-2 sm:p-3 bg-white/20 rounded-xl backdrop-blur-sm flex-shrink-0">
-                    <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                    <Brain className="h-5 w-5 sm:h-8 sm:w-8 text-white" />
                   </div>
                   <span className="truncate">AI Insights</span>
                 </h1>
-                <p className="mt-2 sm:mt-3 text-sm sm:text-lg text-white/90">
+                <p className="mt-2 sm:mt-3 text-sm text-white/90">
                   Create assessments and get AI-powered analysis for your patients
                 </p>
                 <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-2 sm:gap-4">
@@ -2559,15 +2559,15 @@ The therapist retains full responsibility for all clinical decisions and patient
         {/* Modern Assessment Creation Section */}
         {selectedPatient && (
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-6">
+            <div className="bg-gradient-to-r from-emerald-900 to-teal-900 px-8 py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <FileText className="h-8 w-8 text-white" />
+                    <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-white">Create Assessment</h2>
-                    <p className="text-white/90">Build comprehensive patient assessments for AI analysis</p>
+                    <h2 className="text-lg sm:text-2xl font-bold text-white">Create Assessment</h2>
+                    <p className="text-sm sm:text-base text-white/90">Build comprehensive patient assessments for AI analysis</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -2586,15 +2586,15 @@ The therapist retains full responsibility for all clinical decisions and patient
               </div>
             </div>
             
-            <div className="p-8">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 mb-8">
+            <div className="p-6 sm:p-8 lg:p-10">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 sm:p-8 mb-8">
                 <div className="flex items-start gap-4">
                   <div className="p-2 bg-blue-100 rounded-lg">
-                    <Lightbulb className="h-6 w-6 text-blue-600" />
+                    <Lightbulb className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-blue-900 mb-3">Assessment Instructions</h3>
-                    <ul className="text-blue-800 space-y-2">
+                    <h3 className="text-sm sm:text-lg font-semibold text-blue-900 mb-3">Assessment Instructions</h3>
+                    <ul className="text-sm sm:text-base text-blue-800 space-y-2">
                       <li className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
                         Add interview questions to gather patient information
@@ -2616,18 +2616,18 @@ The therapist retains full responsibility for all clinical decisions and patient
                 </div>
               </div>
           
-              <div className="space-y-8">
+              <div className="space-y-8 sm:space-y-10 lg:space-y-12">
                 {/* Modern Interview Questions Panel */}
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-8 py-6">
+                  <div className="bg-gradient-to-r from-green-900 to-emerald-900 px-8 py-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                          <FileText className="h-6 w-6 text-white" />
+                          <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-white">Interview Questions</h3>
-                          <p className="text-white/90">Add questions and record patient responses</p>
+                          <h3 className="text-lg sm:text-xl font-bold text-white">Interview Questions</h3>
+                          <p className="text-sm sm:text-base text-white/90">Add questions and record patient responses</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-xl backdrop-blur-sm">
@@ -2639,16 +2639,16 @@ The therapist retains full responsibility for all clinical decisions and patient
                     </div>
                   </div>
               
-                  <div className="p-8">
-                    <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
+                  <div className="p-6 sm:p-8 lg:p-10">
+                    <div className="space-y-6 sm:space-y-8 max-h-96 overflow-y-auto pr-2">
                       {interviewQuestions.map((item, index) => (
-                        <div key={item.id} className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200 shadow-sm">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <span className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-bold rounded-full shadow-lg">
+                        <div key={item.id} className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 sm:p-8 border border-gray-200 shadow-sm">
+                          <div className="flex items-center justify-between mb-3 sm:mb-4">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <span className="inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs sm:text-sm font-bold rounded-full shadow-lg">
                                 {index + 1}
                               </span>
-                              <span className="text-lg font-semibold text-gray-800">Question {index + 1}</span>
+                              <span className="text-sm sm:text-lg font-semibold text-gray-800">Question {index + 1}</span>
                             </div>
                             {interviewQuestions.length > 1 && (
                               <button
@@ -2660,24 +2660,24 @@ The therapist retains full responsibility for all clinical decisions and patient
                               </button>
                             )}
                           </div>
-                          <div className="space-y-4">
+                          <div className="space-y-3 sm:space-y-4">
                             <div>
-                              <label className="block text-sm font-semibold text-gray-700 mb-2">Question</label>
+                              <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">Question</label>
                               <input
                                 type="text"
                                 value={item.question}
                                 onChange={(e) => updateInterviewQuestion(item.id, 'question', e.target.value)}
                                 placeholder="Enter your question here..."
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white shadow-sm hover:border-gray-400"
+                                className="w-full border border-gray-300 rounded-xl px-4 sm:px-4 py-3 sm:py-3 text-xs sm:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white shadow-sm hover:border-gray-400"
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-semibold text-gray-700 mb-2">Patient Response</label>
+                              <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">Patient Response</label>
                               <textarea
                                 value={item.answer}
                                 onChange={(e) => updateInterviewQuestion(item.id, 'answer', e.target.value)}
                                 placeholder="Record the patient's response..."
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-all duration-200 bg-white shadow-sm hover:border-gray-400"
+                                className="w-full border border-gray-300 rounded-xl px-4 sm:px-4 py-3 sm:py-3 text-xs sm:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-all duration-200 bg-white shadow-sm hover:border-gray-400"
                                 rows={3}
                               />
                             </div>
@@ -2687,32 +2687,32 @@ The therapist retains full responsibility for all clinical decisions and patient
                     </div>
                 
                     {/* Modern Question Management Buttons */}
-                    <div className="mt-8 pt-6 border-t border-gray-200">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <button
                           onClick={addInterviewQuestion}
-                          className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-500 border border-green-500 rounded-xl text-white hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
+                          className="flex items-center justify-center px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-green-500 to-emerald-500 border border-green-500 rounded-xl text-white hover:from-green-600 hover:to-emerald-600 transition-all duration-200 text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
                         >
                           <Plus size={18} className="mr-2" />
                           Add Question
                         </button>
                         <button
                           onClick={loadSampleQuestions}
-                          className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 border border-blue-500 rounded-xl text-white hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
+                          className="flex items-center justify-center px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-cyan-500 border border-blue-500 rounded-xl text-white hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
                         >
                           <FileText size={18} className="mr-2" />
                           Load Sample
                         </button>
                         <button
                           onClick={openTemplateModal}
-                          className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-500 border border-indigo-500 rounded-xl text-white hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
+                          className="flex items-center justify-center px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-indigo-500 to-purple-500 border border-indigo-500 rounded-xl text-white hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
                         >
                           <Save size={18} className="mr-2" />
                           Save Template
                         </button>
                         <button
                           onClick={() => setShowTemplateList(true)}
-                          className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-gray-500 to-gray-600 border border-gray-500 rounded-xl text-white hover:from-gray-600 hover:to-gray-700 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
+                          className="flex items-center justify-center px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-gray-500 to-gray-600 border border-gray-500 rounded-xl text-white hover:from-gray-600 hover:to-gray-700 transition-all duration-200 text-xs sm:text-sm font-semibold shadow-lg hover:shadow-xl touch-target"
                         >
                           <BookOpen size={18} className="mr-2" />
                           <span className="hidden sm:inline">Load Template ({templates.length})</span>
@@ -2725,32 +2725,32 @@ The therapist retains full responsibility for all clinical decisions and patient
 
                 {/* Modern Observations Panel */}
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-8 py-6">
+                  <div className="bg-gradient-to-r from-blue-900 to-cyan-900 px-8 py-6">
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                        <Eye className="h-6 w-6 text-white" />
+                        <Eye className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-white">Clinical Observations</h3>
-                        <p className="text-white/90">Record detailed observations about patient behavior and abilities</p>
+                        <h3 className="text-lg sm:text-xl font-bold text-white">Clinical Observations</h3>
+                        <p className="text-sm sm:text-base text-white/90">Record detailed observations about patient behavior and abilities</p>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="p-8">
-                    <div className="space-y-6">
+                  <div className="p-6 sm:p-8 lg:p-10">
+                    <div className="space-y-6 sm:space-y-8">
                       <div>
-                        <label className="block text-lg font-semibold text-gray-700 mb-3">
+                        <label className="block text-sm sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                           Observation Notes
                         </label>
                         <textarea
                           value={observations}
                           onChange={(e) => setObservations(e.target.value)}
                           placeholder="Record detailed observations about patient behavior, abilities, responses, and any notable patterns or concerns..."
-                          className="w-full h-80 border border-gray-300 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 bg-white shadow-sm hover:border-gray-400"
+                          className="w-full h-60 sm:h-80 border border-gray-300 rounded-2xl px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 bg-white shadow-sm hover:border-gray-400"
                         />
                       </div>
-                      <div className="flex justify-between items-center text-sm text-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 rounded-2xl border border-gray-200">
+                      <div className="flex justify-between items-center text-xs sm:text-base text-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl border border-gray-200">
                         <span className="font-medium">Include behavioral patterns, motor skills, attention span, communication abilities, and any concerns</span>
                         <span className="font-bold text-blue-600">{observations.length} characters</span>
                       </div>
@@ -2760,12 +2760,12 @@ The therapist retains full responsibility for all clinical decisions and patient
           </div>
 
               {/* Modern Action Buttons */}
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <div className="mt-10 sm:mt-12 pt-8 sm:pt-10 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
                   <button
                     onClick={saveAssessmentData}
                     disabled={isSaving}
-                    className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-target"
+                    className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 border border-transparent text-xs sm:text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-target"
                   >
                     {isSaving ? (
                       <>
@@ -2783,7 +2783,7 @@ The therapist retains full responsibility for all clinical decisions and patient
                   <button
                     onClick={generateInsights}
                     disabled={isGenerating}
-                    className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-target"
+                    className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 border border-transparent text-xs sm:text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-target"
                   >
                     {isGenerating ? (
                       <>
@@ -2822,19 +2822,19 @@ The therapist retains full responsibility for all clinical decisions and patient
 
               {/* Modern Assessment Summary */}
               {(interviewQuestions.some(q => q.question.trim() !== '') || observations.trim() !== '') && (
-                <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl border border-gray-200">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Target className="h-5 w-5 text-blue-600" />
+                <div className="hidden sm:block mt-10 sm:mt-12 p-8 sm:p-10 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl border border-gray-200">
+                  <h4 className="text-sm sm:text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                    <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                     Assessment Summary
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 text-sm">
+                    <div className="flex items-center justify-between p-5 sm:p-6 bg-white rounded-xl border border-gray-200">
                       <span className="font-semibold text-gray-700">Questions:</span>
                       <span className="text-gray-600 font-medium">
                         {interviewQuestions.filter(q => q.question.trim() !== '').length} questions added
                       </span>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200">
+                    <div className="flex items-center justify-between p-5 sm:p-6 bg-white rounded-xl border border-gray-200">
                       <span className="font-semibold text-gray-700">Observations:</span>
                       <span className="text-gray-600 font-medium">
                         {observations.trim() ? `${observations.length} characters` : 'None recorded'}
@@ -2851,13 +2851,13 @@ The therapist retains full responsibility for all clinical decisions and patient
                     </div>
                     <div className="md:col-span-2 pt-4 border-t border-gray-200">
                       <div className="flex items-center gap-4">
-                        <span className={`px-4 py-2 rounded-full text-sm font-medium ${interviewQuestions.some(q => q.question.trim() !== '') ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium ${interviewQuestions.some(q => q.question.trim() !== '') ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
                           {interviewQuestions.some(q => q.question.trim() !== '') ? '✓ Questions' : '○ Questions'}
                         </span>
-                        <span className={`px-4 py-2 rounded-full text-sm font-medium ${observations.trim() !== '' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium ${observations.trim() !== '' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
                           {observations.trim() !== '' ? '✓ Observations' : '○ Observations'}
                         </span>
-                        <span className={`px-4 py-2 rounded-full text-sm font-medium ${interviewQuestions.some(q => q.question.trim() !== '') && observations.trim() !== '' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium ${interviewQuestions.some(q => q.question.trim() !== '') && observations.trim() !== '' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
                           {interviewQuestions.some(q => q.question.trim() !== '') && observations.trim() !== '' ? '✓ Complete' : '○ Incomplete'}
                         </span>
                       </div>
@@ -2871,14 +2871,14 @@ The therapist retains full responsibility for all clinical decisions and patient
 
 
         {/* Modern AI Service Status */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 px-8 py-6">
+        <div className="hidden sm:block bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 px-8 py-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                <Brain className="h-8 w-8 text-white" />
+                <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
               <div className="flex-1">
-                <h3 className="text-2xl font-bold text-white">AI Service Status</h3>
+                <h3 className="text-lg sm:text-2xl font-bold text-white">AI Service Status</h3>
                 <p className="text-white/90 mt-1">
                   GPT-4 powered analysis is available and ready to provide insights
                 </p>
@@ -2900,13 +2900,13 @@ The therapist retains full responsibility for all clinical decisions and patient
 
         {/* Modern Assessment Ready Message */}
         {insights.length === 0 && !isGenerating && selectedPatient && (
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
+          <div className="hidden sm:block bg-white rounded-2xl shadow-xl border border-gray-100">
             <div className="text-center py-16">
               <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Brain className="h-10 w-10 text-purple-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Ready to Generate AI Insights</h3>
-              <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+              <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mb-3">Ready to Generate AI Insights</h3>
+              <p className="text-sm sm:text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
                 Create an assessment with interview questions and observations, then generate AI-powered insights. 
                 Generated insights will be available for download as PDF reports.
               </p>
@@ -2931,7 +2931,7 @@ The therapist retains full responsibility for all clinical decisions and patient
         {/* Modern AI Assessment History */}
         {selectedPatient && (
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 sm:px-8 py-4 sm:py-6">
+            <div className="bg-gradient-to-r from-indigo-900 to-purple-900 px-4 sm:px-8 py-4 sm:py-6">
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className="p-2 sm:p-3 bg-white/20 rounded-xl backdrop-blur-sm flex-shrink-0">
                   <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
@@ -3050,8 +3050,8 @@ The therapist retains full responsibility for all clinical decisions and patient
               <div className="w-20 h-20 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
                 <User className="h-10 w-10 text-gray-400" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Select a Patient to Begin</h3>
-              <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
+              <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mb-3">Select a Patient to Begin</h3>
+              <p className="text-sm sm:text-lg text-gray-600 mb-8 max-w-md mx-auto">
                 Choose a patient from the dropdown above to create assessments and generate AI insights.
               </p>
             </div>
@@ -3065,8 +3065,8 @@ The therapist retains full responsibility for all clinical decisions and patient
               <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Generating AI Insights</h3>
-              <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+              <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mb-3">Generating AI Insights</h3>
+              <p className="text-sm sm:text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
                 Analyzing assessment data and generating personalized recommendations...
               </p>
               <div className="max-w-md mx-auto">
@@ -3081,7 +3081,7 @@ The therapist retains full responsibility for all clinical decisions and patient
 
         {/* Modern How It Works Section */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+          <div className="bg-gradient-to-r from-blue-900 to-indigo-900 px-8 py-6">
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
               <Lightbulb className="h-8 w-8 text-white" />
               How AI Insights Work
@@ -3094,7 +3094,7 @@ The therapist retains full responsibility for all clinical decisions and patient
                 <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
                   <FileText className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Assessment</h3>
+                <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-2">Create Assessment</h3>
                 <p className="text-sm text-gray-600">
                   Add interview questions and record observations about the patient
                 </p>
@@ -3103,7 +3103,7 @@ The therapist retains full responsibility for all clinical decisions and patient
                 <div className="mx-auto h-16 w-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
                   <Brain className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Analysis</h3>
+                <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-2">AI Analysis</h3>
                 <p className="text-sm text-gray-600">
                   AI analyzes the assessment data to identify patterns and insights
                 </p>
@@ -3112,7 +3112,7 @@ The therapist retains full responsibility for all clinical decisions and patient
                 <div className="mx-auto h-16 w-16 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
                   <Lightbulb className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Smart Recommendations</h3>
+                <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-2">Smart Recommendations</h3>
                 <p className="text-sm text-gray-600">
                   Get evidence-based treatment suggestions and progress insights
                 </p>
@@ -3124,26 +3124,26 @@ The therapist retains full responsibility for all clinical decisions and patient
         {/* Modern Recent Activity */}
         {insights.length > 0 && (
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                <Activity className="h-8 w-8 text-white" />
+            <div className="bg-gradient-to-r from-purple-900 to-indigo-900 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3">
+                <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 Recent AI Activity
               </h2>
             </div>
             <div className="divide-y divide-gray-200">
               {insights.slice(0, 3).map((insight) => (
-                <div key={insight.id} className="px-8 py-6">
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 h-12 w-12 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg">
+                <div key={insight.id} className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="flex-shrink-0 h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg">
                       {getInsightIcon(insight.type)}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-lg font-semibold text-gray-900">{insight.title}</p>
-                      <p className="text-sm text-gray-600 mt-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-lg font-semibold text-gray-900 truncate">{insight.title}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1 truncate">
                         Generated for {patients.find(p => p.id === parseInt(selectedPatient))?.name}
                       </p>
-                      <div className="mt-2 flex items-center text-sm text-gray-500">
-                        <Clock className="h-4 w-4 mr-2" />
+                      <div className="mt-1 sm:mt-2 flex items-center text-xs sm:text-sm text-gray-500">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         {new Date(insight.timestamp).toLocaleString()}
                       </div>
                     </div>
@@ -3160,7 +3160,7 @@ The therapist retains full responsibility for all clinical decisions and patient
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
           <div className="relative p-8 border w-2/3 max-w-md mx-auto rounded-lg shadow-lg bg-white">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900">{selectedAssessment.type}</h3>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">{selectedAssessment.type}</h3>
               <button
                 onClick={() => setShowAssessmentModal(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -3226,7 +3226,7 @@ The therapist retains full responsibility for all clinical decisions and patient
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-sm sm:text-lg font-medium text-gray-900">
                   {editingTemplate ? 'Edit Template' : 'Save Template'}
                 </h3>
                 <button
@@ -3274,7 +3274,7 @@ The therapist retains full responsibility for all clinical decisions and patient
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Load Template</h3>
+                <h3 className="text-sm sm:text-lg font-medium text-gray-900">Load Template</h3>
                 <button
                   onClick={() => setShowTemplateList(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -3350,38 +3350,38 @@ The therapist retains full responsibility for all clinical decisions and patient
             <div className="space-y-4 sm:space-y-8">
               {/* Patient Information Section */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-200">
-                <h4 className="text-lg sm:text-xl font-semibold text-blue-900 mb-3 sm:mb-4 flex items-center gap-2">
+                <h4 className="text-sm sm:text-xl font-semibold text-blue-900 mb-3 sm:mb-4 flex items-center gap-2">
                   <User className="h-4 w-4 sm:h-5 sm:w-5" />
                   Patient Information
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   <div className="bg-white rounded-lg p-3 sm:p-4 border border-blue-100">
                     <p className="text-xs sm:text-sm font-medium text-gray-700">Patient Name</p>
-                    <p className="text-sm sm:text-lg font-semibold text-gray-900 truncate">
+                    <p className="text-xs sm:text-lg font-semibold text-gray-900 truncate">
                       {patients.find(p => p.id === parseInt(selectedPatient))?.name || 'N/A'}
                     </p>
                   </div>
                   <div className="bg-white rounded-lg p-3 sm:p-4 border border-blue-100">
                     <p className="text-xs sm:text-sm font-medium text-gray-700">Age</p>
-                    <p className="text-sm sm:text-lg font-semibold text-gray-900">
+                    <p className="text-xs sm:text-lg font-semibold text-gray-900">
                       {patients.find(p => p.id === parseInt(selectedPatient))?.age || 'N/A'}
                     </p>
                   </div>
                   <div className="bg-white rounded-lg p-3 sm:p-4 border border-blue-100">
                     <p className="text-xs sm:text-sm font-medium text-gray-700">Diagnosis</p>
-                    <p className="text-sm sm:text-lg font-semibold text-gray-900 truncate">
+                    <p className="text-xs sm:text-lg font-semibold text-gray-900 truncate">
                       {patients.find(p => p.id === parseInt(selectedPatient))?.diagnosis || 'N/A'}
                     </p>
                   </div>
                   <div className="bg-white rounded-lg p-3 sm:p-4 border border-blue-100">
                     <p className="text-xs sm:text-sm font-medium text-gray-700">Assessment Date</p>
-                    <p className="text-sm sm:text-lg font-semibold text-gray-900">
+                    <p className="text-xs sm:text-lg font-semibold text-gray-900">
                       {formatDateWithoutYear(selectedAIInsight.generatedAt)}
                     </p>
                   </div>
                   <div className="bg-white rounded-lg p-3 sm:p-4 border border-blue-100">
                     <p className="text-xs sm:text-sm font-medium text-gray-700">AI Model</p>
-                    <p className="text-sm sm:text-lg font-semibold text-gray-900">
+                    <p className="text-xs sm:text-lg font-semibold text-gray-900">
                       {cleanModelName(selectedAIInsight.model)}
                     </p>
                   </div>
@@ -3390,14 +3390,14 @@ The therapist retains full responsibility for all clinical decisions and patient
 
               {/* AI-Generated Insights Sections */}
               <div className="space-y-6">
-                <h4 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <h4 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
                   <Brain className="h-5 w-5 text-purple-600" />
                   AI-Generated Insights
                 </h4>
 
                 {/* Assessment Summary */}
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <h5 className="text-sm sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <FileText className="h-4 w-4 text-green-600" />
                     Assessment Summary
                   </h5>
@@ -3420,7 +3420,7 @@ The therapist retains full responsibility for all clinical decisions and patient
 
                 {/* Functional Analysis */}
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <h5 className="text-sm sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Target className="h-4 w-4 text-blue-600" />
                     Functional Analysis
                   </h5>
@@ -3444,7 +3444,7 @@ The therapist retains full responsibility for all clinical decisions and patient
 
                 {/* Clinical Insights */}
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <h5 className="text-sm sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Lightbulb className="h-4 w-4 text-yellow-600" />
                     Clinical Insights
                   </h5>
@@ -3468,7 +3468,7 @@ The therapist retains full responsibility for all clinical decisions and patient
 
                 {/* Treatment Recommendations */}
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <h5 className="text-sm sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-green-600" />
                     Treatment Recommendations
                   </h5>
@@ -3493,7 +3493,7 @@ The therapist retains full responsibility for all clinical decisions and patient
                 {/* Original Assessment Data */}
                 {selectedAIInsight.assessmentData && (
                   <div className="bg-white rounded-xl border border-gray-200 p-6">
-                    <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <h5 className="text-sm sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                       <BookOpen className="h-4 w-4 text-indigo-600" />
                       Original Assessment Data
                     </h5>
@@ -3531,7 +3531,7 @@ The therapist retains full responsibility for all clinical decisions and patient
 
               {/* Important Disclaimer */}
               <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-                <h5 className="text-lg font-semibold text-red-900 mb-4 flex items-center gap-2">
+                <h5 className="text-sm sm:text-lg font-semibold text-red-900 mb-4 flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5" />
                   Important Disclaimer
                 </h5>

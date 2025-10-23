@@ -6,7 +6,6 @@ import {
   User, 
   Users,
   Plus, 
-  Search, 
   CheckCircle,
   AlertCircle,
   X,
@@ -53,9 +52,6 @@ const TherapistSchedule = () => {
   
   // State for view management (same as admin appointments)
   const [currentView, setCurrentView] = useState('list'); // 'list' or 'calendar'
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('asc');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -166,25 +162,6 @@ const TherapistSchedule = () => {
     // Remove appointments with "therapy" status
     filtered = filtered.filter(appointment => appointment.status !== 'therapy');
 
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(appointment =>
-        appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.reason.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(appointment => appointment.status === statusFilter);
-    }
-
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(appointment => appointment.type === typeFilter);
-    }
-
     // Sorting
     filtered.sort((a, b) => {
       let comparison = 0;
@@ -210,7 +187,7 @@ const TherapistSchedule = () => {
     });
 
     return filtered;
-  }, [allAppointments, searchTerm, statusFilter, typeFilter, sortBy, sortOrder]);
+  }, [allAppointments, sortBy, sortOrder]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
@@ -218,10 +195,10 @@ const TherapistSchedule = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentAppointments = filteredAppointments.slice(startIndex, endIndex);
 
-  // Reset to first page when search or filters change
+  // Reset to first page when sort changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, typeFilter, sortBy, sortOrder]);
+  }, [sortBy, sortOrder]);
 
   // Pagination handlers
   const handlePageChange = (page) => {
@@ -468,6 +445,26 @@ const TherapistSchedule = () => {
     }
   };
 
+  const getTypeColor = (type) => {
+    switch (type) {
+      case 'session':
+      case 'therapy':
+      case 'Regular Session':
+        return 'bg-pink-500 text-white border-pink-600';
+      case 'consultation':
+        return 'bg-orange-500 text-white border-orange-600';
+      case 'assessment':
+      case 'evaluation':
+        return 'bg-green-500 text-white border-green-600';
+      case 'follow-up':
+        return 'bg-yellow-500 text-white border-yellow-600';
+      case 'emergency':
+        return 'bg-red-500 text-white border-red-600';
+      default:
+        return 'bg-gray-500 text-white border-gray-600';
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -503,172 +500,57 @@ const TherapistSchedule = () => {
         {/* Header Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Schedule Management</h1>
-              <p className="text-gray-600 mt-1">Manage your therapy sessions and patient appointments</p>
-        </div>
-            <div className="flex items-center gap-3">
-          <button
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
-            onClick={() => setShowSessionModal(true)}
-          >
-                <Plus size={20} />
-            Create Appointment
-          </button>
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
+                <Calendar className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Schedule Management</h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-1">Manage your therapy sessions and patient appointments</p>
+              </div>
             </div>
-        </div>
-      </div>
-
-        {/* View Toggle and Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            {/* View Toggle */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">View:</span>
+            <div className="flex items-center gap-3">
+              {/* View Toggle */}
               <div className="flex bg-gray-100 rounded-lg p-1">
                 <button
                   onClick={() => setCurrentView('calendar')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                  className={`px-3 py-2 sm:px-4 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
                     currentView === 'calendar' 
                       ? 'bg-white text-blue-600 shadow-sm' 
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   <Grid3X3 size={16} />
-                  Calendar View
+                  <span className="hidden sm:inline">Calendar View</span>
+                  <span className="sm:hidden">Calendar</span>
                 </button>
                 <button
                   onClick={() => setCurrentView('list')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                  className={`px-3 py-2 sm:px-4 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
                     currentView === 'list' 
                       ? 'bg-white text-blue-600 shadow-sm' 
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   <List size={16} />
-                  List View
+                  <span className="hidden sm:inline">List View</span>
+                  <span className="sm:hidden">List</span>
                 </button>
               </div>
-            </div>
-
-            {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="Search appointments..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
-                />
-              </div>
-
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              
+              <button
+                className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all font-medium flex items-center gap-2 shadow-sm hover:shadow-md text-sm sm:text-base"
+                onClick={() => setShowSessionModal(true)}
               >
-                <option value="all">All Status</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-
-              {/* Type Filter */}
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Types</option>
-                <option value="session">Therapy Session</option>
-                <option value="individual">Individual Therapy</option>
-                <option value="group">Group Therapy</option>
-                <option value="consultation">Consultation</option>
-                <option value="assessment">Assessment</option>
-                <option value="follow-up">Follow-up</option>
-                <option value="emergency">Emergency</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Data Status & Color Coding Legend */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Appointment Type Colors</h3>
-            <div className="flex items-center gap-2">
-              {isLoading ? (
-                <>
-                  <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
-                  <span className="text-sm text-gray-600">Loading appointments...</span>
-                </>
-              ) : error ? (
-                <>
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span className="text-sm text-red-600">Error loading appointments</span>
-                </>
-              ) : (
-                <>
-                  <div className={`w-3 h-3 rounded-full ${allAppointments.length > 0 ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                  <span className="text-sm text-gray-600">
-                    {allAppointments.length > 0 
-                      ? `${allAppointments.length} appointments from API` 
-                      : 'No appointments found'
-                    }
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 bg-pink-200 border border-pink-300 rounded"></div>
-              <span className="text-sm text-gray-700">Therapy Session</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 bg-orange-200 border border-orange-300 rounded"></div>
-              <span className="text-sm text-gray-700">Consultation</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 bg-green-200 border border-green-300 rounded"></div>
-              <span className="text-sm text-gray-700">Assessment</span>
-              </div>
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 bg-yellow-200 border border-yellow-300 rounded"></div>
-              <span className="text-sm text-gray-700">Follow-up</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 bg-yellow-200 border border-yellow-300 rounded"></div>
-              <span className="text-sm text-gray-700">Emergency</span>
-            </div>
-          </div>
-          {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-800">
-                <strong>Error:</strong> {error.message || 'Failed to load appointments'}
-              </p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-              >
-                Retry
+                <Plus size={18} className="sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">Create Appointment</span>
+                <span className="sm:hidden">Create</span>
               </button>
-        </div>
-          )}
-          
-          {!error && allAppointments.length === 0 && !isLoading && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                <strong>Note:</strong> No appointments found in the database. The calendar will be empty until appointments are created.
-              </p>
             </div>
-          )}
         </div>
+      </div>
+
+
 
         {/* Main Content */}
         {isLoading ? (
@@ -685,8 +567,8 @@ const TherapistSchedule = () => {
             <div className="therapist-schedule-table-container overflow-x-auto overflow-y-visible">
               {/* Table Header */}
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700 min-w-[800px]">
-                  <div className="col-span-4 flex items-center gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-12 gap-4 text-sm font-medium text-gray-700 min-w-[400px] sm:min-w-[800px]">
+                  <div className="col-span-1 sm:col-span-4 flex items-center gap-2">
                     <button
                       onClick={() => handleSort('date')}
                       className="flex items-center gap-1 hover:text-blue-600"
@@ -697,7 +579,7 @@ const TherapistSchedule = () => {
                       )}
                     </button>
                   </div>
-                  <div className="col-span-3 flex items-center gap-2">
+                  <div className="hidden sm:flex sm:col-span-3 items-center gap-2">
                     <button
                       onClick={() => handleSort('patient')}
                       className="flex items-center gap-1 hover:text-blue-600"
@@ -708,7 +590,7 @@ const TherapistSchedule = () => {
                       )}
                     </button>
                   </div>
-                  <div className="col-span-3 flex items-center gap-2">
+                  <div className="col-span-1 sm:col-span-3 flex items-center gap-2">
                     <button
                       onClick={() => handleSort('type')}
                       className="flex items-center gap-1 hover:text-blue-600"
@@ -719,7 +601,7 @@ const TherapistSchedule = () => {
                       )}
                     </button>
                   </div>
-                  <div className="col-span-2 flex items-center gap-2">
+                  <div className="hidden sm:flex sm:col-span-2 items-center gap-2">
                     <button
                       onClick={() => handleSort('status')}
                       className="flex items-center gap-1 hover:text-blue-600"
@@ -734,15 +616,13 @@ const TherapistSchedule = () => {
               </div>
 
               {/* Table Body */}
-              <div className="divide-y divide-gray-200 min-w-[800px]">
+              <div className="divide-y divide-gray-200 min-w-[400px] sm:min-w-[800px]">
               {filteredAppointments.length === 0 ? (
                 <div className="px-6 py-12 text-center">
                   <Calendar className="mx-auto h-12 w-12 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No appointments found</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-                      ? 'Try adjusting your search or filter criteria.'
-                      : 'Get started by creating a new appointment.'}
+                    Get started by creating a new appointment.
                   </p>
                 </div>
               ) : (
@@ -753,9 +633,9 @@ const TherapistSchedule = () => {
                     className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
                     title="Click to view appointment details"
                   >
-                    <div className="grid grid-cols-12 gap-4 items-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-12 gap-4 items-center">
                       {/* Date & Time */}
-                      <div className="col-span-4">
+                      <div className="col-span-1 sm:col-span-4">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
                           <div>
@@ -769,25 +649,25 @@ const TherapistSchedule = () => {
                         </div>
                       </div>
 
-                      {/* Patient */}
-                      <div className="col-span-3">
+                      {/* Patient - Hidden on mobile */}
+                      <div className="hidden sm:block sm:col-span-3">
                         <div className="text-sm text-gray-900">
                           {appointment.patientName}
                         </div>
                       </div>
 
                       {/* Type */}
-                      <div className="col-span-3">
+                      <div className="col-span-1 sm:col-span-3">
                         <div className="flex items-center gap-2">
                           {getTypeIcon(appointment.type)}
-                          <span className="text-sm text-gray-900 capitalize">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getTypeColor(appointment.type)}`}>
                             {appointment.type.replace('-', ' ')}
                           </span>
                         </div>
                       </div>
 
-                      {/* Status */}
-                      <div className="col-span-2">
+                      {/* Status - Hidden on mobile */}
+                      <div className="hidden sm:block sm:col-span-2">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(appointment.status)}
                           <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(appointment.status)}`}>
@@ -892,7 +772,7 @@ const TherapistSchedule = () => {
               showQuickActions={false}
               showSearch={false}
               showFilters={false}
-              className="border-0"
+              className="border-0 mobile-compact-calendar"
             />
             </div>
         )}
@@ -995,9 +875,9 @@ const TherapistSchedule = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                         <div className="flex items-center gap-2">
                           {getTypeIcon(selectedAppointment.type)}
-                          <span className="text-gray-900 capitalize">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getTypeColor(selectedAppointment.type)}`}>
                             {selectedAppointment.type.replace('-', ' ')}
-                  </span>
+                          </span>
                         </div>
                       </div>
                 
