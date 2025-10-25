@@ -227,6 +227,9 @@ const AdminPatients = () => {
           therapistId: patient.primaryTherapistId
         }
       };
+    })
+    .map(patient => {
+      return patient;
     });
 
 
@@ -329,6 +332,7 @@ const AdminPatients = () => {
           city: editingPatient.city,
           state: editingPatient.state,
           zipCode: editingPatient.zipCode,
+          country: editingPatient.country,
           // Patient-specific data
           patient: {
             diagnosis: editingPatient.patient?.diagnosis || '',
@@ -336,12 +340,14 @@ const AdminPatients = () => {
           }
         };
 
-        await adminAPI.updateUser(editingPatient.id, updateData);
+
+        await adminAPI.updateUser(editingPatient.userId, updateData);
         toast.success('Patient updated successfully');
         setEditingPatient(null);
-        refetch(); // Refresh data from API
+        await refetch(); // Refresh data from API
       } catch (error) {
         console.error('Error updating patient:', error);
+        console.error('Error details:', error.response?.data);
         toast.error('Failed to update patient');
       }
     }
@@ -1422,9 +1428,40 @@ const AdminPatients = () => {
                         <div className="flex-1">
                           <p className="text-sm text-gray-500">Full Address</p>
                           <p className="font-medium text-gray-900">
-                            {selectedPatient.address && selectedPatient.address !== 'N/A' ? 
-                              `${selectedPatient.address}, ${selectedPatient.city}, ${selectedPatient.state} ${selectedPatient.zipCode}, ${selectedPatient.country}` : 
-                              'Not provided'}
+                            {(() => {
+                              if (!selectedPatient.address || selectedPatient.address === 'N/A') {
+                                return 'Not provided';
+                              }
+                              
+                              // Build address components array
+                              const addressParts = [];
+                              
+                              // Add the main address
+                              addressParts.push(selectedPatient.address);
+                              
+                              // Add city only if it's not already in the address
+                              if (selectedPatient.city && selectedPatient.city !== 'N/A' && 
+                                  !selectedPatient.address.toLowerCase().includes(selectedPatient.city.toLowerCase())) {
+                                addressParts.push(selectedPatient.city);
+                              }
+                              
+                              // Add state
+                              if (selectedPatient.state && selectedPatient.state !== 'N/A') {
+                                addressParts.push(selectedPatient.state);
+                              }
+                              
+                              // Add zip code
+                              if (selectedPatient.zipCode && selectedPatient.zipCode !== 'N/A') {
+                                addressParts.push(selectedPatient.zipCode);
+                              }
+                              
+                              // Add country
+                              if (selectedPatient.country && selectedPatient.country !== 'N/A') {
+                                addressParts.push(selectedPatient.country);
+                              }
+                              
+                              return addressParts.join(', ');
+                            })()}
                           </p>
                         </div>
                       </div>

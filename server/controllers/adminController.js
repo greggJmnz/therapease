@@ -449,8 +449,10 @@ const updateUser = async (req, res) => {
     const id = userId;
     const updateData = req.body;
 
+
     // Check if user exists
     const existingUser = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(id)]);
+    
     
     if (!existingUser) {
       return res.status(404).json({
@@ -478,7 +480,7 @@ const updateUser = async (req, res) => {
         userUpdateParams.push(updateData.lastName);
       }
 
-      if (updateData.email !== undefined) {
+      if (updateData.email !== undefined && updateData.email !== existingUser.email) {
         userUpdateFields.push('email = ?');
         userUpdateParams.push(updateData.email);
       }
@@ -517,10 +519,15 @@ const updateUser = async (req, res) => {
         userUpdateParams.push(updateData.state);
       }
 
-        if (updateData.zipCode !== undefined) {
-          userUpdateFields.push('zipCode = ?');
-          userUpdateParams.push(updateData.zipCode);
-        }
+      if (updateData.zipCode !== undefined) {
+        userUpdateFields.push('zipCode = ?');
+        userUpdateParams.push(updateData.zipCode);
+      }
+
+      if (updateData.country !== undefined) {
+        userUpdateFields.push('country = ?');
+        userUpdateParams.push(updateData.country);
+      }
 
         if (updateData.status !== undefined) {
           userUpdateFields.push('status = ?');
@@ -534,6 +541,7 @@ const updateUser = async (req, res) => {
           SET ${userUpdateFields.join(', ')}, updatedAt = CURRENT_TIMESTAMP
           WHERE id = ?
         `;
+        
         
         userUpdateParams.push(parseInt(id));
         await connection.execute(updateUserSql, userUpdateParams);
@@ -636,6 +644,13 @@ const updateUser = async (req, res) => {
 
     } catch (error) {
       // Rollback transaction on error
+      console.error('Transaction error:', error);
+      console.error('Transaction error details:', {
+        message: error.message,
+        stack: error.stack,
+        userUpdateFields: userUpdateFields || 'undefined',
+        userUpdateParams: userUpdateParams || 'undefined'
+      });
       await connection.rollback();
       throw error;
     } finally {
@@ -644,7 +659,17 @@ const updateUser = async (req, res) => {
 
   } catch (error) {
     console.error('Update user error:', error);
-    res.status(500).json({ success: false, error: 'Failed to update user' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      userId: userId || 'undefined',
+      updateData: updateData || 'undefined'
+    });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to update user',
+      details: error.message 
+    });
   }
 };
 
@@ -2075,13 +2100,6 @@ const assignTherapistToPatient = async (req, res) => {
 
       await connection.commit();
 
-      console.log('Assignment successful!');
-      console.log('Final data:', {
-        patientId: patient.id,
-        patientName: patient.patientName,
-        therapistId: parseInt(therapistId),
-        therapistName: therapist.therapistName,
-        currentPatientCount: currentCount + 1,
         maxPatients: maxPatients
       });
 
@@ -3067,6 +3085,7 @@ const getPatientsWithAssignments = async (req, res) => {
         u.city,
         u.state,
         u.zipCode,
+        u.country,
         (SELECT CONCAT(u2.firstName, ' ', u2.lastName) FROM users u2 WHERE u2.id = p.therapistId) as primaryTherapistName
       FROM patients p
       JOIN users u ON p.userId = u.id
@@ -3149,6 +3168,7 @@ const getPatientsWithAssignments = async (req, res) => {
       city: patient.city,
       state: patient.state,
       zipCode: patient.zipCode,
+      country: patient.country,
       diagnosis: patient.diagnosis,
       medicalHistory: patient.medicalHistory,
       goals: patient.goals,
