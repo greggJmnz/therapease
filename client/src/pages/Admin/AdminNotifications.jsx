@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { adminAPI } from '../../services/api';
 import NotificationList from '../../components/NotificationList';
 import NotificationModal from '../../components/NotificationModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const AdminNotifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -166,17 +168,18 @@ const AdminNotifications = () => {
   };
 
   const deleteNotification = (notificationId) => {
-    if (window.confirm('Are you sure you want to delete this notification?')) {
-      deleteNotificationMutation.mutate(notificationId);
-    }
+    deleteNotificationMutation.mutate(notificationId);
   };
 
   const deleteAllNotifications = () => {
-    if (window.confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
-      notifications.forEach(notification => {
-        deleteNotificationMutation.mutate(notification.id);
-      });
-    }
+    setShowDeleteAllModal(true);
+  };
+
+  const confirmDeleteAllNotifications = () => {
+    notifications.forEach(notification => {
+      deleteNotificationMutation.mutate(notification.id);
+    });
+    setShowDeleteAllModal(false);
   };
 
   const refreshNotifications = () => {
@@ -224,6 +227,18 @@ const AdminNotifications = () => {
           isDeleting={deleteNotificationMutation.isLoading}
         />
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteAllModal}
+        onClose={() => setShowDeleteAllModal(false)}
+        onConfirm={confirmDeleteAllNotifications}
+        title="Delete All Notifications"
+        message="Are you sure you want to delete all notifications? This action cannot be undone."
+        confirmText="Delete All"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

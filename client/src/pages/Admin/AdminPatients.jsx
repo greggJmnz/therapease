@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from 'react-query';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import { 
   Search, 
   Filter, 
@@ -37,6 +38,85 @@ import toast from 'react-hot-toast';
 import Avatar from '../../components/Avatar';
 import './AdminPatients.css';
 
+// Helper function to format working hours into concise description
+const formatWorkingHours = (workingHours) => {
+  if (!workingHours || typeof workingHours !== 'object') {
+    return 'Working hours not set';
+  }
+
+  // Helper function to convert 24-hour time to 12-hour format
+  const formatTime12Hour = (time24) => {
+    if (!time24) return '';
+    
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours, 10);
+    const minute = parseInt(minutes, 10);
+    
+    if (hour === 0) {
+      return `12:${minutes} AM`;
+    } else if (hour < 12) {
+      return `${hour}:${minutes} AM`;
+    } else if (hour === 12) {
+      return `12:${minutes} PM`;
+    } else {
+      return `${hour - 12}:${minutes} PM`;
+    }
+  };
+
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  
+  const enabledDays = [];
+  const disabledDays = [];
+  
+  days.forEach((day, index) => {
+    const dayData = workingHours[day];
+    if (dayData && dayData.enabled && dayData.start && dayData.end) {
+      enabledDays.push({
+        day: dayNames[index],
+        start: formatTime12Hour(dayData.start),
+        end: formatTime12Hour(dayData.end)
+      });
+    } else if (dayData && !dayData.enabled) {
+      disabledDays.push(dayNames[index]);
+    }
+  });
+
+  if (enabledDays.length === 0) {
+    return 'No working hours set';
+  }
+
+  // Group consecutive days with same hours
+  const groups = [];
+  let currentGroup = null;
+
+  enabledDays.forEach(day => {
+    if (!currentGroup || currentGroup.start !== day.start || currentGroup.end !== day.end) {
+      currentGroup = {
+        start: day.start,
+        end: day.end,
+        days: [day.day]
+      };
+      groups.push(currentGroup);
+    } else {
+      currentGroup.days.push(day.day);
+    }
+  });
+
+  // Format groups
+  const formattedGroups = groups.map(group => {
+    if (group.days.length === 1) {
+      return `${group.days[0]} ${group.start}-${group.end}`;
+    } else if (group.days.length === 2) {
+      return `${group.days[0]} & ${group.days[1]} ${group.start}-${group.end}`;
+    } else {
+      return `${group.days[0]}-${group.days[group.days.length - 1]} ${group.start}-${group.end}`;
+    }
+  });
+
+  return formattedGroups.join(', ');
+};
+
 const AdminPatients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -56,6 +136,8 @@ const AdminPatients = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const dropdownRefs = useRef({});
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState(null);
 
   // Reset to first page when search or filter changes
   useEffect(() => {
@@ -374,17 +456,23 @@ const AdminPatients = () => {
     }
   };
 
-  const handleDeletePatient = async (patientId) => {
-    console.log('Delete patient clicked:', patientId);
-    if (window.confirm('Are you sure you want to delete this patient?')) {
-      try {
-        await adminAPI.deleteUser(patientId);
-        toast.success('Patient deleted successfully');
-        refetch(); // Refresh data from API
-      } catch (error) {
-        console.error('Error deleting patient:', error);
-        toast.error('Failed to delete patient');
-      }
+  const handleDeletePatient = (patientId) => {
+    setPatientToDelete(patientId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeletePatient = async () => {
+    if (!patientToDelete) return;
+    
+    try {
+      await adminAPI.deleteUser(patientToDelete);
+      toast.success('Patient deleted successfully');
+      refetch(); // Refresh data from API
+      setShowDeleteModal(false);
+      setPatientToDelete(null);
+    } catch (error) {
+      console.error('Error deleting patient:', error);
+      toast.error('Failed to delete patient');
     }
   };
 
@@ -1215,6 +1303,11 @@ const AdminPatients = () => {
                 refetch();
                 toast.success('Therapist assigned successfully');
               }}
+              onUnassignmentSuccess={() => {
+                closeModal();
+                refetch();
+                // Don't show assignment success message for unassignment
+              }}
             />
           </div>
           {/* Modal Footer */}
@@ -1581,6 +1674,21 @@ const AdminPatients = () => {
         </div>
       </div>
     )}
+    
+    {/* Confirmation Modal */}
+    <ConfirmationModal
+      isOpen={showDeleteModal}
+      onClose={() => {
+        setShowDeleteModal(false);
+        setPatientToDelete(null);
+      }}
+      onConfirm={confirmDeletePatient}
+      title="Delete Patient"
+      message="Are you sure you want to delete this patient? This action cannot be undone."
+      confirmText="Delete"
+      cancelText="Cancel"
+      type="danger"
+    />
     </>
   );
 };
@@ -2180,13 +2288,15 @@ const SessionSchedulingContent = ({ patient, onScheduleSuccess }) => {
 };
 
 // Therapist Assignment Content Component
-const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
+const TherapistAssignmentContent = ({ patient, onAssignmentSuccess, onUnassignmentSuccess }) => {
   const [therapists, setTherapists] = useState([]);
   const [assignedTherapists, setAssignedTherapists] = useState([]);
   const [selectedTherapist, setSelectedTherapist] = useState('');
   const [loading, setLoading] = useState(false);
   const [therapistsLoading, setTherapistsLoading] = useState(true);
   const [assignedLoading, setAssignedLoading] = useState(true);
+  const [showUnassignModal, setShowUnassignModal] = useState(false);
+  const [therapistToUnassign, setTherapistToUnassign] = useState(null);
 
   // Fetch assigned therapists
   React.useEffect(() => {
@@ -2262,17 +2372,20 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
     }
   };
 
-  const handleUnassign = async (therapistId, therapistName) => {
-    if (!window.confirm(`Are you sure you want to unassign ${therapistName} from this patient?`)) {
-      return;
-    }
+  const handleUnassign = (therapistId, therapistName) => {
+    setTherapistToUnassign({ id: therapistId, name: therapistName });
+    setShowUnassignModal(true);
+  };
+
+  const confirmUnassign = async () => {
+    if (!therapistToUnassign) return;
 
     try {
       setLoading(true);
       const response = await adminAPI.unassignTherapistFromPatient(patient.id);
 
       if (response.data.success) {
-        toast.success(`${therapistName} has been unassigned successfully`);
+        toast.success(`${therapistToUnassign?.name} has been unassigned successfully`);
         
         // Refresh the assigned therapists list
         const refreshResponse = await adminAPI.getPatientTherapists(patient.patient?.id);
@@ -2286,7 +2399,15 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
           setTherapists(availableResponse.data.data.therapists || []);
         }
         
-        onAssignmentSuccess();
+        // Use the unassignment success callback if available, otherwise fallback to assignment callback
+        if (onUnassignmentSuccess) {
+          onUnassignmentSuccess();
+        } else if (onAssignmentSuccess) {
+          onAssignmentSuccess();
+        }
+        
+        setShowUnassignModal(false);
+        setTherapistToUnassign(null);
       } else {
         toast.error(response.data.error || 'Failed to unassign therapist');
       }
@@ -2444,10 +2565,10 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
                   </div>
                 </div>
                 
-                {therapist.availability && (
+                {therapist.workingHours && (
                   <div className="mt-3 ml-8">
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Availability:</span> {therapist.availability}
+                      <span className="font-medium">Working Hours:</span> {formatWorkingHours(therapist.workingHours)}
                     </p>
                   </div>
                 )}
@@ -2479,6 +2600,21 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess }) => {
           </button>
         </div>
       )}
+      
+      {/* Unassign Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showUnassignModal}
+        onClose={() => {
+          setShowUnassignModal(false);
+          setTherapistToUnassign(null);
+        }}
+        onConfirm={confirmUnassign}
+        title="Unassign Therapist"
+        message={`Are you sure you want to unassign ${therapistToUnassign?.name} from this patient?`}
+        confirmText="Unassign"
+        cancelText="Cancel"
+        type="warning"
+      />
     </div>
   );
 };

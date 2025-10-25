@@ -10,6 +10,7 @@ import {
   X
 } from 'lucide-react';
 import NotificationCard from './NotificationCard';
+import ConfirmationModal from './ConfirmationModal';
 
 const NotificationList = ({
   notifications = [],
@@ -33,6 +34,12 @@ const NotificationList = ({
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [viewMode, setViewMode] = useState('compact'); // 'card' or 'compact'
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+
+  const confirmDeleteAll = () => {
+    onDeleteAll();
+    setShowDeleteAllModal(false);
+  };
 
   // Filter notifications
   const filteredNotifications = notifications.filter(notification => {
@@ -109,11 +116,7 @@ const NotificationList = ({
               <>
                 {onDeleteAll && totalCount > 0 && (
                   <button
-                    onClick={() => {
-                      if (window.confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
-                        onDeleteAll();
-                      }
-                    }}
+                    onClick={() => setShowDeleteAllModal(true)}
                     disabled={isDeletingAll}
                     className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
                   >
@@ -258,6 +261,18 @@ const NotificationList = ({
           )}
         </div>
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteAllModal}
+        onClose={() => setShowDeleteAllModal(false)}
+        onConfirm={confirmDeleteAll}
+        title="Delete All Notifications"
+        message="Are you sure you want to delete all notifications? This action cannot be undone."
+        confirmText="Delete All"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

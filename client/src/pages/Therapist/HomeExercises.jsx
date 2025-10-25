@@ -29,6 +29,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useRealtimeData } from '../../hooks/useWebSocket';
 import FullScreenImageViewer from '../../components/FullScreenImageViewer';
 import ExerciseDetailsModal from '../../components/ExerciseDetailsModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import toast from 'react-hot-toast';
 
 const HomeExercises = () => {
@@ -45,6 +46,8 @@ const HomeExercises = () => {
   const [patients, setPatients] = useState([]);
   const [expandedExercises, setExpandedExercises] = useState(new Set());
   const [fullScreenImage, setFullScreenImage] = useState({ isOpen: false, url: '', fileName: '' });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [exerciseToDelete, setExerciseToDelete] = useState(null);
   const [formData, setFormData] = useState({
     patientId: '',
     title: '',
@@ -247,8 +250,15 @@ const HomeExercises = () => {
   };
 
   const handleDelete = (exerciseId) => {
-    if (window.confirm('Are you sure you want to delete this exercise?')) {
-      deleteExerciseMutation.mutate(exerciseId);
+    setExerciseToDelete(exerciseId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteExercise = () => {
+    if (exerciseToDelete) {
+      deleteExerciseMutation.mutate(exerciseToDelete);
+      setShowDeleteModal(false);
+      setExerciseToDelete(null);
     }
   };
 
@@ -917,6 +927,21 @@ const HomeExercises = () => {
         imageUrl={fullScreenImage.url}
         imageAlt="Exercise proof submission"
         fileName={fullScreenImage.fileName}
+      />
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setExerciseToDelete(null);
+        }}
+        onConfirm={confirmDeleteExercise}
+        title="Delete Exercise"
+        message="Are you sure you want to delete this exercise?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
       />
     </div>
   );

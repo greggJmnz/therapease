@@ -44,6 +44,19 @@ import {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  
+  // Utility function to convert 24-hour time to 12-hour format
+  const formatTime12Hour = (time24) => {
+    if (!time24) return '';
+    try {
+      const [hours, minutes] = time24.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    } catch (error) {
+      return time24; // Return original if parsing fails
+    }
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -816,7 +829,7 @@ const AdminDashboard = () => {
           <div key={appointment.id} className="appointment-card">
             <div className="appointment-time">
               <Clock size={16} />
-              <span>{appointment.time}</span>
+              <span>{formatTime12Hour(appointment.time)}</span>
                     </div>
             <div className="appointment-details">
               <h4>{appointment.patientName}</h4>

@@ -5,6 +5,7 @@ import { therapistAPI } from '../../services/api';
 import { useRealtimeData } from '../../hooks/useWebSocket';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const DailyNotes = () => {
   const { user, isAuthenticated } = useAuth();
@@ -18,6 +19,10 @@ const DailyNotes = () => {
   const [therapistComment, setTherapistComment] = useState('');
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [editingComment, setEditingComment] = useState(null);
+  const [showDeleteCommentModal, setShowDeleteCommentModal] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+  const [showDeleteNoteModal, setShowDeleteNoteModal] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState(null);
   const [editCommentText, setEditCommentText] = useState('');
   const [showComments, setShowComments] = useState({});
   const [showCommentMenu, setShowCommentMenu] = useState(null);
@@ -274,11 +279,18 @@ const DailyNotes = () => {
   };
 
   const handleDeleteComment = (noteId, commentId) => {
-    if (window.confirm('Are you sure you want to delete this comment?')) {
+    setCommentToDelete({ noteId, commentId });
+    setShowDeleteCommentModal(true);
+  };
+
+  const confirmDeleteComment = () => {
+    if (commentToDelete) {
       deleteCommentMutation.mutate({
-        noteId: noteId,
-        commentId: commentId
+        noteId: commentToDelete.noteId,
+        commentId: commentToDelete.commentId
       });
+      setShowDeleteCommentModal(false);
+      setCommentToDelete(null);
     }
   };
 
@@ -310,8 +322,15 @@ const DailyNotes = () => {
   };
 
   const handleDelete = async (noteId) => {
-    if (window.confirm('Are you sure you want to delete this note?')) {
-      deleteNoteMutation.mutate(noteId);
+    setNoteToDelete(noteId);
+    setShowDeleteNoteModal(true);
+  };
+
+  const confirmDeleteNote = () => {
+    if (noteToDelete) {
+      deleteNoteMutation.mutate(noteToDelete);
+      setShowDeleteNoteModal(false);
+      setNoteToDelete(null);
     }
   };
 
@@ -976,6 +995,35 @@ const DailyNotes = () => {
           </div>
         )}
       </div>
+      
+      {/* Confirmation Modals */}
+      <ConfirmationModal
+        isOpen={showDeleteCommentModal}
+        onClose={() => {
+          setShowDeleteCommentModal(false);
+          setCommentToDelete(null);
+        }}
+        onConfirm={confirmDeleteComment}
+        title="Delete Comment"
+        message="Are you sure you want to delete this comment?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
+      
+      <ConfirmationModal
+        isOpen={showDeleteNoteModal}
+        onClose={() => {
+          setShowDeleteNoteModal(false);
+          setNoteToDelete(null);
+        }}
+        onConfirm={confirmDeleteNote}
+        title="Delete Note"
+        message="Are you sure you want to delete this note?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

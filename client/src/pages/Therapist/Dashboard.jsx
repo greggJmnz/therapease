@@ -21,6 +21,19 @@ import InitialsAvatar from '../../components/InitialsAvatar';
 const TherapistDashboard = () => {
   const { user } = useAuth();
   
+  // Utility function to convert 24-hour time to 12-hour format
+  const formatTime12Hour = (time24) => {
+    if (!time24) return '';
+    try {
+      const [hours, minutes] = time24.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    } catch (error) {
+      return time24; // Return original if parsing fails
+    }
+  };
+  
   // Fetch dashboard data from API
   const { data: dashboardData, isLoading, error, refetch } = useQuery(
     'therapistDashboard',
@@ -357,7 +370,7 @@ const TherapistDashboard = () => {
                           <p className="text-sm font-medium text-gray-900 truncate">{appointment.patientName || 'Appointment'}</p>
                           <p className="text-sm text-gray-500">
                             {appointment.appointmentDate ? new Date(appointment.appointmentDate).toLocaleDateString() : 'No date'} 
-                            {appointment.startTime && ` at ${appointment.startTime}`}
+                            {appointment.startTime && ` at ${formatTime12Hour(appointment.startTime)}`}
                           </p>
                         </div>
                         <div className="flex-shrink-0 text-right">

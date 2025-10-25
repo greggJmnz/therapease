@@ -15,6 +15,9 @@ body {
     color: #1f2937;
     overflow-x: hidden;
     background: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 /* Color Variables */
@@ -273,7 +276,7 @@ body {
 
 /* Hero Section */
 .hero {
-    min-height: 100vh;
+    min-height: 120vh;
     display: flex;
     align-items: center;
     position: relative;
@@ -563,7 +566,7 @@ body {
 
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 2rem;
 }
 
@@ -824,6 +827,18 @@ body {
     display: flex;
     align-items: flex-start;
     gap: 1rem;
+    padding: 1.5rem;
+    background: var(--light-gray);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.contact-item:hover {
+    background: white;
+    border-color: var(--primary-green);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.1);
 }
 
 .contact-item i {
@@ -852,10 +867,41 @@ body {
     line-height: 1.6;
 }
 
-.contact-form {
+.contact-item small {
+    color: var(--medium-gray);
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.contact-form-container {
     background: var(--light-gray);
     padding: 2.5rem;
     border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.form-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.form-header h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-black);
+    margin-bottom: 0.5rem;
+}
+
+.form-header p {
+    color: var(--medium-gray);
+    font-size: 0.95rem;
+}
+
+.contact-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .form-group {
@@ -876,20 +922,95 @@ body {
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
     width: 100%;
-    padding: 10px 14px;
+    padding: 12px 16px;
     border: 2px solid #e5e7eb;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 0.95rem;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
     background: white;
+    font-family: inherit;
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
     outline: none;
     border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-group select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+    appearance: none;
+}
+
+.checkbox-group {
+    margin-bottom: 1.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--medium-gray);
+    line-height: 1.5;
+    position: relative;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    opacity: 0;
+    position: absolute;
+    left: -9999px;
+}
+
+.checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark {
+    background: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    color: white;
+    font-size: 0.8rem;
+}
+
+.checkbox-label a {
+    color: var(--primary-green);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.checkbox-label a:hover {
+    text-decoration: underline;
 }
 
 .form-options {
@@ -1107,10 +1228,165 @@ body {
     padding: 1.5rem 2rem 2rem;
 }
 
+/* Disable hover behavior on mobile devices */
+@media (max-width: 768px) {
+    .dropdown:hover .dropdown-menu {
+        opacity: 0;
+        visibility: hidden;
+        transform: none;
+    }
+    
+    .dropdown.active .dropdown-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+    }
+}
+
+/* Mobile Device Optimizations */
+.mobile-device {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.mobile-device input,
+.mobile-device textarea,
+.mobile-device select {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* Mobile Touch Optimizations */
+@media (max-width: 768px) {
+    /* Touch-friendly interactions */
+    * {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+    }
+
+    /* Improve touch targets */
+    .nav-link,
+    .btn,
+    .dropdown-item,
+    .portals-btn {
+        min-height: 44px;
+        min-width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Smooth scrolling for mobile */
+    html {
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Mobile scrolling fixes */
+    body {
+        overflow-x: hidden;
+        overflow-y: auto;
+        width: 100%;
+        height: auto;
+        min-height: 100vh;
+        position: relative;
+    }
+
+    html {
+        overflow-x: hidden;
+        overflow-y: auto;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    /* Ensure all sections are scrollable */
+    .hero,
+    .features,
+    .services,
+    .about,
+    .contact {
+        overflow: visible;
+        height: auto;
+        min-height: auto;
+    }
+
+    /* Fix mobile viewport issues */
+    .hero {
+        min-height: 100vh;
+        min-height: calc(var(--vh, 1vh) * 100);
+        overflow: visible;
+    }
+
+    /* Mobile-specific animations */
+    .fade-in {
+        animation: mobileFadeIn 0.6s ease-in;
+    }
+
+    @keyframes mobileFadeIn {
+        from { 
+            opacity: 0; 
+            transform: translateY(20px);
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0);
+        }
+    }
+
+    /* Mobile card optimizations */
+    .feature-card,
+    .service-card,
+    .contact-item {
+        margin-bottom: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Mobile text optimizations */
+    p, li {
+        line-height: 1.7;
+    }
+
+    /* Mobile spacing */
+    .section-header {
+        margin-bottom: 2rem;
+    }
+
+    .section-header h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .section-header p {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
+    /* Mobile Navigation */
     .hamburger {
         display: flex;
+        z-index: 1001;
+    }
+
+    .hamburger.active .bar:nth-child(2) {
+        opacity: 0;
+    }
+
+    .hamburger.active .bar:nth-child(1) {
+        transform: translateY(8px) rotate(45deg);
+    }
+
+    .hamburger.active .bar:nth-child(3) {
+        transform: translateY(-8px) rotate(-45deg);
     }
 
     .nav-menu {
@@ -1124,6 +1400,9 @@ body {
         transition: 0.3s;
         box-shadow: 0 10px 27px rgba(0, 0, 0, 0.05);
         padding: 2rem 0;
+        z-index: 1000;
+        max-height: calc(100vh - 70px);
+        overflow-y: auto;
     }
 
     .nav-menu.active {
@@ -1132,6 +1411,21 @@ body {
 
     .nav-menu li {
         margin: 1rem 0;
+        width: 100%;
+    }
+
+    .nav-link {
+        display: block;
+        padding: 1rem;
+        font-size: 1.1rem;
+        border-radius: 8px;
+        margin: 0 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .nav-link:hover {
+        background-color: var(--light-gray);
+        color: var(--primary-green);
     }
 
     /* Mobile dropdown styles */
@@ -1147,28 +1441,85 @@ body {
         border-radius: 8px;
         min-width: auto;
         transition: all 0.3s ease;
+        max-height: 0;
+        overflow: hidden;
+        padding: 0;
     }
 
     .dropdown.active .dropdown-menu {
         opacity: 1;
         visibility: visible;
+        max-height: 300px;
+        padding: 8px 0;
     }
 
     .dropdown-item {
-        padding: 10px 16px;
+        padding: 12px 16px;
         border-bottom: 1px solid #e5e7eb;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
     }
 
     .dropdown-item:last-child {
         border-bottom: none;
     }
 
+    .dropdown-item:hover {
+        background: #e5e7eb;
+    }
+
+    /* Make portals button more touch-friendly on mobile */
+    .portals-btn {
+        padding: 12px 20px;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    /* Ensure mobile dropdown is properly visible */
+    .nav-menu.active .dropdown.active .dropdown-menu {
+        display: block;
+        opacity: 1;
+        visibility: visible;
+        max-height: 300px;
+        padding: 8px 0;
+        margin-top: 0.5rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Ensure dropdown items are clickable in mobile */
+    .nav-menu.active .dropdown.active .dropdown-item {
+        pointer-events: auto;
+        cursor: pointer;
+        display: flex;
+        opacity: 1;
+        visibility: visible;
+        padding: 12px 16px;
+        min-height: 48px;
+        transition: background-color 0.2s ease;
+    }
+
+    .nav-menu.active .dropdown.active .dropdown-item:hover {
+        background: #e5e7eb;
+    }
+
+    /* Mobile Hero Section */
     .hero-container {
         grid-template-columns: 1fr;
         text-align: center;
         gap: 2rem;
         padding: 0 15px;
         padding-top: 80px; /* Account for fixed navbar */
+        min-height: auto;
+        padding-bottom: 2rem;
     }
 
     .hero-title {
@@ -1176,15 +1527,37 @@ body {
         line-height: 1.3;
         margin-bottom: 1rem;
         word-wrap: break-word;
+        hyphens: auto;
+    }
+
+    .hero-description {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
     }
 
     .hero-buttons {
         flex-direction: column;
         align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .hero-buttons .btn {
+        width: 100%;
+        max-width: 280px;
+        padding: 14px 24px;
+        font-size: 1rem;
     }
 
     .hero-stats {
         justify-content: center;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+
+    .stat {
+        min-width: 120px;
     }
 
     .about-content {
@@ -1192,9 +1565,69 @@ body {
         gap: 2rem;
     }
 
+    /* Mobile Contact Section */
     .contact-content {
         grid-template-columns: 1fr;
         gap: 2rem;
+    }
+
+    .contact-form-container {
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .form-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-header h3 {
+        font-size: 1.3rem;
+    }
+
+    .contact-form {
+        padding: 1.5rem;
+    }
+
+    .contact-item {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .contact-item i {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .contact-item h4 {
+        font-size: 1.1rem;
+    }
+
+    /* Mobile Form Enhancements */
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 14px 16px;
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        border-color: var(--primary-green);
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        outline: none;
+    }
+
+    .btn {
+        min-height: 48px;
+        padding: 14px 24px;
+        font-size: 1rem;
+        border-radius: 8px;
+        touch-action: manipulation;
     }
 
     .footer-content {
@@ -1278,6 +1711,38 @@ body {
 
     .modal-header h2 {
         font-size: 1.3rem;
+    }
+
+    /* Extra small screen optimizations */
+    .container {
+        padding: 0 10px;
+    }
+
+    .hero-buttons .btn {
+        width: 100%;
+        max-width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .contact-form-container {
+        padding: 1rem;
+    }
+
+    .contact-form {
+        padding: 1rem;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        font-size: 16px;
+        padding: 12px 14px;
+    }
+
+    .btn {
+        min-height: 44px;
+        padding: 12px 20px;
+        font-size: 0.95rem;
     }
 }
 

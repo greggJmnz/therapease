@@ -4,6 +4,7 @@ import { Brain, TrendingUp, Lightbulb, Target, Clock, User, FileText, Save, Plus
 import { therapistAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const AIInsights = () => {
   const [patients, setPatients] = useState([]);
@@ -12,6 +13,8 @@ const AIInsights = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [assessmentHistory, setAssessmentHistory] = useState([]);
   const [generatedPDFs, setGeneratedPDFs] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [pdfToDelete, setPdfToDelete] = useState(null);
   
   // New state for interview questions and observations
   const [interviewQuestions, setInterviewQuestions] = useState([
@@ -2157,18 +2160,16 @@ The therapist retains full responsibility for all clinical decisions and patient
       return;
     }
 
-    // Show confirmation dialog
-    const confirmed = window.confirm(
-      `Are you sure you want to delete this AI assessment record?\n\n"${pdfRecord.filename}"\n\nThis action cannot be undone.`
-    );
+    setPdfToDelete(pdfRecord);
+    setShowDeleteModal(true);
+  };
 
-    if (!confirmed) {
-      return;
-    }
+  const confirmDeletePDF = async () => {
+    if (!pdfToDelete) return;
 
     try {
       // Call API to delete the record
-      const response = await therapistAPI.deletePDFRecord(pdfRecord.id);
+      const response = await therapistAPI.deletePDFRecord(pdfToDelete.id);
       
       if (response.data.success) {
         toast.success('AI assessment record deleted successfully');
@@ -2176,6 +2177,8 @@ The therapist retains full responsibility for all clinical decisions and patient
         if (selectedPatient) {
           await loadPatientPDFsFromDatabase();
         }
+        setShowDeleteModal(false);
+        setPdfToDelete(null);
       } else {
         toast.error(response.data.error || 'Failed to delete record');
       }
@@ -3580,6 +3583,21 @@ The therapist retains full responsibility for all clinical decisions and patient
           </div>
         </div>
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setPdfToDelete(null);
+        }}
+        onConfirm={confirmDeletePDF}
+        title="Delete AI Assessment Record"
+        message={pdfToDelete ? `Are you sure you want to delete this AI assessment record?\n\n"${pdfToDelete.filename}"\n\nThis action cannot be undone.` : ''}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

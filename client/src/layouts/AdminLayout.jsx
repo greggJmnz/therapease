@@ -19,6 +19,8 @@ import {
   ChevronDown,
   User,
   Globe,
+  UserCheck,
+  UserPlus,
 } from 'lucide-react';
 import './Layouts.css';
 
@@ -26,6 +28,7 @@ const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [userManagementDropdownOpen, setUserManagementDropdownOpen] = useState(false);
   const { user, logout } = useAuth();
   const { systemName } = useSystemSettings();
   const navigate = useNavigate();
@@ -83,9 +86,16 @@ const AdminLayout = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: BarChart3 },
-    { name: 'User Management', href: '/admin/users', icon: Users },
-    { name: 'Patients', href: '/admin/patients', icon: Users },
-    { name: 'Therapists', href: '/admin/therapists', icon: Users },
+    { 
+      name: 'User Management', 
+      icon: Users, 
+      isDropdown: true,
+      dropdownItems: [
+        { name: 'All Users', href: '/admin/users', icon: Users },
+        { name: 'Patients', href: '/admin/patients', icon: UserCheck },
+        { name: 'Therapists', href: '/admin/therapists', icon: UserPlus },
+      ]
+    },
     { name: 'Appointments', href: '/admin/appointments', icon: Calendar },
     { name: 'Notifications', href: '/admin/notifications', icon: Bell },
     { name: 'Reports', href: '/admin/reports', icon: FileText },
@@ -100,10 +110,29 @@ const AdminLayout = () => {
     setProfileDropdownOpen(!profileDropdownOpen);
   };
 
+  const toggleUserManagementDropdown = () => {
+    setUserManagementDropdownOpen(!userManagementDropdownOpen);
+  };
+
   // Get current section name for breadcrumb
   const getCurrentSectionName = () => {
+    // Check regular navigation items first
     const currentRoute = navigation.find(item => item.href === location.pathname);
-    return currentRoute ? currentRoute.name : 'Dashboard';
+    if (currentRoute) {
+      return currentRoute.name;
+    }
+    
+    // Check dropdown items
+    for (const navItem of navigation) {
+      if (navItem.isDropdown && navItem.dropdownItems) {
+        const dropdownItem = navItem.dropdownItems.find(item => item.href === location.pathname);
+        if (dropdownItem) {
+          return dropdownItem.name;
+        }
+      }
+    }
+    
+    return 'Dashboard';
   };
 
   return (
@@ -128,18 +157,57 @@ const AdminLayout = () => {
           </div>
           <nav className="mobile-sidebar-nav">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`nav-link ${isActive ? 'active' : ''}`}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon size={20} />
-                  {item.name}
-                </Link>
-              );
+              if (item.isDropdown) {
+                const isDropdownActive = item.dropdownItems?.some(dropdownItem => 
+                  location.pathname === dropdownItem.href
+                );
+                return (
+                  <div key={item.name} className="nav-dropdown-container">
+                    <button
+                      className={`nav-link dropdown-toggle ${isDropdownActive ? 'active' : ''}`}
+                      onClick={toggleUserManagementDropdown}
+                    >
+                      <item.icon size={20} />
+                      {item.name}
+                      <ChevronDown 
+                        size={16} 
+                        className={`dropdown-arrow ${userManagementDropdownOpen ? 'open' : ''}`} 
+                      />
+                    </button>
+                    {userManagementDropdownOpen && (
+                      <div className="nav-dropdown">
+                        {item.dropdownItems?.map((dropdownItem) => {
+                          const isActive = location.pathname === dropdownItem.href;
+                          return (
+                            <Link
+                              key={dropdownItem.name}
+                              to={dropdownItem.href}
+                              className={`nav-link dropdown-item ${isActive ? 'active' : ''}`}
+                              onClick={() => setSidebarOpen(false)}
+                            >
+                              <dropdownItem.icon size={20} />
+                              {dropdownItem.name}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              } else {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`nav-link ${isActive ? 'active' : ''}`}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <item.icon size={20} />
+                    {item.name}
+                  </Link>
+                );
+              }
             })}
             <div className="tools-section">
               <h4>Tools</h4>
@@ -214,17 +282,55 @@ const AdminLayout = () => {
         
         <nav className="sidebar-nav">
           {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`nav-link ${isActive ? 'active' : ''}`}
-              >
-                <item.icon size={20} />
-                {item.name}
-              </Link>
-            );
+            if (item.isDropdown) {
+              const isDropdownActive = item.dropdownItems?.some(dropdownItem => 
+                location.pathname === dropdownItem.href
+              );
+              return (
+                <div key={item.name} className="nav-dropdown-container">
+                  <button
+                    className={`nav-link dropdown-toggle ${isDropdownActive ? 'active' : ''}`}
+                    onClick={toggleUserManagementDropdown}
+                  >
+                    <item.icon size={20} />
+                    {item.name}
+                    <ChevronDown 
+                      size={16} 
+                      className={`dropdown-arrow ${userManagementDropdownOpen ? 'open' : ''}`} 
+                    />
+                  </button>
+                  {userManagementDropdownOpen && (
+                    <div className="nav-dropdown">
+                      {item.dropdownItems?.map((dropdownItem) => {
+                        const isActive = location.pathname === dropdownItem.href;
+                        return (
+                          <Link
+                            key={dropdownItem.name}
+                            to={dropdownItem.href}
+                            className={`nav-link dropdown-item ${isActive ? 'active' : ''}`}
+                          >
+                            <dropdownItem.icon size={20} />
+                            {dropdownItem.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            } else {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`nav-link ${isActive ? 'active' : ''}`}
+                >
+                  <item.icon size={20} />
+                  {item.name}
+                </Link>
+              );
+            }
           })}
           
           <div className="tools-section">

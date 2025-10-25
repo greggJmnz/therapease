@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from 'react-query';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import { 
   Plus, 
   Clock, 
@@ -32,6 +33,19 @@ import toast from 'react-hot-toast';
 import './AdminAppointments.css';
 
 const AdminAppointments = () => {
+  // Utility function to convert 24-hour time to 12-hour format
+  const formatTime12Hour = (time24) => {
+    if (!time24) return '';
+    try {
+      const [hours, minutes] = time24.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    } catch (error) {
+      return time24; // Return original if parsing fails
+    }
+  };
+
   // State for appointment scheduling modal
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [newAppointment, setNewAppointment] = useState({
@@ -64,6 +78,8 @@ const AdminAppointments = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState(null);
 
   // Fetch appointments data from API
   const { data: appointmentsData, isLoading, error, refetch, isFetching } = useQuery(
@@ -604,16 +620,23 @@ const AdminAppointments = () => {
     return spaceBelow < dropdownHeight && rect.top > dropdownHeight;
   };
 
-  const handleDeleteAppointment = async (appointmentId) => {
-    if (window.confirm('Are you sure you want to delete this appointment? This action cannot be undone.')) {
-      try {
-        await adminAPI.deleteAppointment(appointmentId);
-        toast.success('Appointment deleted successfully!');
-        refetch();
-      } catch (error) {
-        console.error('Error deleting appointment:', error);
-        toast.error('Failed to delete appointment. Please try again.');
-      }
+  const handleDeleteAppointment = (appointmentId) => {
+    setAppointmentToDelete(appointmentId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteAppointment = async () => {
+    if (!appointmentToDelete) return;
+    
+    try {
+      await adminAPI.deleteAppointment(appointmentToDelete);
+      toast.success('Appointment deleted successfully!');
+      refetch();
+      setShowDeleteModal(false);
+      setAppointmentToDelete(null);
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      toast.error('Failed to delete appointment. Please try again.');
     }
   };
 
@@ -1011,7 +1034,7 @@ const AdminAppointments = () => {
                             </div>
                             <div className="text-sm text-gray-600 flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {appointment.time}
+                              {formatTime12Hour(appointment.time)}
                             </div>
                           </div>
                         </div>
@@ -1517,9 +1540,9 @@ const AdminAppointments = () => {
                             startTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
                             const endTime = new Date(startTime.getTime() + (selectedAppointment.duration * 60000));
                             return endTime.toLocaleTimeString('en-US', { 
-                              hour: '2-digit', 
+                              hour: 'numeric', 
                               minute: '2-digit',
-                              hour12: false 
+                              hour12: true 
                             });
                           })()} ({selectedAppointment.duration} minutes)
                         </span>
@@ -1785,6 +1808,21 @@ const AdminAppointments = () => {
           </div>
         </div>
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setAppointmentToDelete(null);
+        }}
+        onConfirm={confirmDeleteAppointment}
+        title="Delete Appointment"
+        message="Are you sure you want to delete this appointment? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { patientAPI } from '../../services/api';
 import { useRealtimeData } from '../../hooks/useWebSocket';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const DailyNotes = () => {
   const { user, isAuthenticated } = useAuth();
@@ -18,6 +19,8 @@ const DailyNotes = () => {
   const [editCommentText, setEditCommentText] = useState('');
   const [showComments, setShowComments] = useState({});
   const [showCommentMenu, setShowCommentMenu] = useState(null);
+  const [showDeleteCommentModal, setShowDeleteCommentModal] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
   const queryClient = useQueryClient();
 
     // Fetch daily notes data
@@ -168,11 +171,18 @@ const DailyNotes = () => {
   };
 
   const handleDeleteComment = (noteId, commentId) => {
-    if (window.confirm('Are you sure you want to delete this comment?')) {
+    setCommentToDelete({ noteId, commentId });
+    setShowDeleteCommentModal(true);
+  };
+
+  const confirmDeleteComment = () => {
+    if (commentToDelete) {
       deleteCommentMutation.mutate({
-        noteId: noteId,
-        commentId: commentId
+        noteId: commentToDelete.noteId,
+        commentId: commentToDelete.commentId
       });
+      setShowDeleteCommentModal(false);
+      setCommentToDelete(null);
     }
   };
 
@@ -629,6 +639,21 @@ const DailyNotes = () => {
           )}
         </div>
       </div>
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteCommentModal}
+        onClose={() => {
+          setShowDeleteCommentModal(false);
+          setCommentToDelete(null);
+        }}
+        onConfirm={confirmDeleteComment}
+        title="Delete Comment"
+        message="Are you sure you want to delete this comment?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

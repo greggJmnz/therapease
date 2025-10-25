@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNotifications } from '../../hooks/useNotifications';
 import NotificationList from '../../components/NotificationList';
 import NotificationModal from '../../components/NotificationModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const Notifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   
   const {
     notifications,
@@ -34,9 +36,12 @@ const Notifications = () => {
   };
 
   const handleDeleteAll = () => {
-    if (window.confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
-      deleteAllNotifications();
-    }
+    setShowDeleteAllModal(true);
+  };
+
+  const confirmDeleteAll = () => {
+    deleteAllNotifications();
+    setShowDeleteAllModal(false);
   };
 
   const handleViewDetails = (notification) => {
@@ -80,6 +85,18 @@ const Notifications = () => {
           isDeleting={isDeleting}
         />
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteAllModal}
+        onClose={() => setShowDeleteAllModal(false)}
+        onConfirm={confirmDeleteAll}
+        title="Delete All Notifications"
+        message="Are you sure you want to delete all notifications? This action cannot be undone."
+        confirmText="Delete All"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

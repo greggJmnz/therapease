@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import { 
   Plus, 
   Edit, 
@@ -48,6 +49,8 @@ const AdminTherapists = () => {
     name: '',
     email: ''
   });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [therapistToDelete, setTherapistToDelete] = useState(null);
 
   // Fetch therapists data from API
   const { data: therapistsData, isLoading, error, refetch } = useQuery(
@@ -76,7 +79,6 @@ const AdminTherapists = () => {
       experience: therapist.therapist?.yearsOfExperience ? `${therapist.therapist.yearsOfExperience} years` : 'Not specified',
       education: therapist.therapist?.education || 'Not provided',
       certifications: therapist.therapist?.certifications || 'Not provided',
-      availability: therapist.therapist?.availability || 'Not specified',
       status: therapist.status || 'active',
       patientsCount: therapist.patientCount || 0, // Count of assigned patients
       maxPatients: therapist.therapist?.maxPatients || 20, // Maximum patients capacity
@@ -254,17 +256,23 @@ const AdminTherapists = () => {
     }
   };
 
-  const handleDelete = async (therapistId) => {
-    console.log('Delete therapist clicked:', therapistId);
-    if (window.confirm('Are you sure you want to delete this therapist?')) {
-      try {
-        await adminAPI.deleteUser(therapistId);
-        toast.success('Therapist deleted successfully');
-        refetch(); // Refresh data from API
-      } catch (error) {
-        console.error('Error deleting therapist:', error);
-        toast.error('Failed to delete therapist');
-      }
+  const handleDelete = (therapistId) => {
+    setTherapistToDelete(therapistId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!therapistToDelete) return;
+    
+    try {
+      await adminAPI.deleteUser(therapistToDelete);
+      toast.success('Therapist deleted successfully');
+      refetch(); // Refresh data from API
+      setShowDeleteModal(false);
+      setTherapistToDelete(null);
+    } catch (error) {
+      console.error('Error deleting therapist:', error);
+      toast.error('Failed to delete therapist');
     }
   };
 
@@ -896,21 +904,6 @@ const AdminTherapists = () => {
                       </div>
                     </div>
 
-                    {/* Availability */}
-                    <div className="info-card">
-                      <div className="card-header">
-                        <div className="card-icon">
-                          <Calendar size={20} />
-                        </div>
-                        <h3>Availability</h3>
-                      </div>
-                      <div className="card-content">
-                        <div className="availability-section">
-                          <h4 className="subsection-title">Schedule</h4>
-                          <p className="availability-text">{selectedTherapist.availability || 'Not specified'}</p>
-                        </div>
-                      </div>
-                    </div>
 
                     {/* Account Status */}
                     <div className="info-card status-card">
@@ -1140,16 +1133,6 @@ const AdminTherapists = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
-                    <textarea
-                      value={editingTherapist.availability || ''}
-                      onChange={(e) => handleInputChange('availability', e.target.value)}
-                      rows={2}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      placeholder="Enter availability schedule and working hours..."
-                    />
-                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Account Status</label>
@@ -1380,6 +1363,21 @@ const AdminTherapists = () => {
         </div>
       </div>
     )}
+    
+    {/* Confirmation Modal */}
+    <ConfirmationModal
+      isOpen={showDeleteModal}
+      onClose={() => {
+        setShowDeleteModal(false);
+        setTherapistToDelete(null);
+      }}
+      onConfirm={confirmDelete}
+      title="Delete Therapist"
+      message="Are you sure you want to delete this therapist? This action cannot be undone."
+      confirmText="Delete"
+      cancelText="Cancel"
+      type="danger"
+    />
     </>
   );
 };

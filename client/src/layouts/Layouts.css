@@ -31,11 +31,11 @@
 
 /* Enhanced Sidebar Styles */
 .sidebar {
-  width: 280px;
+  width: 260px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border-right: 1px solid rgba(0, 0, 0, 0.1);
-  padding: 24px 0;
+  padding: 20px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -76,8 +76,8 @@
 .sidebar-header {
   width: 100%;
   text-align: center;
-  margin-bottom: 32px;
-  padding: 0 24px;
+  margin-bottom: 24px;
+  padding: 0 20px;
 }
 
 .logo-container {
@@ -86,7 +86,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .logo-icon {
@@ -129,7 +129,7 @@
 }
 
 .logo-container h1 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 800;
   background: linear-gradient(135deg, var(--secondary-green) 0%, var(--primary-green) 100%);
   -webkit-background-clip: text;
@@ -141,7 +141,7 @@
 }
 
 .subtitle {
-  font-size: 14px;
+  font-size: 12px;
   color: #64748b;
   margin: 0;
   font-weight: 500;
@@ -195,14 +195,14 @@
 }
 
 .nav-link-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
   color: inherit;
 }
 
 .nav-link-description {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
   line-height: 1.2;
   color: var(--medium-gray);
@@ -228,10 +228,10 @@
 }
 
 .nav-link:hover {
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  color: var(--primary-black);
+  background: var(--primary-green);
+  color: white;
   transform: translateX(3px) scale(1.005);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
 }
 
 .nav-link.active {
@@ -271,7 +271,7 @@
 }
 
 .tools-section h4 {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #94a3b8;
   text-transform: uppercase;
@@ -285,8 +285,25 @@
   max-width: calc(100% - 8px);
 }
 
+/* Ensure tools section icons are the same size as navigation icons */
+.tools-section .nav-link svg {
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0;
+}
+
 .tools-section .nav-link:hover {
+  background: var(--primary-green);
+  color: white;
   transform: translateX(2px) scale(1.005);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+}
+
+/* Ensure navigation icons are consistent size */
+.sidebar-nav .nav-link svg {
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0;
 }
 
 /* Enhanced Main Content */
@@ -301,7 +318,7 @@
   content: '';
   position: fixed;
   top: 0;
-  left: 280px;
+  left: 260px;
   right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(226, 232, 240, 0.8), transparent);
@@ -475,7 +492,7 @@
 }
 
 .mobile-sidebar-nav .nav-link-description {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
   line-height: 1.2;
   color: var(--medium-gray);
@@ -486,8 +503,10 @@
 }
 
 .mobile-sidebar-nav .nav-link:hover {
-  background: rgba(241, 245, 249, 0.8);
+  background: var(--primary-green);
+  color: white;
   transform: translateX(4px);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
 }
 
 .mobile-sidebar-nav .nav-link.active {
@@ -553,14 +572,14 @@
 }
 
 .user-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #1e293b;
   margin: 0;
 }
 
 .user-role {
-  font-size: 12px;
+  font-size: 11px;
   color: #64748b;
   margin: 0;
 }
@@ -575,7 +594,7 @@
 }
 
 .profile-info strong {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--primary-black);
   margin: 0;
@@ -586,7 +605,7 @@
 }
 
 .profile-info span {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--medium-gray);
   margin: 0;
   line-height: 1.2;
@@ -649,7 +668,7 @@
 
 .dropdown-header span {
   display: block;
-  font-size: 11px;
+  font-size: 9px;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -658,7 +677,7 @@
 
 .dropdown-header strong {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   color: #1e293b;
   font-weight: 600;
 }
@@ -682,7 +701,7 @@
   background: none;
   width: 100%;
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .dropdown-item:hover {
@@ -730,7 +749,7 @@
   overflow: hidden;
   position: relative;
   padding: 24px;
-  margin-left: 280px;
+  margin-left: 260px;
   min-height: 100vh;
 }
 
@@ -738,7 +757,7 @@
   content: '';
   position: fixed;
   top: 0;
-  left: 280px;
+  left: 260px;
   right: 0;
   bottom: 0;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
@@ -818,7 +837,7 @@
 }
 
 .portal-type {
-  font-size: 11px;
+  font-size: 10px;
   color: #6b7280;
   font-weight: 500;
   line-height: 1.2;
@@ -914,7 +933,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   border: 2px solid white;
   z-index: 10;
@@ -968,7 +987,7 @@
 /* Enhanced Responsive Design */
 @media (max-width: 1200px) {
   .sidebar {
-    width: 260px;
+    width: 240px;
     position: fixed;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
@@ -981,16 +1000,16 @@
   
   /* Ensure consistent sidebar spacing across all screen sizes */
   .sidebar-nav {
-    gap: 16px;
+    gap: 12px;
   }
   
   .nav-link {
-    margin: 10px 0;
+    margin: 8px 0;
   }
   
   .tools-section {
-    margin-top: 32px;
-    padding: 32px 24px 0;
+    margin-top: 24px;
+    padding: 24px 20px 0;
   }
   
   /* Consistent scrollbar styling for all screen sizes */
@@ -1059,7 +1078,7 @@
   }
   
   .portal-type {
-    font-size: 11px;
+    font-size: 10px;
   }
   
   .btn-secondary {
@@ -1508,7 +1527,7 @@
   }
   
   .breadcrumb {
-    font-size: 11px;
+    font-size: 10px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1533,7 +1552,7 @@
   }
   
   .mobile-sidebar-nav .nav-link-description {
-    font-size: 11px;
+    font-size: 10px;
   }
   
   .mobile-menu-btn {
@@ -1582,7 +1601,7 @@
   }
   
   .profile-info span {
-    font-size: 11px;
+    font-size: 10px;
   }
 }
 
@@ -3494,7 +3513,7 @@ textarea:focus {
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: 500;
-  font-size: 11px;
+  font-size: 10px;
   text-transform: capitalize;
 }
 
@@ -3519,7 +3538,7 @@ textarea:focus {
   background: #f0f9ff;
   color: #0ea5e9;
   font-weight: 500;
-  font-size: 11px;
+  font-size: 10px;
   text-transform: capitalize;
 }
 
@@ -3535,7 +3554,7 @@ textarea:focus {
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3550,7 +3569,7 @@ textarea:focus {
   color: white;
   padding: 4px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
 }
 
@@ -4472,7 +4491,7 @@ textarea:focus {
   }
   
   .breadcrumb {
-    font-size: 11px;
+    font-size: 10px;
   }
   
   .breadcrumb-main,
@@ -4522,7 +4541,7 @@ textarea:focus {
   }
   
   .profile-info strong {
-    font-size: 11px;
+    font-size: 10px;
   }
   
   .profile-info span {
@@ -4584,7 +4603,7 @@ textarea:focus {
   }
   
   .mobile-card-label {
-    font-size: 11px;
+    font-size: 10px;
   }
   
   .mobile-card-value {
@@ -5540,7 +5559,9 @@ textarea:focus {
   }
   
   .therapist-layout .nav-link:hover {
-    background: #f3f4f6;
+    background: var(--primary-green);
+    color: white;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
   }
   
   .therapist-layout .nav-link.active {
@@ -5777,7 +5798,12 @@ textarea:focus {
     min-width: 44px;
   }
   
-  .therapist-layout .nav-link:hover,
+  .therapist-layout .nav-link:hover {
+    background: var(--primary-green);
+    color: white;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  }
+  
   .therapist-layout .profile-main:hover,
   .therapist-layout .dropdown-item:hover {
     background: transparent;
@@ -5834,4 +5860,212 @@ textarea:focus {
   .therapist-layout .page-content {
     padding: 0;
   }
+}
+
+/* Navigation Dropdown Styles */
+.nav-dropdown-container {
+  width: 100%;
+  position: relative;
+}
+
+.nav-link.dropdown-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--medium-gray);
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 4px 0;
+  border-radius: 16px;
+  font-weight: 500;
+  font-size: 13px;
+  position: relative;
+  overflow: hidden;
+  max-width: calc(100% - 4px);
+  box-sizing: border-box;
+  min-height: 56px;
+  text-align: left;
+}
+
+.nav-link.dropdown-toggle:hover {
+  background: var(--primary-green);
+  color: white;
+  transform: translateX(3px) scale(1.005);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+}
+
+.nav-link.dropdown-toggle.active {
+  background: var(--primary-green);
+  color: white;
+  transform: translateX(3px) scale(1.005);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+}
+
+.dropdown-arrow {
+  margin-left: auto;
+  transition: transform 0.3s ease;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  margin: 4px 0 4px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: slideDown 0.3s ease-out;
+}
+
+.nav-link.dropdown-item {
+  padding: 12px 20px;
+  margin: 0;
+  border-radius: 0;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--medium-gray);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.nav-link.dropdown-item:hover {
+  background: var(--primary-green);
+  color: white;
+  transform: translateX(2px);
+}
+
+.nav-link.dropdown-item.active {
+  background: var(--primary-green);
+  color: white;
+  font-weight: 500;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile Dropdown Styles */
+.mobile-sidebar-nav .nav-link.dropdown-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--medium-gray);
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 3px 0;
+  border-radius: 16px;
+  font-weight: 500;
+  font-size: 14px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  text-align: left;
+  min-height: 56px;
+}
+
+.mobile-sidebar-nav .nav-link.dropdown-toggle:hover {
+  background: var(--primary-green);
+  color: white;
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+}
+
+.mobile-sidebar-nav .nav-link.dropdown-toggle.active {
+  background: var(--primary-green);
+  color: white;
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+}
+
+.mobile-sidebar-nav .nav-dropdown {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  margin: 4px 0 4px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: slideDown 0.3s ease-out;
+}
+
+.mobile-sidebar-nav .nav-link.dropdown-item {
+  padding: 12px 20px;
+  margin: 0;
+  border-radius: 0;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--medium-gray);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-weight: 400;
+  font-size: 14px;
+  min-height: 48px;
+}
+
+.mobile-sidebar-nav .nav-link.dropdown-item:hover {
+  background: var(--primary-green);
+  color: white;
+  transform: translateX(2px);
+}
+
+.mobile-sidebar-nav .nav-link.dropdown-item.active {
+  background: var(--primary-green);
+  color: white;
+  font-weight: 500;
+}
+
+/* Admin Layout Specific Font Sizes */
+.admin-layout .nav-link-name {
+  font-size: 13px !important;
+}
+
+.admin-layout .mobile-sidebar-nav .nav-link-name {
+  font-size: 14px !important;
+}
+
+.admin-layout .nav-link.dropdown-toggle {
+  font-size: 13px !important;
+}
+
+.admin-layout .mobile-sidebar-nav .nav-link.dropdown-toggle {
+  font-size: 14px !important;
+}
+
+.admin-layout .nav-link.dropdown-item {
+  font-size: 13px !important;
+}
+
+.admin-layout .mobile-sidebar-nav .nav-link.dropdown-item {
+  font-size: 14px !important;
 }

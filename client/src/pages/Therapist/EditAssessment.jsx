@@ -14,6 +14,7 @@ import {
   Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const EditAssessment = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const EditAssessment = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [areas, setAreas] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const {
     register,
@@ -158,9 +160,10 @@ const EditAssessment = () => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this assessment? This action cannot be undone.')) {
-      return;
-    }
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
 
     try {
       const response = await fetch(`/api/therapist/assessments/${id}`, {
@@ -171,6 +174,7 @@ const EditAssessment = () => {
 
       if (result.success) {
         toast.success('Assessment deleted successfully!');
+        setShowDeleteModal(false);
         navigate('/therapist/assessments');
       } else {
         toast.error(result.error || 'Failed to delete assessment');
@@ -549,6 +553,18 @@ const EditAssessment = () => {
           </button>
         </div>
       </form>
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Assessment"
+        message="Are you sure you want to delete this assessment? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

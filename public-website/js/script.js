@@ -20,21 +20,20 @@ function initNavigation() {
         hamburger.classList.toggle('active');
     });
 
-    // Close mobile menu when clicking on a link
+    // Close mobile menu when clicking on a link (but not portal dropdown)
     navLinks.forEach(link => {
-        link.addEventListener('click', () => {
+        link.addEventListener('click', (e) => {
+            // Don't close mobile menu if it's the portal dropdown button
+            if (link === portalsDropdown) {
+                console.log('Portal dropdown clicked - keeping menu open');
+                e.stopPropagation();
+                return; // Don't close the menu for portal dropdown
+            }
+            console.log('Regular nav link clicked - closing menu');
             navMenu.classList.remove('active');
             hamburger.classList.remove('active');
         });
     });
-    
-    // Close mobile menu when clicking on portal dropdown
-    if (portalsDropdown) {
-        portalsDropdown.addEventListener('click', () => {
-            navMenu.classList.remove('active');
-            hamburger.classList.remove('active');
-        });
-    }
 
     // Navbar scroll effect
     window.addEventListener('scroll', () => {
@@ -94,6 +93,11 @@ function initPortalNavigation() {
         e.stopPropagation();
         
         console.log('Portals dropdown clicked');
+        
+        // Check if we're in mobile view
+        const isMobile = window.innerWidth <= 768;
+        const navMenuActive = navMenu.classList.contains('active');
+        
         // Toggle dropdown for both desktop and mobile
         const isActive = dropdown.classList.contains('active');
         if (isActive) {
@@ -102,6 +106,15 @@ function initPortalNavigation() {
         } else {
             dropdown.classList.add('active');
             console.log('Dropdown opened');
+        }
+        
+        // In mobile view, keep the nav menu open when dropdown is toggled
+        if (isMobile && navMenuActive) {
+            console.log('Mobile dropdown toggled, keeping nav menu open');
+            // Ensure mobile menu stays open
+            navMenu.classList.add('active');
+            hamburger.classList.add('active');
+            return;
         }
     });
 
@@ -118,8 +131,10 @@ function initPortalNavigation() {
             const originalContent = item.innerHTML;
             item.innerHTML = '<i class="fas fa-external-link-alt"></i> Opening...';
             
-            // Close dropdown
+            // Close dropdown and mobile menu when portal is selected
             dropdown.classList.remove('active');
+            navMenu.classList.remove('active');
+            hamburger.classList.remove('active');
             
             // Reset button content after a short delay
             setTimeout(() => {
@@ -336,22 +351,70 @@ function initForms() {
             const contactData = {
                 name: formData.get('name'),
                 email: formData.get('email'),
+                phone: formData.get('phone'),
+                inquiryType: formData.get('inquiryType'),
                 subject: formData.get('subject'),
-                message: formData.get('message')
+                message: formData.get('message'),
+                newsletter: formData.get('newsletter') === 'on',
+                privacy: formData.get('privacy') === 'on'
             };
+
+            // Validate required fields
+            if (!contactData.name || !contactData.email || !contactData.inquiryType || !contactData.subject || !contactData.message) {
+                showError('Please fill in all required fields.');
+                return;
+            }
+
+            if (!contactData.privacy) {
+                showError('Please agree to the Privacy Policy and Terms of Service.');
+                return;
+            }
 
             try {
                 showLoading(contactForm);
                 
+                // Enhanced contact data with additional context
+                const enhancedContactData = {
+                    ...contactData,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    referrer: document.referrer,
+                    pageUrl: window.location.href
+                };
+
                 // You can implement a contact endpoint or use a service like EmailJS
-                // For now, we'll simulate a successful submission
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // For now, we'll simulate a successful submission with enhanced feedback
+                await new Promise(resolve => setTimeout(resolve, 1500));
                 
-                showSuccess('Thank you for your message! We\'ll get back to you soon.');
+                // Show success message based on inquiry type
+                let successMessage = 'Thank you for your message! We\'ll get back to you soon.';
+                
+                switch (contactData.inquiryType) {
+                    case 'demo':
+                        successMessage = 'Thank you! We\'ll contact you within 24 hours to schedule your personalized demo.';
+                        break;
+                    case 'pricing':
+                        successMessage = 'Thank you! We\'ll send you detailed pricing information within 24 hours.';
+                        break;
+                    case 'support':
+                        successMessage = 'Thank you! Our technical support team will respond within 24 hours.';
+                        break;
+                    case 'partnership':
+                        successMessage = 'Thank you! We\'ll review your partnership inquiry and get back to you soon.';
+                        break;
+                    default:
+                        successMessage = 'Thank you for your message! We\'ll get back to you within 24 hours.';
+                }
+
+                if (contactData.newsletter) {
+                    successMessage += ' You\'ll also receive our newsletter with the latest TherapEase updates.';
+                }
+                
+                showSuccess(successMessage);
                 contactForm.reset();
             } catch (error) {
                 console.error('Contact form error:', error);
-                showError('Failed to send message. Please try again.');
+                showError('Failed to send message. Please try again or contact us directly at support@therapease.com.');
             } finally {
                 hideLoading(contactForm);
             }
@@ -514,6 +577,66 @@ function initFormValidation() {
             }
         });
     });
+
+    // Contact form specific validation
+    const contactForm = document.getElementById('contact-form');
+    if (contactForm) {
+        const inquiryTypeSelect = contactForm.querySelector('#inquiry-type');
+        const subjectInput = contactForm.querySelector('#subject');
+        const messageTextarea = contactForm.querySelector('#message');
+
+        // Auto-fill subject based on inquiry type
+        inquiryTypeSelect.addEventListener('change', () => {
+            const inquiryType = inquiryTypeSelect.value;
+            if (subjectInput.value === '' || subjectInput.value === 'Subject Line') {
+                switch (inquiryType) {
+                    case 'demo':
+                        subjectInput.value = 'Schedule a Demo - TherapEase';
+                        break;
+                    case 'pricing':
+                        subjectInput.value = 'Pricing Information Request';
+                        break;
+                    case 'support':
+                        subjectInput.value = 'Technical Support Request';
+                        break;
+                    case 'partnership':
+                        subjectInput.value = 'Partnership Inquiry';
+                        break;
+                    case 'general':
+                        subjectInput.value = 'General Question';
+                        break;
+                    default:
+                        subjectInput.value = '';
+                }
+            }
+        });
+
+        // Character count for message
+        messageTextarea.addEventListener('input', () => {
+            const maxLength = 1000;
+            const currentLength = messageTextarea.value.length;
+            const remaining = maxLength - currentLength;
+            
+            // Remove existing counter
+            const existingCounter = contactForm.querySelector('.char-counter');
+            if (existingCounter) {
+                existingCounter.remove();
+            }
+            
+            if (currentLength > maxLength * 0.8) {
+                const counter = document.createElement('div');
+                counter.className = 'char-counter';
+                counter.style.cssText = `
+                    font-size: 0.8rem;
+                    color: ${remaining < 0 ? '#ef4444' : remaining < 50 ? '#f59e0b' : '#6b7280'};
+                    text-align: right;
+                    margin-top: 0.25rem;
+                `;
+                counter.textContent = `${currentLength}/${maxLength} characters`;
+                messageTextarea.parentNode.appendChild(counter);
+            }
+        });
+    }
 }
 
 function showFieldError(input, message) {
@@ -559,6 +682,70 @@ function initDemoAccounts() {
     });
 }
 
+// Mobile-specific functionality
+function initMobileFeatures() {
+    // Detect mobile device
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Add mobile class to body
+        document.body.classList.add('mobile-device');
+        
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+        
+        // Improve touch scrolling
+        document.body.style.webkitOverflowScrolling = 'touch';
+        document.documentElement.style.webkitOverflowScrolling = 'touch';
+        
+        // Fix mobile scrolling issues
+        document.body.style.overflow = 'auto';
+        document.body.style.height = 'auto';
+        document.documentElement.style.overflow = 'auto';
+        document.documentElement.style.height = 'auto';
+        
+        // Remove any fixed heights that might prevent scrolling
+        const hero = document.querySelector('.hero');
+        if (hero) {
+            hero.style.minHeight = '100vh';
+            hero.style.height = 'auto';
+            hero.style.overflow = 'visible';
+        }
+        
+        // Handle orientation change
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                // Recalculate viewport height for mobile browsers
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+                
+                // Ensure scrolling works after orientation change
+                document.body.style.overflow = 'auto';
+                document.documentElement.style.overflow = 'auto';
+            }, 100);
+        });
+        
+        // Set initial viewport height
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+        
+        // Ensure scrolling is enabled
+        window.addEventListener('load', () => {
+            document.body.style.overflow = 'auto';
+            document.documentElement.style.overflow = 'auto';
+        });
+        
+        console.log('Mobile features initialized with scrolling fixes');
+    }
+}
+
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
@@ -569,6 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollAnimations();
     initFormValidation();
     initDemoAccounts();
+    initMobileFeatures();
     
     // Add loading animation to page
     document.body.classList.add('fade-in');

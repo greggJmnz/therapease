@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   X, 
   Bell, 
@@ -14,15 +14,17 @@ import {
   ExternalLink,
   Trash2
 } from 'lucide-react';
+import ConfirmationModal from './ConfirmationModal';
 
 const NotificationModal = ({ 
   notification, 
   onClose, 
   onDelete, 
-  onMarkAsRead,
+  onMarkAsRead, 
   onViewAppointment,
-  isDeleting = false 
+  isDeleting = false
 }) => {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   if (!notification) return null;
 
   const getTypeIcon = (type) => {
@@ -94,10 +96,13 @@ const NotificationModal = ({
   };
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this notification?')) {
-      onDelete(notification.id);
-      onClose();
-    }
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    onDelete(notification.id);
+    onClose();
+    setShowDeleteModal(false);
   };
 
   return (
@@ -243,6 +248,18 @@ const NotificationModal = ({
           </div>
         </div>
       </div>
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Notification"
+        message="Are you sure you want to delete this notification?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

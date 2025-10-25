@@ -28,6 +28,19 @@ import toast from 'react-hot-toast';
 const PatientDashboard = () => {
   const navigate = useNavigate();
   const [isRedirecting, setIsRedirecting] = useState(false);
+  
+  // Utility function to convert 24-hour time to 12-hour format
+  const formatTime12Hour = (time24) => {
+    if (!time24) return '';
+    try {
+      const [hours, minutes] = time24.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    } catch (error) {
+      return time24; // Return original if parsing fails
+    }
+  };
   const { startNavigation, completeNavigation, canNavigate } = useNavigationState();
 
   // Note: Onboarding status check and navigation is now handled in PatientLayout
@@ -272,7 +285,7 @@ const PatientDashboard = () => {
                             {appointment.type || 'Therapy Session'}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {appointment.appointmentDate ? new Date(appointment.appointmentDate).toLocaleDateString() : 'No date'} at {appointment.startTime}
+                            {appointment.appointmentDate ? new Date(appointment.appointmentDate).toLocaleDateString() : 'No date'} at {formatTime12Hour(appointment.startTime)}
                           </p>
                           <p className="text-xs text-gray-500">With {dashboardStats.therapistName}</p>
                         </div>

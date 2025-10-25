@@ -359,7 +359,7 @@ const ProgressView = () => {
             </div>
           </div>
           
-            {/* Overall Stats Summary */}
+          {/* Overall Stats Summary */}
             <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-xl border border-blue-100">
               <div className="text-base sm:text-lg lg:text-xl font-bold text-blue-600 mb-1">
@@ -384,7 +384,7 @@ const ProgressView = () => {
                 {overallStats.activePlans}
               </div>
               <div className="text-xs font-medium text-purple-800 leading-tight">Active Plans</div>
-            </div>
+        </div>
       </div>
         </div>
 

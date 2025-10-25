@@ -23,6 +23,7 @@ import { SessionCreator, ModernCard, ModernButton } from '../../components';
 import { therapistAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const Sessions = () => {
   const { user } = useAuth();
@@ -33,6 +34,8 @@ const Sessions = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState(null);
 
   // Fetch sessions data from API
   const { data: sessionsData, isLoading, error } = useQuery(
@@ -149,8 +152,15 @@ const Sessions = () => {
   };
 
   const handleDeleteSession = (sessionId) => {
-    if (window.confirm('Are you sure you want to delete this session?')) {
-      deleteSessionMutation.mutate(sessionId);
+    setSessionToDelete(sessionId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteSession = () => {
+    if (sessionToDelete) {
+      deleteSessionMutation.mutate(sessionToDelete);
+      setShowDeleteModal(false);
+      setSessionToDelete(null);
     }
   };
 
@@ -530,6 +540,21 @@ const Sessions = () => {
           </div>
         </div>
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSessionToDelete(null);
+        }}
+        onConfirm={confirmDeleteSession}
+        title="Delete Session"
+        message="Are you sure you want to delete this session?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

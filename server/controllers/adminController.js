@@ -1885,7 +1885,6 @@ const getAvailableTherapists = async (req, res) => {
         t.licenseNumber,
         t.specialization,
         t.yearsOfExperience,
-        t.availability,
         t.maxPatients,
         t.isAcceptingPatients,
         (SELECT COUNT(DISTINCT pta.patientId) FROM patient_therapist_assignments pta WHERE pta.therapistId = u.id AND pta.status = 'active') as currentPatientCount
@@ -1917,8 +1916,46 @@ const getAvailableTherapists = async (req, res) => {
       filteredTherapists = availableTherapists.filter(therapist => !assignedIds.includes(therapist.id));
     }
 
+    // Fetch working hours for each therapist
+    const therapistsWithWorkingHours = await Promise.all(
+      filteredTherapists.map(async (therapist) => {
+        const workingHoursSql = `
+          SELECT dayOfWeek, startTime, endTime, isEnabled
+          FROM working_hours
+          WHERE userId = ?
+          ORDER BY 
+            CASE dayOfWeek
+              WHEN 'monday' THEN 1
+              WHEN 'tuesday' THEN 2
+              WHEN 'wednesday' THEN 3
+              WHEN 'thursday' THEN 4
+              WHEN 'friday' THEN 5
+              WHEN 'saturday' THEN 6
+              WHEN 'sunday' THEN 7
+            END
+        `;
+        
+        const workingHoursData = await getAll(workingHoursSql, [therapist.id]);
+        
+        // Format working hours
+        const workingHours = {};
+        workingHoursData.forEach(hour => {
+          workingHours[hour.dayOfWeek] = {
+            start: hour.startTime,
+            end: hour.endTime,
+            enabled: hour.isEnabled
+          };
+        });
+
+        return {
+          ...therapist,
+          workingHours
+        };
+      })
+    );
+
     // Format response
-    const formattedTherapists = filteredTherapists.map(therapist => ({
+    const formattedTherapists = therapistsWithWorkingHours.map(therapist => ({
       id: therapist.id,
       therapistId: therapist.therapistId,
       name: `${therapist.firstName} ${therapist.lastName}`,
@@ -1926,7 +1963,7 @@ const getAvailableTherapists = async (req, res) => {
       phone: therapist.phone,
       specialization: therapist.specialization,
       yearsOfExperience: therapist.yearsOfExperience,
-      availability: therapist.availability,
+      workingHours: therapist.workingHours,
       currentPatientCount: therapist.currentPatientCount,
       maxPatients: therapist.maxPatients,
       availableSlots: therapist.maxPatients - therapist.currentPatientCount,
@@ -2099,9 +2136,6 @@ const assignTherapistToPatient = async (req, res) => {
       }
 
       await connection.commit();
-
-        maxPatients: maxPatients
-      });
 
       res.json({
         success: true,

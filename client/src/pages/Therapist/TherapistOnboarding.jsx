@@ -181,7 +181,6 @@ const TherapistOnboarding = () => {
         yearsOfExperience: obj.yearsOfExperience || null,
         education: obj.education || null,
         certifications: obj.certifications || null,
-        availability: obj.availability || null,
         maxPatients: obj.maxPatients || 20,
         isAcceptingPatients: obj.isAcceptingPatients !== undefined ? obj.isAcceptingPatients : true
       };
@@ -607,20 +606,6 @@ const ProfessionalInfoStep = ({ register, errors, watch, onNext, onPrev, onSave,
           )}
         </div>
 
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Availability
-          </label>
-          <textarea
-            {...register('availability')}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            placeholder="Describe your availability (e.g., Monday-Friday 9AM-5PM)"
-          />
-          {errors.availability && (
-            <p className="mt-1 text-sm text-red-600">{errors.availability.message}</p>
-          )}
-        </div>
 
         <div className="md:col-span-2">
           <div className="flex items-center">

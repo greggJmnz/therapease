@@ -28,6 +28,7 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import InitialsAvatar from '../../components/InitialsAvatar';
 import CommentModal from '../../components/CommentModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const ProgressTracking = () => {
   const { user } = useAuth();
@@ -58,6 +59,16 @@ const ProgressTracking = () => {
     description: '',
     file: null
   });
+  
+  // Confirmation Modal states
+  const [showDeleteReportModal, setShowDeleteReportModal] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState(null);
+  const [showDeleteTreatmentPlanModal, setShowDeleteTreatmentPlanModal] = useState(false);
+  const [treatmentPlanToDelete, setTreatmentPlanToDelete] = useState(null);
+  const [showDeleteMainObjectiveModal, setShowDeleteMainObjectiveModal] = useState(false);
+  const [mainObjectiveToDelete, setMainObjectiveToDelete] = useState(null);
+  const [showDeleteSpecificObjectiveModal, setShowDeleteSpecificObjectiveModal] = useState(false);
+  const [specificObjectiveToDelete, setSpecificObjectiveToDelete] = useState(null);
   
   // Form states
   const [planForm, setPlanForm] = useState({
@@ -421,8 +432,15 @@ const ProgressTracking = () => {
   };
 
   const handleDeleteReport = (reportId, reportTitle) => {
-    if (window.confirm(`Are you sure you want to delete the progress report "${reportTitle}"? This action cannot be undone.`)) {
-      deleteReportMutation.mutate(reportId);
+    setReportToDelete({ id: reportId, title: reportTitle });
+    setShowDeleteReportModal(true);
+  };
+
+  const confirmDeleteReport = () => {
+    if (reportToDelete) {
+      deleteReportMutation.mutate(reportToDelete.id);
+      setShowDeleteReportModal(false);
+      setReportToDelete(null);
     }
   };
 
@@ -683,20 +701,41 @@ const ProgressTracking = () => {
   };
 
   const handleDeleteTreatmentPlan = (treatmentPlanId) => {
-    if (window.confirm('Are you sure you want to delete this treatment plan? This action cannot be undone and will also delete all associated objectives.')) {
-      deleteTreatmentPlanMutation.mutate(treatmentPlanId);
+    setTreatmentPlanToDelete(treatmentPlanId);
+    setShowDeleteTreatmentPlanModal(true);
+  };
+
+  const confirmDeleteTreatmentPlan = () => {
+    if (treatmentPlanToDelete) {
+      deleteTreatmentPlanMutation.mutate(treatmentPlanToDelete);
+      setShowDeleteTreatmentPlanModal(false);
+      setTreatmentPlanToDelete(null);
     }
   };
 
   const handleDeleteMainObjective = (mainObjectiveId) => {
-    if (window.confirm('Are you sure you want to delete this main objective? This action cannot be undone and will also delete all associated specific objectives.')) {
-      deleteMainObjectiveMutation.mutate(mainObjectiveId);
+    setMainObjectiveToDelete(mainObjectiveId);
+    setShowDeleteMainObjectiveModal(true);
+  };
+
+  const confirmDeleteMainObjective = () => {
+    if (mainObjectiveToDelete) {
+      deleteMainObjectiveMutation.mutate(mainObjectiveToDelete);
+      setShowDeleteMainObjectiveModal(false);
+      setMainObjectiveToDelete(null);
     }
   };
 
   const handleDeleteSpecificObjective = (specificObjectiveId) => {
-    if (window.confirm('Are you sure you want to delete this specific objective? This action cannot be undone.')) {
-      deleteSpecificObjectiveMutation.mutate(specificObjectiveId);
+    setSpecificObjectiveToDelete(specificObjectiveId);
+    setShowDeleteSpecificObjectiveModal(true);
+  };
+
+  const confirmDeleteSpecificObjective = () => {
+    if (specificObjectiveToDelete) {
+      deleteSpecificObjectiveMutation.mutate(specificObjectiveToDelete);
+      setShowDeleteSpecificObjectiveModal(false);
+      setSpecificObjectiveToDelete(null);
     }
   };
 
@@ -1995,6 +2034,63 @@ const ProgressTracking = () => {
         initialComment={commentModalData.currentComment}
         objectiveTitle={commentModalData.objectiveTitle}
         isLoading={updateSpecificObjectiveMutation.isLoading}
+      />
+      
+      {/* Confirmation Modals */}
+      <ConfirmationModal
+        isOpen={showDeleteReportModal}
+        onClose={() => {
+          setShowDeleteReportModal(false);
+          setReportToDelete(null);
+        }}
+        onConfirm={confirmDeleteReport}
+        title="Delete Progress Report"
+        message={reportToDelete ? `Are you sure you want to delete the progress report "${reportToDelete.title}"? This action cannot be undone.` : ''}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
+      
+      <ConfirmationModal
+        isOpen={showDeleteTreatmentPlanModal}
+        onClose={() => {
+          setShowDeleteTreatmentPlanModal(false);
+          setTreatmentPlanToDelete(null);
+        }}
+        onConfirm={confirmDeleteTreatmentPlan}
+        title="Delete Treatment Plan"
+        message="Are you sure you want to delete this treatment plan? This action cannot be undone and will also delete all associated objectives."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
+      
+      <ConfirmationModal
+        isOpen={showDeleteMainObjectiveModal}
+        onClose={() => {
+          setShowDeleteMainObjectiveModal(false);
+          setMainObjectiveToDelete(null);
+        }}
+        onConfirm={confirmDeleteMainObjective}
+        title="Delete Main Objective"
+        message="Are you sure you want to delete this main objective? This action cannot be undone and will also delete all associated specific objectives."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
+      
+      <ConfirmationModal
+        isOpen={showDeleteSpecificObjectiveModal}
+        onClose={() => {
+          setShowDeleteSpecificObjectiveModal(false);
+          setSpecificObjectiveToDelete(null);
+        }}
+        onConfirm={confirmDeleteSpecificObjective}
+        title="Delete Specific Objective"
+        message="Are you sure you want to delete this specific objective? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
       />
     </div>
   );

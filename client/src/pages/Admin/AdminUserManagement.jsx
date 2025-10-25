@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import { 
   Search, 
   MoreVertical, 
@@ -35,6 +36,8 @@ const AdminUserManagement = () => {
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
   const [passwordResetResult, setPasswordResetResult] = useState(null);
   const dropdownRefs = useRef({});
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   // Fetch all users
   const { data: usersData, isLoading, error, refetch } = useQuery(
@@ -295,11 +298,18 @@ const AdminUserManagement = () => {
 
   // Handle delete user
   const handleDeleteUser = (userId) => {
-    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      // Find the user to get their role
-      const user = users.find(u => u.id === userId);
-      deleteUserMutation.mutate({ userId, userRole: user?.role });
-    }
+    setUserToDelete(userId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    // Find the user to get their role
+    const user = users.find(u => u.id === userToDelete);
+    deleteUserMutation.mutate({ userId: userToDelete, userRole: user?.role });
+    setShowDeleteModal(false);
+    setUserToDelete(null);
   };
 
   // Handle status toggle
@@ -884,6 +894,21 @@ const AdminUserManagement = () => {
           </div>
         </div>
       )}
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setUserToDelete(null);
+        }}
+        onConfirm={confirmDeleteUser}
+        title="Delete User"
+        message="Are you sure you want to delete this user? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };
