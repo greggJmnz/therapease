@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const compression = require('compression');
 const path = require('path');
 const { createHTTPSServer, securityHeaders, sslHealthCheck } = require('./config/ssl');
 const { 
@@ -39,6 +40,9 @@ const treatmentPlanRoutes = require('./routes/treatmentPlanRoutes');
 const homeExerciseRoutes = require('./routes/homeExerciseRoutes');
 const progressReportRoutes = require('./routes/progressReportRoutes');
 
+// Compression Middleware (Enable gzip compression)
+app.use(compression());
+
 // Security Middleware
 app.use(helmet({
   contentSecurityPolicy: false, // Temporarily disable CSP to test image loading
@@ -57,12 +61,25 @@ app.use(checkEnvironmentExposure);
 app.use(securityHeaders);
 app.use(customSecurityHeaders);
 app.use(addEncryptionHeaders);
+// Parse CORS origins from environment variable or use defaults
+const getCorsOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // Use CORS_ORIGIN from environment variable if set, otherwise use defaults
+    if (process.env.CORS_ORIGIN) {
+      return process.env.CORS_ORIGIN.split(',').map(origin => origin.trim());
+    }
+    // Default production origins
+    return [
+      'https://therapease-gnu5.vercel.app', // Vercel production deployment
+      'https://therapease.site',            // Custom domain
+      'https://www.therapease.site'         // www subdomain
+    ];
+  }
+  return true; // Allow all origins in development
+};
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? [
-    'https://therapease.site',
-    'https://www.therapease.site',
-    'https://api.therapease.site'
-  ] : true,
+  origin: getCorsOrigins(),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Data-Protection', 'X-Content-Encryption'],
