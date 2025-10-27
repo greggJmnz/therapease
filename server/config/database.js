@@ -164,47 +164,28 @@ const createTables = async () => {
 
     // Add missing columns to patients table if they don't exist
     try {
-      await pool.execute(`
-        ALTER TABLE patients 
-        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'discharged') DEFAULT 'active'
-      `);
-      console.log('✅ Patients table columns updated successfully');
-    } catch (error) {
-      // Ignore error if columns already exist
-      if (!error.message.includes('Duplicate column name')) {
-        console.log('Note: Patient status column may already exist');
+      const patientColumnsToAdd = [
+        { name: 'status', sql: "ALTER TABLE patients ADD COLUMN status ENUM('active', 'inactive', 'discharged') DEFAULT 'active'" },
+        { name: 'emergencyContact', sql: 'ALTER TABLE patients ADD COLUMN emergencyContact TEXT' },
+        { name: 'insuranceInfo', sql: 'ALTER TABLE patients ADD COLUMN insuranceInfo TEXT' }
+      ];
+      
+      for (const column of patientColumnsToAdd) {
+        try {
+          await pool.execute(column.sql);
+        } catch (err) {
+          if (!err.message.includes('Duplicate column name')) {
+            throw err;
+          }
+          // Column already exists, skip it
+        }
       }
-    }
-
-    // Add missing columns to patients table if they don't exist
-    try {
-      await pool.execute(`
-        ALTER TABLE patients 
-        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'discharged') DEFAULT 'active',
-        ADD COLUMN IF NOT EXISTS emergencyContact TEXT,
-        ADD COLUMN IF NOT EXISTS insuranceInfo TEXT
-      `);
+      
       console.log('✅ Patients table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
         console.log('Note: Patient columns may already exist');
-      }
-    }
-
-    // Add missing columns to therapists table if they don't exist
-    try {
-      await pool.execute(`
-        ALTER TABLE therapists 
-        ADD COLUMN IF NOT EXISTS maxPatients INT DEFAULT 20,
-        ADD COLUMN IF NOT EXISTS isAcceptingPatients BOOLEAN DEFAULT TRUE,
-        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'
-      `);
-      console.log('✅ Therapists table columns updated successfully');
-    } catch (error) {
-      // Ignore error if columns already exist
-      if (!error.message.includes('Duplicate column name')) {
-        console.log('Note: Therapist columns may already exist');
       }
     }
 
@@ -287,15 +268,28 @@ const createTables = async () => {
 
     // Add missing columns to therapists table if they don't exist
     try {
-      await pool.execute(`
-        ALTER TABLE therapists 
-        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'
-      `);
+      const therapistColumnsToAdd = [
+        { name: 'maxPatients', sql: 'ALTER TABLE therapists ADD COLUMN maxPatients INT DEFAULT 20' },
+        { name: 'isAcceptingPatients', sql: 'ALTER TABLE therapists ADD COLUMN isAcceptingPatients BOOLEAN DEFAULT TRUE' },
+        { name: 'status', sql: "ALTER TABLE therapists ADD COLUMN status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'" }
+      ];
+      
+      for (const column of therapistColumnsToAdd) {
+        try {
+          await pool.execute(column.sql);
+        } catch (err) {
+          if (!err.message.includes('Duplicate column name')) {
+            throw err;
+          }
+          // Column already exists, skip it
+        }
+      }
+      
       console.log('✅ Therapists table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
-        console.log('Note: Therapist status column may already exist');
+        console.log('Note: Therapist columns may already exist');
       }
     }
 
