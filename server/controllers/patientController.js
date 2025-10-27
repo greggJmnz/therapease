@@ -1672,6 +1672,42 @@ const getSettings = async (req, res) => {
   }
 };
 
+// Get notification statistics
+const getNotificationStats = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get total notifications
+    const totalResult = await getRow(`
+      SELECT COUNT(*) as total
+      FROM notifications
+      WHERE userId = ?
+    `, [userId]);
+    const total = totalResult.total || 0;
+
+    // Get unread count
+    const unreadResult = await getRow(`
+      SELECT COUNT(*) as unread
+      FROM notifications
+      WHERE userId = ? AND isRead = 0
+    `, [userId]);
+    const unreadCount = unreadResult.unread || 0;
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        unread: unreadCount,
+        read: total - unreadCount
+      }
+    });
+
+  } catch (error) {
+    console.error('Get patient notification stats error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get notification stats' });
+  }
+};
+
 // Book new appointment
 const bookAppointment = async (req, res) => {
   try {
@@ -2492,6 +2528,7 @@ module.exports = {
   getAssessments,
   getHomeExercises,
   getNotifications,
+  getNotificationStats,
   getSettings,
   // Onboarding methods
   getOnboardingStatus,
