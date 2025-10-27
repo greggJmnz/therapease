@@ -890,6 +890,36 @@ const createTables = async () => {
       }
     }
 
+    // Add missing columns to progress_reports table if they don't exist
+    try {
+      const progressReportsColumnsToAdd = [
+        { name: 'title', sql: 'ALTER TABLE progress_reports ADD COLUMN title VARCHAR(255)' },
+        { name: 'description', sql: 'ALTER TABLE progress_reports ADD COLUMN description TEXT' },
+        { name: 'originalFileName', sql: 'ALTER TABLE progress_reports ADD COLUMN originalFileName VARCHAR(255)' },
+        { name: 'fileSize', sql: 'ALTER TABLE progress_reports ADD COLUMN fileSize INT' },
+        { name: 'mimeType', sql: 'ALTER TABLE progress_reports ADD COLUMN mimeType VARCHAR(100)' },
+        { name: 'uploadedAt', sql: 'ALTER TABLE progress_reports ADD COLUMN uploadedAt TIMESTAMP NULL' }
+      ];
+      
+      for (const column of progressReportsColumnsToAdd) {
+        try {
+          await pool.execute(column.sql);
+        } catch (err) {
+          if (!err.message.includes('Duplicate column name')) {
+            throw err;
+          }
+          // Column already exists, skip it
+        }
+      }
+      
+      console.log('✅ Progress reports table columns updated successfully');
+    } catch (error) {
+      // Ignore error if columns already exist
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Progress reports columns may already exist');
+      }
+    }
+
     console.log('Database tables created successfully');
     
   } catch (error) {
