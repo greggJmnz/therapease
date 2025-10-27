@@ -275,11 +275,10 @@ const getUsers = async (req, res) => {
       LEFT JOIN patients p ON u.id = p.userId
       ${whereClause}
       ORDER BY u.createdAt DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${limitNum} OFFSET ${offset}
     `;
 
-    const queryParams = [...params, limitNum, offset];
-    const users = await getAll(sql, queryParams);
+    const users = await getAll(sql, params);
 
     // Format user data
     const formattedUsers = users.map(user => {
