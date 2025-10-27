@@ -920,6 +920,31 @@ const createTables = async () => {
       }
     }
 
+    // Add missing columns to treatment_plans table if they don't exist
+    try {
+      const treatmentPlansColumnsToAdd = [
+        { name: 'overallProgress', sql: 'ALTER TABLE treatment_plans ADD COLUMN overallProgress INT DEFAULT 0' }
+      ];
+      
+      for (const column of treatmentPlansColumnsToAdd) {
+        try {
+          await pool.execute(column.sql);
+        } catch (err) {
+          if (!err.message.includes('Duplicate column name')) {
+            throw err;
+          }
+          // Column already exists, skip it
+        }
+      }
+      
+      console.log('✅ Treatment plans table columns updated successfully');
+    } catch (error) {
+      // Ignore error if columns already exist
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Treatment plans columns may already exist');
+      }
+    }
+
     console.log('Database tables created successfully');
     
   } catch (error) {
