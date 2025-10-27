@@ -8,13 +8,20 @@ class EmailService {
   }
 
   initializeTransporter() {
+    // Check if email is enabled
+    if (process.env.EMAIL_ENABLED === 'false' || !process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.log('ℹ️ Email service disabled (EMAIL_ENABLED=false or missing credentials)');
+      this.transporter = null;
+      return;
+    }
+
     // For development/testing, we'll use Gmail SMTP
     // In production, you should use a proper email service like SendGrid, AWS SES, etc.
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASSWORD || 'your-app-password' // Use App Password for Gmail
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
       }
     });
 
