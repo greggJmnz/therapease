@@ -34,11 +34,18 @@ class WebSocketService {
       // Development environment
       wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
     } else {
-      // Production environment - connect to API subdomain
+      // Production environment - Use API subdomain for WebSocket
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      // Use api subdomain for WebSocket connection
-      const hostname = window.location.hostname.replace('therapease.site', 'api.therapease.site');
-      wsUrl = `${protocol}//${hostname}/ws?token=${token}`;
+      
+      // Check if we're on therapease.site domain - use api subdomain
+      if (window.location.hostname.includes('therapease.site')) {
+        // Replace main domain with api subdomain
+        const apiHost = window.location.hostname.replace('therapease.site', 'api.therapease.site');
+        wsUrl = `${protocol}//${apiHost}/ws?token=${token}`;
+      } else {
+        // For other production domains, try standard ports first
+        wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
+      }
     }
     
     // Set connection timeout to prevent long waits
