@@ -945,6 +945,33 @@ const createTables = async () => {
       }
     }
 
+    // Add missing columns to specific_objectives table if they don't exist
+    try {
+      const specificObjectivesColumnsToAdd = [
+        { name: 'isCompleted', sql: 'ALTER TABLE specific_objectives ADD COLUMN isCompleted BOOLEAN DEFAULT FALSE' },
+        { name: 'remarks', sql: 'ALTER TABLE specific_objectives ADD COLUMN remarks TEXT' },
+        { name: 'patientComments', sql: 'ALTER TABLE specific_objectives ADD COLUMN patientComments TEXT' }
+      ];
+      
+      for (const column of specificObjectivesColumnsToAdd) {
+        try {
+          await pool.execute(column.sql);
+        } catch (err) {
+          if (!err.message.includes('Duplicate column name')) {
+            throw err;
+          }
+          // Column already exists, skip it
+        }
+      }
+      
+      console.log('✅ Specific objectives table columns updated successfully');
+    } catch (error) {
+      // Ignore error if columns already exist
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Specific objectives columns may already exist');
+      }
+    }
+
     console.log('Database tables created successfully');
     
   } catch (error) {
