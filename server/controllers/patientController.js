@@ -2366,8 +2366,8 @@ const completeOnboarding = async (req, res) => {
 
       // Log compliance action
       const auditSql = `
-        INSERT INTO compliance_audit_log (userId, action, newValue, ipAddress, userAgent, timestamp)
-        VALUES (?, 'terms_accepted', TRUE, ?, ?, NOW())
+        INSERT INTO compliance_audit_log (userId, action, newValues, ipAddress, userAgent, timestamp)
+        VALUES (?, 'terms_accepted', '{"terms_accepted": true}', ?, ?, NOW())
       `;
 
       const auditParams = [
