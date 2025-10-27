@@ -101,17 +101,29 @@ const createTables = async () => {
 
     // Add missing columns to users table if they don't exist
     try {
-      await pool.execute(`
-        ALTER TABLE users 
-        ADD COLUMN IF NOT EXISTS twoFactorEnabled BOOLEAN DEFAULT FALSE,
-        ADD COLUMN IF NOT EXISTS twoFactorMethod ENUM('email', 'sms', 'push') DEFAULT 'email',
-        ADD COLUMN IF NOT EXISTS twoFactorEnabledAt TIMESTAMP NULL,
-        ADD COLUMN IF NOT EXISTS emailVerified BOOLEAN DEFAULT FALSE,
-        ADD COLUMN IF NOT EXISTS emailVerifiedAt TIMESTAMP NULL,
-        ADD COLUMN IF NOT EXISTS status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
-        ADD COLUMN IF NOT EXISTS country VARCHAR(100),
-        ADD COLUMN IF NOT EXISTS profileImage VARCHAR(500)
-      `);
+      // Add each column individually to handle "already exists" errors
+      const columnsToAdd = [
+        { name: 'twoFactorEnabled', sql: 'ALTER TABLE users ADD COLUMN twoFactorEnabled BOOLEAN DEFAULT FALSE' },
+        { name: 'twoFactorMethod', sql: "ALTER TABLE users ADD COLUMN twoFactorMethod ENUM('email', 'sms', 'push') DEFAULT 'email'" },
+        { name: 'twoFactorEnabledAt', sql: 'ALTER TABLE users ADD COLUMN twoFactorEnabledAt TIMESTAMP NULL' },
+        { name: 'emailVerified', sql: 'ALTER TABLE users ADD COLUMN emailVerified BOOLEAN DEFAULT FALSE' },
+        { name: 'emailVerifiedAt', sql: 'ALTER TABLE users ADD COLUMN emailVerifiedAt TIMESTAMP NULL' },
+        { name: 'status', sql: "ALTER TABLE users ADD COLUMN status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'" },
+        { name: 'country', sql: 'ALTER TABLE users ADD COLUMN country VARCHAR(100)' },
+        { name: 'profileImage', sql: 'ALTER TABLE users ADD COLUMN profileImage VARCHAR(500)' }
+      ];
+      
+      for (const column of columnsToAdd) {
+        try {
+          await pool.execute(column.sql);
+        } catch (err) {
+          if (!err.message.includes('Duplicate column name')) {
+            throw err;
+          }
+          // Column already exists, skip it
+        }
+      }
+      
       console.log('✅ Users table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
