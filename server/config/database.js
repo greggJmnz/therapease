@@ -790,6 +790,8 @@ const createTables = async () => {
         priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
         status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
         targetDate DATE,
+        progress INT DEFAULT 0,
+        category VARCHAR(100),
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (treatmentPlanId) REFERENCES treatment_plans(id) ON DELETE CASCADE,
@@ -861,6 +863,32 @@ const createTables = async () => {
         INDEX idx_timestamp (timestamp)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Add missing columns to main_objectives table if they don't exist
+    try {
+      const objectivesColumnsToAdd = [
+        { name: 'progress', sql: 'ALTER TABLE main_objectives ADD COLUMN progress INT DEFAULT 0' },
+        { name: 'category', sql: 'ALTER TABLE main_objectives ADD COLUMN category VARCHAR(100)' }
+      ];
+      
+      for (const column of objectivesColumnsToAdd) {
+        try {
+          await pool.execute(column.sql);
+        } catch (err) {
+          if (!err.message.includes('Duplicate column name')) {
+            throw err;
+          }
+          // Column already exists, skip it
+        }
+      }
+      
+      console.log('✅ Main objectives table columns updated successfully');
+    } catch (error) {
+      // Ignore error if columns already exist
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Main objectives columns may already exist');
+      }
+    }
 
     console.log('Database tables created successfully');
     
