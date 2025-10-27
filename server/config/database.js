@@ -25,7 +25,7 @@ const envFile = process.env.NODE_ENV === 'production'
   : joinPaths(__dirname, '../../.env');
 require('dotenv').config({ path: envFile });
 
-// Database configuration with Windows compatibility
+// Database configuration with Windows compatibility - Optimized for production
 const dbConfig = {
   host: getEnvVar('DB_HOST', '127.0.0.1'),
   user: getEnvVar('DB_USER', 'root'),
@@ -33,15 +33,21 @@ const dbConfig = {
   database: getEnvVar('DB_NAME', 'therapease'),
   port: parseInt(getEnvVar('DB_PORT', '3306')),
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: process.env.NODE_ENV === 'production' ? 20 : 10, // More connections in production
   queueLimit: 0,
-  acquireTimeout: 60000,
-  connectTimeout: 60000,
+  acquireTimeout: 30000, // Reduced from 60000 for faster failure detection
+  connectTimeout: 10000, // Reduced from 60000 for faster connection establishment
   // Windows-specific MySQL configuration
   charset: 'utf8mb4',
   timezone: 'Z',
   // Handle Windows path separators in connection strings
-  ssl: false
+  ssl: false,
+  // Performance optimizations
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+  // Pool settings for better throughput
+  maxIdle: 10,
+  idleTimeout: 300000 // 5 minutes
 };
 
 // Create connection pool

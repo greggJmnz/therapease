@@ -40,8 +40,19 @@ const treatmentPlanRoutes = require('./routes/treatmentPlanRoutes');
 const homeExerciseRoutes = require('./routes/homeExerciseRoutes');
 const progressReportRoutes = require('./routes/progressReportRoutes');
 
-// Compression Middleware (Enable gzip compression)
-app.use(compression());
+// Compression Middleware (Enable gzip compression with optimization)
+app.use(compression({
+  level: 6, // Compression level (1-9, 6 is good balance)
+  threshold: 1024, // Only compress if response is larger than 1KB
+  filter: (req, res) => {
+    // Don't compress if request has no-transform cache-control
+    if (req.headers['cache-control']?.includes('no-transform')) {
+      return false;
+    }
+    // Use compression filter for all other requests
+    return compression.filter(req, res);
+  }
+}));
 
 // Security Middleware
 app.use(helmet({
@@ -61,6 +72,27 @@ app.use(checkEnvironmentExposure);
 app.use(securityHeaders);
 app.use(customSecurityHeaders);
 app.use(addEncryptionHeaders);
+// Simple in-memory cache for frequently accessed data
+const cache = new Map();
+const CACHE_TTL = 30000; // 30 seconds default TTL
+
+// Cache middleware helper
+const getCached = (key) => {
+  const cached = cache.get(key);
+  if (cached && Date.now() < cached.expiry) {
+    return cached.data;
+  }
+  cache.delete(key);
+  return null;
+};
+
+const setCache = (key, data, ttl = CACHE_TTL) => {
+  cache.set(key, {
+    data,
+    expiry: Date.now() + ttl
+  });
+};
+
 // Parse CORS origins from environment variable or use defaults
 const getCorsOrigins = () => {
   if (process.env.NODE_ENV === 'production') {
@@ -368,6 +400,9 @@ app.use((err, req, res, next) => {
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
+
+// Make cache available to the app
+app.locals.cache = { get: getCached, set: setCache };
 
 // Create HTTP server for development (temporarily disable SSL)
 const http = require('http');
