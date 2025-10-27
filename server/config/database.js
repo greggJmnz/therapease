@@ -120,7 +120,8 @@ const createTables = async () => {
         { name: 'termsAccepted', sql: 'ALTER TABLE users ADD COLUMN termsAccepted BOOLEAN DEFAULT FALSE' },
         { name: 'hipaaAcknowledged', sql: 'ALTER TABLE users ADD COLUMN hipaaAcknowledged BOOLEAN DEFAULT FALSE' },
         { name: 'acceptedAt', sql: 'ALTER TABLE users ADD COLUMN acceptedAt TIMESTAMP NULL' },
-        { name: 'onboardingCompleted', sql: 'ALTER TABLE users ADD COLUMN onboardingCompleted BOOLEAN DEFAULT FALSE' }
+        { name: 'onboardingCompleted', sql: 'ALTER TABLE users ADD COLUMN onboardingCompleted BOOLEAN DEFAULT FALSE' },
+        { name: 'onboardingCompletedAt', sql: 'ALTER TABLE users ADD COLUMN onboardingCompletedAt TIMESTAMP NULL' }
       ];
       
       for (const column of columnsToAdd) {
