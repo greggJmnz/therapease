@@ -34,16 +34,9 @@ class WebSocketService {
       // Development environment
       wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
     } else {
-      // Production environment - Smart port detection
+      // Production environment - use Nginx proxy
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      
-      // Check if we're on therapease.site domain and use port 5000 for emergency server
-      if (window.location.hostname.includes('therapease.site')) {
-        wsUrl = `${protocol}//${window.location.hostname}:5000/ws?token=${token}`;
-      } else {
-        // For other production domains, try standard ports first
-        wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
-      }
+      wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
     }
     
     // Set connection timeout to prevent long waits
