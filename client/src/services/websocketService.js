@@ -34,9 +34,11 @@ class WebSocketService {
       // Development environment
       wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
     } else {
-      // Production environment - use Nginx proxy
+      // Production environment - connect to API subdomain
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
+      // Use api subdomain for WebSocket connection
+      const hostname = window.location.hostname.replace('therapease.site', 'api.therapease.site');
+      wsUrl = `${protocol}//${hostname}/ws?token=${token}`;
     }
     
     // Set connection timeout to prevent long waits
