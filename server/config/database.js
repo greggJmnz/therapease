@@ -19,7 +19,11 @@ const {
 } = require('../utils/windowsCompatibility');
 
 // Load environment variables with Windows compatibility
-require('dotenv').config({ path: joinPaths(__dirname, '../../.env') });
+// Use .env.production in production, .env in development
+const envFile = process.env.NODE_ENV === 'production' 
+  ? joinPaths(__dirname, '../.env.production')
+  : joinPaths(__dirname, '../../.env');
+require('dotenv').config({ path: envFile });
 
 // Database configuration with Windows compatibility
 const dbConfig = {
