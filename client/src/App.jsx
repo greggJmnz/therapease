@@ -4,8 +4,8 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
 
 // Context providers
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { SystemSettingsProvider } from './context/SystemSettingsContext';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { SystemSettingsProvider } from './context/SystemSettingsContext.jsx';
 
 // Layouts
 import AdminLayout from './layouts/AdminLayout';

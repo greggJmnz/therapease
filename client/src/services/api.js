@@ -3,9 +3,9 @@ import axios from 'axios';
 // Create axios instance with base configuration
 // Use environment variable if available, otherwise fallback to relative URL
 const getApiBaseUrl = () => {
-  // Check if REACT_APP_API_URL is set (production)
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
+  // Check if VITE_API_URL is set (production)
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
   }
   // Fallback to relative URL for development
   return '/api';
