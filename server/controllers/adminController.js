@@ -1167,7 +1167,7 @@ const getNotifications = async (req, res) => {
         u.lastName
       FROM notifications n
       LEFT JOIN users u ON n.userId = u.id
-      WHERE n.userId = ?
+      WHERE n.userId = ? AND n.type != 'therapist_assignment'
       ORDER BY n.createdAt DESC
     `;
 
@@ -1177,20 +1177,18 @@ const getNotifications = async (req, res) => {
     // Format notification data
     const formattedNotifications = notifications.map(notification => {
       const createdAt = new Date(notification.createdAt);
-      // Display UTC time directly without timezone conversion
+      // Display local server time (not UTC)
       const date = createdAt.toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric',
         month: 'short',
-        day: 'numeric',
-        timeZone: 'UTC'
+        day: 'numeric'
       });
       const time = createdAt.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: true,
-        timeZone: 'UTC'
-      }).replace(/\s*GMT.*$/, ''); // Remove timezone information
+        hour12: true
+      });
       
       return {
         id: notification.id,
@@ -2112,9 +2110,9 @@ const assignTherapistToPatient = async (req, res) => {
         { patientId: patient.id, therapistId: parseInt(therapistId), priority: 'high' }
       );
 
-      // Notify patient
+      // Notify patient (use patient.userId, not patientId)
       await notificationController.createNotification(
-        parseInt(patientId),
+        patient.userId,
         'Therapist Assigned',
         `You have been assigned to therapist: ${therapist.therapistName}`,
         'therapist_assignment',
