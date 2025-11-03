@@ -35,7 +35,6 @@ const dbConfig = {
   waitForConnections: true,
   connectionLimit: process.env.NODE_ENV === 'production' ? 20 : 10, // More connections in production
   queueLimit: 0,
-  acquireTimeout: 30000, // Reduced from 60000 for faster failure detection
   connectTimeout: 10000, // Reduced from 60000 for faster connection establishment
   // Windows-specific MySQL configuration
   charset: 'utf8mb4',
