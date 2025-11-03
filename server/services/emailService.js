@@ -1,9 +1,12 @@
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const axios = require('axios');
 
 class EmailService {
   constructor() {
     this.transporter = null;
+    this.useSendGridAPI = false;
+    this.sendGridAPIKey = null;
     this.initializeTransporter();
   }
 
@@ -21,6 +24,19 @@ class EmailService {
       let smtpConfig;
       
       if (process.env.EMAIL_HOST && process.env.EMAIL_PORT) {
+        // Check if we should use SendGrid API instead of SMTP (when SMTP is blocked)
+        // Use SendGrid API when EMAIL_USE_API=true or when using SendGrid with apikey user
+        // This bypasses SMTP which is often blocked on cloud providers
+        if (process.env.EMAIL_USE_API === 'true' || 
+            (process.env.EMAIL_HOST === 'smtp.sendgrid.net' && process.env.EMAIL_USER === 'apikey')) {
+          // Use SendGrid API instead of SMTP (works when SMTP ports are blocked)
+          this.useSendGridAPI = true;
+          this.sendGridAPIKey = process.env.EMAIL_PASSWORD;
+          console.log(`📧 Using SendGrid API (HTTP) - SMTP ports are blocked, using API instead`);
+          console.log(`   This uses HTTPS (port 443) which is not blocked by firewalls`);
+          return; // Don't create SMTP transporter
+        }
+        
         // Custom SMTP configuration (SendGrid, AWS SES, etc.)
         console.log(`📧 Using custom SMTP: ${process.env.EMAIL_HOST}:${process.env.EMAIL_PORT}`);
         smtpConfig = {
@@ -92,8 +108,72 @@ class EmailService {
     }
   }
 
+  // Send email via SendGrid API (when SMTP is blocked)
+  async sendViaSendGridAPI(email, subject, html, text, fromEmail = null) {
+    try {
+      if (!this.sendGridAPIKey) {
+        throw new Error('SendGrid API key not configured');
+      }
+
+      const response = await axios.post(
+        'https://api.sendgrid.com/v3/mail/send',
+        {
+          personalizations: [{
+            to: [{ email: email }],
+            subject: subject
+          }],
+          from: {
+            email: fromEmail || process.env.EMAIL_FROM || 'noreply@therapease.com',
+            name: 'TherapEase Support'
+          },
+          content: [
+            {
+              type: 'text/plain',
+              value: text
+            },
+            {
+              type: 'text/html',
+              value: html
+            }
+          ]
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.sendGridAPIKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000 // 10 second timeout
+        }
+      );
+
+      return { success: true, messageId: response.headers['x-message-id'] || 'sent' };
+    } catch (error) {
+      if (error.response) {
+        throw new Error(`SendGrid API error: ${error.response.data?.errors?.[0]?.message || error.response.statusText}`);
+      }
+      throw error;
+    }
+  }
+
   async sendPasswordResetEmail(email, resetToken, userFirstName = 'User') {
     try {
+      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+      const html = this.getPasswordResetEmailTemplate(userFirstName, resetLink);
+      const text = this.getPasswordResetEmailText(userFirstName, resetLink);
+      
+      // Use SendGrid API if configured (when SMTP is blocked)
+      if (this.useSendGridAPI) {
+        const result = await this.sendViaSendGridAPI(
+          email,
+          'Password Reset Request - TherapEase',
+          html,
+          text,
+          process.env.EMAIL_FROM || 'noreply@therapease.com'
+        );
+        console.log('✅ Password reset email sent via SendGrid API:', result.messageId);
+        return result;
+      }
+
       // Check if email service is enabled
       if (!this.transporter) {
         console.log('⚠️ Email service is disabled. Cannot send password reset email.');
@@ -103,8 +183,6 @@ class EmailService {
         };
       }
 
-      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
-      
       const mailOptions = {
         from: {
           name: 'TherapEase Support',
@@ -112,8 +190,8 @@ class EmailService {
         },
         to: email,
         subject: 'Password Reset Request - TherapEase',
-        html: this.getPasswordResetEmailTemplate(userFirstName, resetLink),
-        text: this.getPasswordResetEmailText(userFirstName, resetLink)
+        html: html,
+        text: text
       };
 
       // Add timeout to prevent long blocking - 5 seconds max
