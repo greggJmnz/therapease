@@ -1,12 +1,21 @@
 // Push Notification Service for TherapEase
 // Handles browser push notifications, service worker registration, and notification management
 
+// Get API base URL (same logic as api.js)
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  return '/api';
+};
+
 class PushNotificationService {
   constructor() {
     this.registration = null;
     this.subscription = null;
     this.isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
     this.permission = Notification.permission;
+    this.baseURL = getApiBaseUrl();
   }
 
   // Initialize push notifications
@@ -110,7 +119,7 @@ class PushNotificationService {
   // Send subscription to server
   async sendSubscriptionToServer(subscription) {
     try {
-      const response = await fetch('/api/notifications/subscribe', {
+      const response = await fetch(`${this.baseURL}/notifications/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -137,7 +146,7 @@ class PushNotificationService {
   // Send unsubscription to server
   async sendUnsubscriptionToServer() {
     try {
-      await fetch('/api/notifications/unsubscribe', {
+      await fetch(`${this.baseURL}/notifications/unsubscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

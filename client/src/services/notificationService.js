@@ -38,16 +38,28 @@ class NotificationService {
         ...(isRead !== undefined && { isRead: isRead.toString() })
       });
 
-      const response = await fetch(`${this.baseURL}/notifications?${params}`, {
+      const url = `${this.baseURL}/notifications?${params}`;
+      const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders()
       });
+
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type');
+      const responseText = await response.text();
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+          console.error('❌ Server returned HTML instead of JSON for notifications');
+          throw new Error(`API endpoint not found. Check VITE_API_URL configuration. URL: ${url}`);
+        }
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = JSON.parse(responseText);
       return data;
     } catch (error) {
       console.error('Error fetching notifications:', error);
