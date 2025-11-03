@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
@@ -22,7 +22,7 @@ const ResetPassword = () => {
     confirmPassword: ''
   });
 
-  const verifyToken = useCallback(async (tokenToVerify) => {
+  const verifyToken = async (tokenToVerify) => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
@@ -53,7 +53,7 @@ const ResetPassword = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     const tokenFromUrl = searchParams.get('token');
@@ -61,7 +61,8 @@ const ResetPassword = () => {
       setToken(tokenFromUrl);
       verifyToken(tokenFromUrl);
     }
-  }, [searchParams, verifyToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
