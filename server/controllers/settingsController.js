@@ -143,7 +143,6 @@ const getSettings = async (req, res) => {
       const therapistQuery = `
         SELECT 
           ts.notifications,
-          ts.workingHours,
           ts.updatedAt as settingsUpdatedAt
         FROM therapist_settings ts
         WHERE ts.userId = ?
@@ -156,10 +155,6 @@ const getSettings = async (req, res) => {
             (typeof therapistSettings.notifications === 'string' ? 
               JSON.parse(therapistSettings.notifications) : 
               therapistSettings.notifications) : null,
-          workingHours: therapistSettings.workingHours ? 
-            (typeof therapistSettings.workingHours === 'string' ? 
-              JSON.parse(therapistSettings.workingHours) : 
-              therapistSettings.workingHours) : null,
           updatedAt: therapistSettings.settingsUpdatedAt
         };
       }
@@ -314,7 +309,6 @@ const getSettingsData = async (userId, userRole) => {
       const therapistQuery = `
         SELECT 
           ts.notifications,
-          ts.workingHours,
           ts.updatedAt as settingsUpdatedAt
         FROM therapist_settings ts
         WHERE ts.userId = ?
@@ -327,10 +321,6 @@ const getSettingsData = async (userId, userRole) => {
             (typeof therapistSettings.notifications === 'string' ? 
               JSON.parse(therapistSettings.notifications) : 
               therapistSettings.notifications) : null,
-          workingHours: therapistSettings.workingHours ? 
-            (typeof therapistSettings.workingHours === 'string' ? 
-              JSON.parse(therapistSettings.workingHours) : 
-              therapistSettings.workingHours) : null,
           updatedAt: therapistSettings.settingsUpdatedAt
         };
       }
