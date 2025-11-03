@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
@@ -22,15 +22,7 @@ const ResetPassword = () => {
     confirmPassword: ''
   });
 
-  useEffect(() => {
-    const tokenFromUrl = searchParams.get('token');
-    if (tokenFromUrl) {
-      setToken(tokenFromUrl);
-      verifyToken(tokenFromUrl);
-    }
-  }, [searchParams]);
-
-  const verifyToken = async (tokenToVerify) => {
+  const verifyToken = useCallback(async (tokenToVerify) => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
@@ -61,7 +53,15 @@ const ResetPassword = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const tokenFromUrl = searchParams.get('token');
+    if (tokenFromUrl) {
+      setToken(tokenFromUrl);
+      verifyToken(tokenFromUrl);
+    }
+  }, [searchParams, verifyToken]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
