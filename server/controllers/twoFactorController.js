@@ -63,19 +63,29 @@ const enable2FA = async (req, res) => {
         [userId, code, expiresAt]
       );
 
-      // Send setup verification email
-      const emailResult = await emailService.send2FASetupCodeEmail(
+      await connection.commit();
+
+      // Send setup verification email (non-blocking - fire and forget)
+      // Don't wait for email to send to avoid API timeout
+      emailService.send2FASetupCodeEmail(
         user.email,
         code,
         user.firstName || 'User'
-      );
+      ).then(emailResult => {
+        if (emailResult.success) {
+          console.log(`✅ 2FA setup code email sent to ${user.email}`);
+        } else {
+          console.warn(`⚠️ Failed to send 2FA setup code email to ${user.email}: ${emailResult.error}`);
+          console.warn(`   Code was saved to database: ${code}`);
+          console.warn(`   User can still verify with this code for 10 minutes`);
+        }
+      }).catch(error => {
+        console.error(`❌ Error sending 2FA setup code email to ${user.email}:`, error.message);
+        console.error(`   Code was saved to database: ${code}`);
+        console.error(`   User can still verify with this code for 10 minutes`);
+      });
 
-      if (!emailResult.success) {
-        throw new Error(`Failed to send email: ${emailResult.error}`);
-      }
-
-      await connection.commit();
-
+      // Return success immediately - email is sent in background
       res.json({
         success: true,
         message: '2FA setup code sent to your email. Please check your inbox and enter the code to complete setup.'
@@ -361,22 +371,32 @@ const send2FALoginCode = async (req, res) => {
         [user.id, code, expiresAt]
       );
 
-      // Send login verification email
-      const emailResult = await emailService.send2FACodeEmail(
+      await connection.commit();
+
+      // Send login verification email (non-blocking - fire and forget)
+      // Don't wait for email to send to avoid API timeout
+      emailService.send2FACodeEmail(
         user.email,
         code,
         user.firstName || 'User'
-      );
+      ).then(emailResult => {
+        if (emailResult.success) {
+          console.log(`✅ 2FA code email sent to ${user.email}`);
+        } else {
+          console.warn(`⚠️ Failed to send 2FA code email to ${user.email}: ${emailResult.error}`);
+          console.warn(`   Code was saved to database: ${code}`);
+          console.warn(`   User can still verify with this code for 10 minutes`);
+        }
+      }).catch(error => {
+        console.error(`❌ Error sending 2FA code email to ${user.email}:`, error.message);
+        console.error(`   Code was saved to database: ${code}`);
+        console.error(`   User can still verify with this code for 10 minutes`);
+      });
 
-      if (!emailResult.success) {
-        throw new Error(`Failed to send email: ${emailResult.error}`);
-      }
-
-      await connection.commit();
-
+      // Return success immediately - email is sent in background
       res.json({
         success: true,
-        message: '2FA verification code sent to your email'
+        message: '2FA verification code sent to your email. Please check your inbox.'
       });
 
     } catch (error) {
