@@ -5,9 +5,12 @@ import axios from 'axios';
 const getApiBaseUrl = () => {
   // Check if VITE_API_URL is set (production)
   if (import.meta.env.VITE_API_URL) {
+    console.log('✅ Using VITE_API_URL:', import.meta.env.VITE_API_URL);
     return import.meta.env.VITE_API_URL;
   }
   // Fallback to relative URL for development
+  console.warn('⚠️ VITE_API_URL not set! Falling back to relative /api. This will fail in production.');
+  console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
   return '/api';
 };
 
