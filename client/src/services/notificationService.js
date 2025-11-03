@@ -5,6 +5,25 @@
 import { api } from './api';
 
 class NotificationService {
+  // Get user role from localStorage
+  getUserRole() {
+    return localStorage.getItem('userRole') || '';
+  }
+
+  // Get the correct notifications endpoint based on user role
+  getNotificationsEndpoint() {
+    const role = this.getUserRole();
+    if (role === 'admin') {
+      return '/admin/notifications';
+    } else if (role === 'patient') {
+      return '/patient/notifications';
+    } else if (role === 'therapist') {
+      return '/therapist/notifications';
+    }
+    // Fallback to general endpoint if role is unknown
+    return '/notifications';
+  }
+
   // Fetch notifications for current user
   async getNotifications(options = {}) {
     try {
@@ -17,7 +36,9 @@ class NotificationService {
         ...(isRead !== undefined && { isRead: isRead.toString() })
       };
 
-      const response = await api.get('/notifications', { params });
+      const endpoint = this.getNotificationsEndpoint();
+      console.log(`📬 Fetching notifications from: ${endpoint} (role: ${this.getUserRole()})`);
+      const response = await api.get(endpoint, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -33,10 +54,27 @@ class NotificationService {
     }
   }
 
+  // Get the correct base endpoint for notification actions based on user role
+  getNotificationsBaseEndpoint() {
+    const role = this.getUserRole();
+    if (role === 'admin') {
+      return '/admin/notifications';
+    } else if (role === 'patient') {
+      return '/patient/notifications';
+    } else if (role === 'therapist') {
+      return '/therapist/notifications';
+    }
+    // Fallback to general endpoint if role is unknown
+    return '/notifications';
+  }
+
   // Mark notification as read
   async markAsRead(notificationId) {
     try {
-      const response = await api.patch(`/notifications/${notificationId}/read`);
+      const baseEndpoint = this.getNotificationsBaseEndpoint();
+      // For admin, use PATCH; for others, use PUT (as per backend routes)
+      const method = this.getUserRole() === 'admin' ? 'patch' : 'put';
+      const response = await api[method](`${baseEndpoint}/${notificationId}/read`);
       return response.data;
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -47,7 +85,10 @@ class NotificationService {
   // Mark all notifications as read
   async markAllAsRead() {
     try {
-      const response = await api.patch('/notifications/read-all');
+      const baseEndpoint = this.getNotificationsBaseEndpoint();
+      // For admin, use PATCH; for others, use PUT (as per backend routes)
+      const method = this.getUserRole() === 'admin' ? 'patch' : 'put';
+      const response = await api[method](`${baseEndpoint}/read-all`);
       return response.data;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
@@ -58,7 +99,8 @@ class NotificationService {
   // Delete notification
   async deleteNotification(notificationId) {
     try {
-      const response = await api.delete(`/notifications/${notificationId}`);
+      const baseEndpoint = this.getNotificationsBaseEndpoint();
+      const response = await api.delete(`${baseEndpoint}/${notificationId}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting notification:', error);
@@ -69,7 +111,10 @@ class NotificationService {
   // Delete all notifications
   async deleteAllNotifications() {
     try {
-      const response = await api.delete('/notifications/delete-all');
+      const baseEndpoint = this.getNotificationsBaseEndpoint();
+      // Use delete-all endpoint if available, otherwise fallback
+      const endpoint = `${baseEndpoint}/delete-all`;
+      const response = await api.delete(endpoint);
       return response.data;
     } catch (error) {
       console.error('Error deleting all notifications:', error);
@@ -77,11 +122,26 @@ class NotificationService {
     }
   }
 
+  // Get the correct notification stats endpoint based on user role
+  getNotificationStatsEndpoint() {
+    const role = this.getUserRole();
+    if (role === 'admin') {
+      return '/admin/notifications/stats';
+    } else if (role === 'patient') {
+      return '/patient/notifications/stats';
+    } else if (role === 'therapist') {
+      return '/therapist/notifications/stats';
+    }
+    // Fallback to general endpoint if role is unknown
+    return '/notifications/stats';
+  }
+
   // Get notification statistics
   async getNotificationStats() {
     try {
-      console.log('📊 Fetching notification stats...');
-      const response = await api.get('/notifications/stats', { params: { _t: Date.now() } });
+      const endpoint = this.getNotificationStatsEndpoint();
+      console.log(`📊 Fetching notification stats from: ${endpoint} (role: ${this.getUserRole()})`);
+      const response = await api.get(endpoint, { params: { _t: Date.now() } });
       return response.data;
     } catch (error) {
       console.error('Error fetching notification stats:', error);

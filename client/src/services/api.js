@@ -177,7 +177,7 @@ export const therapistAPI = {
   getAIInsights: () => api.get(`/therapist/ai-insights?_t=${Date.now()}`),
   getProgressTracking: (therapistId) => api.get(`/therapist/progress-tracking?therapistId=${therapistId}&_t=${Date.now()}`),
   getPatientProgressSummary: (patientId) => api.get(`/therapist/progress-tracking/patient/${patientId}?_t=${Date.now()}`),
-  getNotifications: () => api.get(`/notifications?_t=${Date.now()}`),
+  getNotifications: () => api.get(`/therapist/notifications?_t=${Date.now()}`),
   getSettings: (therapistId) => api.get(`/therapist/settings?therapistId=${therapistId}&_t=${Date.now()}`),
   
   // Profile management
@@ -265,7 +265,7 @@ export const patientAPI = {
   editNoteComment: (noteId, commentId, comment) => api.put(`/patient/daily-notes/${noteId}/comments/${commentId}`, { comment }),
   deleteNoteComment: (noteId, commentId) => api.delete(`/patient/daily-notes/${noteId}/comments/${commentId}`),
   getSessions: () => api.get(`/patient/sessions?_t=${Date.now()}`),
-  getNotifications: () => api.get(`/notifications?_t=${Date.now()}`),
+  getNotifications: () => api.get(`/patient/notifications?_t=${Date.now()}`),
   getSettings: () => api.get(`/patient/settings?_t=${Date.now()}`),
   getHomeExercises: (patientId) => api.get(`/home-exercises/patient/exercises?patientId=${patientId}&_t=${Date.now()}`),
   getHomeExercisesNew: (patientId) => api.get(`/home-exercises/patient/exercises?patientId=${patientId}&_t=${Date.now()}`),
