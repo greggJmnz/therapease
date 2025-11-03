@@ -514,11 +514,29 @@ const createTables = async () => {
       console.log('Error checking/adding createdBy column:', error.message);
     }
 
-    // Note: progress_tracking table removed - using treatment plan progress tracking instead
-    // Progress tracking is now handled through:
-    // - treatment_plans table (overall progress)
-    // - main_objectives table (objective progress)
-    // - specific_objectives table (task completion)
+    // Progress Tracking table (for outcome measurement and goal tracking)
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS progress_tracking (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patientId INT NOT NULL,
+        assessmentId INT NULL,
+        area VARCHAR(255) NOT NULL,
+        baselineScore DECIMAL(5,2) NULL,
+        currentScore DECIMAL(5,2) NULL,
+        targetScore DECIMAL(5,2) NULL,
+        progressNotes TEXT NULL,
+        measurementDate DATE NOT NULL,
+        nextReviewDate DATE NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
+        FOREIGN KEY (assessmentId) REFERENCES assessments(id) ON DELETE SET NULL,
+        INDEX idx_patient (patientId),
+        INDEX idx_area (area),
+        INDEX idx_measurement_date (measurementDate),
+        INDEX idx_next_review (nextReviewDate)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
 
     // Sessions table
     await pool.execute(`
