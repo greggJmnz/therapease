@@ -5,18 +5,62 @@
  * Tests SMTP connectivity and email sending capabilities
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '../../.env.production') });
+const path = require('path');
+const fs = require('fs');
+
+// Try multiple locations for .env.production file
+const possiblePaths = [
+  path.join(__dirname, '../.env.production'),  // server/.env.production (most common)
+  path.join(__dirname, '../../.env.production'),  // root/.env.production
+  path.join(process.cwd(), 'server/.env.production'),  // relative to current working directory
+  path.join(process.cwd(), '.env.production')  // root if running from root
+];
+
+let envFile = null;
+for (const envPath of possiblePaths) {
+  if (fs.existsSync(envPath)) {
+    envFile = envPath;
+    console.log(`📁 Found .env.production at: ${envPath}\n`);
+    break;
+  }
+}
+
+if (envFile) {
+  require('dotenv').config({ path: envFile });
+} else {
+  console.log('⚠️  .env.production not found in common locations. Checking current directory...\n');
+  // Try to load from current working directory or use default dotenv behavior
+  require('dotenv').config();
+}
 
 const nodemailer = require('nodemailer');
 
 async function testSMTPConnection() {
   console.log('🔍 Testing Email Service Configuration...\n');
 
+  // Debug: Show what we loaded
+  if (envFile) {
+    console.log(`📄 Loading from: ${envFile}`);
+  } else {
+    console.log('⚠️  No .env.production file found - using default dotenv behavior');
+  }
+  console.log('');
+
   // Check environment variables
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
     console.error('❌ Missing email credentials:');
-    console.error('   EMAIL_USER:', process.env.EMAIL_USER ? '✓ Set' : '✗ Missing');
-    console.error('   EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? '✓ Set' : '✗ Missing');
+    console.error('   EMAIL_USER:', process.env.EMAIL_USER ? `✓ Set (${process.env.EMAIL_USER})` : '✗ Missing');
+    console.error('   EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? '✓ Set (hidden)' : '✗ Missing');
+    console.error('');
+    console.error('💡 Tips:');
+    console.error('   1. Make sure .env.production exists at server/.env.production');
+    console.error('   2. Check that EMAIL_USER and EMAIL_PASSWORD are set correctly');
+    console.error('   3. No spaces around the = sign: EMAIL_USER=value (not EMAIL_USER = value)');
+    console.error('   4. Remove trailing colons: EMAIL_FROM=noreply@therapease.com (not noreply@therapease.com:)');
+    
+    if (envFile) {
+      console.error(`\n📄 Check the file: ${envFile}`);
+    }
     return;
   }
 
