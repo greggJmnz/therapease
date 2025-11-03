@@ -817,18 +817,23 @@ const resetPassword = async (req, res) => {
 // Verify reset token (for frontend validation)
 const verifyResetToken = async (req, res) => {
   try {
-    const { token } = req.params;
+    // Express automatically decodes URL-encoded parameters
+    let { token } = req.params;
 
     if (!token) {
+      console.error('❌ Verify reset token: No token provided in request');
       return res.status(400).json({
         success: false,
         error: 'Reset token is required'
       });
     }
 
+    // Log token info (first 20 chars for debugging, not full token for security)
+    console.log(`🔍 Verify reset token: Received token (first 20 chars): ${token.substring(0, 20)}...`);
+
     // Check if token is valid and not expired
     const resetTokenRecord = await getRow(
-      `SELECT prt.id, prt.userId, prt.expiresAt, u.email, u.firstName, u.lastName 
+      `SELECT prt.id, prt.userId, prt.expiresAt, prt.used, u.email, u.firstName, u.lastName 
        FROM password_reset_tokens prt 
        JOIN users u ON prt.userId = u.id 
        WHERE prt.token = ? AND prt.used = FALSE AND prt.expiresAt > NOW()`,
@@ -836,12 +841,31 @@ const verifyResetToken = async (req, res) => {
     );
 
     if (!resetTokenRecord) {
+      // Check if token exists but is used or expired
+      const expiredTokenRecord = await getRow(
+        `SELECT prt.id, prt.userId, prt.expiresAt, prt.used 
+         FROM password_reset_tokens prt 
+         WHERE prt.token = ?`,
+        [token]
+      );
+      
+      if (expiredTokenRecord) {
+        if (expiredTokenRecord.used) {
+          console.log(`⚠️ Verify reset token: Token has already been used`);
+        } else {
+          console.log(`⚠️ Verify reset token: Token has expired (expiresAt: ${expiredTokenRecord.expiresAt})`);
+        }
+      } else {
+        console.log(`⚠️ Verify reset token: Token not found in database`);
+      }
+      
       return res.status(400).json({
         success: false,
         error: 'Invalid or expired reset token'
       });
     }
 
+    console.log(`✅ Verify reset token: Token is valid for user ${resetTokenRecord.email}`);
     res.json({
       success: true,
       message: 'Reset token is valid',

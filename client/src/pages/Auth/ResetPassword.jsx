@@ -26,11 +26,19 @@ const ResetPassword = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const url = `${apiBaseUrl}/auth/verify-reset-token/${tokenToVerify}`;
+      // URL encode the token to handle special characters safely
+      const encodedToken = encodeURIComponent(tokenToVerify);
+      const url = `${apiBaseUrl}/auth/verify-reset-token/${encodedToken}`;
       
       console.log('🔍 Verifying token at URL:', url);
+      console.log('🔍 Original token:', tokenToVerify.substring(0, 20) + '...');
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       
       // Check if response is JSON (not HTML error page) - do this before consuming body
       const contentType = response.headers.get('content-type');
