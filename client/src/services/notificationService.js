@@ -1,9 +1,17 @@
 // Notification Service for TherapEase
 // Handles real notification data fetching and management
 
+// Get API base URL (same logic as api.js)
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  return '/api';
+};
+
 class NotificationService {
   constructor() {
-    this.baseURL = '/api';
+    this.baseURL = getApiBaseUrl();
   }
 
   // Get auth token from localStorage
@@ -130,16 +138,30 @@ class NotificationService {
   // Get notification statistics
   async getNotificationStats() {
     try {
-      const response = await fetch(`${this.baseURL}/notifications/stats`, {
+      const url = `${this.baseURL}/notifications/stats`;
+      console.log('📊 Fetching notification stats from:', url);
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders()
       });
+
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type');
+      const responseText = await response.text();
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+          console.error('❌ Server returned HTML instead of JSON for notification stats');
+          throw new Error(`API endpoint not found. Check VITE_API_URL configuration. URL: ${url}`);
+        }
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = JSON.parse(responseText);
       return data;
     } catch (error) {
       console.error('Error fetching notification stats:', error);
