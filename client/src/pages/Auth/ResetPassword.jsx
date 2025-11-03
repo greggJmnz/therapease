@@ -26,6 +26,20 @@ const ResetPassword = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
+      
+      // Debug: Log API configuration
+      console.log('🔧 API Configuration:', {
+        VITE_API_URL: import.meta.env.VITE_API_URL || 'NOT SET (using fallback /api)',
+        apiBaseUrl: apiBaseUrl,
+        windowLocation: window.location.href
+      });
+      
+      // Warn if using relative URL in production (Vercel)
+      if (!import.meta.env.VITE_API_URL && window.location.hostname.includes('therapease.site')) {
+        console.error('⚠️ WARNING: VITE_API_URL is not set! Using relative URL /api which will fail.');
+        console.error('💡 Fix: Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
+      }
+      
       // URL encode the token to handle special characters safely
       const encodedToken = encodeURIComponent(tokenToVerify);
       const url = `${apiBaseUrl}/auth/verify-reset-token/${encodedToken}`;
