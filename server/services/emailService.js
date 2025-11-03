@@ -188,7 +188,9 @@ class EmailService {
 
   async sendPasswordResetEmail(email, resetToken, userFirstName = 'User') {
     try {
-      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+      // URL encode the token to ensure it's safely handled in the URL
+      const encodedToken = encodeURIComponent(resetToken);
+      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${encodedToken}`;
       const html = this.getPasswordResetEmailTemplate(userFirstName, resetLink);
       const text = this.getPasswordResetEmailText(userFirstName, resetLink);
       

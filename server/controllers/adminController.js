@@ -1785,7 +1785,9 @@ const sendPasswordResetLink = async (req, res) => {
       });
 
       // Return success immediately - email is sent in background
-      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+      // URL encode the token to ensure it's safely handled in the URL
+      const encodedToken = encodeURIComponent(resetToken);
+      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${encodedToken}`;
       res.json({
         success: true,
         message: 'Password reset token created successfully. Email will be sent if email service is configured.',

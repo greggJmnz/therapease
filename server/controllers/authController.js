@@ -830,10 +830,12 @@ const verifyResetToken = async (req, res) => {
 
     // Log token info (first 20 chars for debugging, not full token for security)
     console.log(`🔍 Verify reset token: Received token (first 20 chars): ${token.substring(0, 20)}...`);
+    console.log(`🔍 Verify reset token: Token length: ${token.length} characters`);
+    console.log(`🔍 Verify reset token: Token format check (hex only): ${/^[0-9a-f]+$/i.test(token)}`);
 
     // Check if token is valid and not expired
     const resetTokenRecord = await getRow(
-      `SELECT prt.id, prt.userId, prt.expiresAt, prt.used, u.email, u.firstName, u.lastName 
+      `SELECT prt.id, prt.userId, prt.expiresAt, prt.used, prt.token as storedToken, u.email, u.firstName, u.lastName 
        FROM password_reset_tokens prt 
        JOIN users u ON prt.userId = u.id 
        WHERE prt.token = ? AND prt.used = FALSE AND prt.expiresAt > NOW()`,
@@ -841,6 +843,23 @@ const verifyResetToken = async (req, res) => {
     );
 
     if (!resetTokenRecord) {
+      // If not found, do a case-insensitive comparison to check for case mismatch
+      const caseInsensitiveRecord = await getRow(
+        `SELECT prt.id, prt.userId, prt.expiresAt, prt.used, prt.token as storedToken 
+         FROM password_reset_tokens prt 
+         WHERE LOWER(prt.token) = LOWER(?) AND prt.used = FALSE AND prt.expiresAt > NOW()`,
+        [token]
+      );
+      
+      if (caseInsensitiveRecord) {
+        console.error(`⚠️ Verify reset token: Token found but case mismatch!`);
+        console.error(`   Received: ${token.substring(0, 20)}... (length: ${token.length})`);
+        console.error(`   Stored:   ${caseInsensitiveRecord.storedToken.substring(0, 20)}... (length: ${caseInsensitiveRecord.storedToken.length})`);
+        return res.status(400).json({
+          success: false,
+          error: 'Token case mismatch - token may have been modified'
+        });
+      }
       // Check if token exists but is used or expired
       const expiredTokenRecord = await getRow(
         `SELECT prt.id, prt.userId, prt.expiresAt, prt.used 
