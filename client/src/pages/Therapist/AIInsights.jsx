@@ -2380,25 +2380,13 @@ The therapist retains full responsibility for all clinical decisions and patient
         therapyGoals: patient.therapyGoals || 'Not specified'
       };
 
-      // Call the AI API
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/ai/analyze-assessment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          patientData,
-          assessmentData
-        })
+      // Call the AI API using aiAPI (matching other API calls)
+      const response = await aiAPI.analyzeAssessment({
+        patientData,
+        assessmentData
       });
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      const result = response.data;
       
       if (result.success) {
         // Parse the AI response and convert to insights format
