@@ -133,7 +133,7 @@ class EmailService {
         throw new Error('SendGrid API key not configured');
       }
 
-      const fromAddress = fromEmail || process.env.EMAIL_FROM || 'noreply@therapease.com';
+      const fromAddress = fromEmail || process.env.EMAIL_FROM || 'therapease16@gmail.com';
       
       const response = await axios.post(
         'https://api.sendgrid.com/v3/mail/send',
@@ -174,7 +174,7 @@ class EmailService {
         // Provide helpful guidance for common SendGrid errors
         if (errorMessage.includes('verified Sender Identity') || errorMessage.includes('sender identity')) {
           throw new Error(
-            `SendGrid sender identity not verified: The email address "${fromEmail || process.env.EMAIL_FROM || 'noreply@therapease.com'}" needs to be verified in SendGrid. ` +
+            `SendGrid sender identity not verified: The email address "${fromEmail || process.env.EMAIL_FROM || 'therapease16@gmail.com'}" needs to be verified in SendGrid. ` +
             `Visit https://app.sendgrid.com/settings/sender_auth/senders/new to verify your sender identity. ` +
             `After verification, update EMAIL_FROM in .env.production to match the verified address.`
           );
@@ -199,7 +199,7 @@ class EmailService {
           'Password Reset Request - TherapEase',
           html,
           text,
-          process.env.EMAIL_FROM || 'noreply@therapease.com'
+          process.env.EMAIL_FROM || 'therapease16@gmail.com'
         );
         console.log('✅ Password reset email sent via SendGrid API:', result.messageId);
         return result;
@@ -217,7 +217,7 @@ class EmailService {
       const mailOptions = {
         from: {
           name: 'TherapEase Support',
-          address: process.env.EMAIL_USER || 'noreply@therapease.com'
+            address: process.env.EMAIL_USER || 'therapease16@gmail.com'
         },
         to: email,
         subject: 'Password Reset Request - TherapEase',
@@ -261,7 +261,7 @@ class EmailService {
           'Welcome to TherapEase!',
           html,
           text,
-          process.env.EMAIL_FROM || 'noreply@therapease.com'
+          process.env.EMAIL_FROM || 'therapease16@gmail.com'
         );
         console.log('✅ Welcome email sent via SendGrid API:', result.messageId);
         return result;
@@ -279,7 +279,7 @@ class EmailService {
       const mailOptions = {
         from: {
           name: 'TherapEase Team',
-          address: process.env.EMAIL_USER || 'noreply@therapease.com'
+            address: process.env.EMAIL_USER || 'therapease16@gmail.com'
         },
         to: email,
         subject: 'Welcome to TherapEase!',
