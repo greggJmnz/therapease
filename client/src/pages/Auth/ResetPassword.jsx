@@ -36,27 +36,49 @@ const ResetPassword = () => {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       });
       
-      // Check if response is JSON (not HTML error page) - do this before consuming body
-      const contentType = response.headers.get('content-type');
-      const isJSON = contentType && contentType.includes('application/json');
+      // Get the response text first (before parsing) to check if it's HTML
+      const responseText = await response.text();
       
-      // Check response status and content type
-      if (!response.ok || !isJSON) {
-        const text = await response.text();
-        console.error(`❌ HTTP Error ${response.status}:`, text.substring(0, 200));
-        
-        if (!isJSON) {
-          throw new Error(`Server returned HTML instead of JSON. This usually means the endpoint was not found. URL: ${url}`);
-        }
-        
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      // Check if response is HTML (error page) instead of JSON
+      if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+        console.error('❌ Server returned HTML instead of JSON:', responseText.substring(0, 500));
+        throw new Error(`Server returned HTML page. This usually means:
+1. The API endpoint was not found (404)
+2. VITE_API_URL is incorrect
+3. The backend is not running
+
+URL called: ${url}
+Expected URL format: https://api.therapease.site/api/auth/verify-reset-token/{token}
+
+Please check:
+- VITE_API_URL in Vercel environment variables should be: https://api.therapease.site/api
+- The backend server should be running on the droplet
+- The endpoint /api/auth/verify-reset-token/:token should be accessible`);
       }
       
-      const result = await response.json();
+      // Check response status
+      if (!response.ok) {
+        console.error(`❌ HTTP Error ${response.status}:`, responseText.substring(0, 200));
+        try {
+          const errorJson = JSON.parse(responseText);
+          throw new Error(errorJson.error || `Server error: ${response.status} ${response.statusText}`);
+        } catch (parseError) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+      }
+      
+      // Parse JSON response
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ Failed to parse JSON response:', responseText.substring(0, 200));
+        throw new Error('Server returned invalid JSON response');
+      }
 
       if (result.success) {
         setTokenValid(true);
