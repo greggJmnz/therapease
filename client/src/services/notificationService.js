@@ -7,21 +7,30 @@ import { api } from './api';
 class NotificationService {
   // Get user role from localStorage
   getUserRole() {
-    return localStorage.getItem('userRole') || '';
+    const role = localStorage.getItem('userRole') || '';
+    console.log(`🔍 getUserRole(): Found role: "${role}" in localStorage`);
+    return role;
   }
 
   // Get the correct notifications endpoint based on user role
   getNotificationsEndpoint() {
     const role = this.getUserRole();
+    let endpoint;
+    
     if (role === 'admin') {
-      return '/admin/notifications';
+      endpoint = '/admin/notifications';
     } else if (role === 'patient') {
-      return '/patient/notifications';
+      endpoint = '/patient/notifications';
     } else if (role === 'therapist') {
-      return '/therapist/notifications';
+      endpoint = '/therapist/notifications';
+    } else {
+      // Fallback to general endpoint if role is unknown
+      console.warn(`⚠️ Unknown role "${role}", using general /notifications endpoint`);
+      endpoint = '/notifications';
     }
-    // Fallback to general endpoint if role is unknown
-    return '/notifications';
+    
+    console.log(`🔍 getNotificationsEndpoint(): role="${role}" → endpoint="${endpoint}"`);
+    return endpoint;
   }
 
   // Fetch notifications for current user
@@ -37,17 +46,50 @@ class NotificationService {
       };
 
       const endpoint = this.getNotificationsEndpoint();
-      console.log(`📬 Fetching notifications from: ${endpoint} (role: ${this.getUserRole()})`);
+      const role = this.getUserRole();
+      
+      // Debug: Check API base URL
+      const baseURL = api.defaults.baseURL || 'NOT SET';
+      console.log(`📬 Fetching notifications:`, {
+        endpoint: endpoint,
+        role: role,
+        baseURL: baseURL,
+        fullURL: `${baseURL}${endpoint}`,
+        params: params
+      });
+      
       const response = await api.get(endpoint, { params });
+      console.log(`✅ Notifications fetched successfully from: ${endpoint}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('❌ Error fetching notifications:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response ? {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: typeof error.response.data === 'string' 
+            ? error.response.data.substring(0, 200) 
+            : error.response.data
+        } : 'No response',
+        config: error.config ? {
+          url: error.config.url,
+          baseURL: error.config.baseURL,
+          method: error.config.method
+        } : 'No config'
+      });
+      
       // Check if response is HTML (404 page) instead of JSON
       if (error.response && error.response.data) {
         const dataStr = typeof error.response.data === 'string' ? error.response.data : JSON.stringify(error.response.data);
         if (dataStr.trim().startsWith('<!DOCTYPE') || dataStr.trim().startsWith('<html')) {
+          const attemptedURL = error.config?.url || endpoint || '/notifications';
+          const fullURL = error.config?.baseURL ? `${error.config.baseURL}${attemptedURL}` : attemptedURL;
           console.error('❌ Server returned HTML instead of JSON for notifications');
-          throw new Error(`API endpoint not found. Check VITE_API_URL configuration. URL: ${error.config?.url || '/notifications'}`);
+          console.error(`   Attempted URL: ${fullURL}`);
+          console.error(`   User role: ${this.getUserRole()}`);
+          console.error(`   Expected endpoint based on role: ${this.getNotificationsEndpoint()}`);
+          throw new Error(`API endpoint not found (404). Tried: ${fullURL}. Check VITE_API_URL and role-specific endpoint configuration.`);
         }
       }
       throw error;
