@@ -139,8 +139,18 @@ app.use((req, res, next) => {
   return decryptResponseData(req, res, next);
 });
 
-// Health check endpoints
+// Health check endpoints (both /health and /api/health for compatibility)
 app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'TherapEase API is running',
+    database: dbType,
+    encryption: 'AES-256-GCM',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
     message: 'TherapEase API is running',
