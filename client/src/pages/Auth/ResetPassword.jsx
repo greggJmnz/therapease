@@ -111,11 +111,26 @@ Debugging steps:
         toast.success('Token verified successfully');
       } else {
         setTokenValid(false);
-        toast.error(result.error || 'Invalid or expired token');
+        const errorMsg = result.error || 'Invalid or expired token';
+        console.error('❌ Token verification failed:', errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error('Token verification error:', error);
-      toast.error('Failed to verify token');
+      
+      // Show the actual error message if available
+      const errorMsg = error.message || 'Failed to verify token';
+      console.error('Error message:', errorMsg);
+      
+      // If it's an HTML response error, show a more helpful message
+      if (errorMsg.includes('Server returned HTML')) {
+        toast.error('API endpoint not found. Please check server configuration.');
+      } else if (errorMsg.includes('VITE_API_URL')) {
+        toast.error('API URL not configured. Please contact administrator.');
+      } else {
+        toast.error(errorMsg);
+      }
+      
       setTokenValid(false);
     } finally {
       setLoading(false);
