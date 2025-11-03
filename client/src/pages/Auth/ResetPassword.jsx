@@ -26,14 +26,26 @@ const ResetPassword = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/auth/verify-reset-token/${tokenToVerify}`);
+      const url = `${apiBaseUrl}/auth/verify-reset-token/${tokenToVerify}`;
       
-      // Check if response is JSON (not HTML error page)
+      console.log('🔍 Verifying token at URL:', url);
+      
+      const response = await fetch(url);
+      
+      // Check if response is JSON (not HTML error page) - do this before consuming body
       const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      const isJSON = contentType && contentType.includes('application/json');
+      
+      // Check response status and content type
+      if (!response.ok || !isJSON) {
         const text = await response.text();
-        console.error('Non-JSON response:', text.substring(0, 200));
-        throw new Error('Server returned non-JSON response. Please check the API URL configuration.');
+        console.error(`❌ HTTP Error ${response.status}:`, text.substring(0, 200));
+        
+        if (!isJSON) {
+          throw new Error(`Server returned HTML instead of JSON. This usually means the endpoint was not found. URL: ${url}`);
+        }
+        
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
       }
       
       const result = await response.json();
