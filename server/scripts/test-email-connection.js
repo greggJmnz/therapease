@@ -70,50 +70,77 @@ async function testSMTPConnection() {
   console.log('   EMAIL_ENABLED:', process.env.EMAIL_ENABLED || 'not set');
   console.log('');
 
-  // Test different SMTP configurations
-  const configs = [
-    {
-      name: 'Gmail SMTP (Port 587 - TLS)',
+  // Test SMTP configurations based on what's configured
+  const configs = [];
+  
+  if (process.env.EMAIL_HOST && process.env.EMAIL_PORT) {
+    // Custom SMTP (SendGrid, AWS SES, etc.)
+    configs.push({
+      name: `Custom SMTP (${process.env.EMAIL_HOST}:${process.env.EMAIL_PORT})`,
       config: {
-        service: 'gmail',
+        host: process.env.EMAIL_HOST,
+        port: parseInt(process.env.EMAIL_PORT),
+        secure: process.env.EMAIL_SECURE === 'true' || process.env.EMAIL_PORT === '465',
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASSWORD
         },
-        connectionTimeout: 5000,
-        greetingTimeout: 5000
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000
       }
-    },
-    {
-      name: 'Gmail SMTP (Port 465 - SSL)',
-      config: {
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        },
-        connectionTimeout: 5000,
-        greetingTimeout: 5000
-      }
-    },
-    {
-      name: 'Gmail SMTP (Port 587 - STARTTLS)',
-      config: {
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        requireTLS: true,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        },
-        connectionTimeout: 5000,
-        greetingTimeout: 5000
-      }
+    });
+    
+    // Add TLS requirement if specified
+    if (process.env.EMAIL_REQUIRE_TLS === 'true' && !configs[0].config.secure) {
+      configs[0].config.requireTLS = true;
     }
-  ];
+  } else {
+    // Test Gmail configurations
+    configs.push(
+      {
+        name: 'Gmail SMTP (Port 587 - TLS)',
+        config: {
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
+          },
+          connectionTimeout: 5000,
+          greetingTimeout: 5000
+        }
+      },
+      {
+        name: 'Gmail SMTP (Port 465 - SSL)',
+        config: {
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
+          },
+          connectionTimeout: 5000,
+          greetingTimeout: 5000
+        }
+      },
+      {
+        name: 'Gmail SMTP (Port 587 - STARTTLS)',
+        config: {
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          requireTLS: true,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
+          },
+          connectionTimeout: 5000,
+          greetingTimeout: 5000
+        }
+      }
+    );
+  }
 
   for (const { name, config } of configs) {
     console.log(`\n🧪 Testing: ${name}`);

@@ -22,6 +22,7 @@ class EmailService {
       
       if (process.env.EMAIL_HOST && process.env.EMAIL_PORT) {
         // Custom SMTP configuration (SendGrid, AWS SES, etc.)
+        console.log(`📧 Using custom SMTP: ${process.env.EMAIL_HOST}:${process.env.EMAIL_PORT}`);
         smtpConfig = {
           host: process.env.EMAIL_HOST,
           port: parseInt(process.env.EMAIL_PORT),
@@ -30,9 +31,10 @@ class EmailService {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASSWORD
           },
-          connectionTimeout: 5000,
-          greetingTimeout: 5000,
-          socketTimeout: 5000
+          // Longer timeout for SendGrid/other services
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 10000
         };
         
         // Add TLS options for STARTTLS
@@ -41,6 +43,7 @@ class EmailService {
         }
       } else {
         // Default to Gmail SMTP service
+        console.log(`📧 Using Gmail SMTP service`);
         smtpConfig = {
           service: 'gmail',
           auth: {
