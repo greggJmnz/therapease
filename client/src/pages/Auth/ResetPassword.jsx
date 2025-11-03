@@ -33,6 +33,8 @@ const ResetPassword = () => {
       console.log('🔍 Verifying token at URL:', url);
       console.log('🔍 Original token:', tokenToVerify.substring(0, 20) + '...');
       
+      console.log('📡 Making API request to:', url);
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -40,35 +42,56 @@ const ResetPassword = () => {
         },
       });
       
+      console.log('📥 Response status:', response.status, response.statusText);
+      console.log('📥 Response Content-Type:', response.headers.get('content-type'));
+      
       // Get the response text first (before parsing) to check if it's HTML
       const responseText = await response.text();
+      console.log('📥 Response text (first 100 chars):', responseText.substring(0, 100));
       
       // Check if response is HTML (error page) instead of JSON
-      if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-        console.error('❌ Server returned HTML instead of JSON:', responseText.substring(0, 500));
-        throw new Error(`Server returned HTML page. This usually means:
-1. The API endpoint was not found (404)
-2. VITE_API_URL is incorrect
-3. The backend is not running
+      const trimmedText = responseText.trim();
+      if (trimmedText.startsWith('<!DOCTYPE') || trimmedText.startsWith('<html') || trimmedText.startsWith('<!doctype')) {
+        console.error('❌ Server returned HTML instead of JSON');
+        console.error('Full HTML response:', responseText);
+        
+        // Extract error message from HTML if possible
+        const titleMatch = responseText.match(/<title[^>]*>([^<]+)<\/title>/i);
+        const errorTitle = titleMatch ? titleMatch[1] : 'Unknown error';
+        
+        throw new Error(`Server returned HTML page (${response.status} ${errorTitle}). This usually means:
+1. The API endpoint was not found (404) - Route: /api/auth/verify-reset-token/:token
+2. VITE_API_URL is incorrect - Currently using: ${apiBaseUrl}
+3. The backend server is not running or not accessible
 
 URL called: ${url}
 Expected URL format: https://api.therapease.site/api/auth/verify-reset-token/{token}
 
-Please check:
-- VITE_API_URL in Vercel environment variables should be: https://api.therapease.site/api
-- The backend server should be running on the droplet
-- The endpoint /api/auth/verify-reset-token/:token should be accessible`);
+Debugging steps:
+1. Check VITE_API_URL in Vercel → Settings → Environment Variables
+   Should be: https://api.therapease.site/api
+2. Test API directly: curl https://api.therapease.site/api/health
+3. Check PM2 status on droplet: pm2 status
+4. Check PM2 logs: pm2 logs therapease-api`);
       }
       
       // Check response status
       if (!response.ok) {
         console.error(`❌ HTTP Error ${response.status}:`, responseText.substring(0, 200));
+        
+        // Try to parse as JSON first (API might return JSON errors)
+        let errorMessage = `Server error: ${response.status} ${response.statusText}`;
         try {
           const errorJson = JSON.parse(responseText);
-          throw new Error(errorJson.error || `Server error: ${response.status} ${response.statusText}`);
+          errorMessage = errorJson.error || errorJson.message || errorMessage;
         } catch (parseError) {
-          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+          // Not JSON, use the raw text or status
+          if (responseText.length > 0 && responseText.length < 500) {
+            errorMessage = responseText;
+          }
         }
+        
+        throw new Error(errorMessage);
       }
       
       // Parse JSON response
@@ -76,8 +99,10 @@ Please check:
       try {
         result = JSON.parse(responseText);
       } catch (parseError) {
-        console.error('❌ Failed to parse JSON response:', responseText.substring(0, 200));
-        throw new Error('Server returned invalid JSON response');
+        console.error('❌ Failed to parse JSON response');
+        console.error('Response text:', responseText.substring(0, 500));
+        console.error('Parse error:', parseError);
+        throw new Error(`Server returned invalid JSON. Response: ${responseText.substring(0, 100)}...`);
       }
 
       if (result.success) {
