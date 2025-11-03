@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { useNotifications } from '../../hooks/useNotifications';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useNavigate } from 'react-router-dom';
+import { patientAPI } from '../../services/api';
 import NotificationList from '../../components/NotificationList';
 import NotificationModal from '../../components/NotificationModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -7,21 +9,195 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 const Notifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
-  
+
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  // Fetch notifications using patient API (matching admin pattern)
   const {
-    notifications,
+    data: notificationsData,
     isLoading,
     error,
-    stats,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    deleteAllNotifications,
-    refreshNotifications,
-    isMarkingAsRead,
-    isDeleting,
-    isDeletingAll
-  } = useNotifications();
+    refetch
+  } = useQuery(
+    'patientNotifications',
+    patientAPI.getNotifications,
+    {
+      refetchOnWindowFocus: false,
+      staleTime: 300000, // 5 minutes - match admin
+      cacheTime: 600000, // 10 minutes
+      refetchInterval: false, // Disable automatic refetching
+    }
+  );
+
+  // Format notifications for display (matching admin pattern)
+  const notifications = notificationsData?.data?.data?.notifications?.map(notification => {
+    const formatted = {
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      priority: notification.priority || 'medium',
+      isRead: notification.read === true || notification.isRead === 1 || notification.isRead === true,
+      createdAt: notification.createdAt,
+      updatedAt: notification.updatedAt,
+      date: notification.date,
+      time: notification.time,
+      timeAgo: notification.timeAgo || 'Just now'
+    };
+    return formatted;
+  }) || [];
+
+  // Calculate stats from notifications data
+  const stats = {
+    total: notificationsData?.data?.data?.total || notifications.length || 0,
+    unreadCount: notificationsData?.data?.data?.unreadCount || notifications.filter(n => !n.isRead).length || 0,
+    page: notificationsData?.data?.data?.page || 1,
+    totalPages: notificationsData?.data?.data?.totalPages || 1
+  };
+
+  // Mark as read mutation (matching admin pattern)
+  const markAsReadMutation = useMutation(
+    (notificationId) => {
+      // Use patient-specific endpoint - we'll need to add markAsRead to patientAPI
+      // For now, use notificationService which has the role-based logic
+      const notificationService = require('../../services/notificationService').default;
+      return notificationService.markAsRead(notificationId);
+    },
+    {
+      onSuccess: (data, notificationId) => {
+        // Update the notification state optimistically
+        queryClient.setQueryData('patientNotifications', (oldData) => {
+          if (!oldData?.data?.data?.notifications) return oldData;
+          
+          const updatedNotifications = oldData.data.data.notifications.map(notification => {
+            if (notification.id === notificationId) {
+              return { ...notification, read: true, isRead: 1 };
+            }
+            return notification;
+          });
+          
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              data: {
+                ...oldData.data.data,
+                notifications: updatedNotifications
+              }
+            }
+          };
+        });
+      },
+      onError: (error) => {
+        console.error('Error marking notification as read:', error);
+        queryClient.invalidateQueries('patientNotifications');
+      }
+    }
+  );
+
+  // Mark all as read mutation
+  const markAllAsReadMutation = useMutation(
+    () => {
+      const notificationService = require('../../services/notificationService').default;
+      return notificationService.markAllAsRead();
+    },
+    {
+      onSuccess: (data) => {
+        queryClient.setQueryData('patientNotifications', (oldData) => {
+          if (!oldData?.data?.data?.notifications) return oldData;
+          
+          const updatedNotifications = oldData.data.data.notifications.map(notification => ({
+            ...notification,
+            read: true,
+            isRead: 1
+          }));
+          
+          return {
+            ...oldData,
+            data: {
+              ...oldData.data,
+              data: {
+                ...oldData.data.data,
+                notifications: updatedNotifications
+              }
+            }
+          };
+        });
+      },
+      onError: (error) => {
+        console.error('Error marking all notifications as read:', error);
+        queryClient.invalidateQueries('patientNotifications');
+      }
+    }
+  );
+
+  // Delete notification mutation
+  const deleteNotificationMutation = useMutation(
+    (notificationId) => {
+      const notificationService = require('../../services/notificationService').default;
+      return notificationService.deleteNotification(notificationId);
+    },
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries('patientNotifications');
+      },
+      onError: (error) => {
+        console.error('Error deleting notification:', error);
+      }
+    }
+  );
+
+  // Actions (matching admin pattern)
+  const markAsRead = (notificationId) => {
+    markAsReadMutation.mutate(notificationId);
+  };
+
+  const markAllAsRead = () => {
+    queryClient.setQueryData('patientNotifications', (oldData) => {
+      if (!oldData?.data?.data?.notifications) {
+        return oldData;
+      }
+      
+      const updatedNotifications = oldData.data.data.notifications.map(notification => ({
+        ...notification,
+        read: true,
+        isRead: 1
+      }));
+      
+      return {
+        ...oldData,
+        data: {
+          ...oldData.data,
+          data: {
+            ...oldData.data.data,
+            notifications: updatedNotifications
+          }
+        }
+      };
+    });
+    
+    markAllAsReadMutation.mutate();
+  };
+
+  const deleteNotification = (notificationId) => {
+    deleteNotificationMutation.mutate(notificationId);
+  };
+
+  const deleteAllNotifications = () => {
+    setShowDeleteAllModal(true);
+  };
+
+  const confirmDeleteAll = () => {
+    notifications.forEach(notification => {
+      deleteNotificationMutation.mutate(notification.id);
+    });
+    setShowDeleteAllModal(false);
+  };
+
+  const refreshNotifications = () => {
+    refetch();
+  };
 
   const handleMarkAsRead = (notificationId) => {
     markAsRead(notificationId);
@@ -36,12 +212,7 @@ const Notifications = () => {
   };
 
   const handleDeleteAll = () => {
-    setShowDeleteAllModal(true);
-  };
-
-  const confirmDeleteAll = () => {
     deleteAllNotifications();
-    setShowDeleteAllModal(false);
   };
 
   const handleViewDetails = (notification) => {
@@ -69,9 +240,9 @@ const Notifications = () => {
         subtitle="Stay updated with your therapy progress and important updates"
         showFilters={true}
         showBulkActions={true}
-        isMarkingAsRead={isMarkingAsRead}
-        isDeleting={isDeleting}
-        isDeletingAll={isDeletingAll}
+        isMarkingAsRead={markAsReadMutation.isLoading}
+        isDeleting={deleteNotificationMutation.isLoading}
+        isDeletingAll={false}
       />
 
       {/* Notification Details Modal */}
