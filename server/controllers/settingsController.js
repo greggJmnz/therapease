@@ -155,7 +155,17 @@ const getSettings = async (req, res) => {
             (typeof therapistSettings.notifications === 'string' ? 
               JSON.parse(therapistSettings.notifications) : 
               therapistSettings.notifications) : null,
+          // Include workingHours from the main settings object (not from database)
+          // This maintains API compatibility without querying non-existent column
+          workingHours: workingHours,
           updatedAt: therapistSettings.settingsUpdatedAt
+        };
+      } else {
+        // Even if therapist_settings doesn't exist, include workingHours
+        settings.therapistSettings = {
+          notifications: null,
+          workingHours: workingHours,
+          updatedAt: null
         };
       }
     }
@@ -321,7 +331,17 @@ const getSettingsData = async (userId, userRole) => {
             (typeof therapistSettings.notifications === 'string' ? 
               JSON.parse(therapistSettings.notifications) : 
               therapistSettings.notifications) : null,
+          // Include workingHours from the main settings object (not from database)
+          // This maintains API compatibility without querying non-existent column
+          workingHours: workingHours,
           updatedAt: therapistSettings.settingsUpdatedAt
+        };
+      } else {
+        // Even if therapist_settings doesn't exist, include workingHours
+        settings.therapistSettings = {
+          notifications: null,
+          workingHours: workingHours,
+          updatedAt: null
         };
       }
     }
