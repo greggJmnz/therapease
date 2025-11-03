@@ -67,22 +67,34 @@ const enable2FA = async (req, res) => {
 
       // Send setup verification email (non-blocking - fire and forget)
       // Don't wait for email to send to avoid API timeout
+      console.log(`📧 Attempting to send 2FA setup code to ${user.email}...`);
+      console.log(`   Email service config: useSendGridAPI=${emailService.useSendGridAPI}, hasTransporter=${!!emailService.transporter}`);
+      console.log(`   Generated code: ${code} (valid for 10 minutes)`);
+      
       emailService.send2FASetupCodeEmail(
         user.email,
         code,
         user.firstName || 'User'
       ).then(emailResult => {
         if (emailResult.success) {
-          console.log(`✅ 2FA setup code email sent to ${user.email}`);
+          console.log(`✅ 2FA setup code email sent successfully to ${user.email}`);
+          console.log(`   Message ID: ${emailResult.messageId || 'N/A'}`);
         } else {
-          console.warn(`⚠️ Failed to send 2FA setup code email to ${user.email}: ${emailResult.error}`);
+          console.warn(`⚠️ Failed to send 2FA setup code email to ${user.email}`);
+          console.warn(`   Error: ${emailResult.error}`);
           console.warn(`   Code was saved to database: ${code}`);
+          console.warn(`   Code expires at: ${expiresAt.toISOString()}`);
           console.warn(`   User can still verify with this code for 10 minutes`);
+          console.warn(`   💡 Check PM2 logs or email service configuration`);
         }
       }).catch(error => {
-        console.error(`❌ Error sending 2FA setup code email to ${user.email}:`, error.message);
+        console.error(`❌ Error sending 2FA setup code email to ${user.email}:`);
+        console.error(`   Error message: ${error.message}`);
+        console.error(`   Error stack: ${error.stack}`);
         console.error(`   Code was saved to database: ${code}`);
+        console.error(`   Code expires at: ${expiresAt.toISOString()}`);
         console.error(`   User can still verify with this code for 10 minutes`);
+        console.error(`   💡 To retrieve code manually, query: SELECT code FROM two_factor_codes WHERE userId=${userId} AND used=FALSE ORDER BY createdAt DESC LIMIT 1`);
       });
 
       // Return success immediately - email is sent in background
@@ -375,22 +387,34 @@ const send2FALoginCode = async (req, res) => {
 
       // Send login verification email (non-blocking - fire and forget)
       // Don't wait for email to send to avoid API timeout
+      console.log(`📧 Attempting to send 2FA code to ${user.email}...`);
+      console.log(`   Email service config: useSendGridAPI=${emailService.useSendGridAPI}, hasTransporter=${!!emailService.transporter}`);
+      console.log(`   Generated code: ${code} (valid for 10 minutes)`);
+      
       emailService.send2FACodeEmail(
         user.email,
         code,
         user.firstName || 'User'
       ).then(emailResult => {
         if (emailResult.success) {
-          console.log(`✅ 2FA code email sent to ${user.email}`);
+          console.log(`✅ 2FA code email sent successfully to ${user.email}`);
+          console.log(`   Message ID: ${emailResult.messageId || 'N/A'}`);
         } else {
-          console.warn(`⚠️ Failed to send 2FA code email to ${user.email}: ${emailResult.error}`);
+          console.warn(`⚠️ Failed to send 2FA code email to ${user.email}`);
+          console.warn(`   Error: ${emailResult.error}`);
           console.warn(`   Code was saved to database: ${code}`);
+          console.warn(`   Code expires at: ${expiresAt.toISOString()}`);
           console.warn(`   User can still verify with this code for 10 minutes`);
+          console.warn(`   💡 Check PM2 logs or email service configuration`);
         }
       }).catch(error => {
-        console.error(`❌ Error sending 2FA code email to ${user.email}:`, error.message);
+        console.error(`❌ Error sending 2FA code email to ${user.email}:`);
+        console.error(`   Error message: ${error.message}`);
+        console.error(`   Error stack: ${error.stack}`);
         console.error(`   Code was saved to database: ${code}`);
+        console.error(`   Code expires at: ${expiresAt.toISOString()}`);
         console.error(`   User can still verify with this code for 10 minutes`);
+        console.error(`   💡 To retrieve code manually, query: SELECT code FROM two_factor_codes WHERE userId=${user.id} AND used=FALSE ORDER BY createdAt DESC LIMIT 1`);
       });
 
       // Return success immediately - email is sent in background

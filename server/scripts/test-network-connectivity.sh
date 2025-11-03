@@ -96,6 +96,44 @@ else
     echo "   (Should connect. If not, firewall is blocking)"
 fi
 
+# Test SendGrid connectivity if configured
+if [ -f "server/.env.production" ] && grep -q "EMAIL_HOST=smtp.sendgrid.net" server/.env.production; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "🧪 Testing SendGrid SMTP connectivity..."
+    echo "Test 5: Testing SendGrid port 587..."
+    if timeout 5 bash -c "echo > /dev/tcp/smtp.sendgrid.net/587" 2>/dev/null; then
+        echo -e "${GREEN}✅ SendGrid port 587 is accessible${NC}"
+        SENDGRID_587_OPEN=true
+    else
+        echo -e "${RED}❌ SendGrid port 587 is blocked or unreachable${NC}"
+        SENDGRID_587_OPEN=false
+    fi
+    
+    echo "Test 6: Testing SendGrid port 2525 (alternative)..."
+    if timeout 5 bash -c "echo > /dev/tcp/smtp.sendgrid.net/2525" 2>/dev/null; then
+        echo -e "${GREEN}✅ SendGrid port 2525 is accessible${NC}"
+        SENDGRID_2525_OPEN=true
+    else
+        echo -e "${YELLOW}⚠️  SendGrid port 2525 is blocked (this is optional)${NC}"
+        SENDGRID_2525_OPEN=false
+    fi
+    
+    if [ "$SENDGRID_587_OPEN" = false ]; then
+        echo ""
+        echo -e "${RED}❌ SendGrid SMTP is blocked${NC}"
+        echo "   This may be due to:"
+        echo "   1. DigitalOcean firewall blocking outbound SMTP"
+        echo "   2. Network restrictions"
+        echo ""
+        echo "💡 Solutions:"
+        echo "   Option A: Use SendGrid API instead of SMTP (recommended)"
+        echo "   Option B: Contact DigitalOcean support to allow outbound SMTP"
+        echo "   Option C: Use SendGrid webhook/API integration"
+    fi
+fi
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
@@ -109,4 +147,8 @@ echo "      EMAIL_SECURE=false"
 echo "      EMAIL_REQUIRE_TLS=true"
 echo "      EMAIL_USER=apikey"
 echo "      EMAIL_PASSWORD=your-sendgrid-api-key"
+echo ""
+echo "   If SMTP is blocked, use SendGrid API instead:"
+echo "   Option 1: Use port 2525 (alternative SendGrid port)"
+echo "   Option 2: Implement SendGrid API client (requires code changes)"
 
