@@ -87,7 +87,13 @@ class EmailService {
         text: this.getPasswordResetEmailText(userFirstName, resetLink)
       };
 
-      const result = await this.transporter.sendMail(mailOptions);
+      // Add timeout to prevent long blocking - 5 seconds max
+      const sendPromise = this.transporter.sendMail(mailOptions);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Email sending timeout - connection to email server failed or took too long')), 5000);
+      });
+
+      const result = await Promise.race([sendPromise, timeoutPromise]);
       console.log('Password reset email sent successfully:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
@@ -95,8 +101,8 @@ class EmailService {
       
       // Provide helpful error messages
       let errorMessage = error.message;
-      if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
-        errorMessage = 'Email service connection failed. Please check your email credentials and network settings. For Gmail, you may need to use an app-specific password.';
+      if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' || error.message.includes('timeout')) {
+        errorMessage = 'Email service connection failed or timed out. This may be due to network restrictions, firewall blocking SMTP ports, or Gmail blocking the connection. Try using a different email service (SendGrid, AWS SES) or check your network settings.';
       } else if (error.code === 'EAUTH') {
         errorMessage = 'Email authentication failed. Please check your EMAIL_USER and EMAIL_PASSWORD. For Gmail, use an app-specific password, not your regular password.';
       }

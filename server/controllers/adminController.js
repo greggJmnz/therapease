@@ -1766,39 +1766,34 @@ const sendPasswordResetLink = async (req, res) => {
         [user.id, resetToken, expiresAt]
       );
 
-      // Send reset email (if email service is enabled)
-      const emailResult = await emailService.sendPasswordResetEmail(
+      await connection.commit();
+
+      // Send reset email (if email service is enabled) - non-blocking after token is saved
+      // Fire and forget - don't wait for email to send to avoid API timeout
+      emailService.sendPasswordResetEmail(
         user.email, 
         resetToken, 
         user.firstName || 'User'
-      );
+      ).then(emailResult => {
+        if (emailResult.success) {
+          console.log(`✅ Password reset email sent to ${user.email}`);
+        } else {
+          console.warn(`⚠️ Failed to send password reset email to ${user.email}: ${emailResult.error}`);
+        }
+      }).catch(error => {
+        console.error(`❌ Error sending password reset email to ${user.email}:`, error.message);
+      });
 
-      await connection.commit();
-
-      // If email failed but token was saved, return success with warning
-      if (!emailResult.success) {
-        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
-        return res.json({
-          success: true,
-          message: 'Password reset token created, but email could not be sent. Email service may be disabled.',
-          warning: emailResult.error,
-          data: {
-            userId: parseInt(userId),
-            email: user.email,
-            resetToken: resetToken,
-            resetLink: resetLink
-          }
-        });
-      }
-
+      // Return success immediately - email is sent in background
+      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
       res.json({
         success: true,
-        message: 'Password reset link sent successfully',
+        message: 'Password reset token created successfully. Email will be sent if email service is configured.',
         data: {
           userId: parseInt(userId),
           email: user.email,
-          resetToken: resetToken, // Only return this in development
-          resetLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`
+          resetToken: resetToken,
+          resetLink: resetLink
         }
       });
 
