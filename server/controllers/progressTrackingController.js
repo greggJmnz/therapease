@@ -70,11 +70,10 @@ const getProgressTracking = async (req, res) => {
       JOIN users u ON p.userId = u.id
       ${whereClause}
       ORDER BY mo.updatedAt DESC, mo.createdAt DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
 
-    const queryParams = [...params, parseInt(limit), offset];
-    const progressTracking = await getAll(sql, queryParams);
+    const progressTracking = await getAll(sql, params);
 
     // Calculate progress percentages
     const progressWithPercentages = progressTracking.map(progress => {

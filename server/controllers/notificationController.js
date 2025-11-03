@@ -84,11 +84,10 @@ const getNotifications = async (req, res) => {
       FROM notifications n
       ${whereClause}
       ORDER BY n.createdAt DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
 
-    const queryParams = [...params, parseInt(limit), offset];
-    const notifications = await getAll(sql, queryParams);
+    const notifications = await getAll(sql, params);
 
     // Format notification data with date and time
     const formattedNotifications = notifications.map(notification => {

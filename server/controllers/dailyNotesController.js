@@ -86,11 +86,10 @@ const getDailyNotes = async (req, res) => {
       JOIN users u ON p.userId = u.id
       ${whereClause}
       ORDER BY dn.sessionDate DESC, dn.createdAt DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
 
-    const queryParams = [...params, parseInt(limit), offset];
-    const dailyNotes = await getAll(sql, queryParams);
+    const dailyNotes = await getAll(sql, params);
     
 
     // Process notes and handle encryption gracefully

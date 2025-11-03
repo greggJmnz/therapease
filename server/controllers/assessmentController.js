@@ -175,11 +175,10 @@ const getPatientAssessments = async (req, res) => {
       JOIN users tu ON a.therapistId = tu.id
       ${whereClause}
       ORDER BY a.assessmentDate DESC, a.createdAt DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
 
-    const queryParams = [...params, parseInt(limit), offset];
-    const assessments = await getAll(sql, queryParams);
+    const assessments = await getAll(sql, params);
 
     // Parse JSON fields
     const parsedAssessments = assessments.map(assessment => ({
