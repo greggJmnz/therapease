@@ -341,6 +341,11 @@ const updateSettings = async (req, res) => {
     const userRole = req.user.role;
     const updateData = req.body;
     
+    console.log(`⚙️  Updating settings for user ${userId} (role: ${userRole})`);
+    console.log(`   Update data keys:`, Object.keys(updateData));
+    if (updateData.workingHours) {
+      console.log(`   Has workingHours: true`);
+    }
 
     const connection = await getConnection();
     await connection.beginTransaction();
@@ -401,27 +406,46 @@ const updateSettings = async (req, res) => {
 
       // Update working hours for therapists
       if (userRole === 'therapist' && updateData.workingHours) {
+        console.log(`📅 Updating working hours for therapist ${userId}`);
+        console.log(`   Received workingHours:`, JSON.stringify(updateData.workingHours, null, 2));
         
         // Delete existing working hours
-        await connection.execute(`
+        const deleteResult = await connection.execute(`
           DELETE FROM working_hours WHERE userId = ?
         `, [userId]);
+        console.log(`   Deleted ${deleteResult[0].affectedRows} existing working hours`);
 
         // Insert new working hours
         const workingHours = updateData.workingHours;
+        const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        let insertedCount = 0;
+        
         for (const [day, hours] of Object.entries(workingHours)) {
+          // Validate day name
+          if (!validDays.includes(day.toLowerCase())) {
+            console.warn(`   ⚠️  Skipping invalid day: ${day}`);
+            continue;
+          }
           
           // Convert undefined values to null for MySQL
           const startTime = hours.start || null;
           const endTime = hours.end || null;
           const isEnabled = hours.enabled !== undefined ? hours.enabled : false;
           
-          
-          await connection.execute(`
-            INSERT INTO working_hours (userId, dayOfWeek, startTime, endTime, isEnabled)
-            VALUES (?, ?, ?, ?, ?)
-          `, [userId, day, startTime, endTime, isEnabled]);
+          try {
+            await connection.execute(`
+              INSERT INTO working_hours (userId, dayOfWeek, startTime, endTime, isEnabled)
+              VALUES (?, ?, ?, ?, ?)
+            `, [userId, day.toLowerCase(), startTime, endTime, isEnabled]);
+            insertedCount++;
+            console.log(`   ✅ Inserted working hours for ${day}: ${startTime} - ${endTime} (enabled: ${isEnabled})`);
+          } catch (insertError) {
+            console.error(`   ❌ Error inserting working hours for ${day}:`, insertError.message);
+            throw new Error(`Failed to insert working hours for ${day}: ${insertError.message}`);
+          }
         }
+        
+        console.log(`   ✅ Successfully updated ${insertedCount} working hours`);
       }
 
       // Update notification settings for therapists
