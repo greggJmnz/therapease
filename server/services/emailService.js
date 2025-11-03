@@ -37,6 +37,15 @@ class EmailService {
 
   async sendPasswordResetEmail(email, resetToken, userFirstName = 'User') {
     try {
+      // Check if email service is enabled
+      if (!this.transporter) {
+        console.log('⚠️ Email service is disabled. Cannot send password reset email.');
+        return { 
+          success: false, 
+          error: 'Email service is disabled. Please enable email service in environment variables to send password reset emails.' 
+        };
+      }
+
       const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
       
       const mailOptions = {
@@ -61,6 +70,15 @@ class EmailService {
 
   async sendWelcomeEmail(email, userFirstName, userRole) {
     try {
+      // Check if email service is enabled
+      if (!this.transporter) {
+        console.log('⚠️ Email service is disabled. Cannot send welcome email.');
+        return { 
+          success: false, 
+          error: 'Email service is disabled. Please enable email service in environment variables to send welcome emails.' 
+        };
+      }
+
       const mailOptions = {
         from: {
           name: 'TherapEase Team',
@@ -285,6 +303,12 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
   // Test email functionality
   async testEmailConnection() {
     try {
+      if (!this.transporter) {
+        return { 
+          success: false, 
+          error: 'Email service is disabled. Set EMAIL_ENABLED=true and provide EMAIL_USER and EMAIL_PASSWORD to enable email service.' 
+        };
+      }
       await this.transporter.verify();
       return { success: true, message: 'Email service is properly configured' };
     } catch (error) {
@@ -300,6 +324,15 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
   // Send 2FA verification code via email
   async send2FACodeEmail(email, code, userFirstName = 'User') {
     try {
+      // Check if email service is enabled
+      if (!this.transporter) {
+        console.log('⚠️ Email service is disabled. Cannot send 2FA code email.');
+        return {
+          success: false,
+          error: 'Email service is disabled. Please enable email service in environment variables to use 2FA via email.'
+        };
+      }
+
       const mailOptions = {
         from: {
           name: 'TherapEase Support',
@@ -331,6 +364,15 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
   // Send 2FA setup verification code
   async send2FASetupCodeEmail(email, code, userFirstName = 'User') {
     try {
+      // Check if email service is enabled
+      if (!this.transporter) {
+        console.log('⚠️ Email service is disabled. Cannot send 2FA setup code email.');
+        return {
+          success: false,
+          error: 'Email service is disabled. Please enable email service in environment variables to set up 2FA via email.'
+        };
+      }
+
       const mailOptions = {
         from: {
           name: 'TherapEase Support',

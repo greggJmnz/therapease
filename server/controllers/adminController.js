@@ -1766,18 +1766,30 @@ const sendPasswordResetLink = async (req, res) => {
         [user.id, resetToken, expiresAt]
       );
 
-      // Send reset email
+      // Send reset email (if email service is enabled)
       const emailResult = await emailService.sendPasswordResetEmail(
         user.email, 
         resetToken, 
         user.firstName || 'User'
       );
 
-      if (!emailResult.success) {
-        throw new Error(`Failed to send email: ${emailResult.error}`);
-      }
-
       await connection.commit();
+
+      // If email failed but token was saved, return success with warning
+      if (!emailResult.success) {
+        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+        return res.json({
+          success: true,
+          message: 'Password reset token created, but email could not be sent. Email service may be disabled.',
+          warning: emailResult.error,
+          data: {
+            userId: parseInt(userId),
+            email: user.email,
+            resetToken: resetToken,
+            resetLink: resetLink
+          }
+        });
+      }
 
       res.json({
         success: true,
