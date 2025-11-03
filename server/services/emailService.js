@@ -12,8 +12,38 @@ class EmailService {
 
   initializeTransporter() {
     // Check if email is enabled
-    if (process.env.EMAIL_ENABLED === 'false' || !process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.log('ℹ️ Email service disabled (EMAIL_ENABLED=false or missing credentials)');
+    if (process.env.EMAIL_ENABLED === 'false') {
+      console.log('ℹ️ Email service disabled (EMAIL_ENABLED=false)');
+      this.transporter = null;
+      return;
+    }
+
+    // Check if we should use SendGrid API instead of SMTP (when SMTP is blocked)
+    // This check should happen BEFORE checking credentials, as API mode uses different auth
+    if (process.env.EMAIL_HOST && process.env.EMAIL_PORT) {
+      const shouldUseAPI = process.env.EMAIL_USE_API === 'true' || 
+                          (process.env.EMAIL_HOST === 'smtp.sendgrid.net' && process.env.EMAIL_USER === 'apikey');
+      
+      console.log(`🔍 Email config check: EMAIL_HOST=${process.env.EMAIL_HOST}, EMAIL_USER=${process.env.EMAIL_USER}, EMAIL_USE_API=${process.env.EMAIL_USE_API}`);
+      
+      if (shouldUseAPI) {
+        // Use SendGrid API instead of SMTP (works when SMTP ports are blocked)
+        if (!process.env.EMAIL_PASSWORD) {
+          console.log('⚠️ Email service disabled - SendGrid API key (EMAIL_PASSWORD) not set');
+          this.transporter = null;
+          return;
+        }
+        this.useSendGridAPI = true;
+        this.sendGridAPIKey = process.env.EMAIL_PASSWORD;
+        console.log(`📧 Using SendGrid API (HTTP) - SMTP ports are blocked, using API instead`);
+        console.log(`   This uses HTTPS (port 443) which is not blocked by firewalls`);
+        return; // Don't create SMTP transporter
+      }
+    }
+
+    // For SMTP, check credentials
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.log('ℹ️ Email service disabled (missing EMAIL_USER or EMAIL_PASSWORD)');
       this.transporter = null;
       return;
     }
@@ -24,18 +54,6 @@ class EmailService {
       let smtpConfig;
       
       if (process.env.EMAIL_HOST && process.env.EMAIL_PORT) {
-        // Check if we should use SendGrid API instead of SMTP (when SMTP is blocked)
-        // Use SendGrid API when EMAIL_USE_API=true or when using SendGrid with apikey user
-        // This bypasses SMTP which is often blocked on cloud providers
-        if (process.env.EMAIL_USE_API === 'true' || 
-            (process.env.EMAIL_HOST === 'smtp.sendgrid.net' && process.env.EMAIL_USER === 'apikey')) {
-          // Use SendGrid API instead of SMTP (works when SMTP ports are blocked)
-          this.useSendGridAPI = true;
-          this.sendGridAPIKey = process.env.EMAIL_PASSWORD;
-          console.log(`📧 Using SendGrid API (HTTP) - SMTP ports are blocked, using API instead`);
-          console.log(`   This uses HTTPS (port 443) which is not blocked by firewalls`);
-          return; // Don't create SMTP transporter
-        }
         
         // Custom SMTP configuration (SendGrid, AWS SES, etc.)
         console.log(`📧 Using custom SMTP: ${process.env.EMAIL_HOST}:${process.env.EMAIL_PORT}`);
@@ -175,7 +193,7 @@ class EmailService {
       }
 
       // Check if email service is enabled
-      if (!this.transporter) {
+      if (!this.transporter && !this.useSendGridAPI) {
         console.log('⚠️ Email service is disabled. Cannot send password reset email.');
         return { 
           success: false, 
@@ -220,6 +238,22 @@ class EmailService {
 
   async sendWelcomeEmail(email, userFirstName, userRole) {
     try {
+      const html = this.getWelcomeEmailTemplate(userFirstName, userRole);
+      const text = this.getWelcomeEmailText(userFirstName, userRole);
+      
+      // Use SendGrid API if configured
+      if (this.useSendGridAPI) {
+        const result = await this.sendViaSendGridAPI(
+          email,
+          'Welcome to TherapEase!',
+          html,
+          text,
+          process.env.EMAIL_FROM || 'noreply@therapease.com'
+        );
+        console.log('✅ Welcome email sent via SendGrid API:', result.messageId);
+        return result;
+      }
+
       // Check if email service is enabled
       if (!this.transporter) {
         console.log('⚠️ Email service is disabled. Cannot send welcome email.');
@@ -236,8 +270,8 @@ class EmailService {
         },
         to: email,
         subject: 'Welcome to TherapEase!',
-        html: this.getWelcomeEmailTemplate(userFirstName, userRole),
-        text: this.getWelcomeEmailText(userFirstName, userRole)
+        html: html,
+        text: text
       };
 
       const result = await this.transporter.sendMail(mailOptions);
@@ -474,6 +508,24 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
   // Send 2FA verification code via email
   async send2FACodeEmail(email, code, userFirstName = 'User') {
     try {
+      // Use SendGrid API if configured
+      if (this.useSendGridAPI) {
+        const html = this.get2FACodeEmailTemplate(code, userFirstName);
+        const result = await this.sendViaSendGridAPI(
+          email,
+          'TherapEase - Your 2FA Login Code',
+          html,
+          `Your TherapEase login verification code is: ${code}`,
+          'therapease16@gmail.com'
+        );
+        console.log('✅ 2FA code email sent via SendGrid API:', result.messageId);
+        return {
+          success: true,
+          messageId: result.messageId,
+          message: '2FA code sent successfully'
+        };
+      }
+
       // Check if email service is enabled
       if (!this.transporter) {
         console.log('⚠️ Email service is disabled. Cannot send 2FA code email.');
@@ -514,6 +566,24 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
   // Send 2FA setup verification code
   async send2FASetupCodeEmail(email, code, userFirstName = 'User') {
     try {
+      // Use SendGrid API if configured
+      if (this.useSendGridAPI) {
+        const html = this.get2FASetupCodeEmailTemplate(code, userFirstName);
+        const result = await this.sendViaSendGridAPI(
+          email,
+          'TherapEase - Verify 2FA Setup',
+          html,
+          `Your 2FA setup verification code is: ${code}`,
+          'therapease16@gmail.com'
+        );
+        console.log('✅ 2FA setup code email sent via SendGrid API:', result.messageId);
+        return {
+          success: true,
+          messageId: result.messageId,
+          message: '2FA setup code sent successfully'
+        };
+      }
+
       // Check if email service is enabled
       if (!this.transporter) {
         console.log('⚠️ Email service is disabled. Cannot send 2FA setup code email.');
