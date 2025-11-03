@@ -15,24 +15,52 @@ class EmailService {
       return;
     }
 
-    // For development/testing, we'll use Gmail SMTP
-    // In production, you should use a proper email service like SendGrid, AWS SES, etc.
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
-    });
+    try {
+      // For development/testing, we'll use Gmail SMTP
+      // In production, you should use a proper email service like SendGrid, AWS SES, etc.
+      this.transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        },
+        // Add connection timeout settings
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000,
+        socketTimeout: 10000
+      });
 
-    // Verify connection configuration
-    this.transporter.verify((error, success) => {
-      if (error) {
-        console.error('Email service configuration error:', error);
-      } else {
-        console.log('✅ Email service is ready to send messages');
-      }
-    });
+      // Verify connection configuration (non-blocking, with timeout)
+      // Don't block initialization if verification fails
+      const verifyPromise = new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          console.log('⚠️ Email service verification timed out - will attempt to send emails anyway');
+          resolve(false);
+        }, 5000); // 5 second timeout for verification
+
+        this.transporter.verify((error, success) => {
+          clearTimeout(timeout);
+          if (error) {
+            console.error('⚠️ Email service configuration error:', error.message);
+            console.log('💡 Email service will still be available, but emails may fail to send.');
+            console.log('💡 Check: 1) Gmail requires app-specific passwords, 2) Network/firewall settings, 3) Email credentials');
+            resolve(false);
+          } else {
+            console.log('✅ Email service is ready to send messages');
+            resolve(true);
+          }
+        });
+      });
+
+      // Fire and forget - don't wait for verification
+      verifyPromise.catch(() => {
+        // Verification failed but transporter is still set
+      });
+
+    } catch (error) {
+      console.error('❌ Failed to initialize email transporter:', error.message);
+      this.transporter = null;
+    }
   }
 
   async sendPasswordResetEmail(email, resetToken, userFirstName = 'User') {
@@ -63,8 +91,17 @@ class EmailService {
       console.log('Password reset email sent successfully:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('Error sending password reset email:', error);
-      return { success: false, error: error.message };
+      console.error('Error sending password reset email:', error.message);
+      
+      // Provide helpful error messages
+      let errorMessage = error.message;
+      if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+        errorMessage = 'Email service connection failed. Please check your email credentials and network settings. For Gmail, you may need to use an app-specific password.';
+      } else if (error.code === 'EAUTH') {
+        errorMessage = 'Email authentication failed. Please check your EMAIL_USER and EMAIL_PASSWORD. For Gmail, use an app-specific password, not your regular password.';
+      }
+      
+      return { success: false, error: errorMessage };
     }
   }
 
