@@ -16,19 +16,45 @@ class EmailService {
     }
 
     try {
-      // For development/testing, we'll use Gmail SMTP
-      // In production, you should use a proper email service like SendGrid, AWS SES, etc.
-      this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        },
-        // Add connection timeout settings
-        connectionTimeout: 10000, // 10 seconds
-        greetingTimeout: 10000,
-        socketTimeout: 10000
-      });
+      // Support multiple SMTP configurations
+      // Priority: Custom SMTP config > Gmail service
+      let smtpConfig;
+      
+      if (process.env.EMAIL_HOST && process.env.EMAIL_PORT) {
+        // Custom SMTP configuration (SendGrid, AWS SES, etc.)
+        smtpConfig = {
+          host: process.env.EMAIL_HOST,
+          port: parseInt(process.env.EMAIL_PORT),
+          secure: process.env.EMAIL_SECURE === 'true' || process.env.EMAIL_PORT === '465',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
+          },
+          connectionTimeout: 5000,
+          greetingTimeout: 5000,
+          socketTimeout: 5000
+        };
+        
+        // Add TLS options for STARTTLS
+        if (!smtpConfig.secure && process.env.EMAIL_REQUIRE_TLS === 'true') {
+          smtpConfig.requireTLS = true;
+        }
+      } else {
+        // Default to Gmail SMTP service
+        smtpConfig = {
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
+          },
+          // Shorter timeouts to fail fast
+          connectionTimeout: 5000,
+          greetingTimeout: 5000,
+          socketTimeout: 5000
+        };
+      }
+      
+      this.transporter = nodemailer.createTransport(smtpConfig);
 
       // Verify connection configuration (non-blocking, with timeout)
       // Don't block initialization if verification fails
