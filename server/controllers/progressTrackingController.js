@@ -93,13 +93,14 @@ const getProgressTracking = async (req, res) => {
       };
     });
 
-    // Get available areas for filtering
+    // Get available areas for filtering (using treatment plans)
     const areasSql = `
-      SELECT DISTINCT pt.area
-      FROM progress_tracking pt
-      JOIN patients p ON pt.patientId = p.id
+      SELECT DISTINCT mo.title as area
+      FROM main_objectives mo
+      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+      JOIN patients p ON tp.patientId = p.id
       WHERE p.therapistId = ?
-      ORDER BY pt.area
+      ORDER BY mo.title
     `;
     
     const areas = await getAll(areasSql, [therapistId]);

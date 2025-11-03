@@ -138,35 +138,28 @@ const getDashboard = async (req, res) => {
 
     const recentDailyNotes = await getAll(recentDailyNotesSql, [therapistId, therapistId]);
 
-    // Get progress summary by area
+    // Get progress summary by area (using treatment plans)
     const progressByAreaSql = `
       SELECT 
-        pt.area,
+        mo.title as area,
         COUNT(*) as entryCount,
-        AVG(pt.currentScore) as avgCurrentScore,
-        AVG(pt.targetScore) as avgTargetScore
-      FROM progress_tracking pt
-      JOIN patients p ON pt.patientId = p.id
+        AVG(mo.progress) as avgProgress
+      FROM main_objectives mo
+      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+      JOIN patients p ON tp.patientId = p.id
       WHERE p.therapistId = ?
-      GROUP BY pt.area
+      GROUP BY mo.title
       ORDER BY entryCount DESC
       LIMIT 5
     `;
 
     const progressByArea = await getAll(progressByAreaSql, [therapistId]);
 
-    // Calculate progress percentages for each area
-    const progressWithPercentages = progressByArea.map(area => {
-      let progressPercentage = 0;
-      if (area.avgCurrentScore !== null && area.avgTargetScore !== null) {
-        progressPercentage = Math.round((area.avgCurrentScore / area.avgTargetScore) * 100);
-      }
-      
-      return {
-        ...area,
-        progressPercentage: Math.max(0, Math.min(100, progressPercentage))
-      };
-    });
+    // Format progress data
+    const progressWithPercentages = progressByArea.map(area => ({
+      ...area,
+      avgProgress: area.avgProgress ? Math.round(area.avgProgress) : 0
+    }));
 
     // Get monthly statistics for the current year
     const currentYear = new Date().getFullYear();
@@ -310,20 +303,22 @@ const getQuickActions = async (req, res) => {
 
     const assessmentsDue = await getAll(assessmentsDueSql, [therapistId]);
 
-    // Get progress areas needing review
+    // Get progress areas needing review (using treatment plans)
     const progressReviewSql = `
       SELECT 
-        pt.id,
-        pt.area,
-        pt.nextReviewDate,
+        mo.id,
+        mo.title as area,
+        mo.targetDate as nextReviewDate,
         CONCAT(u.firstName, ' ', u.lastName) as patientName
-      FROM progress_tracking pt
-      JOIN patients p ON pt.patientId = p.id
+      FROM main_objectives mo
+      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+      JOIN patients p ON tp.patientId = p.id
       JOIN users u ON p.userId = u.id
       WHERE p.therapistId = ? 
-      AND pt.nextReviewDate IS NOT NULL
-      AND pt.nextReviewDate <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-      ORDER BY pt.nextReviewDate ASC
+      AND mo.targetDate IS NOT NULL
+      AND mo.targetDate <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+      AND mo.status != 'completed'
+      ORDER BY mo.targetDate ASC
       LIMIT 5
     `;
 
@@ -409,17 +404,18 @@ const getDashboardCharts = async (req, res) => {
 
     const patientActivity = await getAll(patientActivitySql, [therapistId]);
 
-    // Get progress trends by area
+    // Get progress trends by area (using treatment plans)
     const progressTrendsSql = `
       SELECT 
-        pt.area,
-        DATE_FORMAT(pt.measurementDate, '${dateFormat}') as period,
-        AVG(pt.currentScore) as avgScore
-      FROM progress_tracking pt
-      JOIN patients p ON pt.patientId = p.id
-      WHERE p.therapistId = ? AND pt.measurementDate >= ${dateRange}
-      GROUP BY pt.area, DATE_FORMAT(pt.measurementDate, '${dateFormat}')
-      ORDER BY pt.area, period
+        mo.title as area,
+        DATE_FORMAT(mo.updatedAt, '${dateFormat}') as period,
+        AVG(mo.progress) as avgScore
+      FROM main_objectives mo
+      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+      JOIN patients p ON tp.patientId = p.id
+      WHERE p.therapistId = ? AND mo.updatedAt >= ${dateRange}
+      GROUP BY mo.title, DATE_FORMAT(mo.updatedAt, '${dateFormat}')
+      ORDER BY mo.title, period
     `;
 
     const progressTrends = await getAll(progressTrendsSql, [therapistId]);
