@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { Brain, TrendingUp, Lightbulb, Target, Clock, User, FileText, Save, Plus, Trash2, Eye, Download, BookOpen, Edit3, X, Activity, Users, AlertTriangle } from 'lucide-react';
-import { therapistAPI } from '../../services/api';
+import { therapistAPI, aiAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import ConfirmationModal from '../../components/ConfirmationModal';
