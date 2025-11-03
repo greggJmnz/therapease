@@ -1,68 +1,34 @@
 // Notification Service for TherapEase
 // Handles real notification data fetching and management
+// Uses axios instance from api.js for consistency with adminAPI, patientAPI, and therapistAPI
 
-// Get API base URL (same logic as api.js)
-const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  return '/api';
-};
+import { api } from './api';
 
 class NotificationService {
-  constructor() {
-    this.baseURL = getApiBaseUrl();
-  }
-
-  // Get auth token from localStorage
-  getAuthToken() {
-    return localStorage.getItem('token');
-  }
-
-  // Get headers with auth token
-  getHeaders() {
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getAuthToken()}`
-    };
-  }
-
   // Fetch notifications for current user
   async getNotifications(options = {}) {
     try {
       const { page = 1, limit = 20, type, isRead } = options;
-      const params = new URLSearchParams({
+      const params = {
         page: page.toString(),
         limit: limit.toString(),
+        _t: Date.now(),
         ...(type && { type }),
         ...(isRead !== undefined && { isRead: isRead.toString() })
-      });
+      };
 
-      const url = `${this.baseURL}/notifications?${params}`;
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: this.getHeaders()
-      });
-
-      // Check if response is JSON before parsing
-      const contentType = response.headers.get('content-type');
-      const responseText = await response.text();
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-          console.error('❌ Server returned HTML instead of JSON for notifications');
-          throw new Error(`API endpoint not found. Check VITE_API_URL configuration. URL: ${url}`);
-        }
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = JSON.parse(responseText);
-      return data;
+      const response = await api.get('/notifications', { params });
+      return response.data;
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      // Check if response is HTML (404 page) instead of JSON
+      if (error.response && error.response.data) {
+        const dataStr = typeof error.response.data === 'string' ? error.response.data : JSON.stringify(error.response.data);
+        if (dataStr.trim().startsWith('<!DOCTYPE') || dataStr.trim().startsWith('<html')) {
+          console.error('❌ Server returned HTML instead of JSON for notifications');
+          throw new Error(`API endpoint not found. Check VITE_API_URL configuration. URL: ${error.config?.url || '/notifications'}`);
+        }
+      }
       throw error;
     }
   }
@@ -70,17 +36,8 @@ class NotificationService {
   // Mark notification as read
   async markAsRead(notificationId) {
     try {
-      const response = await fetch(`${this.baseURL}/notifications/${notificationId}/read`, {
-        method: 'PATCH',
-        headers: this.getHeaders()
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      const response = await api.patch(`/notifications/${notificationId}/read`);
+      return response.data;
     } catch (error) {
       console.error('Error marking notification as read:', error);
       throw error;
@@ -90,17 +47,8 @@ class NotificationService {
   // Mark all notifications as read
   async markAllAsRead() {
     try {
-      const response = await fetch(`${this.baseURL}/notifications/read-all`, {
-        method: 'PATCH',
-        headers: this.getHeaders()
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      const response = await api.patch('/notifications/read-all');
+      return response.data;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       throw error;
@@ -110,17 +58,8 @@ class NotificationService {
   // Delete notification
   async deleteNotification(notificationId) {
     try {
-      const response = await fetch(`${this.baseURL}/notifications/${notificationId}`, {
-        method: 'DELETE',
-        headers: this.getHeaders()
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      const response = await api.delete(`/notifications/${notificationId}`);
+      return response.data;
     } catch (error) {
       console.error('Error deleting notification:', error);
       throw error;
@@ -130,17 +69,8 @@ class NotificationService {
   // Delete all notifications
   async deleteAllNotifications() {
     try {
-      const response = await fetch(`${this.baseURL}/notifications/delete-all`, {
-        method: 'DELETE',
-        headers: this.getHeaders()
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      const response = await api.delete('/notifications/delete-all');
+      return response.data;
     } catch (error) {
       console.error('Error deleting all notifications:', error);
       throw error;
@@ -150,33 +80,19 @@ class NotificationService {
   // Get notification statistics
   async getNotificationStats() {
     try {
-      const url = `${this.baseURL}/notifications/stats`;
-      console.log('📊 Fetching notification stats from:', url);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: this.getHeaders()
-      });
-
-      // Check if response is JSON before parsing
-      const contentType = response.headers.get('content-type');
-      const responseText = await response.text();
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-          console.error('❌ Server returned HTML instead of JSON for notification stats');
-          throw new Error(`API endpoint not found. Check VITE_API_URL configuration. URL: ${url}`);
-        }
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = JSON.parse(responseText);
-      return data;
+      console.log('📊 Fetching notification stats...');
+      const response = await api.get('/notifications/stats', { params: { _t: Date.now() } });
+      return response.data;
     } catch (error) {
       console.error('Error fetching notification stats:', error);
+      // Check if response is HTML (404 page) instead of JSON
+      if (error.response && error.response.data) {
+        const dataStr = typeof error.response.data === 'string' ? error.response.data : JSON.stringify(error.response.data);
+        if (dataStr.trim().startsWith('<!DOCTYPE') || dataStr.trim().startsWith('<html')) {
+          console.error('❌ Server returned HTML instead of JSON for notification stats');
+          throw new Error(`API endpoint not found. Check VITE_API_URL configuration. URL: ${error.config?.url || '/notifications/stats'}`);
+        }
+      }
       throw error;
     }
   }
@@ -184,22 +100,12 @@ class NotificationService {
   // Subscribe to push notifications
   async subscribeToPush(subscription, userAgent) {
     try {
-      const response = await fetch(`${this.baseURL}/notifications/subscribe`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify({
-          subscription,
-          userAgent,
-          endpoint: subscription.endpoint
-        })
+      const response = await api.post('/notifications/subscribe', {
+        subscription,
+        userAgent,
+        endpoint: subscription.endpoint
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      return response.data;
     } catch (error) {
       console.error('Error subscribing to push notifications:', error);
       throw error;
@@ -209,17 +115,8 @@ class NotificationService {
   // Unsubscribe from push notifications
   async unsubscribeFromPush() {
     try {
-      const response = await fetch(`${this.baseURL}/notifications/unsubscribe`, {
-        method: 'POST',
-        headers: this.getHeaders()
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      const response = await api.post('/notifications/unsubscribe');
+      return response.data;
     } catch (error) {
       console.error('Error unsubscribing from push notifications:', error);
       throw error;
@@ -229,17 +126,8 @@ class NotificationService {
   // Send test notification
   async sendTestNotification() {
     try {
-      const response = await fetch(`${this.baseURL}/notifications/test`, {
-        method: 'POST',
-        headers: this.getHeaders()
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      const response = await api.post('/notifications/test');
+      return response.data;
     } catch (error) {
       console.error('Error sending test notification:', error);
       throw error;

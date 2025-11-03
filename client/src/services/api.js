@@ -11,7 +11,9 @@ const getApiBaseUrl = () => {
   return '/api';
 };
 
-const api = axios.create({
+// Create axios instance with base configuration
+// Export it so other services can use it
+export const api = axios.create({
   baseURL: getApiBaseUrl(),
   timeout: 10000,
   headers: {
