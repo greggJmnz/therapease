@@ -133,6 +133,8 @@ class EmailService {
         throw new Error('SendGrid API key not configured');
       }
 
+      const fromAddress = fromEmail || process.env.EMAIL_FROM || 'noreply@therapease.com';
+      
       const response = await axios.post(
         'https://api.sendgrid.com/v3/mail/send',
         {
@@ -141,7 +143,7 @@ class EmailService {
             subject: subject
           }],
           from: {
-            email: fromEmail || process.env.EMAIL_FROM || 'noreply@therapease.com',
+            email: fromAddress,
             name: 'TherapEase Support'
           },
           content: [
@@ -167,7 +169,18 @@ class EmailService {
       return { success: true, messageId: response.headers['x-message-id'] || 'sent' };
     } catch (error) {
       if (error.response) {
-        throw new Error(`SendGrid API error: ${error.response.data?.errors?.[0]?.message || error.response.statusText}`);
+        const errorMessage = error.response.data?.errors?.[0]?.message || error.response.statusText;
+        
+        // Provide helpful guidance for common SendGrid errors
+        if (errorMessage.includes('verified Sender Identity') || errorMessage.includes('sender identity')) {
+          throw new Error(
+            `SendGrid sender identity not verified: The email address "${fromEmail || process.env.EMAIL_FROM || 'noreply@therapease.com'}" needs to be verified in SendGrid. ` +
+            `Visit https://app.sendgrid.com/settings/sender_auth/senders/new to verify your sender identity. ` +
+            `After verification, update EMAIL_FROM in .env.production to match the verified address.`
+          );
+        }
+        
+        throw new Error(`SendGrid API error: ${errorMessage}`);
       }
       throw error;
     }
