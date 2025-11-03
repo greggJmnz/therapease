@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
+// Get API base URL (same logic as api.js)
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  return '/api';
+};
+
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -25,7 +33,17 @@ const ResetPassword = () => {
   const verifyToken = async (tokenToVerify) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/auth/verify-reset-token/${tokenToVerify}`);
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/auth/verify-reset-token/${tokenToVerify}`);
+      
+      // Check if response is JSON (not HTML error page)
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text.substring(0, 200));
+        throw new Error('Server returned non-JSON response. Please check the API URL configuration.');
+      }
+      
       const result = await response.json();
 
       if (result.success) {
@@ -105,7 +123,8 @@ const ResetPassword = () => {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/auth/reset-password', {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,6 +134,14 @@ const ResetPassword = () => {
           newPassword: formData.newPassword
         })
       });
+
+      // Check if response is JSON (not HTML error page)
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text.substring(0, 200));
+        throw new Error('Server returned non-JSON response. Please check the API URL configuration.');
+      }
 
       const result = await response.json();
 
