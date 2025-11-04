@@ -634,6 +634,7 @@ const createTables = async () => {
         message TEXT NOT NULL,
         type VARCHAR(50) NOT NULL,
         isRead BOOLEAN DEFAULT FALSE,
+        priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
         relatedId INT,
         smsMessageId VARCHAR(255),
         smsStatus ENUM('pending', 'sent', 'delivered', 'failed', 'error') DEFAULT NULL,
@@ -982,6 +983,28 @@ const createTables = async () => {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
         console.log('Note: Specific objectives columns may already exist');
+      }
+    }
+
+    // Add missing columns to notifications table if they don't exist
+    try {
+      // Check if priority column exists
+      const [priorityColumns] = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'notifications' 
+        AND COLUMN_NAME = 'priority'
+      `);
+      
+      if (priorityColumns.length === 0) {
+        await pool.execute(`ALTER TABLE notifications ADD COLUMN priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal'`);
+        console.log('✅ Added priority column to notifications table');
+      }
+    } catch (error) {
+      // Ignore error if column already exists
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('Note: Notifications priority column may already exist');
       }
     }
 
