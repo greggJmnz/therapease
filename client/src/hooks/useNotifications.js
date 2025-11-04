@@ -1,14 +1,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import notificationService from '../services/notificationService';
+import { patientAPI, therapistAPI, adminAPI } from '../services/api';
 import { useWebSocketEvent } from './useWebSocket';
+
+// Get the appropriate API instance based on user role
+const getNotificationsAPI = () => {
+  const role = localStorage.getItem('userRole') || '';
+  if (role === 'admin') {
+    return adminAPI.getNotifications;
+  } else if (role === 'therapist') {
+    return therapistAPI.getNotifications;
+  } else if (role === 'patient') {
+    return patientAPI.getNotifications;
+  }
+  // Fallback to notificationService for unknown roles
+  return () => notificationService.getNotifications({});
+};
 
 export const useNotifications = (options = {}) => {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState(options.filter || 'all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch notifications
+  // Fetch notifications using role-specific API
   const {
     data: notificationsData,
     isLoading,
@@ -16,10 +31,19 @@ export const useNotifications = (options = {}) => {
     refetch
   } = useQuery(
     ['notifications', filter, searchTerm, options.page, options.limit],
-    () => notificationService.getNotifications({
-      ...options,
-      isRead: filter === 'unread' ? false : filter === 'read' ? true : undefined
-    }),
+    () => {
+      const apiMethod = getNotificationsAPI();
+      // For role-specific APIs, they don't accept query params directly
+      // So we need to use notificationService for filtered queries
+      if (filter !== 'all' || options.page || options.limit) {
+        return notificationService.getNotifications({
+          ...options,
+          isRead: filter === 'unread' ? false : filter === 'read' ? true : undefined
+        });
+      }
+      // Use role-specific API for simple queries
+      return apiMethod();
+    },
     {
       refetchOnWindowFocus: false,
       staleTime: 30000, // 30 seconds
@@ -186,13 +210,19 @@ export const useNotifications = (options = {}) => {
 };
 
 export const useNotificationStats = () => {
+  const getStatsAPI = () => {
+    const role = localStorage.getItem('userRole') || '';
+    // For stats, we can use notificationService as it handles role-specific endpoints correctly
+    return () => notificationService.getNotificationStats();
+  };
+
   const {
     data: statsData,
     isLoading,
     error
   } = useQuery(
     'notificationStats',
-    () => notificationService.getNotificationStats(),
+    getStatsAPI(),
     {
       refetchOnWindowFocus: false,
       staleTime: 60000, // 1 minute
