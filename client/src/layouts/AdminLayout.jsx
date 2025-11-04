@@ -24,6 +24,36 @@ import {
 } from 'lucide-react';
 import './Layouts.css';
 
+// Helper function to get the public website URL
+const getPublicWebsiteUrl = () => {
+  // Check for environment variable first
+  const publicWebsiteUrl = import.meta.env.VITE_PUBLIC_WEBSITE_URL;
+  if (publicWebsiteUrl) {
+    return publicWebsiteUrl;
+  }
+  
+  // In development, use localhost
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isDevelopment) {
+    return 'http://localhost:8000';
+  }
+  
+  // In production, use www.therapease.site
+  const isProduction = window.location.protocol === 'https:';
+  if (isProduction) {
+    return 'https://www.therapease.site';
+  }
+  
+  // Fallback: infer from current location
+  const hostname = window.location.hostname;
+  if (hostname.includes('therapease.site')) {
+    return `https://www.therapease.site`;
+  }
+  
+  // Default fallback
+  return window.location.origin;
+};
+
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -428,7 +458,7 @@ const AdminLayout = () => {
           
           <div className="header-actions">
             <a 
-              href="http://localhost:8000/"
+              href={getPublicWebsiteUrl()}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary"
