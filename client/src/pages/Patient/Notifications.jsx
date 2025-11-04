@@ -5,6 +5,7 @@ import { patientAPI } from '../../services/api';
 import NotificationList from '../../components/NotificationList';
 import NotificationModal from '../../components/NotificationModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import notificationService from '../../services/notificationService';
 
 const Notifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
@@ -61,7 +62,6 @@ const Notifications = () => {
     (notificationId) => {
       // Use patient-specific endpoint - we'll need to add markAsRead to patientAPI
       // For now, use notificationService which has the role-based logic
-      const notificationService = require('../../services/notificationService').default;
       return notificationService.markAsRead(notificationId);
     },
     {
@@ -99,7 +99,6 @@ const Notifications = () => {
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation(
     () => {
-      const notificationService = require('../../services/notificationService').default;
       return notificationService.markAllAsRead();
     },
     {
@@ -135,7 +134,6 @@ const Notifications = () => {
   // Delete notification mutation
   const deleteNotificationMutation = useMutation(
     (notificationId) => {
-      const notificationService = require('../../services/notificationService').default;
       return notificationService.deleteNotification(notificationId);
     },
     {
@@ -253,7 +251,7 @@ const Notifications = () => {
           onDelete={handleDelete}
           onMarkAsRead={handleMarkAsRead}
           onViewAppointment={handleViewAppointment}
-          isDeleting={isDeleting}
+          isDeleting={deleteNotificationMutation.isLoading}
         />
       )}
       

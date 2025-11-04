@@ -5,6 +5,7 @@ import { therapistAPI } from '../../services/api';
 import NotificationList from '../../components/NotificationList';
 import NotificationModal from '../../components/NotificationModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import notificationService from '../../services/notificationService';
 
 const TherapistNotifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
@@ -58,7 +59,6 @@ const TherapistNotifications = () => {
   // Mark as read mutation (matching admin pattern)
   const markAsReadMutation = useMutation(
     (notificationId) => {
-      const notificationService = require('../../services/notificationService').default;
       return notificationService.markAsRead(notificationId);
     },
     {
@@ -95,7 +95,6 @@ const TherapistNotifications = () => {
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation(
     () => {
-      const notificationService = require('../../services/notificationService').default;
       return notificationService.markAllAsRead();
     },
     {
@@ -131,7 +130,6 @@ const TherapistNotifications = () => {
   // Delete notification mutation
   const deleteNotificationMutation = useMutation(
     (notificationId) => {
-      const notificationService = require('../../services/notificationService').default;
       return notificationService.deleteNotification(notificationId);
     },
     {
