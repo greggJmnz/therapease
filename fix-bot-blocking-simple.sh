@@ -10,6 +10,7 @@ echo ""
 
 NGINX_CONFIG="/etc/nginx/sites-enabled/therapease"
 BACKUP_CONFIG="${NGINX_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)"
+TEMP_FILE="${NGINX_CONFIG}.tmp"
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then 
@@ -47,14 +48,35 @@ if grep -A 10 "location / {" "$NGINX_CONFIG" | grep -q "if.*block_bot"; then
 else
     echo "   Adding bot blocking to location / block..."
     
+    # Create a temporary file with the bot blocking code
+    cat > /tmp/bot_block.txt << 'EOF'
+    # Block bots FIRST (before rate limiting)
+    if ($block_bot) {
+        return 403;
+    }
+    
+EOF
+    
     # Find line number of "location / {" block
     LOC_LINE=$(grep -n "^[[:space:]]*location / {" "$NGINX_CONFIG" | head -1 | cut -d: -f1)
     
     if [ -z "$LOC_LINE" ]; then
         echo "   ⚠️  Could not find 'location / {' block"
     else
-        # Insert bot blocking after the opening brace
-        sed -i "${LOC_LINE}a\    # Block bots FIRST (before rate limiting)\n    if (\$block_bot) {\n        return 403;\n    }\n" "$NGINX_CONFIG"
+        # Insert bot blocking after the opening brace using awk
+        awk -v n="$LOC_LINE" -v file="/tmp/bot_block.txt" '
+            NR == n {
+                print
+                while ((getline line < file) > 0) {
+                    print line
+                }
+                close(file)
+                next
+            }
+            { print }
+        ' "$NGINX_CONFIG" > "$TEMP_FILE"
+        mv "$TEMP_FILE" "$NGINX_CONFIG"
+        rm -f /tmp/bot_block.txt
         echo "   ✅ Added bot blocking to location / block"
     fi
 fi
@@ -67,14 +89,35 @@ if grep -A 15 "location /api/ {" "$NGINX_CONFIG" | grep -q "if.*block_bot"; then
 else
     echo "   Adding bot blocking to location /api/ block..."
     
+    # Create a temporary file with the bot blocking code
+    cat > /tmp/bot_block_api.txt << 'EOF'
+    # Block bots FIRST (before OPTIONS handling)
+    if ($block_bot) {
+        return 403;
+    }
+    
+EOF
+    
     # Find line number of "location /api/ {" block
     API_LINE=$(grep -n "^[[:space:]]*location /api/ {" "$NGINX_CONFIG" | head -1 | cut -d: -f1)
     
     if [ -z "$API_LINE" ]; then
         echo "   ⚠️  Could not find 'location /api/ {' block"
     else
-        # Insert bot blocking after the opening brace (before OPTIONS handling)
-        sed -i "${API_LINE}a\    # Block bots FIRST (before OPTIONS handling)\n    if (\$block_bot) {\n        return 403;\n    }\n" "$NGINX_CONFIG"
+        # Insert bot blocking after the opening brace using awk
+        awk -v n="$API_LINE" -v file="/tmp/bot_block_api.txt" '
+            NR == n {
+                print
+                while ((getline line < file) > 0) {
+                    print line
+                }
+                close(file)
+                next
+            }
+            { print }
+        ' "$NGINX_CONFIG" > "$TEMP_FILE"
+        mv "$TEMP_FILE" "$NGINX_CONFIG"
+        rm -f /tmp/bot_block_api.txt
         echo "   ✅ Added bot blocking to location /api/ block"
     fi
 fi
@@ -82,14 +125,18 @@ fi
 # Test nginx config
 echo ""
 echo "5. Testing nginx configuration..."
-if nginx -t 2>&1 | grep -q "test is successful"; then
+NGINX_TEST=$(nginx -t 2>&1)
+if echo "$NGINX_TEST" | grep -q "test is successful"; then
     echo "✅ Nginx configuration test passed"
 else
     echo "❌ Nginx configuration test failed!"
+    echo ""
+    echo "Error details:"
+    echo "$NGINX_TEST"
+    echo ""
     echo "Restoring backup..."
     cp "$BACKUP_CONFIG" "$NGINX_CONFIG"
     echo "❌ Changes reverted. Please check the configuration manually."
-    nginx -t
     exit 1
 fi
 
@@ -130,4 +177,3 @@ echo "2. Should see 403 errors instead of 400"
 echo "3. Monitor: sudo tail -f /var/log/nginx/access.log | grep -E '403|400' | grep 'Go-http-client'"
 echo ""
 echo "Backup saved at: $BACKUP_CONFIG"
-
