@@ -38,7 +38,7 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           utils: ['axios', 'date-fns'],
-          query: ['react-query', '@tanstack/react-query'],
+          query: ['react-query'],
         },
         // Optimize chunk naming for better caching
         chunkFileNames: 'assets/[name]-[hash].js',
