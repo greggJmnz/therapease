@@ -91,13 +91,18 @@ const getProofImageUrl = (fileUrl) => {
     ? `${serverBaseUrl}${fileUrl}` 
     : `${serverBaseUrl}/${fileUrl}`;
   
-    originalFileUrl: fileUrl, 
-    serverBaseUrl, 
-    fullUrl,
-    apiBaseUrl,
-    isProduction: import.meta.env.PROD,
-    hostname: window.location.hostname
-  });
+  // Only log in development
+  if (import.meta.env.DEV) {
+    console.log('📸 Proof image URL:', { 
+      originalFileUrl: fileUrl, 
+      serverBaseUrl, 
+      fullUrl,
+      apiBaseUrl,
+      isProduction: import.meta.env.PROD,
+      hostname: window.location.hostname
+    });
+  }
+  
   return fullUrl;
 };
 
