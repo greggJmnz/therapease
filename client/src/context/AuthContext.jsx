@@ -38,33 +38,42 @@ export const AuthProvider = ({ children }) => {
       const storedUserId = localStorage.getItem('userId');
 
       if (storedToken && storedUser && storedRole && storedUserId) {
-        try {
-          // Verify token with backend
-          const response = await authAPI.verify();
-          const data = response.data;
-
-          if (data.success) {
-            const userData = {
-              id: storedUserId,
-              role: storedRole,
-              ...JSON.parse(storedUser),
-            };
+        // Set user immediately from cache for faster initial render
+        const userData = {
+          id: storedUserId,
+          role: storedRole,
+          ...JSON.parse(storedUser),
+        };
         setUser(userData);
         setIsAuthenticated(true);
         setToken(storedToken);
+        setIsLoading(false); // Allow UI to render immediately
         
-        // Initialize WebSocket connection
-        websocketService.connect(storedToken);
-          } else {
+        // Verify token and initialize WebSocket asynchronously (non-blocking)
+        // This allows the UI to render immediately while verification happens in background
+        authAPI.verify().then(response => {
+          const data = response.data;
+          if (!data.success) {
             // Token is invalid, clear storage
             logout();
+          } else {
+            // Initialize WebSocket connection after verification (non-blocking)
+            // Use setTimeout to defer WebSocket connection slightly to prioritize UI rendering
+            setTimeout(() => {
+              websocketService.connect(storedToken);
+            }, 100);
           }
-        } catch (error) {
+        }).catch(error => {
           console.error('Token verification failed:', error);
-          logout();
-        }
+          // Don't logout on network errors - allow cached user to stay logged in
+          // Only logout if token is explicitly invalid
+          if (error.response?.status === 401) {
+            logout();
+          }
+        });
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initializeAuth();

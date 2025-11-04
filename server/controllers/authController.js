@@ -80,13 +80,10 @@ const login = async (req, res) => {
       });
     }
 
-    // Get session timeout from system settings
-    const sessionTimeoutSetting = await getRow(
-      'SELECT setting_value FROM system_settings WHERE setting_key = ?',
-      ['session_timeout']
-    );
-    
-    const sessionTimeoutMinutes = sessionTimeoutSetting ? parseInt(sessionTimeoutSetting.setting_value) : 30;
+    // Use default session timeout (skip database query for faster login)
+    // System settings can be fetched later if needed
+    const DEFAULT_SESSION_TIMEOUT = 30; // minutes
+    const sessionTimeoutMinutes = DEFAULT_SESSION_TIMEOUT;
     const sessionTimeoutHours = sessionTimeoutMinutes / 60;
     const expiresIn = sessionTimeoutHours >= 1 ? `${sessionTimeoutHours}h` : `${sessionTimeoutMinutes}m`;
 
@@ -101,44 +98,37 @@ const login = async (req, res) => {
       { expiresIn }
     );
 
-    // Get additional role-specific data
+    // Defer role-specific data loading - return minimal data for faster login
+    // Role-specific data can be fetched on-demand when dashboard loads
+    // This significantly speeds up login response time
     let roleData = {};
     
+    // Only fetch critical role-specific fields needed for immediate redirect/routing
     if (user.role === 'therapist') {
       const therapistSql = `
         SELECT 
           t.id,
-          t.licenseNumber,
-          t.specialization,
-          t.yearsOfExperience,
-          t.education,
-          t.certifications,
-          t.availability
+          t.specialization
         FROM therapists t
         WHERE t.userId = ?
       `;
       
       const therapist = await getRow(therapistSql, [user.id]);
       if (therapist) {
-        roleData = therapist;
+        roleData = { id: therapist.id, specialization: therapist.specialization };
       }
     } else if (user.role === 'patient') {
       const patientSql = `
         SELECT 
           p.id,
-          p.diagnosis,
-          p.medicalHistory,
-          p.goals,
-          p.therapistId,
-          p.emergencyContact,
-          p.insuranceInfo
+          p.therapistId
         FROM patients p
         WHERE p.userId = ?
       `;
       
       const patient = await getRow(patientSql, [user.id]);
       if (patient) {
-        roleData = patient;
+        roleData = { id: patient.id, therapistId: patient.therapistId };
       }
     }
 

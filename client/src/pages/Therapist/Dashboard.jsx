@@ -34,7 +34,8 @@ const TherapistDashboard = () => {
     }
   };
   
-  // Fetch dashboard data from API
+  // Fetch dashboard data from API with optimized loading
+  // Use suspense: false to allow partial rendering while loading
   const { data: dashboardData, isLoading, error, refetch } = useQuery(
     'therapistDashboard',
     () => therapistAPI.getDashboard(user?.id),
@@ -47,7 +48,12 @@ const TherapistDashboard = () => {
       staleTime: 2 * 60 * 1000, // 2 minutes
       cacheTime: 5 * 60 * 1000, // 5 minutes
       refetchOnMount: false,
-      refetchOnWindowFocus: false
+      refetchOnWindowFocus: false,
+      // Optimize: Use placeholder data to show UI structure immediately
+      placeholderData: (previousData) => previousData,
+      // Reduce loading priority - allow UI to render first
+      retry: 1,
+      retryDelay: 1000
     }
   );
 

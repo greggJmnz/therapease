@@ -45,7 +45,7 @@ const PatientDashboard = () => {
 
   // Note: Onboarding status check and navigation is now handled in PatientLayout
 
-  // Fetch dashboard data from API
+  // Fetch dashboard data from API with optimized loading
   const { data: dashboardData, isLoading, error } = useQuery(
     'patientDashboard',
     patientAPI.getDashboard,
@@ -56,7 +56,16 @@ const PatientDashboard = () => {
       },
       onSuccess: (data) => {
         // Dashboard data loaded successfully
-      }
+      },
+      // Optimize: Use placeholder data to show UI structure immediately
+      placeholderData: (previousData) => previousData,
+      // Reduce loading priority - allow UI to render first
+      retry: 1,
+      retryDelay: 1000,
+      staleTime: 2 * 60 * 1000, // 2 minutes
+      cacheTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnMount: false,
+      refetchOnWindowFocus: false
     }
   );
 
