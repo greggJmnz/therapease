@@ -40,32 +40,41 @@ const getProofImageUrl = (fileUrl) => {
   // Get the server URL from API base URL
   // We need to use the API server URL, not the frontend URL
   const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const isProduction = window.location.protocol === 'https:';
   let serverBaseUrl;
   
   if (apiBaseUrl) {
     // Extract server URL from API URL (remove /api suffix)
     // Example: https://api.therapease.site/api -> https://api.therapease.site
     serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
+    
+    // Ensure HTTPS in production (fix mixed content errors)
+    if (isProduction && serverBaseUrl.startsWith('http://')) {
+      serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
+      console.warn('⚠️ Upgraded HTTP to HTTPS for production:', serverBaseUrl);
+    }
   } else {
     // IMPORTANT: In production, VITE_API_URL MUST be set!
-    // For development, check if we're running locally
-    // Try to detect if we're in development vs production
-    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
     if (isDevelopment) {
       // In development, API is typically on localhost:5000
       serverBaseUrl = 'http://localhost:5000';
       console.warn('⚠️ VITE_API_URL not set in development, using http://localhost:5000');
     } else {
-      // In production without VITE_API_URL, this is a configuration error
-      // Try to infer from window location (not ideal, but better than nothing)
+      // In production without VITE_API_URL, infer from hostname
       // For TherapEase, API is at api.therapease.site
       const hostname = window.location.hostname;
       if (hostname.includes('therapease.site')) {
+        // Always use HTTPS in production
         serverBaseUrl = 'https://api.therapease.site';
         console.warn('⚠️ VITE_API_URL not set, inferred from hostname:', serverBaseUrl);
+        console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
       } else {
+        // Fallback: use current origin but ensure HTTPS
         serverBaseUrl = window.location.origin;
+        if (isProduction && serverBaseUrl.startsWith('http://')) {
+          serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
+        }
         console.error('❌ VITE_API_URL not set and cannot infer server URL. Using:', serverBaseUrl);
         console.error('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
       }
