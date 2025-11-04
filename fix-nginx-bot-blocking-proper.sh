@@ -160,17 +160,38 @@ fi
 echo ""
 echo "8. Testing nginx configuration..."
 NGINX_TEST=$(nginx -t 2>&1)
-if echo "$NGINX_TEST" | grep -q "test is successful"; then
+NGINX_TEST_EXIT=$?
+
+if [ $NGINX_TEST_EXIT -eq 0 ] && echo "$NGINX_TEST" | grep -q "test is successful"; then
     echo "✅ Nginx configuration test passed"
 else
     echo "❌ Nginx configuration test failed!"
     echo ""
-    echo "Error details:"
-    echo "$NGINX_TEST" | grep -i "error\|directive" | head -5
+    echo "Full error output:"
+    echo "$NGINX_TEST"
     echo ""
-    echo "Restoring backup..."
-    cp "$BACKUP_CONFIG" "$NGINX_CONFIG"
-    echo "❌ Changes reverted. Please check the configuration manually."
+    echo "Checking for common issues..."
+    
+    # Check for syntax errors
+    if echo "$NGINX_TEST" | grep -q "directive is not allowed"; then
+        ERROR_LINE=$(echo "$NGINX_TEST" | grep -o "line [0-9]*" | grep -o "[0-9]*" | head -1)
+        if [ -n "$ERROR_LINE" ]; then
+            echo "Error at line $ERROR_LINE:"
+            sed -n "${ERROR_LINE}p" "$NGINX_CONFIG"
+            echo ""
+            echo "Context (lines $((ERROR_LINE-2))-$((ERROR_LINE+2))):"
+            sed -n "$((ERROR_LINE-2)),$((ERROR_LINE+2))p" "$NGINX_CONFIG" | cat -n
+        fi
+    fi
+    
+    echo ""
+    echo "⚠️  Script stopped. Please fix the nginx config manually or restore the backup."
+    echo "Backup saved at: $BACKUP_CONFIG"
+    echo ""
+    echo "To restore backup:"
+    echo "  sudo cp $BACKUP_CONFIG $NGINX_CONFIG"
+    echo "  sudo nginx -t"
+    echo "  sudo systemctl reload nginx"
     exit 1
 fi
 
