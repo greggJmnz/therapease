@@ -410,13 +410,26 @@ const createTables = async () => {
 
     // Add foreign key for approvedBy if it doesn't exist
     try {
-      await pool.execute(`
-        ALTER TABLE appointments 
-        ADD CONSTRAINT fk_appointments_approved_by 
-        FOREIGN KEY (approvedBy) REFERENCES users(id) ON DELETE SET NULL
+      // Check if constraint already exists
+      const [constraints] = await pool.execute(`
+        SELECT CONSTRAINT_NAME 
+        FROM information_schema.TABLE_CONSTRAINTS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'appointments' 
+        AND CONSTRAINT_NAME = 'fk_appointments_approved_by'
       `);
+      
+      if (constraints.length === 0) {
+        await pool.execute(`
+          ALTER TABLE appointments 
+          ADD CONSTRAINT fk_appointments_approved_by 
+          FOREIGN KEY (approvedBy) REFERENCES users(id) ON DELETE SET NULL
+        `);
+      }
     } catch (error) {
-      if (error.code === 'ER_DUP_KEYNAME') {
+      // Ignore duplicate constraint errors
+      if (error.code === 'ER_DUP_KEYNAME' || error.code === 'ER_DUP_FIELDNAME' || error.message.includes('Duplicate')) {
+        // Constraint already exists, ignore
       } else {
         console.error('Error adding foreign key for approvedBy:', error.message);
       }
@@ -439,15 +452,29 @@ const createTables = async () => {
           ALTER TABLE appointments 
           ADD COLUMN createdBy INT NULL
         `);
-        // Add foreign key constraint
+        // Add foreign key constraint (only if it doesn't exist)
         try {
-          await pool.execute(`
-            ALTER TABLE appointments 
-            ADD CONSTRAINT fk_appointments_created_by 
-            FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+          // Check if constraint already exists
+          const [fkConstraints] = await pool.execute(`
+            SELECT CONSTRAINT_NAME 
+            FROM information_schema.TABLE_CONSTRAINTS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'appointments' 
+            AND CONSTRAINT_NAME = 'fk_appointments_created_by'
           `);
+          
+          if (fkConstraints.length === 0) {
+            await pool.execute(`
+              ALTER TABLE appointments 
+              ADD CONSTRAINT fk_appointments_created_by 
+              FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+            `);
+          }
         } catch (fkError) {
-          if (fkError.code !== 'ER_DUP_KEYNAME') {
+          // Ignore duplicate constraint errors
+          if (fkError.code === 'ER_DUP_KEYNAME' || fkError.code === 'ER_DUP_FIELDNAME' || fkError.message.includes('Duplicate')) {
+            // Constraint already exists, ignore
+          } else {
             console.error('Error adding createdBy foreign key:', fkError.message);
           }
         }
