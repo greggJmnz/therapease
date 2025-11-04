@@ -41,6 +41,33 @@ const treatmentPlanRoutes = require('./routes/treatmentPlanRoutes');
 const homeExerciseRoutes = require('./routes/homeExerciseRoutes');
 const progressReportRoutes = require('./routes/progressReportRoutes');
 
+// Parse CORS origins from environment variable or use defaults
+const getCorsOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // Use CORS_ORIGIN from environment variable if set, otherwise use defaults
+    if (process.env.CORS_ORIGIN) {
+      return process.env.CORS_ORIGIN.split(',').map(origin => origin.trim());
+    }
+    // Default production origins
+    return [
+      'https://therapease-gnu5.vercel.app', // Vercel production deployment
+      'https://therapease.site',            // Custom domain
+      'https://www.therapease.site'         // www subdomain
+    ];
+  }
+  return true; // Allow all origins in development
+};
+
+// CORS MUST be before security headers to work properly
+app.use(cors({
+  origin: getCorsOrigins(),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Data-Protection', 'X-Content-Encryption'],
+  exposedHeaders: ['X-Data-Protection', 'X-Content-Encryption'],
+  optionsSuccessStatus: 200
+}));
+
 // Compression Middleware (Enable gzip compression with optimization)
 app.use(compression({
   level: 6, // Compression level (1-9, 6 is good balance)
@@ -73,6 +100,7 @@ app.use(checkEnvironmentExposure);
 app.use(securityHeaders);
 app.use(customSecurityHeaders);
 app.use(addEncryptionHeaders);
+
 // Simple in-memory cache for frequently accessed data
 const cache = new Map();
 const CACHE_TTL = 30000; // 30 seconds default TTL
@@ -93,32 +121,6 @@ const setCache = (key, data, ttl = CACHE_TTL) => {
     expiry: Date.now() + ttl
   });
 };
-
-// Parse CORS origins from environment variable or use defaults
-const getCorsOrigins = () => {
-  if (process.env.NODE_ENV === 'production') {
-    // Use CORS_ORIGIN from environment variable if set, otherwise use defaults
-    if (process.env.CORS_ORIGIN) {
-      return process.env.CORS_ORIGIN.split(',').map(origin => origin.trim());
-    }
-    // Default production origins
-    return [
-      'https://therapease-gnu5.vercel.app', // Vercel production deployment
-      'https://therapease.site',            // Custom domain
-      'https://www.therapease.site'         // www subdomain
-    ];
-  }
-  return true; // Allow all origins in development
-};
-
-app.use(cors({
-  origin: getCorsOrigins(),
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Data-Protection', 'X-Content-Encryption'],
-  exposedHeaders: ['X-Data-Protection', 'X-Content-Encryption'],
-  optionsSuccessStatus: 200
-}));
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
