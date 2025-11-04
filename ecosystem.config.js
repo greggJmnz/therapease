@@ -3,6 +3,7 @@ module.exports = {
     {
       name: 'therapease-api',
       script: 'server/index.js',
+      cwd: '/home/therapease_user/therapease', // Explicit working directory
       instances: 1, // Single instance for better WebSocket compatibility and resource efficiency
       exec_mode: 'fork',
       max_memory_restart: '1G',
@@ -31,6 +32,7 @@ module.exports = {
     {
       name: 'therapease-public',
       script: 'public-website/server.js',
+      cwd: '/home/therapease_user/therapease', // Explicit working directory
       instances: 1,
       exec_mode: 'fork',
       max_memory_restart: '512M',
