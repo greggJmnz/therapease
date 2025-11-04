@@ -57,9 +57,12 @@ echo "5. Checking PM2 Process Info..."
 echo "-----------------------------------"
 PM2_INFO=$(pm2 describe therapease-api 2>&1)
 echo "$PM2_INFO" | grep -E "status|restarts|uptime|mode" | head -5
-RESTART_COUNT=$(echo "$PM2_INFO" | grep "restarts:" | awk '{print $2}' || echo "0")
+RESTART_COUNT=$(echo "$PM2_INFO" | grep "restarts:" | awk '{print $2}' | tr -d ' ' || echo "0")
+if [ -z "$RESTART_COUNT" ] || [ "$RESTART_COUNT" = "" ]; then
+    RESTART_COUNT=0
+fi
 echo "Restart count: $RESTART_COUNT"
-if [ "$RESTART_COUNT" -gt 10 ]; then
+if [ "$RESTART_COUNT" -gt 10 ] 2>/dev/null; then
     echo "⚠️  High restart count - Backend may be crashing repeatedly"
 fi
 echo ""
