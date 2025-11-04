@@ -1,6 +1,7 @@
 // Notification Service for TherapEase
 // Handles real notification data fetching and management
 // Uses axios instance from api.js for consistency with adminAPI, patientAPI, and therapistAPI
+// Note: For simple queries, prefer using role-specific APIs (patientAPI, therapistAPI, adminAPI) directly
 
 import { api } from './api';
 
@@ -203,9 +204,9 @@ class NotificationService {
   async subscribeToPush(subscription, userAgent) {
     try {
       const response = await api.post('/notifications/subscribe', {
-        subscription,
-        userAgent,
-        endpoint: subscription.endpoint
+          subscription,
+          userAgent,
+          endpoint: subscription.endpoint
       });
       return response.data;
     } catch (error) {

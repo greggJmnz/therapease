@@ -2382,8 +2382,8 @@ The therapist retains full responsibility for all clinical decisions and patient
 
       // Call the AI API using aiAPI (matching other API calls)
       const response = await aiAPI.analyzeAssessment({
-        patientData,
-        assessmentData
+          patientData,
+          assessmentData
       });
 
       const result = response.data;

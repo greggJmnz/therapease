@@ -175,7 +175,7 @@ const createTables = async () => {
         } catch (err) {
           if (!err.message.includes('Duplicate column name')) {
             throw err;
-          }
+      }
           // Column already exists, skip it
         }
       }

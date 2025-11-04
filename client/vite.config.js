@@ -23,7 +23,14 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Disable sourcemaps in production for faster builds
+    minify: 'terser', // Use terser for better minification
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.logs in production
+        drop_debugger: true,
+      },
+    },
     // Adjust chunk size warning limit to 1000KB (1MB)
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
@@ -31,9 +38,18 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           utils: ['axios', 'date-fns'],
+          query: ['react-query', '@tanstack/react-query'],
         },
+        // Optimize chunk naming for better caching
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
+    // Enable CSS code splitting
+    cssCodeSplit: true,
+    // Optimize asset handling
+    assetsInlineLimit: 4096, // Inline small assets (< 4KB) as base64
   },
 });
 

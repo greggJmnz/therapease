@@ -1779,7 +1779,7 @@ const sendPasswordResetLink = async (req, res) => {
           console.log(`✅ Password reset email sent to ${user.email}`);
         } else {
           console.warn(`⚠️ Failed to send password reset email to ${user.email}: ${emailResult.error}`);
-        }
+      }
       }).catch(error => {
         console.error(`❌ Error sending password reset email to ${user.email}:`, error.message);
       });

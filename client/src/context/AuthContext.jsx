@@ -141,20 +141,25 @@ export const AuthProvider = ({ children }) => {
   }, [user?.id]);
 
   const login = async (email, password) => {
-    console.log('AuthContext: login called with:', { email, password });
+    // Only log in development
+    if (import.meta.env.DEV) {
+      console.log('AuthContext: login called with:', { email, password });
+    }
     try {
-      console.log('AuthContext: making API call to login...');
+      if (import.meta.env.DEV) {
+        console.log('AuthContext: making API call to login...');
+      }
       const response = await authAPI.login({ email, password });
-      console.log('AuthContext: API response received:', response);
       const data = response.data;
-      console.log('AuthContext: response data:', data);
 
       // Axios automatically throws errors for non-2xx status codes
       // If we reach here, the request was successful
       if (data.success) {
         // Check if 2FA is required
         if (data.requires2FA) {
-          console.log('AuthContext: 2FA required for login');
+          if (import.meta.env.DEV) {
+            console.log('AuthContext: 2FA required for login');
+          }
           return { 
             success: true, 
             requires2FA: true, 
@@ -200,22 +205,20 @@ export const AuthProvider = ({ children }) => {
 
         return { success: true, user: userData };
       } else {
-        console.log('AuthContext: login failed with message:', data.message);
+        if (import.meta.env.DEV) {
+          console.log('AuthContext: login failed with message:', data.message);
+        }
         return { success: false, message: data.message || 'Login failed' };
       }
     } catch (error) {
-      console.error('AuthContext: Login error:', error);
+      if (import.meta.env.DEV) {
+        console.error('AuthContext: Login error:', error);
+      }
       if (error.response) {
-        // Server responded with error status
-        console.log('AuthContext: Server error response:', error.response);
         return { success: false, message: error.response.data?.message || 'Login failed' };
       } else if (error.request) {
-        // Request was made but no response received
-        console.log('AuthContext: No response received:', error.request);
         return { success: false, message: 'Network error. Please check your connection.' };
       } else {
-        // Something else happened
-        console.log('AuthContext: Other error:', error.message);
         return { success: false, message: 'An unexpected error occurred.' };
       }
     }

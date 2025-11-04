@@ -79,8 +79,8 @@ class EmailService {
         // Default to Gmail SMTP service
         console.log(`📧 Using Gmail SMTP service`);
         smtpConfig = {
-          service: 'gmail',
-          auth: {
+      service: 'gmail',
+      auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASSWORD
           },
@@ -101,18 +101,18 @@ class EmailService {
           resolve(false);
         }, 5000); // 5 second timeout for verification
 
-        this.transporter.verify((error, success) => {
+    this.transporter.verify((error, success) => {
           clearTimeout(timeout);
-          if (error) {
+      if (error) {
             console.error('⚠️ Email service configuration error:', error.message);
             console.log('💡 Email service will still be available, but emails may fail to send.');
             console.log('💡 Check: 1) Gmail requires app-specific passwords, 2) Network/firewall settings, 3) Email credentials');
             resolve(false);
-          } else {
-            console.log('✅ Email service is ready to send messages');
+      } else {
+        console.log('✅ Email service is ready to send messages');
             resolve(true);
-          }
-        });
+      }
+    });
       });
 
       // Fire and forget - don't wait for verification
@@ -215,7 +215,7 @@ class EmailService {
           error: 'Email service is disabled. Please enable email service in environment variables to send password reset emails.' 
         };
       }
-
+      
       const mailOptions = {
         from: {
           name: 'TherapEase Support',

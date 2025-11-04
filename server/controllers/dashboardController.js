@@ -157,7 +157,7 @@ const getDashboard = async (req, res) => {
 
     // Format progress data
     const progressWithPercentages = progressByArea.map(area => ({
-      ...area,
+        ...area,
       avgProgress: area.avgProgress ? Math.round(area.avgProgress) : 0
     }));
 

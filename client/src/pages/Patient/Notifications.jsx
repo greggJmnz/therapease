@@ -9,7 +9,7 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 const Notifications = () => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
-
+  
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
