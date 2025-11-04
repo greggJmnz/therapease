@@ -496,12 +496,6 @@ const getExerciseProofs = async (req, res) => {
           // Files are stored in server/uploads/exercise-proofs/
           // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
           proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
-          
-          console.log(`📸 Proof file URL conversion:`, {
-            filePath: proof.filePath,
-            fileName: fileName,
-            fileUrl: proof.fileUrl
-          });
         }
       }
       return proof;
@@ -623,12 +617,6 @@ const getTherapistProofs = async (req, res) => {
           // Files are stored in server/uploads/exercise-proofs/
           // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
           proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
-          
-          console.log(`📸 Proof file URL conversion:`, {
-            filePath: proof.filePath,
-            fileName: fileName,
-            fileUrl: proof.fileUrl
-          });
         }
       }
       return proof;
@@ -682,12 +670,6 @@ const getPatientProofs = async (req, res) => {
           // Files are stored in server/uploads/exercise-proofs/
           // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
           proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
-          
-          console.log(`📸 Proof file URL conversion:`, {
-            filePath: proof.filePath,
-            fileName: fileName,
-            fileUrl: proof.fileUrl
-          });
         }
       }
       return proof;

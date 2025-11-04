@@ -134,11 +134,10 @@ const createTables = async () => {
         }
       }
       
-      console.log('✅ Users table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
-        console.log('Note: Additional columns may already exist');
+        // Column already exists, skip it
       }
     }
 
@@ -180,11 +179,10 @@ const createTables = async () => {
         }
       }
       
-      console.log('✅ Patients table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
-        console.log('Note: Patient columns may already exist');
+        // Column already exists, skip it
       }
     }
 
@@ -194,11 +192,10 @@ const createTables = async () => {
         ALTER TABLE notifications 
         ADD COLUMN IF NOT EXISTS priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium'
       `);
-      console.log('✅ Notifications table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
-        console.log('Note: Notifications priority column may already exist');
+        // Column already exists, skip it
       }
     }
 
@@ -284,11 +281,10 @@ const createTables = async () => {
         }
       }
       
-      console.log('✅ Therapists table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
-        console.log('Note: Therapist columns may already exist');
+        // Column already exists, skip it
       }
     }
 
@@ -355,9 +351,6 @@ const createTables = async () => {
       
       if (contentColumns.length === 0) {
         await pool.execute(`ALTER TABLE daily_notes ADD COLUMN content TEXT`);
-        console.log('Content column added to daily_notes table');
-      } else {
-        console.log('Content column already exists');
       }
 
       // Check for goals column
@@ -371,9 +364,6 @@ const createTables = async () => {
       
       if (goalsColumns.length === 0) {
         await pool.execute(`ALTER TABLE daily_notes ADD COLUMN goals TEXT`);
-        console.log('Goals column added to daily_notes table');
-      } else {
-        console.log('Goals column already exists');
       }
 
       // Check for comments column
@@ -387,12 +377,9 @@ const createTables = async () => {
       
       if (commentsColumns.length === 0) {
         await pool.execute(`ALTER TABLE daily_notes ADD COLUMN comments TEXT`);
-        console.log('Comments column added to daily_notes table');
-      } else {
-        console.log('Comments column already exists');
       }
     } catch (error) {
-      console.log('Error checking/adding columns:', error.message);
+      console.error('Error checking/adding columns:', error.message);
     }
 
     // Appointments table
@@ -428,12 +415,10 @@ const createTables = async () => {
         ADD CONSTRAINT fk_appointments_approved_by 
         FOREIGN KEY (approvedBy) REFERENCES users(id) ON DELETE SET NULL
       `);
-      console.log('Foreign key for approvedBy added to appointments table');
     } catch (error) {
       if (error.code === 'ER_DUP_KEYNAME') {
-        console.log('Foreign key for approvedBy already exists');
       } else {
-        console.log('Error adding foreign key for approvedBy:', error.message);
+        console.error('Error adding foreign key for approvedBy:', error.message);
       }
     }
 
@@ -454,8 +439,6 @@ const createTables = async () => {
           ALTER TABLE appointments 
           ADD COLUMN createdBy INT NULL
         `);
-        console.log('createdBy column added to appointments table');
-        
         // Add foreign key constraint
         try {
           await pool.execute(`
@@ -463,12 +446,9 @@ const createTables = async () => {
             ADD CONSTRAINT fk_appointments_created_by 
             FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
           `);
-          console.log('createdBy foreign key added to appointments table');
         } catch (fkError) {
-          if (fkError.code === 'ER_DUP_KEYNAME') {
-            console.log('createdBy foreign key already exists');
-          } else {
-            console.log('Error adding createdBy foreign key:', fkError.message);
+          if (fkError.code !== 'ER_DUP_KEYNAME') {
+            console.error('Error adding createdBy foreign key:', fkError.message);
           }
         }
         
@@ -486,13 +466,10 @@ const createTables = async () => {
             END
             WHERE createdBy IS NULL
           `);
-          console.log('Populated createdBy field for existing appointments');
         } catch (updateError) {
-          console.log('Error populating createdBy field:', updateError.message);
+          console.error('Error populating createdBy field:', updateError.message);
         }
       } else {
-        console.log('createdBy column already exists');
-        
         // Still try to populate any NULL values
         try {
           await pool.execute(`
@@ -504,13 +481,12 @@ const createTables = async () => {
             END
             WHERE createdBy IS NULL
           `);
-          console.log('Updated NULL createdBy values for existing appointments');
         } catch (updateError) {
-          console.log('Error updating NULL createdBy values:', updateError.message);
+          console.error('Error updating NULL createdBy values:', updateError.message);
         }
       }
     } catch (error) {
-      console.log('Error checking/adding createdBy column:', error.message);
+      console.error('Error checking/adding createdBy column:', error.message);
     }
 
     // Progress Tracking table (for outcome measurement and goal tracking)
@@ -893,7 +869,6 @@ const createTables = async () => {
         }
       }
       
-      console.log('✅ Main objectives table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
@@ -923,7 +898,6 @@ const createTables = async () => {
         }
       }
       
-      console.log('✅ Progress reports table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
@@ -948,7 +922,6 @@ const createTables = async () => {
         }
       }
       
-      console.log('✅ Treatment plans table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
@@ -975,7 +948,6 @@ const createTables = async () => {
         }
       }
       
-      console.log('✅ Specific objectives table columns updated successfully');
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {

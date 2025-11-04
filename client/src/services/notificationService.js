@@ -9,7 +9,6 @@ class NotificationService {
   // Get user role from localStorage
   getUserRole() {
     const role = localStorage.getItem('userRole') || '';
-    console.log(`🔍 getUserRole(): Found role: "${role}" in localStorage`);
     return role;
   }
 

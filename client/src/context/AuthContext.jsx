@@ -25,7 +25,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Listen for custom logout events from API interceptor
     const handleLogoutEvent = (event) => {
-      console.log('🔐 Received logout event:', event.detail);
       logout();
     };
     
@@ -112,13 +111,10 @@ export const AuthProvider = ({ children }) => {
           // Verify token to refresh session
           const response = await authAPI.verify();
           if (response.data.success) {
-            console.log('🔄 Token refreshed successfully');
           } else {
-            console.log('🔄 Token refresh failed, logging out');
             logout();
           }
         } catch (error) {
-          console.log('🔄 Token refresh error, logging out:', error);
           logout();
         }
       }
@@ -142,13 +138,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     // Only log in development
-    if (import.meta.env.DEV) {
-      console.log('AuthContext: login called with:', { email, password });
-    }
     try {
-      if (import.meta.env.DEV) {
-        console.log('AuthContext: making API call to login...');
-      }
       const response = await authAPI.login({ email, password });
       const data = response.data;
 
@@ -157,9 +147,6 @@ export const AuthProvider = ({ children }) => {
       if (data.success) {
         // Check if 2FA is required
         if (data.requires2FA) {
-          if (import.meta.env.DEV) {
-            console.log('AuthContext: 2FA required for login');
-          }
           return { 
             success: true, 
             requires2FA: true, 
@@ -205,15 +192,9 @@ export const AuthProvider = ({ children }) => {
 
         return { success: true, user: userData };
       } else {
-        if (import.meta.env.DEV) {
-          console.log('AuthContext: login failed with message:', data.message);
-        }
         return { success: false, message: data.message || 'Login failed' };
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('AuthContext: Login error:', error);
-      }
       if (error.response) {
         return { success: false, message: error.response.data?.message || 'Login failed' };
       } else if (error.request) {
@@ -225,13 +206,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWith2FA = async (email, code) => {
-    console.log('AuthContext: loginWith2FA called with:', { email, code });
     try {
-      console.log('AuthContext: making API call to loginWith2FA...');
       const response = await authAPI.loginWith2FA({ email, code });
-      console.log('AuthContext: API response received:', response);
       const data = response.data;
-      console.log('AuthContext: response data:', data);
 
       if (data.success) {
         const userData = {
@@ -245,7 +222,6 @@ export const AuthProvider = ({ children }) => {
           onboardingCompleted: data.data.user.onboardingCompleted || false,
         };
 
-        console.log('AuthContext: setting user data:', userData);
         
         // Clear any cached data from previous users
         Object.keys(localStorage).forEach(key => {
@@ -271,7 +247,6 @@ export const AuthProvider = ({ children }) => {
 
         return { success: true, user: userData };
       } else {
-        console.log('AuthContext: 2FA login failed with message:', data.message);
         return { success: false, message: data.message || '2FA verification failed' };
       }
     } catch (error) {

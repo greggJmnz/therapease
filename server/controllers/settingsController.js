@@ -361,11 +361,6 @@ const updateSettings = async (req, res) => {
     const userRole = req.user.role;
     const updateData = req.body;
     
-    console.log(`⚙️  Updating settings for user ${userId} (role: ${userRole})`);
-    console.log(`   Update data keys:`, Object.keys(updateData));
-    if (updateData.workingHours) {
-      console.log(`   Has workingHours: true`);
-    }
 
     const connection = await getConnection();
     await connection.beginTransaction();
@@ -426,14 +421,10 @@ const updateSettings = async (req, res) => {
 
       // Update working hours for therapists
       if (userRole === 'therapist' && updateData.workingHours) {
-        console.log(`📅 Updating working hours for therapist ${userId}`);
-        console.log(`   Received workingHours:`, JSON.stringify(updateData.workingHours, null, 2));
-        
         // Delete existing working hours
         const deleteResult = await connection.execute(`
           DELETE FROM working_hours WHERE userId = ?
         `, [userId]);
-        console.log(`   Deleted ${deleteResult[0].affectedRows} existing working hours`);
 
         // Insert new working hours
         const workingHours = updateData.workingHours;
@@ -458,14 +449,11 @@ const updateSettings = async (req, res) => {
               VALUES (?, ?, ?, ?, ?)
             `, [userId, day.toLowerCase(), startTime, endTime, isEnabled]);
             insertedCount++;
-            console.log(`   ✅ Inserted working hours for ${day}: ${startTime} - ${endTime} (enabled: ${isEnabled})`);
           } catch (insertError) {
             console.error(`   ❌ Error inserting working hours for ${day}:`, insertError.message);
             throw new Error(`Failed to insert working hours for ${day}: ${insertError.message}`);
           }
         }
-        
-        console.log(`   ✅ Successfully updated ${insertedCount} working hours`);
       }
 
       // Update notification settings for therapists

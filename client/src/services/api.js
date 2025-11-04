@@ -5,12 +5,13 @@ import axios from 'axios';
 const getApiBaseUrl = () => {
   // Check if VITE_API_URL is set (production)
   if (import.meta.env.VITE_API_URL) {
-    console.log('✅ Using VITE_API_URL:', import.meta.env.VITE_API_URL);
     return import.meta.env.VITE_API_URL;
   }
   // Fallback to relative URL for development
-  console.warn('⚠️ VITE_API_URL not set! Falling back to relative /api. This will fail in production.');
-  console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
+  if (import.meta.env.DEV) {
+    console.warn('⚠️ VITE_API_URL not set! Falling back to relative /api. This will fail in production.');
+    console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
+  }
   return '/api';
 };
 
@@ -50,7 +51,6 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired or invalid, clear storage but don't redirect automatically
       // Let the AuthContext handle the logout logic to prevent page reloads
-      console.log('🔐 Token expired, clearing storage...');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('userRole');

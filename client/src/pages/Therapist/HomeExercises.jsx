@@ -91,7 +91,6 @@ const getProofImageUrl = (fileUrl) => {
     ? `${serverBaseUrl}${fileUrl}` 
     : `${serverBaseUrl}/${fileUrl}`;
   
-  console.log('📸 Proof image URL:', { 
     originalFileUrl: fileUrl, 
     serverBaseUrl, 
     fullUrl,
@@ -894,7 +893,6 @@ const HomeExercises = () => {
                                       e.target.style.display = 'none';
                                     }}
                                     onLoad={(e) => {
-                                      console.log('Image loaded successfully:', e.target.src);
                                     }}
                                   />
                                 </div>

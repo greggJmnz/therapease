@@ -83,7 +83,7 @@ therapease/
 - **VAPID** - Push notification authentication
 
 ### DevOps & Security
-- **Environment-based configuration** - Flexible deployment options
+- **Environment-based configuration** - Flexible configuration options
 - **Comprehensive error handling** - Robust error management
 - **Data encryption** - Secure data storage
 - **CORS protection** - Cross-origin request security
@@ -336,18 +336,6 @@ npm run seed:sample
 
 # Test database notifications
 npm run notifications:db-test
-```
-
-## 🚀 Deployment
-
-### Production Build
-```bash
-npm run build
-```
-
-### Docker Deployment
-```bash
-docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ## 🤝 Contributing

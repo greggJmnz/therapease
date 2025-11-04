@@ -14,6 +14,7 @@ const {
 const websocketService = require('./services/websocketService');
 const { checkMaintenanceMode, checkPublicMaintenanceMode } = require('./middleware/maintenanceMiddleware');
 const { validateEnvironmentSecurity, securityHeaders: customSecurityHeaders, checkEnvironmentExposure } = require('./middleware/securityMiddleware');
+const logger = require('./utils/logger');
 // Load environment variables - use .env.production in production, .env in development
 const envFile = process.env.NODE_ENV === 'production' 
   ? path.join(__dirname, '.env.production')
@@ -240,7 +241,7 @@ app.post('/api/test-notification', async (req, res) => {
       notificationId: result.insertId
     });
   } catch (error) {
-    console.error('Test notification error:', error);
+    logger.error('Test notification error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -271,7 +272,7 @@ app.get('/api/test-tables', async (req, res) => {
       checks
     });
   } catch (error) {
-    console.error('Test tables error:', error);
+    logger.error('Test tables error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -336,7 +337,7 @@ app.get('/api/test-admin-users', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Test admin users error:', error);
+    logger.error('Test admin users error:', error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -363,7 +364,7 @@ app.get('/api/test-columns', async (req, res) => {
       patients: patientsColumns.map(col => col.Field)
     });
   } catch (error) {
-    console.error('Test columns error:', error);
+    logger.error('Test columns error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -398,7 +399,7 @@ app.use('/api/progress-reports', progressReportRoutes);
 // Error handling middleware
 app.use(handleEncryptionError);
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error(err.stack);
   res.status(500).json({ 
     success: false, 
     error: 'Internal server error',
@@ -427,13 +428,13 @@ initializeNotificationSchedulers();
 
 // Start server
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 TherapEase API server running on port ${PORT}`);
-  console.log(`🌐 HTTP mode (SSL disabled for development)`);
-  console.log(`📊 Database: ${dbType}`);
-  console.log(`🔐 Encryption: AES-256-GCM`);
-  console.log(`🌐 WebSocket service initialized`);
-  console.log(`🔔 Notification schedulers initialized`);
-  console.log(`🔗 Server accessible on all interfaces (0.0.0.0:${PORT})`);
+  logger.startup(`🚀 TherapEase API server running on port ${PORT}`);
+  logger.startup(`🌐 HTTP mode (SSL disabled for development)`);
+  logger.startup(`📊 Database: ${dbType}`);
+  logger.startup(`🔐 Encryption: AES-256-GCM`);
+  logger.startup(`🌐 WebSocket service initialized`);
+  logger.startup(`🔔 Notification schedulers initialized`);
+  logger.startup(`🔗 Server accessible on all interfaces (0.0.0.0:${PORT})`);
 });
 
 module.exports = app;

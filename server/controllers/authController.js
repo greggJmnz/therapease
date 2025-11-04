@@ -818,10 +818,6 @@ const verifyResetToken = async (req, res) => {
       });
     }
 
-    // Log token info (first 20 chars for debugging, not full token for security)
-    console.log(`🔍 Verify reset token: Received token (first 20 chars): ${token.substring(0, 20)}...`);
-    console.log(`🔍 Verify reset token: Token length: ${token.length} characters`);
-    console.log(`🔍 Verify reset token: Token format check (hex only): ${/^[0-9a-f]+$/i.test(token)}`);
 
     // Check if token is valid and not expired
     const resetTokenRecord = await getRow(
@@ -858,15 +854,6 @@ const verifyResetToken = async (req, res) => {
         [token]
       );
       
-      if (expiredTokenRecord) {
-        if (expiredTokenRecord.used) {
-          console.log(`⚠️ Verify reset token: Token has already been used`);
-        } else {
-          console.log(`⚠️ Verify reset token: Token has expired (expiresAt: ${expiredTokenRecord.expiresAt})`);
-        }
-      } else {
-        console.log(`⚠️ Verify reset token: Token not found in database`);
-      }
       
       return res.status(400).json({
         success: false,
@@ -874,7 +861,6 @@ const verifyResetToken = async (req, res) => {
       });
     }
 
-    console.log(`✅ Verify reset token: Token is valid for user ${resetTokenRecord.email}`);
     res.json({
       success: true,
       message: 'Reset token is valid',

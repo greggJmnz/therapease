@@ -11,7 +11,6 @@
     "build": "cd client && npm run build",
     "start": "cd server && npm start",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install && cd ../public-website && npm install",
-    "setup": "node setup.js",
     "setup:env": "cd server && npm run setup:env",
     "setup:ssl": "cd server && npm run setup:ssl",
     "setup:vapid": "cd server && npm run setup:vapid",
@@ -27,8 +26,8 @@
     "lint:fix": "cd client && npm run lint:fix",
     "clean": "rm -rf node_modules server/node_modules client/node_modules public-website/node_modules",
     "clean:install": "npm run clean && npm run install:all",
-    "reset": "npm run clean:install && npm run setup",
-    "fresh-install": "npm run clean && npm run install:all && npm run setup && npm run db:seed",
+    "reset": "npm run clean:install",
+    "fresh-install": "npm run clean && npm run install:all && npm run db:seed",
     "check-deps": "npm outdated && cd server && npm outdated && cd ../client && npm outdated",
     "update-deps": "npm update && cd server && npm update && cd ../client && npm update"
   },

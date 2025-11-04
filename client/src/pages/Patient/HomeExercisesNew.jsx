@@ -86,12 +86,6 @@ const getProofImageUrl = (fileUrl) => {
     ? `${serverBaseUrl}${fileUrl}` 
     : `${serverBaseUrl}/${fileUrl}`;
   
-  console.log('📸 Proof image URL:', { 
-    originalFileUrl: fileUrl, 
-    serverBaseUrl, 
-    fullUrl,
-    apiBaseUrl,
-    isProduction: import.meta.env.PROD,
     hostname: window.location.hostname
   });
   return fullUrl;
@@ -628,7 +622,6 @@ const HomeExercisesNew = () => {
                                       e.target.style.display = 'none';
                                     }}
                                     onLoad={(e) => {
-                                      console.log('Image loaded successfully:', e.target.src);
                                     }}
                                   />
                                 </div>
