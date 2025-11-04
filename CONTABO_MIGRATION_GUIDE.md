@@ -156,7 +156,12 @@ cd ..
 
 ```bash
 cd client
-npm ci
+
+# If npm ci fails due to lock file sync issues, use npm install first
+npm install
+
+# Then you can use npm ci for production builds
+# npm ci
 cd ..
 ```
 

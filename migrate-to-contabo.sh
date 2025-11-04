@@ -133,7 +133,8 @@ cd ..
 # Client dependencies
 echo "  Installing client dependencies..."
 cd client
-sudo -u $APP_USER npm ci
+# Use npm install instead of npm ci to handle package overrides
+sudo -u $APP_USER npm install
 cd ..
 
 echo -e "${GREEN}✅ Dependencies installed${NC}"
