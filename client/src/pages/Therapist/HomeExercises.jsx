@@ -33,6 +33,7 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 import toast from 'react-hot-toast';
 
 // Helper function to get the correct file URL for proof images
+// Static files are served from the backend server, not the frontend
 const getProofImageUrl = (fileUrl) => {
   if (!fileUrl) return '';
   
@@ -41,16 +42,39 @@ const getProofImageUrl = (fileUrl) => {
     return fileUrl;
   }
   
-  // Get the server URL from API base URL or use current origin
+  // Get the server URL from API base URL
+  // We need to use the API server URL, not the frontend URL
   const apiBaseUrl = import.meta.env.VITE_API_URL || '';
   let serverBaseUrl;
   
   if (apiBaseUrl) {
     // Extract server URL from API URL (remove /api suffix)
+    // Example: https://api.therapease.site/api -> https://api.therapease.site
     serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
   } else {
-    // Fallback to current origin (works in development and production)
-    serverBaseUrl = window.location.origin;
+    // IMPORTANT: In production, VITE_API_URL MUST be set!
+    // For development, check if we're running locally
+    // Try to detect if we're in development vs production
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    if (isDevelopment) {
+      // In development, API is typically on localhost:5000
+      serverBaseUrl = 'http://localhost:5000';
+      console.warn('⚠️ VITE_API_URL not set in development, using http://localhost:5000');
+    } else {
+      // In production without VITE_API_URL, this is a configuration error
+      // Try to infer from window location (not ideal, but better than nothing)
+      // For TherapEase, API is at api.therapease.site
+      const hostname = window.location.hostname;
+      if (hostname.includes('therapease.site')) {
+        serverBaseUrl = 'https://api.therapease.site';
+        console.warn('⚠️ VITE_API_URL not set, inferred from hostname:', serverBaseUrl);
+      } else {
+        serverBaseUrl = window.location.origin;
+        console.error('❌ VITE_API_URL not set and cannot infer server URL. Using:', serverBaseUrl);
+        console.error('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
+      }
+    }
   }
   
   // Construct full URL
@@ -58,7 +82,14 @@ const getProofImageUrl = (fileUrl) => {
     ? `${serverBaseUrl}${fileUrl}` 
     : `${serverBaseUrl}/${fileUrl}`;
   
-  console.log('📸 Proof image URL:', { fileUrl, serverBaseUrl, fullUrl });
+  console.log('📸 Proof image URL:', { 
+    originalFileUrl: fileUrl, 
+    serverBaseUrl, 
+    fullUrl,
+    apiBaseUrl,
+    isProduction: import.meta.env.PROD,
+    hostname: window.location.hostname
+  });
   return fullUrl;
 };
 
