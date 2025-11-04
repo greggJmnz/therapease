@@ -178,15 +178,12 @@ export const AuthProvider = ({ children }) => {
           dateOfBirth: data.data.user.dateOfBirth,
           onboardingCompleted: data.data.user.onboardingCompleted || false,
         };
-
-        console.log('AuthContext: setting user data:', userData);
         
-        // Clear any cached data from previous users
-        Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
-            localStorage.removeItem(key);
-          }
-        });
+        // Clear any cached data from previous users (optimized)
+        const keysToRemove = Object.keys(localStorage).filter(key => 
+          key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')
+        );
+        keysToRemove.forEach(key => localStorage.removeItem(key));
         
         // Clear React Query cache
         queryClient.clear();
@@ -200,8 +197,11 @@ export const AuthProvider = ({ children }) => {
         setToken(data.data.token);
         setIsAuthenticated(true);
         
-        // Initialize WebSocket connection
-        websocketService.connect(data.data.token);
+        // Defer WebSocket connection to speed up initial render
+        // Connect after a short delay to allow UI to render first
+        setTimeout(() => {
+          websocketService.connect(data.data.token);
+        }, 500);
 
         return { success: true, user: userData };
       } else {
