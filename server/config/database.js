@@ -1042,16 +1042,15 @@ const createPerformanceIndexes = async () => {
     for (const index of indexes) {
       try {
         // MySQL doesn't support IF NOT EXISTS for CREATE INDEX, so we need to check first
+        const tableName = index.sql.match(/ON\s+(\w+)/)?.[1] || '';
+        const indexName = index.name;
         const [existing] = await pool.execute(`
           SELECT COUNT(*) as count 
           FROM information_schema.statistics 
           WHERE table_schema = DATABASE() 
           AND table_name = ? 
           AND index_name = ?
-        `, [
-          index.sql.match(/ON\s+(\w+)/)?.[1] || '',
-          index.name.replace('idx_', '')
-        ]);
+        `, [tableName, indexName]);
         
         if (existing[0]?.count === 0) {
           // Remove IF NOT EXISTS since MySQL doesn't support it
