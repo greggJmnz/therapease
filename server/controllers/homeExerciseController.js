@@ -488,8 +488,20 @@ const getExerciseProofs = async (req, res) => {
           proof.fileUrl = proof.filePath;
         } else {
           // Convert local file path to HTTP URL
-          const fileName = proof.filePath.split('/').pop();
+          // Extract filename from path (handles both Windows and Unix paths)
+          const pathParts = proof.filePath.split(/[/\\]/);
+          const fileName = pathParts[pathParts.length - 1];
+          
+          // Ensure we have the correct path structure
+          // Files are stored in server/uploads/exercise-proofs/
+          // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
           proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+          
+          console.log(`📸 Proof file URL conversion:`, {
+            filePath: proof.filePath,
+            fileName: fileName,
+            fileUrl: proof.fileUrl
+          });
         }
       }
       return proof;
@@ -603,8 +615,20 @@ const getTherapistProofs = async (req, res) => {
           proof.fileUrl = proof.filePath;
         } else {
           // Convert local file path to HTTP URL
-          const fileName = proof.filePath.split('/').pop();
+          // Extract filename from path (handles both Windows and Unix paths)
+          const pathParts = proof.filePath.split(/[/\\]/);
+          const fileName = pathParts[pathParts.length - 1];
+          
+          // Ensure we have the correct path structure
+          // Files are stored in server/uploads/exercise-proofs/
+          // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
           proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+          
+          console.log(`📸 Proof file URL conversion:`, {
+            filePath: proof.filePath,
+            fileName: fileName,
+            fileUrl: proof.fileUrl
+          });
         }
       }
       return proof;
@@ -650,8 +674,20 @@ const getPatientProofs = async (req, res) => {
           proof.fileUrl = proof.filePath;
         } else {
           // Convert local file path to HTTP URL
-          const fileName = proof.filePath.split('/').pop();
+          // Extract filename from path (handles both Windows and Unix paths)
+          const pathParts = proof.filePath.split(/[/\\]/);
+          const fileName = pathParts[pathParts.length - 1];
+          
+          // Ensure we have the correct path structure
+          // Files are stored in server/uploads/exercise-proofs/
+          // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
           proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+          
+          console.log(`📸 Proof file URL conversion:`, {
+            filePath: proof.filePath,
+            fileName: fileName,
+            fileUrl: proof.fileUrl
+          });
         }
       }
       return proof;

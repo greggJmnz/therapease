@@ -27,6 +27,36 @@ import FullScreenImageViewer from '../../components/FullScreenImageViewer';
 import ExerciseDetailsModal from '../../components/ExerciseDetailsModal';
 import toast from 'react-hot-toast';
 
+// Helper function to get the correct file URL for proof images
+const getProofImageUrl = (fileUrl) => {
+  if (!fileUrl) return '';
+  
+  // If it's already a full URL (data URL or http/https), return as is
+  if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://') || fileUrl.startsWith('data:')) {
+    return fileUrl;
+  }
+  
+  // Get the server URL from API base URL or use current origin
+  const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+  let serverBaseUrl;
+  
+  if (apiBaseUrl) {
+    // Extract server URL from API URL (remove /api suffix)
+    serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
+  } else {
+    // Fallback to current origin (works in development and production)
+    serverBaseUrl = window.location.origin;
+  }
+  
+  // Construct full URL
+  const fullUrl = fileUrl.startsWith('/') 
+    ? `${serverBaseUrl}${fileUrl}` 
+    : `${serverBaseUrl}/${fileUrl}`;
+  
+  console.log('📸 Proof image URL:', { fileUrl, serverBaseUrl, fullUrl });
+  return fullUrl;
+};
+
 const HomeExercisesNew = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -545,12 +575,12 @@ const HomeExercisesNew = () => {
                               {proof.submissionType === 'image' && proof.fileUrl && (
                                 <div className="mt-2">
                                   <img 
-                                    src={`http://localhost:5000${proof.fileUrl}`}
+                                    src={getProofImageUrl(proof.fileUrl)}
                                     alt="Submitted proof"
                                     className="max-w-full h-auto max-h-64 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                                     onClick={() => setFullScreenImage({
                                       isOpen: true,
-                                      url: `http://localhost:5000${proof.fileUrl}`,
+                                      url: getProofImageUrl(proof.fileUrl),
                                       fileName: proof.fileName || 'Exercise Proof'
                                     })}
                                     onError={(e) => {
@@ -576,7 +606,7 @@ const HomeExercisesNew = () => {
                                     }}
                                   >
                                     <source 
-                                      src={`http://localhost:5000${proof.fileUrl}`}
+                                      src={getProofImageUrl(proof.fileUrl)}
                                       type={proof.mimeType || 'video/mp4'}
                                     />
                                     Your browser does not support the video tag.
@@ -591,7 +621,7 @@ const HomeExercisesNew = () => {
                               {proof.submissionType === 'file' && proof.fileUrl && (
                                 <div className="mt-2">
                                   <a 
-                                    href={`http://localhost:5000${proof.fileUrl}`}
+                                    href={getProofImageUrl(proof.fileUrl)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm"
