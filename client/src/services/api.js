@@ -17,12 +17,17 @@ const getApiBaseUrl = () => {
 
 // Create axios instance with base configuration
 // Export it so other services can use it
+const apiBaseUrl = getApiBaseUrl();
+const isCrossOrigin = apiBaseUrl.startsWith('http://') || apiBaseUrl.startsWith('https://');
+
 export const api = axios.create({
-  baseURL: getApiBaseUrl(),
+  baseURL: apiBaseUrl,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
+  // Enable credentials for cross-origin requests to send Authorization header
+  withCredentials: isCrossOrigin,
 });
 
 
@@ -32,6 +37,27 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      
+      // Debug logging in development
+      if (import.meta.env.DEV) {
+        console.log('API Request:', {
+          url: config.url,
+          baseURL: config.baseURL,
+          fullURL: `${config.baseURL}${config.url}`,
+          hasToken: !!token,
+          tokenLength: token.length,
+          tokenPreview: token.substring(0, 20) + '...',
+          headers: config.headers,
+        });
+      }
+    } else {
+      // Debug logging if no token
+      if (import.meta.env.DEV) {
+        console.warn('API Request without token:', {
+          url: config.url,
+          baseURL: config.baseURL,
+        });
+      }
     }
     return config;
   },
@@ -46,18 +72,41 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('API: Response interceptor error:', error);
+    // Only log in development to avoid console spam
+    if (import.meta.env.DEV) {
+      console.error('API: Response interceptor error:', {
+        url: error.config?.url,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+      });
+    }
     
     if (error.response?.status === 401) {
+      // Don't clear token on initial verify check (this happens during auth initialization)
+      // Only clear token if we're not on the login page and it's not a verify request
+      const isVerifyRequest = error.config?.url?.includes('/auth/verify');
+      const isLoginPage = window.location.pathname === '/auth/login';
+      
+      // If it's a verify request and we're on login page, it's expected - don't clear
+      if (isVerifyRequest && isLoginPage) {
+        // Expected during auth initialization - don't clear token
+        return Promise.reject(error);
+      }
+      
       // Token expired or invalid, clear storage but don't redirect automatically
       // Let the AuthContext handle the logout logic to prevent page reloads
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userId');
+      if (!isVerifyRequest) {
+        // Only clear token if it's not a verify request (verify might fail during init)
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userId');
+      }
       
-      // Only redirect if not already on login page and not in the middle of a request
-      if (window.location.pathname !== '/auth/login' && !error.config?.url?.includes('/auth/verify')) {
+      // Only trigger logout if not already on login page and not a verify request
+      if (!isLoginPage && !isVerifyRequest) {
         // Use custom event to trigger logout in AuthContext instead of direct redirect
         // This prevents full page reload and maintains React state
         window.dispatchEvent(new CustomEvent('auth:logout', { 
