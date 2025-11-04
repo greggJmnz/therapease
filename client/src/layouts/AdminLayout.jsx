@@ -38,20 +38,20 @@ const getPublicWebsiteUrl = () => {
     return 'http://localhost:8000';
   }
   
-  // In production, use www.therapease.site
+  // In production, use www.therapease.site/public-website
   const isProduction = window.location.protocol === 'https:';
   if (isProduction) {
-    return 'https://www.therapease.site';
+    return 'https://www.therapease.site/public-website';
   }
   
   // Fallback: infer from current location
   const hostname = window.location.hostname;
   if (hostname.includes('therapease.site')) {
-    return `https://www.therapease.site`;
+    return `https://www.therapease.site/public-website`;
   }
   
   // Default fallback
-  return window.location.origin;
+  return `${window.location.origin}/public-website`;
 };
 
 const AdminLayout = () => {
