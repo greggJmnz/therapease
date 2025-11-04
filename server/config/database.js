@@ -66,6 +66,9 @@ const initializeDatabase = async () => {
     // Initialize tables
     await createTables();
     
+    // Create performance indexes
+    await createPerformanceIndexes();
+    
     // Seed initial data
     await seedInitialData();
     
@@ -987,6 +990,91 @@ const createTables = async () => {
   } catch (error) {
     console.error('Error creating tables:', error);
     throw error;
+  }
+};
+
+// Create performance indexes for common query patterns
+const createPerformanceIndexes = async () => {
+  try {
+    console.log('📊 Creating performance indexes...');
+    
+    const indexes = [
+      // Login performance - email already has UNIQUE index, but add role index
+      { name: 'idx_users_role', sql: 'CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)' },
+      { name: 'idx_users_status', sql: 'CREATE INDEX IF NOT EXISTS idx_users_status ON users(status)' },
+      
+      // Dashboard queries - therapistId indexes
+      { name: 'idx_appointments_therapist', sql: 'CREATE INDEX IF NOT EXISTS idx_appointments_therapist ON appointments(therapistId)' },
+      { name: 'idx_appointments_patient', sql: 'CREATE INDEX IF NOT EXISTS idx_appointments_patient ON appointments(patientId)' },
+      { name: 'idx_appointments_date_status', sql: 'CREATE INDEX IF NOT EXISTS idx_appointments_date_status ON appointments(appointmentDate, status)' },
+      { name: 'idx_appointments_therapist_date', sql: 'CREATE INDEX IF NOT EXISTS idx_appointments_therapist_date ON appointments(therapistId, appointmentDate, status)' },
+      
+      // Assessments indexes
+      { name: 'idx_assessments_therapist', sql: 'CREATE INDEX IF NOT EXISTS idx_assessments_therapist ON assessments(therapistId)' },
+      { name: 'idx_assessments_patient', sql: 'CREATE INDEX IF NOT EXISTS idx_assessments_patient ON assessments(patientId)' },
+      { name: 'idx_assessments_date', sql: 'CREATE INDEX IF NOT EXISTS idx_assessments_date ON assessments(assessmentDate)' },
+      
+      // Daily notes indexes
+      { name: 'idx_daily_notes_therapist', sql: 'CREATE INDEX IF NOT EXISTS idx_daily_notes_therapist ON daily_notes(therapistId)' },
+      { name: 'idx_daily_notes_patient', sql: 'CREATE INDEX IF NOT EXISTS idx_daily_notes_patient ON daily_notes(patientId)' },
+      { name: 'idx_daily_notes_date', sql: 'CREATE INDEX IF NOT EXISTS idx_daily_notes_date ON daily_notes(sessionDate)' },
+      { name: 'idx_daily_notes_therapist_date', sql: 'CREATE INDEX IF NOT EXISTS idx_daily_notes_therapist_date ON daily_notes(therapistId, sessionDate)' },
+      
+      // Patient therapist assignments
+      { name: 'idx_pta_therapist', sql: 'CREATE INDEX IF NOT EXISTS idx_pta_therapist ON patient_therapist_assignments(therapistId, status)' },
+      { name: 'idx_pta_patient', sql: 'CREATE INDEX IF NOT EXISTS idx_pta_patient ON patient_therapist_assignments(patientId, status)' },
+      
+      // Treatment plans
+      { name: 'idx_treatment_plans_patient', sql: 'CREATE INDEX IF NOT EXISTS idx_treatment_plans_patient ON treatment_plans(patientId, status)' },
+      
+      // Main objectives
+      { name: 'idx_main_objectives_treatment_plan', sql: 'CREATE INDEX IF NOT EXISTS idx_main_objectives_treatment_plan ON main_objectives(treatmentPlanId)' },
+      
+      // Notifications
+      { name: 'idx_notifications_user', sql: 'CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(userId, isRead)' },
+      { name: 'idx_notifications_created', sql: 'CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(createdAt)' },
+      
+      // Patients
+      { name: 'idx_patients_therapist', sql: 'CREATE INDEX IF NOT EXISTS idx_patients_therapist ON patients(therapistId)' },
+      { name: 'idx_patients_user', sql: 'CREATE INDEX IF NOT EXISTS idx_patients_user ON patients(userId)' },
+    ];
+    
+    for (const index of indexes) {
+      try {
+        // MySQL doesn't support IF NOT EXISTS for CREATE INDEX, so we need to check first
+        const [existing] = await pool.execute(`
+          SELECT COUNT(*) as count 
+          FROM information_schema.statistics 
+          WHERE table_schema = DATABASE() 
+          AND table_name = ? 
+          AND index_name = ?
+        `, [
+          index.sql.match(/ON\s+(\w+)/)?.[1] || '',
+          index.name.replace('idx_', '')
+        ]);
+        
+        if (existing[0]?.count === 0) {
+          // Remove IF NOT EXISTS since MySQL doesn't support it
+          const sql = index.sql.replace(' IF NOT EXISTS', '');
+          await pool.execute(sql);
+          console.log(`✅ Created index: ${index.name}`);
+        } else {
+          console.log(`ℹ️  Index already exists: ${index.name}`);
+        }
+      } catch (error) {
+        // Ignore duplicate index errors
+        if (error.code === 'ER_DUP_KEYNAME' || error.message.includes('Duplicate key name')) {
+          console.log(`ℹ️  Index already exists: ${index.name}`);
+        } else {
+          console.error(`❌ Error creating index ${index.name}:`, error.message);
+        }
+      }
+    }
+    
+    console.log('✅ Performance indexes created successfully');
+  } catch (error) {
+    console.error('❌ Error creating performance indexes:', error);
+    // Don't throw - indexes are optional optimizations
   }
 };
 
