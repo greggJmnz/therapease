@@ -16,33 +16,25 @@ class WebSocketService {
     });
 
     this.wss.on('connection', this.handleConnection.bind(this));
-    console.log('🔌 WebSocket service initialized');
+    const logger = require('../utils/logger');
+    logger.info('WebSocket service initialized');
   }
 
   verifyClient(info) {
-    console.log('🔍 WebSocket verifyClient called:', {
-      url: info.req.url,
-      headers: info.req.headers,
-      host: info.req.headers.host
-    });
-    
     const url = new URL(info.req.url, `http://${info.req.headers.host}`);
     const token = url.searchParams.get('token');
     
-    console.log('🔍 WebSocket token:', token ? 'present' : 'missing');
-    
     if (!token) {
-      console.log('❌ WebSocket connection rejected: No token');
       return false;
     }
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       info.req.user = decoded;
-      console.log('✅ WebSocket token verified for user:', decoded.userId);
       return true;
     } catch (error) {
-      console.error('❌ WebSocket token verification failed:', error.message);
+      const logger = require('../utils/logger');
+      logger.error('WebSocket token verification failed:', error.message);
       return false;
     }
   }
@@ -51,8 +43,6 @@ class WebSocketService {
     const user = req.user;
     const userId = user.userId;
     const userRole = user.role;
-
-    console.log(`🔌 WebSocket connection established for user ${userId} (${userRole})`);
 
     // Store client connection
     this.clients.set(userId, {
@@ -83,7 +73,6 @@ class WebSocketService {
 
     // Handle disconnection
     ws.on('close', () => {
-      console.log(`🔌 WebSocket connection closed for user ${userId}`);
       this.clients.delete(userId);
       this.leaveAllRooms(userId);
     });
@@ -125,7 +114,7 @@ class WebSocketService {
         this.leaveRoom(userId, `patient_${payload.patientId}`);
         break;
       default:
-        console.log(`Unknown message type: ${type}`);
+        // Unknown message type - ignore silently
     }
   }
 
@@ -134,7 +123,6 @@ class WebSocketService {
       this.rooms.set(roomName, new Set());
     }
     this.rooms.get(roomName).add(userId);
-    console.log(`User ${userId} joined room ${roomName}`);
   }
 
   leaveRoom(userId, roomName) {
@@ -144,7 +132,6 @@ class WebSocketService {
         this.rooms.delete(roomName);
       }
     }
-    console.log(`User ${userId} left room ${roomName}`);
   }
 
   leaveAllRooms(userId) {
@@ -202,7 +189,6 @@ class WebSocketService {
     // Send to patient-specific room
     this.sendToRoom(`patient_${appointment.patientId}`, message);
     
-    console.log(`📢 Broadcasted appointment change: ${changeType} for appointment ${appointment.id}`);
   }
 
   // Broadcast patient record changes
@@ -350,7 +336,6 @@ class WebSocketService {
       this.sendToUser(profileData.therapistId, event);
     }
 
-    console.log(`📢 Broadcasted profile change: ${action} for user ${userId} (${userRole})`);
   }
 
   // Broadcast settings change
@@ -372,7 +357,6 @@ class WebSocketService {
     // Send to admins for all settings changes
     this.broadcastToAdmins(event);
 
-    console.log(`📢 Broadcasted settings change: ${action} for user ${userId} (${userRole})`);
   }
 
   // Broadcast system settings change
@@ -388,7 +372,6 @@ class WebSocketService {
     // Send to all connected clients
     this.broadcastToAll(event);
 
-    console.log(`📢 Broadcasted system settings change to all clients`);
   }
 
   // Broadcast session change
@@ -411,7 +394,6 @@ class WebSocketService {
     // Send to admins
     this.broadcastToAdmins(message);
 
-    console.log(`📢 Broadcasted session change: ${changeType} for session ${session.id}`);
   }
 
   // Broadcast home exercise change
@@ -434,7 +416,6 @@ class WebSocketService {
     // Send to patient-specific room
     this.sendToRoom(`patient_${exercise.patientId}`, message);
 
-    console.log(`📢 Broadcasted home exercise change: ${changeType} for exercise ${exercise.id}`);
   }
 
   // Broadcast proof submission change
@@ -457,7 +438,6 @@ class WebSocketService {
     // Send to patient-specific room
     this.sendToRoom(`patient_${proof.patientId}`, message);
 
-    console.log(`📢 Broadcasted proof change: ${changeType} for proof ${proof.id}`);
   }
 }
 

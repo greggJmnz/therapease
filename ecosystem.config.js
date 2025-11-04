@@ -3,8 +3,8 @@ module.exports = {
     {
       name: 'therapease-api',
       script: 'server/index.js',
-      instances: 2, // Enable load balancing
-      exec_mode: 'cluster',
+      instances: 1, // Single instance for better WebSocket compatibility and resource efficiency
+      exec_mode: 'fork',
       max_memory_restart: '1G',
       min_uptime: '10s',
       max_restarts: 10,

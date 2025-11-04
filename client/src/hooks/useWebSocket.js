@@ -20,11 +20,11 @@ export const useWebSocket = (token) => {
 
     websocketService.on('connection', handleConnection);
 
-    // Update connection state periodically
+    // Update connection state periodically (reduced frequency to reduce overhead)
     const interval = setInterval(() => {
       setConnectionState(websocketService.getConnectionState());
       setIsConnected(websocketService.isConnected());
-    }, 1000);
+    }, 5000); // Reduced from 1000ms to 5000ms (5 seconds)
 
     return () => {
       websocketService.off('connection', handleConnection);
