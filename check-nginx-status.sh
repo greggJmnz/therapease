@@ -103,10 +103,19 @@ if [ -f /var/log/nginx/access.log ]; then
                 echo "   ✅ Bot blocking working: $BOT_403 bots got 403 (blocked)"
             fi
             if [ "$BOT_400" -gt 0 ]; then
-                echo "   ⚠️  $BOT_400 bots got 400 (should be 403)"
+                echo "   ⚠️  $BOT_400 bots got 400 (may be invalid Host headers)"
+                echo "      This is expected if bots use invalid Host headers"
+                echo "      The 400 error blocks them before bot blocking can check"
             fi
             if [ "$BOT_200" -gt 0 ]; then
                 echo "   ❌ $BOT_200 bots got 200 (bot blocking NOT working!)"
+            fi
+            
+            # Check if bots are using IP addresses instead of domain names
+            BOT_WITH_IP_HOST=$(tail -1000 /var/log/nginx/access.log | grep -i "Go-http-client\|bot\|crawler" | grep " 400 " | awk '{print $NF}' | grep -E "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" | wc -l)
+            if [ "$BOT_WITH_IP_HOST" -gt 0 ]; then
+                echo "   ℹ️  $BOT_WITH_IP_HOST bots are using IP addresses as Host header"
+                echo "      This causes 400 errors (invalid Host), which is expected behavior"
             fi
         else
             echo "✅ No bot requests detected"
@@ -176,7 +185,21 @@ else
 fi
 echo ""
 
-# 10. Summary
+# 10. Check backend status
+echo "10. Checking Backend Status..."
+echo "-----------------------------------"
+BACKEND_ERRORS=$(tail -50 /var/log/nginx/error.log | grep -c "Connection refused.*127.0.0.1:5000" || echo "0")
+if [ "$BACKEND_ERRORS" -gt 0 ]; then
+    echo "⚠️  Found $BACKEND_ERRORS backend connection errors"
+    echo "   Backend on port 5000 may not be running"
+    echo "   Check: pm2 status"
+    echo "   Or: sudo ss -tlnp | grep :5000"
+else
+    echo "✅ No recent backend connection errors"
+fi
+echo ""
+
+# 11. Summary
 echo "=========================================="
 echo "  Summary"
 echo "=========================================="
@@ -186,7 +209,10 @@ if systemctl is-active --quiet nginx && [ "$NGINX_TEST_EXIT" -eq 0 ] && [ "$TEST
     echo "✅ Nginx is healthy and running correctly"
     echo "   - Service is running"
     echo "   - Configuration is valid"
-    echo "   - Bot blocking is working"
+    echo "   - Bot blocking is working (manual test confirms)"
+    if [ "$BACKEND_ERRORS" -gt 0 ]; then
+        echo "   ⚠️  Backend may need to be restarted"
+    fi
 elif systemctl is-active --quiet nginx && [ "$NGINX_TEST_EXIT" -eq 0 ]; then
     echo "⚠️  Nginx is running but bot blocking may need attention"
 elif systemctl is-active --quiet nginx; then
