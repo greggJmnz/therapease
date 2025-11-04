@@ -11,7 +11,7 @@ export const useMaintenanceMode = () => {
     'maintenanceStatus',
     adminAPI.getMaintenanceStatus,
     {
-      refetchInterval: 30000, // Refetch every 30 seconds
+      refetchInterval: 120000, // Refetch every 2 minutes (reduced frequency)
       refetchOnWindowFocus: true,
       onSuccess: (data) => {
         if (data?.data?.maintenanceMode) {

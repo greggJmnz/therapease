@@ -44,7 +44,7 @@ const TherapistPatients = () => {
     () => therapistAPI.getPatients(user?.id),
     {
       enabled: !!user?.id, // Only run query when user ID is available
-      refetchInterval: 30000, // Refetch every 30 seconds
+      refetchInterval: 60000, // Refetch every 1 minute (reduced frequency)
     }
   );
 

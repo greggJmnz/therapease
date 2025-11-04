@@ -40,7 +40,7 @@ const ProgressView = () => {
       onError: (error) => {
         console.error('Error fetching treatment plan:', error);
       },
-      refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+      refetchInterval: 60000, // Refetch every 1 minute (reduced frequency)
     }
   );
 
