@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
@@ -7,50 +7,53 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { SystemSettingsProvider } from './context/SystemSettingsContext.jsx';
 
-// Layouts
+// Layouts (eager load - needed immediately)
 import AdminLayout from './layouts/AdminLayout';
 import TherapistLayout from './layouts/TherapistLayout';
 import PatientLayout from './layouts/PatientLayout';
 import AuthLayout from './layouts/AuthLayout';
 
-// Pages
-import AdminDashboard from './pages/Admin/AdminDashboard';
-import AdminPatients from './pages/Admin/AdminPatients';
-import AdminTherapists from './pages/Admin/AdminTherapists';
-import AdminAppointments from './pages/Admin/AdminAppointments';
-import AdminNotifications from './pages/Admin/AdminNotifications';
-import AdminReports from './pages/Admin/AdminReports';
-import AdminSettings from './pages/Admin/AdminSettings';
-import AdminHelpCenter from './pages/Admin/AdminHelpCenter';
-import AdminProfile from './pages/Admin/AdminProfile';
-import AdminUserManagement from './pages/Admin/AdminUserManagement';
+// Lazy load pages for route-based code splitting
+// Admin pages
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
+const AdminPatients = lazy(() => import('./pages/Admin/AdminPatients'));
+const AdminTherapists = lazy(() => import('./pages/Admin/AdminTherapists'));
+const AdminAppointments = lazy(() => import('./pages/Admin/AdminAppointments'));
+const AdminNotifications = lazy(() => import('./pages/Admin/AdminNotifications'));
+const AdminReports = lazy(() => import('./pages/Admin/AdminReports'));
+const AdminSettings = lazy(() => import('./pages/Admin/AdminSettings'));
+const AdminHelpCenter = lazy(() => import('./pages/Admin/AdminHelpCenter'));
+const AdminProfile = lazy(() => import('./pages/Admin/AdminProfile'));
+const AdminUserManagement = lazy(() => import('./pages/Admin/AdminUserManagement'));
 
-import TherapistDashboard from './pages/Therapist/Dashboard';
-import TherapistOnboarding from './pages/Therapist/TherapistOnboarding';
-import TherapistDailyNotes from './pages/Therapist/DailyNotes';
-import TherapistHomeExercises from './pages/Therapist/HomeExercises';
-import TherapistAIInsights from './pages/Therapist/AIInsights';
-import TherapistProgressTracking from './pages/Therapist/ProgressTracking';
-import TherapistPatients from './pages/Therapist/TherapistPatients';
-import TherapistSchedule from './pages/Therapist/TherapistSchedule';
-import TherapistNotifications from './pages/Therapist/TherapistNotifications';
-import TherapistSettings from './pages/Therapist/TherapistSettings';
-import TherapistHelpCenter from './pages/Therapist/TherapistHelpCenter';
-import TherapistProfile from './pages/Therapist/Profile';
+// Therapist pages
+const TherapistDashboard = lazy(() => import('./pages/Therapist/Dashboard'));
+const TherapistOnboarding = lazy(() => import('./pages/Therapist/TherapistOnboarding'));
+const TherapistDailyNotes = lazy(() => import('./pages/Therapist/DailyNotes'));
+const TherapistHomeExercises = lazy(() => import('./pages/Therapist/HomeExercises'));
+const TherapistAIInsights = lazy(() => import('./pages/Therapist/AIInsights'));
+const TherapistProgressTracking = lazy(() => import('./pages/Therapist/ProgressTracking'));
+const TherapistPatients = lazy(() => import('./pages/Therapist/TherapistPatients'));
+const TherapistSchedule = lazy(() => import('./pages/Therapist/TherapistSchedule'));
+const TherapistNotifications = lazy(() => import('./pages/Therapist/TherapistNotifications'));
+const TherapistSettings = lazy(() => import('./pages/Therapist/TherapistSettings'));
+const TherapistHelpCenter = lazy(() => import('./pages/Therapist/TherapistHelpCenter'));
+const TherapistProfile = lazy(() => import('./pages/Therapist/Profile'));
 
+// Patient pages
+const PatientDashboard = lazy(() => import('./pages/Patient/Dashboard'));
+const PatientOnboarding = lazy(() => import('./pages/Patient/PatientOnboarding'));
+const PatientProgressView = lazy(() => import('./pages/Patient/ProgressView'));
+const PatientAppointments = lazy(() => import('./pages/Patient/Appointments'));
+const PatientDailyNotes = lazy(() => import('./pages/Patient/DailyNotes'));
+const PatientNotifications = lazy(() => import('./pages/Patient/Notifications'));
+const PatientSettings = lazy(() => import('./pages/Patient/Settings'));
+const PatientHomeExercises = lazy(() => import('./pages/Patient/HomeExercises'));
+const PatientHomeExercisesNew = lazy(() => import('./pages/Patient/HomeExercisesNew'));
+const PatientProfile = lazy(() => import('./pages/Patient/Profile'));
+const PatientHelp = lazy(() => import('./pages/Patient/Help'));
 
-import PatientDashboard from './pages/Patient/Dashboard';
-import PatientOnboarding from './pages/Patient/PatientOnboarding';
-import PatientProgressView from './pages/Patient/ProgressView';
-import PatientAppointments from './pages/Patient/Appointments';
-import PatientDailyNotes from './pages/Patient/DailyNotes';
-import PatientNotifications from './pages/Patient/Notifications';
-import PatientSettings from './pages/Patient/Settings';
-import PatientHomeExercises from './pages/Patient/HomeExercises';
-import PatientHomeExercisesNew from './pages/Patient/HomeExercisesNew';
-import PatientProfile from './pages/Patient/Profile';
-import PatientHelp from './pages/Patient/Help';
-
+// Auth pages (eager load - needed immediately for login)
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import ForgotPassword from './pages/Auth/ForgotPassword';
@@ -121,6 +124,23 @@ const queryClient = new QueryClient({
   },
 });
 
+// Loading component for lazy-loaded routes
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p className="text-gray-600">Loading page...</p>
+    </div>
+  </div>
+);
+
+// Suspense wrapper for lazy-loaded routes
+const LazyRoute = ({ children }) => (
+  <Suspense fallback={<PageLoader />}>
+    {children}
+  </Suspense>
+);
+
 // App content component
 const AppContent = () => (
   <MaintenanceWrapper>
@@ -142,16 +162,16 @@ const AppContent = () => (
           </ProtectedRoute>
         }>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="users" element={<AdminUserManagement />} />
-          <Route path="patients" element={<AdminPatients />} />
-          <Route path="therapists" element={<AdminTherapists />} />
-          <Route path="appointments" element={<AdminAppointments />} />
-          <Route path="reports" element={<AdminReports />} />
-          <Route path="notifications" element={<AdminNotifications />} />
-          <Route path="settings" element={<AdminSettings />} />
-          <Route path="help" element={<AdminHelpCenter />} />
-          <Route path="profile" element={<AdminProfile />} />
+          <Route path="dashboard" element={<LazyRoute><AdminDashboard /></LazyRoute>} />
+          <Route path="users" element={<LazyRoute><AdminUserManagement /></LazyRoute>} />
+          <Route path="patients" element={<LazyRoute><AdminPatients /></LazyRoute>} />
+          <Route path="therapists" element={<LazyRoute><AdminTherapists /></LazyRoute>} />
+          <Route path="appointments" element={<LazyRoute><AdminAppointments /></LazyRoute>} />
+          <Route path="reports" element={<LazyRoute><AdminReports /></LazyRoute>} />
+          <Route path="notifications" element={<LazyRoute><AdminNotifications /></LazyRoute>} />
+          <Route path="settings" element={<LazyRoute><AdminSettings /></LazyRoute>} />
+          <Route path="help" element={<LazyRoute><AdminHelpCenter /></LazyRoute>} />
+          <Route path="profile" element={<LazyRoute><AdminProfile /></LazyRoute>} />
         </Route>
 
         {/* Therapist routes */}
@@ -161,18 +181,18 @@ const AppContent = () => (
           </ProtectedRoute>
         }>
           <Route index element={<Navigate to="/therapist/dashboard" replace />} />
-          <Route path="dashboard" element={<TherapistDashboard />} />
-          <Route path="onboarding" element={<TherapistOnboarding />} />
-          <Route path="patients" element={<TherapistPatients />} />
-          <Route path="schedule" element={<TherapistSchedule />} />
-          <Route path="daily-notes" element={<TherapistDailyNotes />} />
-          <Route path="home-exercises" element={<TherapistHomeExercises />} />
-          <Route path="ai-insights" element={<TherapistAIInsights />} />
-          <Route path="progress-tracking" element={<TherapistProgressTracking />} />
-          <Route path="notifications" element={<TherapistNotifications />} />
-          <Route path="settings" element={<TherapistSettings />} />
-          <Route path="help" element={<TherapistHelpCenter />} />
-          <Route path="profile" element={<TherapistProfile />} />
+          <Route path="dashboard" element={<LazyRoute><TherapistDashboard /></LazyRoute>} />
+          <Route path="onboarding" element={<LazyRoute><TherapistOnboarding /></LazyRoute>} />
+          <Route path="patients" element={<LazyRoute><TherapistPatients /></LazyRoute>} />
+          <Route path="schedule" element={<LazyRoute><TherapistSchedule /></LazyRoute>} />
+          <Route path="daily-notes" element={<LazyRoute><TherapistDailyNotes /></LazyRoute>} />
+          <Route path="home-exercises" element={<LazyRoute><TherapistHomeExercises /></LazyRoute>} />
+          <Route path="ai-insights" element={<LazyRoute><TherapistAIInsights /></LazyRoute>} />
+          <Route path="progress-tracking" element={<LazyRoute><TherapistProgressTracking /></LazyRoute>} />
+          <Route path="notifications" element={<LazyRoute><TherapistNotifications /></LazyRoute>} />
+          <Route path="settings" element={<LazyRoute><TherapistSettings /></LazyRoute>} />
+          <Route path="help" element={<LazyRoute><TherapistHelpCenter /></LazyRoute>} />
+          <Route path="profile" element={<LazyRoute><TherapistProfile /></LazyRoute>} />
         </Route>
 
         {/* Patient routes */}
@@ -182,16 +202,16 @@ const AppContent = () => (
           </ProtectedRoute>
         }>
           <Route index element={<Navigate to="/patient/dashboard" replace />} />
-          <Route path="dashboard" element={<PatientDashboard />} />
-          <Route path="onboarding" element={<PatientOnboarding />} />
-          <Route path="progress" element={<PatientProgressView />} />
-          <Route path="appointments" element={<PatientAppointments />} />
-          <Route path="daily-notes" element={<PatientDailyNotes />} />
-          <Route path="notifications" element={<PatientNotifications />} />
-          <Route path="settings" element={<PatientSettings />} />
-          <Route path="exercises" element={<PatientHomeExercisesNew />} />
-          <Route path="profile" element={<PatientProfile />} />
-          <Route path="help" element={<PatientHelp />} />
+          <Route path="dashboard" element={<LazyRoute><PatientDashboard /></LazyRoute>} />
+          <Route path="onboarding" element={<LazyRoute><PatientOnboarding /></LazyRoute>} />
+          <Route path="progress" element={<LazyRoute><PatientProgressView /></LazyRoute>} />
+          <Route path="appointments" element={<LazyRoute><PatientAppointments /></LazyRoute>} />
+          <Route path="daily-notes" element={<LazyRoute><PatientDailyNotes /></LazyRoute>} />
+          <Route path="notifications" element={<LazyRoute><PatientNotifications /></LazyRoute>} />
+          <Route path="settings" element={<LazyRoute><PatientSettings /></LazyRoute>} />
+          <Route path="exercises" element={<LazyRoute><PatientHomeExercisesNew /></LazyRoute>} />
+          <Route path="profile" element={<LazyRoute><PatientProfile /></LazyRoute>} />
+          <Route path="help" element={<LazyRoute><PatientHelp /></LazyRoute>} />
         </Route>
 
         {/* Default redirect */}
