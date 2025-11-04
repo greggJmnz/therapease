@@ -86,9 +86,24 @@ else
     echo "Full error output:"
     echo "$NGINX_TEST"
     echo ""
-    echo "Restoring backup..."
-    cp "$BACKUP_CONFIG" "$NGINX_CONFIG"
-    echo "❌ Changes reverted. Please check the configuration manually."
+    
+    # Extract error line number
+    ERROR_LINE=$(echo "$NGINX_TEST" | grep -o "line [0-9]*" | grep -o "[0-9]*" | head -1)
+    if [ -n "$ERROR_LINE" ]; then
+        echo "Error at line $ERROR_LINE:"
+        sed -n "${ERROR_LINE}p" "$NGINX_CONFIG"
+        echo ""
+        echo "Context (lines $((ERROR_LINE-3))-$((ERROR_LINE+3))):"
+        sed -n "$((ERROR_LINE-3)),$((ERROR_LINE+3))p" "$NGINX_CONFIG" | cat -n
+        echo ""
+    fi
+    
+    echo "⚠️  Script stopped. Please check the nginx config manually."
+    echo "Backup saved at: $BACKUP_CONFIG"
+    echo ""
+    echo "To manually check:"
+    echo "  sudo nginx -t"
+    echo "  sudo cat /etc/nginx/sites-enabled/therapease | head -50"
     exit 1
 fi
 
