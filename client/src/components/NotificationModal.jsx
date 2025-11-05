@@ -82,7 +82,29 @@ const NotificationModal = ({
     }
   };
 
-  const formatTime = (dateString, timeString) => {
+  const formatTime = (dateString, timeString, createdAt) => {
+    // If createdAt ISO string is available, use it to format in user's local timezone
+    if (createdAt) {
+      try {
+        const date = new Date(createdAt);
+        const formattedDate = date.toLocaleDateString('en-US', {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        const formattedTime = date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        return `${formattedDate} at ${formattedTime}`;
+      } catch (error) {
+        // Fallback to backend formatted strings if createdAt is invalid
+      }
+    }
+    
+    // Fallback to backend formatted strings
     if (dateString && timeString) {
       return `${dateString} at ${timeString}`;
     }
@@ -170,7 +192,7 @@ const NotificationModal = ({
                   <Clock className="h-4 w-4 text-gray-600" />
                   <h4 className="font-semibold text-gray-900">Date & Time</h4>
                 </div>
-                <p className="text-gray-700 font-medium">{formatTime(notification.date, notification.time)}</p>
+                <p className="text-gray-700 font-medium">{formatTime(notification.date, notification.time, notification.createdAt)}</p>
               </div>
               
               <div className="bg-gray-50 rounded-lg p-4">

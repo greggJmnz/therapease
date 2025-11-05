@@ -75,7 +75,29 @@ const NotificationCard = ({
     }
   };
 
-  const formatTime = (dateString, timeString) => {
+  const formatTime = (dateString, timeString, createdAt) => {
+    // If createdAt ISO string is available, use it to format in user's local timezone
+    if (createdAt) {
+      try {
+        const date = new Date(createdAt);
+        const formattedDate = date.toLocaleDateString('en-US', {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        const formattedTime = date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        return `${formattedDate} at ${formattedTime}`;
+      } catch (error) {
+        // Fallback to backend formatted strings if createdAt is invalid
+      }
+    }
+    
+    // Fallback to backend formatted strings
     if (dateString && timeString) {
       return `${dateString} at ${timeString}`;
     }
@@ -124,7 +146,7 @@ const NotificationCard = ({
             
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500">
-                {formatTime(notification.date, notification.time)}
+                {formatTime(notification.date, notification.time, notification.createdAt)}
               </span>
               <span className={`text-xs px-2 py-0.5 rounded-full ${getTypeColor(notification.type)}`}>
                 {notification.type}
@@ -186,7 +208,7 @@ const NotificationCard = ({
             <div className="flex items-center space-x-4 text-xs text-gray-500">
               <span className="flex items-center space-x-1">
                 <Clock className="h-3 w-3" />
-                <span>{formatTime(notification.date, notification.time)}</span>
+                <span>{formatTime(notification.date, notification.time, notification.createdAt)}</span>
               </span>
               {notification.patient && (
                 <span className="flex items-center space-x-1">

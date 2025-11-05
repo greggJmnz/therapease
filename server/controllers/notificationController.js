@@ -90,22 +90,23 @@ const getNotifications = async (req, res) => {
     const notifications = await getAll(sql, params);
 
     // Format notification data with date and time
+    // Note: Frontend will format using user's local timezone from createdAt ISO string
     const formattedNotifications = notifications.map(notification => {
       const createdAt = new Date(notification.createdAt);
-      // Display UTC time directly without timezone conversion
+      
+      // Format date and time in user's local timezone (will be formatted on frontend)
+      // Keep UTC formatting for backward compatibility, but frontend should use createdAt
       const date = createdAt.toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric',
         month: 'short',
-        day: 'numeric',
-        timeZone: 'UTC'
+        day: 'numeric'
       });
       const time = createdAt.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: true,
-        timeZone: 'UTC'
-      }).replace(/\s*GMT.*$/, ''); // Remove timezone information
+        hour12: true
+      });
       
       return {
         ...notification,
