@@ -110,7 +110,7 @@ const getNotifications = async (req, res) => {
         `;
         notifications = await getAll(sql, params);
         // Add default priority for backward compatibility
-        notifications = notifications.map(n => ({ ...n, priority: 'normal' }));
+        notifications = notifications.map(n => ({ ...n, priority: 'medium' }));
       } else {
         throw error; // Re-throw if it's a different error
       }

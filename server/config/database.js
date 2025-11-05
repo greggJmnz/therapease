@@ -634,7 +634,7 @@ const createTables = async () => {
         message TEXT NOT NULL,
         type VARCHAR(50) NOT NULL,
         isRead BOOLEAN DEFAULT FALSE,
-        priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+        priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
         relatedId INT,
         smsMessageId VARCHAR(255),
         smsStatus ENUM('pending', 'sent', 'delivered', 'failed', 'error') DEFAULT NULL,
@@ -1000,7 +1000,7 @@ const createTables = async () => {
       
       // Required columns for notifications table
       const requiredColumns = [
-        { name: 'priority', sql: `ALTER TABLE notifications ADD COLUMN priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal'` },
+        { name: 'priority', sql: `ALTER TABLE notifications ADD COLUMN priority ENUM('low', 'medium', 'high') DEFAULT 'medium'` },
         { name: 'relatedId', sql: `ALTER TABLE notifications ADD COLUMN relatedId INT DEFAULT NULL` },
         { name: 'smsMessageId', sql: `ALTER TABLE notifications ADD COLUMN smsMessageId VARCHAR(255) DEFAULT NULL` },
         { name: 'smsStatus', sql: `ALTER TABLE notifications ADD COLUMN smsStatus ENUM('pending', 'sent', 'delivered', 'failed', 'error') DEFAULT NULL` },
