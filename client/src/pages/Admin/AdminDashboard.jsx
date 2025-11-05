@@ -80,6 +80,7 @@ const AdminDashboard = () => {
   };
 
   // OPTIMIZED: Fetch dashboard data - Priority load (critical stats)
+  // CRITICAL: Don't block navigation - allow dashboard to render even if data is loading
   const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError, refetch: refetchDashboard } = useQuery(
     'adminDashboard',
     adminAPI.getDashboard,
@@ -91,8 +92,14 @@ const AdminDashboard = () => {
       retry: 1, // Reduce retries for faster failure
       retryDelay: 500,
       placeholderData: (previousData) => previousData, // Use cached data while loading
+      // CRITICAL: Don't block UI rendering - allow navigation even if query fails
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      // Fail fast - don't retry forever
+      retryOnMount: false,
       onError: (error) => {
         console.error('Error fetching dashboard data:', error);
+        // Don't block UI - just log the error
       },
       onSuccess: (data) => {
         // Dashboard data loaded successfully
@@ -104,13 +111,28 @@ const AdminDashboard = () => {
   useRealtimeData('adminDashboard', refetchDashboard);
 
   // OPTIMIZED: Defer non-critical queries - Load after dashboard is visible
-  // Fetch patients data - Deferred (load after dashboard loads)
+  // CRITICAL FIX: Don't wait for dashboardLoading - allow queries to run in parallel
+  // If dashboard fails, these would never load. Instead, enable them after a short delay
+  const [enableSecondaryQueries, setEnableSecondaryQueries] = React.useState(false);
+  
+  React.useEffect(() => {
+    // Enable secondary queries after 500ms, regardless of dashboard status
+    // This prevents blocking if dashboard query fails
+    const timer = setTimeout(() => {
+      setEnableSecondaryQueries(true);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Fetch patients data - Deferred (load after short delay)
   const { data: patientsData, isLoading: patientsLoading, error: patientsError } = useQuery(
     'adminPatients',
     adminAPI.getPatients,
     {
-      enabled: !dashboardLoading, // Only fetch after dashboard loads
+      enabled: enableSecondaryQueries, // Enable after short delay, not waiting for dashboard
       refetchOnMount: false,
+      retry: 1,
+      retryDelay: 500,
       placeholderData: (previousData) => previousData,
       onError: (error) => {
         console.error('Error fetching patients data:', error);
@@ -118,13 +140,15 @@ const AdminDashboard = () => {
     }
   );
 
-  // Fetch therapists data - Deferred (load after dashboard loads)
+  // Fetch therapists data - Deferred (load after short delay)
   const { data: therapistsData, isLoading: therapistsLoading, error: therapistsError } = useQuery(
     'adminTherapists',
     adminAPI.getTherapists,
     {
-      enabled: !dashboardLoading, // Only fetch after dashboard loads
+      enabled: enableSecondaryQueries, // Enable after short delay, not waiting for dashboard
       refetchOnMount: false,
+      retry: 1,
+      retryDelay: 500,
       placeholderData: (previousData) => previousData,
       onError: (error) => {
         console.error('Error fetching therapists data:', error);
@@ -150,13 +174,15 @@ const AdminDashboard = () => {
     }
   );
 
-  // Fetch appointments data - Deferred (load after dashboard loads)
+  // Fetch appointments data - Deferred (load after short delay)
   const { data: appointmentsData, isLoading: appointmentsLoading, error: appointmentsError } = useQuery(
     'adminAppointments',
     adminAPI.getAppointments,
     {
-      enabled: !dashboardLoading, // Only fetch after dashboard loads
+      enabled: enableSecondaryQueries, // Enable after short delay, not waiting for dashboard
       refetchOnMount: false,
+      retry: 1,
+      retryDelay: 500,
       placeholderData: (previousData) => previousData,
       onError: (error) => {
         console.error('Error fetching appointments data:', error);
