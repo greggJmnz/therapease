@@ -8,17 +8,30 @@
 const path = require('path');
 const fs = require('fs');
 
-// Try to load .env.production first, then .env
-const envProductionPath = path.join(__dirname, '../../.env.production');
-const envPath = path.join(__dirname, '../../.env');
+// Try to load .env.production from multiple locations
+// 1. server/.env.production (current location)
+// 2. root/.env.production (root directory)
+// 3. server/.env (fallback)
+// 4. root/.env (fallback)
 
-if (fs.existsSync(envProductionPath)) {
-  require('dotenv').config({ path: envProductionPath });
-  console.log('📄 Loading environment from .env.production');
-} else if (fs.existsSync(envPath)) {
-  require('dotenv').config({ path: envPath });
-  console.log('📄 Loading environment from .env');
-} else {
+const envPaths = [
+  path.join(__dirname, '../.env.production'),  // server/.env.production
+  path.join(__dirname, '../../.env.production'), // root/.env.production
+  path.join(__dirname, '../.env'),               // server/.env
+  path.join(__dirname, '../../.env')             // root/.env
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    require('dotenv').config({ path: envPath });
+    console.log(`📄 Loading environment from ${path.relative(process.cwd(), envPath)}`);
+    envLoaded = true;
+    break;
+  }
+}
+
+if (!envLoaded) {
   console.log('⚠️  No .env file found, using environment variables or defaults');
 }
 
