@@ -112,27 +112,40 @@ const decryptField = (encryptedValue) => {
     return encryptedValue;
   }
   
-  // Check if the value looks like encrypted data (contains colon separator)
+  // Check if the value looks like encrypted data
   if (typeof encryptedValue === 'string' && encryptedValue.includes(':')) {
     try {
       // Additional validation: check if it looks like a valid encrypted format
+      // Encrypted format: 32 hex characters (IV) : encrypted_data
       const parts = encryptedValue.split(':');
-      if (parts.length === 2 && parts[0].length === 32 && parts[1].length > 0) {
+      
+      // Check if it matches encrypted format: exactly 2 parts, first part is 32 hex chars, second part is hex
+      if (parts.length === 2 && 
+          parts[0].length === 32 && 
+          /^[0-9a-fA-F]+$/.test(parts[0]) && // First part is hex
+          parts[1].length > 0 &&
+          /^[0-9a-fA-F]+$/.test(parts[1])) { // Second part is also hex (encrypted data)
+        // This looks like encrypted data, try to decrypt
         return decrypt(encryptedValue);
       } else {
-        // Invalid format - might be plain text that happened to contain a colon
-        console.warn(`Value does not match encrypted format: ${encryptedValue.substring(0, 50)}...`);
+        // Doesn't match encrypted format - likely plain text with a colon (e.g., "Cancellation reason: Vacation")
+        // Don't log warning for plain text - this is expected behavior
         return encryptedValue; // Return as-is if format is invalid
       }
     } catch (error) {
-      console.error(`Decryption failed for value: ${encryptedValue ? encryptedValue.substring(0, 50) : 'empty'}, error: ${error.message}`);
-      // If decryption fails, return the original value or empty string for notes
-      // This handles cases where data might be stored unencrypted
+      // Decryption failed - might be corrupted encrypted data or plain text
+      // Only log if it looked like encrypted data (hex format)
+      const parts = encryptedValue.split(':');
+      if (parts.length === 2 && parts[0].length === 32 && /^[0-9a-fA-F]+$/.test(parts[0])) {
+        // Looked like encrypted data but decryption failed
+        console.error(`Decryption failed for value: ${encryptedValue ? encryptedValue.substring(0, 50) : 'empty'}, error: ${error.message}`);
+      }
+      // Return original value - might be plain text or corrupted encrypted data
       return encryptedValue;
     }
   }
   
-  // If it doesn't look like encrypted data, return as-is
+  // If it doesn't look like encrypted data (no colon), return as-is
   return encryptedValue;
 };
 
