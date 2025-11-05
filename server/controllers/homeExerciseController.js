@@ -346,6 +346,32 @@ const updateExercise = async (req, res) => {
       ? equipment 
       : (equipment ? [equipment] : []);
 
+    // Validate and map status to valid ENUM values
+    // Valid values: 'assigned', 'in_progress', 'completed', 'overdue'
+    const validStatuses = ['assigned', 'in_progress', 'completed', 'overdue'];
+    let validStatus = status || existingExercise.status || 'assigned';
+    
+    // Map common invalid status values to valid ones
+    const statusMap = {
+      'active': 'assigned',
+      'in-progress': 'in_progress',
+      'in progress': 'in_progress',
+      'inprocess': 'in_progress',
+      'pending': 'assigned',
+      'done': 'completed',
+      'finished': 'completed'
+    };
+    
+    // Check if status needs mapping
+    if (statusMap[validStatus.toLowerCase()]) {
+      validStatus = statusMap[validStatus.toLowerCase()];
+    }
+    
+    // Ensure status is valid
+    if (!validStatuses.includes(validStatus)) {
+      validStatus = 'assigned'; // Default to 'assigned' if invalid
+    }
+
     // Prepare query parameters
     const queryParams = [
       title,
@@ -357,7 +383,7 @@ const updateExercise = async (req, res) => {
       difficulty || 'Beginner',
       equipmentArray.length > 0 ? JSON.stringify(equipmentArray) : null,
       dueDate || null,
-      status || 'active',
+      validStatus, // Use validated status
       id
     ];
     
