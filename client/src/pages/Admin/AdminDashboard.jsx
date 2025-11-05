@@ -480,7 +480,25 @@ const AdminDashboard = () => {
               </div>
               <div className="activity-content">
                 <p className="activity-title">{notification.title}</p>
-                <span className="activity-time">{notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now')}</span>
+                <span className="activity-time">{notification.createdAt ? (() => {
+                  try {
+                    const date = new Date(notification.createdAt);
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    });
+                    const formattedTime = date.toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true
+                    });
+                    return `${formattedDate} at ${formattedTime}`;
+                  } catch {
+                    return notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now');
+                  }
+                })() : (notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now'))}</span>
               </div>
               {!notification.read && <div className="unread-dot"></div>}
             </div>
@@ -794,7 +812,25 @@ const AdminDashboard = () => {
               <h4>{notification.title}</h4>
               <p>{notification.message}</p>
               <div className="notification-meta">
-                <span className="time">{notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now')}</span>
+                <span className="time">{notification.createdAt ? (() => {
+                  try {
+                    const date = new Date(notification.createdAt);
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    });
+                    const formattedTime = date.toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true
+                    });
+                    return `${formattedDate} at ${formattedTime}`;
+                  } catch {
+                    return notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now');
+                  }
+                })() : (notification.date && notification.time ? `${notification.date} at ${notification.time}` : (notification.timeAgo || 'Just now'))}</span>
                 <span className={`priority-badge ${notification.priority}`}>
                   {notification.priority}
                 </span>

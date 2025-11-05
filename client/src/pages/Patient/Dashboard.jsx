@@ -423,7 +423,25 @@ const PatientDashboard = () => {
                     <p className="text-xs text-gray-900 font-medium">{notification.title}</p>
                     <p className="text-xs text-gray-600">{notification.message}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {notification.date ? `${notification.date} at ${notification.time}` : 'No date'}
+                      {notification.createdAt ? (() => {
+                        try {
+                          const date = new Date(notification.createdAt);
+                          const formattedDate = date.toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          });
+                          const formattedTime = date.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          });
+                          return `${formattedDate} at ${formattedTime}`;
+                        } catch {
+                          return notification.date ? `${notification.date} at ${notification.time}` : 'No date';
+                        }
+                      })() : (notification.date ? `${notification.date} at ${notification.time}` : 'No date')}
                     </p>
                   </div>
                 ))
