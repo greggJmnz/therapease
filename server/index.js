@@ -50,7 +50,6 @@ const getCorsOrigins = () => {
     }
     // Default production origins
     return [
-      'https://therapease-gnu5.vercel.app', // Vercel production deployment
       'https://therapease.site',            // Custom domain
       'https://www.therapease.site'         // www subdomain
     ];

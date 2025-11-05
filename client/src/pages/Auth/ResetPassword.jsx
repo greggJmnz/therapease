@@ -34,10 +34,10 @@ const ResetPassword = () => {
         windowLocation: window.location.href
       });
       
-      // Warn if using relative URL in production (Vercel)
+      // Warn if using relative URL in production
       if (!import.meta.env.VITE_API_URL && window.location.hostname.includes('therapease.site')) {
         console.error('⚠️ WARNING: VITE_API_URL is not set! Using relative URL /api which will fail.');
-        console.error('💡 Fix: Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
+        console.error('💡 Fix: Set VITE_API_URL=https://api.therapease.site/api in environment variables');
       }
       
       // URL encode the token to handle special characters safely
@@ -82,7 +82,7 @@ URL called: ${url}
 Expected URL format: https://api.therapease.site/api/auth/verify-reset-token/{token}
 
 Debugging steps:
-1. Check VITE_API_URL in Vercel → Settings → Environment Variables
+1. Check VITE_API_URL in environment variables
    Should be: https://api.therapease.site/api
 2. Test API directly: curl https://api.therapease.site/api/health
 3. Check PM2 status on droplet: pm2 status
