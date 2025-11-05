@@ -143,18 +143,28 @@ app.use('/uploads', (req, res, next) => {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    // Check if file exists (for logging/debugging)
-    fs.access(fullPath, fs.constants.F_OK, (err) => {
-      if (err) {
+    // Check if file exists synchronously (for immediate logging)
+    try {
+      if (fs.existsSync(fullPath)) {
+        console.log(`✅ Serving file: ${fullPath} (requested: ${req.path})`);
+      } else {
         console.error(`❌ File not found: ${fullPath} (requested: ${req.path})`);
         console.error(`   Uploads directory: ${uploadsDir}`);
         console.error(`   Requested file: ${requestedPath}`);
-      } else {
-        console.log(`✅ Serving file: ${fullPath}`);
+        console.error(`   Full path: ${fullPath}`);
+        // List directory to see what files exist
+        const dirPath = path.dirname(fullPath);
+        if (fs.existsSync(dirPath)) {
+          const files = fs.readdirSync(dirPath);
+          console.error(`   Files in directory: ${files.join(', ')}`);
+        }
       }
-      // Continue to express.static regardless (it will handle 404)
-      next();
-    });
+    } catch (err) {
+      console.error(`❌ Error checking file: ${err.message}`);
+    }
+    
+    // Continue to express.static (it will handle 404)
+    next();
   } else {
     next();
   }
@@ -438,6 +448,48 @@ app.get('/api', (req, res) => {
     },
     documentation: 'See API documentation for endpoint details'
   });
+});
+
+// Test endpoint to check file existence (for debugging)
+app.get('/api/test-upload-file/:filename', (req, res) => {
+  const { filename } = req.params;
+  const fullPath = path.join(uploadsDir, 'exercise-proofs', filename);
+  
+  try {
+    const exists = fs.existsSync(fullPath);
+    const stats = exists ? fs.statSync(fullPath) : null;
+    
+    // List directory contents
+    const dirPath = path.join(uploadsDir, 'exercise-proofs');
+    const dirExists = fs.existsSync(dirPath);
+    const files = dirExists ? fs.readdirSync(dirPath) : [];
+    
+    res.json({
+      success: true,
+      filename,
+      fullPath,
+      exists,
+      uploadsDir,
+      stats: stats ? {
+        size: stats.size,
+        created: stats.birthtime,
+        modified: stats.mtime
+      } : null,
+      directory: {
+        path: dirPath,
+        exists: dirExists,
+        fileCount: files.length,
+        files: files.slice(0, 10) // First 10 files
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      filename,
+      fullPath
+    });
+  }
 });
 
 // API routes
