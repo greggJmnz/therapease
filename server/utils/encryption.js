@@ -58,11 +58,33 @@ const decrypt = (encryptedData) => {
     const parts = encryptedData.split(':');
     
     if (parts.length !== 2) {
-      throw new Error('Invalid encrypted data format');
+      throw new Error('Invalid encrypted data format - expected iv:encrypted_data');
     }
     
-    const iv = Buffer.from(parts[0], 'hex');
+    const ivHex = parts[0];
     const encrypted = parts[1];
+    
+    // Validate IV length (should be 32 hex characters = 16 bytes)
+    if (!ivHex || ivHex.length !== 32) {
+      throw new Error(`Invalid IV length: expected 32 hex characters, got ${ivHex ? ivHex.length : 0}`);
+    }
+    
+    // Validate IV is valid hex
+    if (!/^[0-9a-fA-F]+$/.test(ivHex)) {
+      throw new Error('Invalid IV format - must be hexadecimal');
+    }
+    
+    const iv = Buffer.from(ivHex, 'hex');
+    
+    // Validate IV buffer length
+    if (iv.length !== IV_LENGTH) {
+      throw new Error(`Invalid IV buffer length: expected ${IV_LENGTH} bytes, got ${iv.length}`);
+    }
+    
+    // Validate encrypted data exists
+    if (!encrypted || encrypted.length === 0) {
+      throw new Error('Encrypted data is empty');
+    }
     
     const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
     
@@ -93,11 +115,20 @@ const decryptField = (encryptedValue) => {
   // Check if the value looks like encrypted data (contains colon separator)
   if (typeof encryptedValue === 'string' && encryptedValue.includes(':')) {
     try {
-      return decrypt(encryptedValue);
+      // Additional validation: check if it looks like a valid encrypted format
+      const parts = encryptedValue.split(':');
+      if (parts.length === 2 && parts[0].length === 32 && parts[1].length > 0) {
+        return decrypt(encryptedValue);
+      } else {
+        // Invalid format - might be plain text that happened to contain a colon
+        console.warn(`Value does not match encrypted format: ${encryptedValue.substring(0, 50)}...`);
+        return encryptedValue; // Return as-is if format is invalid
+      }
     } catch (error) {
-      console.error(`Decryption failed for value: ${encryptedValue}, error: ${error.message}`);
-      // If decryption fails, return a more user-friendly message
-      return 'Data unavailable - please contact support if this persists';
+      console.error(`Decryption failed for value: ${encryptedValue ? encryptedValue.substring(0, 50) : 'empty'}, error: ${error.message}`);
+      // If decryption fails, return the original value or empty string for notes
+      // This handles cases where data might be stored unencrypted
+      return encryptedValue;
     }
   }
   
@@ -133,13 +164,18 @@ const decryptSensitiveFields = (obj, sensitiveFields = []) => {
   sensitiveFields.forEach(field => {
     if (decrypted[field] !== undefined && decrypted[field] !== null && decrypted[field] !== '') {
       try {
+        // decryptField already handles errors internally and returns the original value
+        // or a fallback, so we can safely call it
         decrypted[field] = decryptField(decrypted[field]);
       } catch (error) {
         console.error(`Failed to decrypt field ${field}:`, error.message);
         // For notes field, return empty string if decryption fails
-        // For other fields, keep original value
-        if (field === 'notes') {
+        // For other fields, keep original value (might be unencrypted)
+        if (field === 'notes' || field === 'cancellationReason') {
           decrypted[field] = '';
+        } else {
+          // Keep original value - might be unencrypted data
+          decrypted[field] = decrypted[field];
         }
       }
     }
