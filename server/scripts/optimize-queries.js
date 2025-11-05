@@ -5,12 +5,50 @@
  */
 
 const path = require('path');
+const fs = require('fs');
 
 // Load environment variables before requiring database config
-const envFile = process.env.NODE_ENV === 'production' 
-  ? path.join(__dirname, '../.env.production')
-  : path.join(__dirname, '../../.env');
-require('dotenv').config({ path: envFile });
+// Try multiple possible locations for .env.production
+const possibleEnvFiles = [
+  path.join(__dirname, '../.env.production'),
+  path.join(__dirname, '../../.env.production'),
+  path.join(__dirname, '../.env'),
+  path.join(__dirname, '../../.env')
+];
+
+let envFile = null;
+for (const file of possibleEnvFiles) {
+  if (fs.existsSync(file)) {
+    envFile = file;
+    console.log(`📄 Loading environment from: ${file}`);
+    break;
+  }
+}
+
+if (envFile) {
+  require('dotenv').config({ path: envFile });
+} else {
+  console.warn('⚠️  No .env file found, using environment variables or defaults');
+}
+
+// Verify database credentials are loaded
+const dbUser = process.env.DB_USER || 'root';
+const dbPassword = process.env.DB_PASSWORD ? '***' : 'NOT SET';
+const dbHost = process.env.DB_HOST || '127.0.0.1';
+const dbName = process.env.DB_NAME || 'therapease';
+
+console.log(`🔐 Database Config:`);
+console.log(`   Host: ${dbHost}`);
+console.log(`   User: ${dbUser}`);
+console.log(`   Password: ${dbPassword}`);
+console.log(`   Database: ${dbName}`);
+console.log('');
+
+if (!process.env.DB_PASSWORD) {
+  console.error('❌ ERROR: DB_PASSWORD is not set!');
+  console.error('   Please set DB_PASSWORD in your .env.production file');
+  process.exit(1);
+}
 
 const queryOptimizer = require('../utils/queryOptimizer');
 const { getAll } = require('../config/database');
