@@ -289,8 +289,9 @@ const updateExercise = async (req, res) => {
     }
 
     // First, check if exercise exists and belongs to this therapist
+    // Get current status to use as fallback if status is not provided
     const existingExercise = await getRow(`
-      SELECT id, therapistId FROM home_exercises WHERE id = ?
+      SELECT id, therapistId, status FROM home_exercises WHERE id = ?
     `, [id]);
 
     if (!existingExercise) {
