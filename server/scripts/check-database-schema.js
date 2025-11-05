@@ -6,17 +6,40 @@
  */
 
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../../.env.production') });
+const fs = require('fs');
+
+// Try to load .env.production first, then .env
+const envProductionPath = path.join(__dirname, '../../.env.production');
+const envPath = path.join(__dirname, '../../.env');
+
+if (fs.existsSync(envProductionPath)) {
+  require('dotenv').config({ path: envProductionPath });
+  console.log('📄 Loading environment from .env.production');
+} else if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+  console.log('📄 Loading environment from .env');
+} else {
+  console.log('⚠️  No .env file found, using environment variables or defaults');
+}
 
 const mysql = require('mysql2/promise');
 
 const dbConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
-  user: process.env.DB_USER || 'root',
+  user: process.env.DB_USER || 'therapease_user',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'therapease',
+  database: process.env.DB_NAME || 'therapease_db',
   port: parseInt(process.env.DB_PORT || '3306'),
 };
+
+// Log database config (without password)
+console.log('Database config:', {
+  host: dbConfig.host,
+  user: dbConfig.user,
+  database: dbConfig.database,
+  port: dbConfig.port,
+  passwordSet: !!dbConfig.password
+});
 
 async function checkColumnExists(connection, tableName, columnName) {
   try {
