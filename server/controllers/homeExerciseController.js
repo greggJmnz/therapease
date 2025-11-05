@@ -253,6 +253,12 @@ const createExercise = async (req, res) => {
 const updateExercise = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id; // Get user ID from authenticated user
+    
+    // Get therapist ID from therapists table (therapistId in home_exercises is the user ID, not therapist table ID)
+    // The therapistId field in home_exercises stores the user ID directly
+    const therapistUserId = userId;
+    
     const {
       title,
       description,
@@ -266,27 +272,97 @@ const updateExercise = async (req, res) => {
       status
     } = req.body;
 
-    const query = `
-      UPDATE home_exercises 
-      SET title = ?, description = ?, category = ?, instructions = ?, 
-          duration = ?, frequency = ?, difficulty = ?, equipment = ?, 
-          dueDate = ?, status = ?, updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `;
+    // Validate required fields
+    if (!title || !description) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Title and description are required' 
+      });
+    }
 
-    await runQuery(query, [
+    // Validate user is a therapist
+    if (req.user.role !== 'therapist' && req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Only therapists can update exercises' 
+      });
+    }
+
+    // First, check if exercise exists and belongs to this therapist
+    const existingExercise = await getRow(`
+      SELECT id, therapistId FROM home_exercises WHERE id = ?
+    `, [id]);
+
+    if (!existingExercise) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Exercise not found' 
+      });
+    }
+
+    // Verify therapist owns this exercise (therapistId in table is user ID)
+    if (existingExercise.therapistId !== therapistUserId) {
+      // Admin can update any exercise
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ 
+          success: false,
+          error: 'You do not have permission to update this exercise' 
+        });
+      }
+    }
+
+    // Prepare update query
+    // For admin: allow updating without therapistId check
+    // For therapist: only update their own exercises
+    const query = req.user.role === 'admin'
+      ? `
+        UPDATE home_exercises 
+        SET title = ?, description = ?, category = ?, instructions = ?, 
+            duration = ?, frequency = ?, difficulty = ?, equipment = ?, 
+            dueDate = ?, status = ?, updatedAt = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `
+      : `
+        UPDATE home_exercises 
+        SET title = ?, description = ?, category = ?, instructions = ?, 
+            duration = ?, frequency = ?, difficulty = ?, equipment = ?, 
+            dueDate = ?, status = ?, updatedAt = CURRENT_TIMESTAMP
+        WHERE id = ? AND therapistId = ?
+      `;
+
+    // Ensure instructions is an array before stringifying
+    const instructionsArray = Array.isArray(instructions) 
+      ? instructions 
+      : (typeof instructions === 'string' && instructions.trim() 
+          ? instructions.split('\n').filter(i => i.trim())
+          : []);
+
+    // Ensure equipment is an array before stringifying
+    const equipmentArray = Array.isArray(equipment) 
+      ? equipment 
+      : (equipment ? [equipment] : []);
+
+    // Prepare query parameters
+    const queryParams = [
       title,
       description,
       category || 'General',
-      JSON.stringify(instructions),
+      JSON.stringify(instructionsArray),
       duration || 30,
-      frequency,
-      difficulty,
-      equipment ? JSON.stringify(equipment) : null,
-      dueDate,
-      status,
+      frequency || 'daily',
+      difficulty || 'Beginner',
+      equipmentArray.length > 0 ? JSON.stringify(equipmentArray) : null,
+      dueDate || null,
+      status || 'active',
       id
-    ]);
+    ];
+    
+    // Add therapistId check for non-admin users
+    if (req.user.role !== 'admin') {
+      queryParams.push(therapistUserId);
+    }
+
+    await runQuery(query, queryParams);
 
     // Get updated exercise
     const getExerciseQuery = `
@@ -304,7 +380,10 @@ const updateExercise = async (req, res) => {
     const exercise = await getRow(getExerciseQuery, [id]);
 
     if (!exercise) {
-      return res.status(404).json({ error: 'Exercise not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Exercise not found after update' 
+      });
     }
 
     // Parse JSON fields for equipment and instructions
@@ -324,7 +403,29 @@ const updateExercise = async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating exercise:', error);
-    res.status(500).json({ error: 'Failed to update exercise' });
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage,
+      stack: error.stack
+    });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to update exercise';
+    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      errorMessage = 'Invalid patient or therapist reference';
+    } else if (error.code === 'ER_DATA_TOO_LONG') {
+      errorMessage = 'One or more fields exceed maximum length';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      error: errorMessage 
+    });
   }
 };
 
