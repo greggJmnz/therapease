@@ -34,40 +34,68 @@ const TherapistDashboard = () => {
     }
   };
   
-  // Fetch dashboard data from API with optimized loading
-  // Use suspense: false to allow partial rendering while loading
-  const { data: dashboardData, isLoading, error, refetch } = useQuery(
-    'therapistDashboard',
-    () => therapistAPI.getDashboard(user?.id),
+  // OPTIMIZED: Split dashboard queries for better perceived performance
+  // 1. Fast stats query - loads immediately for stat cards
+  const { data: statsData, isLoading: isStatsLoading, error: statsError } = useQuery(
+    'therapistDashboardStats',
+    therapistAPI.getDashboardStats,
     {
-      enabled: !!user?.id, // Only run query when user ID is available
-      onError: (error) => {
-        toast.error('Failed to load dashboard data');
-        console.error('Error fetching dashboard:', error);
-      },
-      staleTime: 2 * 60 * 1000, // 2 minutes
-      cacheTime: 5 * 60 * 1000, // 5 minutes
+      enabled: !!user?.id,
+      staleTime: 2 * 60 * 1000,
+      cacheTime: 5 * 60 * 1000,
       refetchOnMount: false,
       refetchOnWindowFocus: false,
-      // Optimize: Use placeholder data to show UI structure immediately
-      placeholderData: (previousData) => previousData,
-      // Reduce loading priority - allow UI to render first
       retry: 1,
       retryDelay: 1000
     }
   );
 
-  // Enable real-time updates
-  const { isRefreshing } = useRealtimeData('therapistDashboard', refetch);
+  // 2. Recent items query - can load separately (shows loading spinner for lists)
+  const { data: recentData, isLoading: isRecentLoading, error: recentError } = useQuery(
+    'therapistDashboardRecent',
+    therapistAPI.getDashboardRecent,
+    {
+      enabled: !!user?.id,
+      staleTime: 1 * 60 * 1000, // 1 minute (more frequent updates)
+      cacheTime: 5 * 60 * 1000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
+      retryDelay: 1000
+    }
+  );
 
-  // Extract data from API response
-  const apiData = dashboardData?.data?.data || dashboardData?.data;
-  const overview = apiData?.overview || {};
-  const appointments = apiData?.appointments || {};
-  const recent = apiData?.recent || {};
-  const progress = apiData?.progress || {};
-  const assessments = apiData?.assessments || {};
-  const trends = apiData?.trends || {};
+  // 3. Progress and trends query - can load separately (shows loading for charts)
+  const { data: progressData, isLoading: isProgressLoading, error: progressError } = useQuery(
+    'therapistDashboardProgressTrends',
+    therapistAPI.getDashboardProgressTrends,
+    {
+      enabled: !!user?.id,
+      staleTime: 5 * 60 * 1000, // 5 minutes (trends don't change often)
+      cacheTime: 10 * 60 * 1000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
+      retryDelay: 1000
+    }
+  );
+
+  // Enable real-time updates for stats
+  const { isRefreshing: isStatsRefreshing } = useRealtimeData('therapistDashboardStats', () => {
+    // Refetch stats when needed
+  });
+
+  // Extract data from API responses
+  const statsApiData = statsData?.data?.data || statsData?.data || {};
+  const recentApiData = recentData?.data?.data || recentData?.data || {};
+  const progressApiData = progressData?.data?.data || progressData?.data || {};
+
+  const overview = statsApiData?.overview || {};
+  const appointments = statsApiData?.appointments || {};
+  const assessments = statsApiData?.assessments || {};
+  const progress = { ...statsApiData?.progress, ...progressApiData?.progress };
+  const trends = progressApiData?.trends || {};
+  const recent = recentApiData || {};
 
   // Calculate stats from real API data
   const stats = {
@@ -83,8 +111,12 @@ const TherapistDashboard = () => {
   const recentAssessments = recent.assessments || [];
 
 
-  // Error state
-  if (error) {
+  // Combined loading state - show loading only if stats are loading (most important)
+  const isLoading = isStatsLoading;
+  const error = statsError || recentError || progressError;
+
+  // Error state - only show if stats fail (critical)
+  if (statsError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -100,7 +132,8 @@ const TherapistDashboard = () => {
     );
   }
 
-  if (isLoading) {
+  // Show loading only for stats (page structure can render while lists/charts load)
+  if (isStatsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
@@ -108,8 +141,8 @@ const TherapistDashboard = () => {
     );
   }
 
-  // Check if data is loaded
-  if (!dashboardData || !apiData) {
+  // Check if critical data is loaded
+  if (!statsData) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">

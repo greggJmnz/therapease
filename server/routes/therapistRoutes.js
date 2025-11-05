@@ -21,7 +21,10 @@ router.use(authorizeTherapist);
 router.use(decryptResponseData);
 
 // Dashboard
-router.get('/dashboard', dashboardController.getDashboard);
+router.get('/dashboard', dashboardController.getDashboard); // Full dashboard (backward compatible)
+router.get('/dashboard/stats', dashboardController.getDashboardStats); // Fast stats only
+router.get('/dashboard/recent', dashboardController.getRecentItems); // Recent items only
+router.get('/dashboard/progress-trends', dashboardController.getProgressAndTrends); // Progress and trends only
 router.get('/dashboard/quick-actions', dashboardController.getQuickActions);
 router.get('/dashboard/charts', dashboardController.getDashboardCharts);
 

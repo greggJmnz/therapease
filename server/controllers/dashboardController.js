@@ -423,8 +423,238 @@ const getDashboardCharts = async (req, res) => {
   }
 };
 
+// Get dashboard overview stats only (fast loading)
+const getDashboardStats = async (req, res) => {
+  try {
+    const therapistId = req.user.id;
+
+    // Combined overview stats query (optimized)
+    const overviewStatsSql = `
+      SELECT
+        (SELECT COUNT(DISTINCT pta.patientId) 
+         FROM patient_therapist_assignments pta
+         WHERE pta.therapistId = ? AND pta.status = 'active') as totalPatients,
+        
+        (SELECT COUNT(*) FROM assessments a WHERE a.therapistId = ?) as totalAssessments,
+        (SELECT COUNT(CASE WHEN status = 'completed' THEN 1 END) FROM assessments a WHERE a.therapistId = ?) as assessmentsCompleted,
+        (SELECT COUNT(CASE WHEN status = 'in-progress' THEN 1 END) FROM assessments a WHERE a.therapistId = ?) as assessmentsInProgress,
+        (SELECT COUNT(CASE WHEN status = 'scheduled' THEN 1 END) FROM assessments a WHERE a.therapistId = ?) as assessmentsScheduled,
+        
+        (SELECT COUNT(*) FROM appointments a WHERE a.therapistId = ?) as totalAppointments,
+        (SELECT COUNT(CASE WHEN status = 'scheduled' THEN 1 END) FROM appointments a WHERE a.therapistId = ?) as appointmentsScheduled,
+        (SELECT COUNT(CASE WHEN status = 'confirmed' THEN 1 END) FROM appointments a WHERE a.therapistId = ?) as appointmentsConfirmed,
+        (SELECT COUNT(CASE WHEN status = 'completed' THEN 1 END) FROM appointments a WHERE a.therapistId = ?) as appointmentsCompleted,
+        (SELECT COUNT(CASE WHEN status = 'cancelled' THEN 1 END) FROM appointments a WHERE a.therapistId = ?) as appointmentsCancelled,
+        
+        (SELECT COUNT(*) FROM appointments a 
+         WHERE a.therapistId = ? AND a.appointmentDate >= CURDATE() AND a.status = 'scheduled') as upcomingAppointments,
+        
+        (SELECT COUNT(*) FROM daily_notes dn 
+         WHERE dn.therapistId = ? AND dn.sessionDate = CURDATE()) as todayNotes,
+        
+        (SELECT COUNT(DISTINCT mo.id) 
+         FROM main_objectives mo
+         JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+         JOIN patients p ON tp.patientId = p.id
+         LEFT JOIN patient_therapist_assignments pta ON p.id = pta.patientId
+         WHERE p.therapistId = ? OR (pta.therapistId = ? AND pta.status = 'active')) as totalProgressEntries,
+        
+        (SELECT ROUND(
+          (COUNT(CASE WHEN status = 'completed' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)), 2
+        ) FROM assessments a WHERE a.therapistId = ?) as completionRate,
+        
+        (SELECT ROUND(AVG(sessionDuration), 2) 
+         FROM daily_notes dn 
+         WHERE dn.therapistId = ? AND dn.sessionDuration IS NOT NULL) as avgSessionDuration
+    `;
+
+    const overviewResult = await getRow(overviewStatsSql, [
+      therapistId, therapistId, therapistId, therapistId, therapistId,
+      therapistId, therapistId, therapistId, therapistId, therapistId,
+      therapistId, therapistId, therapistId, therapistId,
+      therapistId, therapistId
+    ]);
+
+    const overview = overviewResult || {};
+    
+    res.json({
+      success: true,
+      data: {
+        overview: {
+          totalPatients: overview.totalPatients || 0,
+          totalAssessments: overview.totalAssessments || 0,
+          totalAppointments: overview.totalAppointments || 0,
+          upcomingAppointments: overview.upcomingAppointments || 0,
+          todayNotes: overview.todayNotes || 0,
+          totalProgressEntries: overview.totalProgressEntries || 0
+        },
+        assessments: {
+          total: overview.totalAssessments || 0,
+          completed: overview.assessmentsCompleted || 0,
+          inProgress: overview.assessmentsInProgress || 0,
+          scheduled: overview.assessmentsScheduled || 0,
+          completionRate: overview.completionRate || 0
+        },
+        appointments: {
+          total: overview.totalAppointments || 0,
+          scheduled: overview.appointmentsScheduled || 0,
+          confirmed: overview.appointmentsConfirmed || 0,
+          completed: overview.appointmentsCompleted || 0,
+          cancelled: overview.appointmentsCancelled || 0
+        },
+        progress: {
+          avgSessionDuration: overview.avgSessionDuration || 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch dashboard stats' });
+  }
+};
+
+// Get recent items (lists) - can be loaded separately
+const getRecentItems = async (req, res) => {
+  try {
+    const therapistId = req.user.id;
+
+    // Get recent assessments
+    const recentAssessments = await getAll(`
+      SELECT 
+        a.id,
+        a.title,
+        a.status,
+        a.assessmentDate,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM assessments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE a.therapistId = ?
+      ORDER BY a.assessmentDate DESC, a.createdAt DESC
+      LIMIT 5
+    `, [therapistId]);
+
+    // Get upcoming appointments
+    const upcomingAppointments = await getAll(`
+      SELECT 
+        a.id,
+        a.appointmentDate,
+        a.startTime,
+        a.endTime,
+        a.type,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE a.therapistId = ? 
+      AND a.appointmentDate >= CURDATE()
+      AND a.status = 'scheduled'
+      ORDER BY a.appointmentDate ASC, a.startTime ASC
+      LIMIT 5
+    `, [therapistId]);
+
+    // Get recent daily notes
+    const recentDailyNotes = await getAll(`
+      SELECT DISTINCT
+        p.id as patientId,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        COALESCE(MAX(dn.sessionDate), p.createdAt) as lastSession,
+        MAX(dn.sessionDuration) as sessionDuration,
+        MAX(dn.activities) as activities
+      FROM patients p
+      JOIN users u ON p.userId = u.id
+      LEFT JOIN daily_notes dn ON p.id = dn.patientId AND dn.therapistId = ?
+      WHERE p.therapistId = ?
+      GROUP BY p.id, u.firstName, u.lastName, p.createdAt
+      ORDER BY lastSession DESC
+      LIMIT 5
+    `, [therapistId, therapistId]);
+
+    res.json({
+      success: true,
+      data: {
+        assessments: recentAssessments,
+        appointments: upcomingAppointments,
+        dailyNotes: recentDailyNotes
+      }
+    });
+  } catch (error) {
+    console.error('Get recent items error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch recent items' });
+  }
+};
+
+// Get progress and trends (can be loaded separately)
+const getProgressAndTrends = async (req, res) => {
+  try {
+    const therapistId = req.user.id;
+    const currentYear = new Date().getFullYear();
+
+    // Get progress summary by area
+    const progressByArea = await getAll(`
+      SELECT 
+        mo.title as area,
+        COUNT(*) as entryCount,
+        AVG(mo.progress) as avgProgress
+      FROM main_objectives mo
+      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+      JOIN patients p ON tp.patientId = p.id
+      WHERE p.therapistId = ?
+      GROUP BY mo.title
+      ORDER BY entryCount DESC
+      LIMIT 5
+    `, [therapistId]);
+
+    const progressWithPercentages = progressByArea.map(area => ({
+      ...area,
+      avgProgress: area.avgProgress ? Math.round(area.avgProgress) : 0
+    }));
+
+    // Get monthly statistics
+    const monthlyStats = await getAll(`
+      SELECT 
+        MONTH(a.appointmentDate) as month,
+        COUNT(*) as appointmentCount
+      FROM appointments a
+      WHERE a.therapistId = ? AND YEAR(a.appointmentDate) = ?
+      GROUP BY MONTH(a.appointmentDate)
+      ORDER BY month
+    `, [therapistId, currentYear]);
+
+    // Get patient growth
+    const patientGrowth = await getAll(`
+      SELECT 
+        DATE_FORMAT(p.createdAt, '%Y-%m') as month,
+        COUNT(*) as newPatients
+      FROM patients p
+      WHERE p.therapistId = ? AND YEAR(p.createdAt) = ?
+      GROUP BY DATE_FORMAT(p.createdAt, '%Y-%m')
+      ORDER BY month
+    `, [therapistId, currentYear]);
+
+    res.json({
+      success: true,
+      data: {
+        progress: {
+          byArea: progressWithPercentages
+        },
+        trends: {
+          monthlyAppointments: monthlyStats,
+          patientGrowth: patientGrowth
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get progress and trends error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch progress and trends' });
+  }
+};
+
 module.exports = {
   getDashboard,
+  getDashboardStats,  // New: Fast stats only
+  getRecentItems,     // New: Lists only
+  getProgressAndTrends, // New: Progress and trends only
   getQuickActions,
   getDashboardCharts
 };

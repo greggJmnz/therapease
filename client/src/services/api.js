@@ -212,7 +212,10 @@ export const adminAPI = {
 
 // Therapist API endpoints
 export const therapistAPI = {
-  getDashboard: (therapistId) => api.get(`/therapist/dashboard?therapistId=${therapistId}`),
+  getDashboard: (therapistId) => api.get(`/therapist/dashboard?therapistId=${therapistId}`), // Full dashboard (backward compatible)
+  getDashboardStats: () => api.get('/therapist/dashboard/stats'), // Fast stats only
+  getDashboardRecent: () => api.get('/therapist/dashboard/recent'), // Recent items only
+  getDashboardProgressTrends: () => api.get('/therapist/dashboard/progress-trends'), // Progress and trends only
   getPatients: () => api.get(`/therapist/patients`),
   getSchedule: () => api.get(`/therapist/schedule`),
   createAppointment: (appointmentData) => api.post('/therapist/schedule', appointmentData),
