@@ -30,42 +30,44 @@ export const SystemSettingsProvider = ({ children }) => {
   // Use isAuthenticated from AuthContext as it's reactive to token changes
   const hasToken = Boolean(isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('token'));
 
-  // Fetch system settings (only for admin users)
-  const { data: settingsData, isLoading, error, refetch } = useQuery(
-    'systemSettings',
-    adminAPI.getSystemSettings,
-    {
-      enabled: shouldFetchSettings && hasToken, // Only fetch if user is admin AND token exists (both must be boolean)
-      onSuccess: (data) => {
-        if (data?.data?.general) {
-          const newSettings = {
-            systemName: data.data.general.systemName || 'TherapEase',
-            sessionTimeout: data.data.general.sessionTimeout || 30,
-            maintenanceMode: data.data.general.maintenanceMode || false,
-            maintenanceDuration: data.data.general.maintenanceDuration || '2 hours'
-          };
-          setSystemSettings(prev => ({
-            ...prev,
-            ...newSettings
-          }));
-        }
-      },
-      onError: (error) => {
-        // Handle 403 Forbidden errors gracefully for non-admin users
-        if (error?.response?.status === 403) {
-          console.log('System settings not accessible for this user role - using defaults');
-          // Keep default values for non-admin users
-        } else {
-          console.error('Error fetching system settings:', error);
-        }
-      },
-      staleTime: 30 * 1000, // 30 seconds - reasonable cache time for system settings
-      cacheTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: true, // Refetch when window gains focus
-      retry: false, // Don't retry on error to avoid repeated 403 errors
-      retryOnMount: false // Don't retry when component mounts
-    }
-  );
+         // OPTIMIZED: Fetch system settings with deferred loading
+         // Only fetch after authentication is complete to avoid blocking login
+         const { data: settingsData, isLoading, error, refetch } = useQuery(
+           'systemSettings',
+           adminAPI.getSystemSettings,
+           {
+             enabled: shouldFetchSettings && hasToken && isAuthenticated, // Only fetch if authenticated AND admin
+             refetchOnMount: false, // Don't refetch on mount
+             onSuccess: (data) => {
+               if (data?.data?.general) {
+                 const newSettings = {
+                   systemName: data.data.general.systemName || 'TherapEase',
+                   sessionTimeout: data.data.general.sessionTimeout || 30,
+                   maintenanceMode: data.data.general.maintenanceMode || false,
+                   maintenanceDuration: data.data.general.maintenanceDuration || '2 hours'
+                 };
+                 setSystemSettings(prev => ({
+                   ...prev,
+                   ...newSettings
+                 }));
+               }
+             },
+             onError: (error) => {
+               // Handle 403 Forbidden errors gracefully for non-admin users
+               if (error?.response?.status === 403) {
+                 console.log('System settings not accessible for this user role - using defaults');
+                 // Keep default values for non-admin users
+               } else {
+                 console.error('Error fetching system settings:', error);
+               }
+             },
+             staleTime: 30 * 1000, // 30 seconds - reasonable cache time for system settings
+             cacheTime: 5 * 60 * 1000, // 5 minutes
+             refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
+             retry: false, // Don't retry on error to avoid repeated 403 errors
+             placeholderData: (previousData) => previousData // Use cached data while loading
+           }
+         );
 
 
   // Function to refresh system settings

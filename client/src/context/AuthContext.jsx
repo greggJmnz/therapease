@@ -181,19 +181,19 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('userRole', data.data.user.role);
         localStorage.setItem('userId', data.data.user.id);
 
-        // Use a small delay to ensure localStorage is fully written before state updates
+        // OPTIMIZED: Reduce delay - localStorage is synchronous, minimal delay needed
         // This prevents race conditions where components try to make API calls before token is available
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 10));
 
         setUser(userData);
         setToken(data.data.token);
         setIsAuthenticated(true);
         
-        // Defer WebSocket connection to speed up initial render
-        // Connect after a short delay to allow UI to render first
+        // OPTIMIZED: Defer WebSocket connection further to prioritize UI rendering
+        // Connect after UI has rendered to make login feel instant
         setTimeout(() => {
           websocketService.connect(data.data.token);
-        }, 500);
+        }, 1000);
 
         return { success: true, user: userData };
       } else {
