@@ -320,8 +320,17 @@ const createMainObjective = async (req, res) => {
   try {
     const { treatmentPlanId } = req.params;
     const therapistId = req.user.id;
-    const { title, description, category, priority } = req.body;
+    const { title, description, category, priority, status } = req.body;
 
+    // Validate required fields
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title is required'
+      });
+    }
+
+    // Verify treatment plan exists and belongs to this therapist
     const treatmentPlan = await getRow(`
       SELECT id FROM treatment_plans WHERE id = ? AND therapistId = ?
     `, [treatmentPlanId, therapistId]);
@@ -329,14 +338,59 @@ const createMainObjective = async (req, res) => {
     if (!treatmentPlan) {
       return res.status(404).json({
         success: false,
-        error: 'Treatment plan not found'
+        error: 'Treatment plan not found or you do not have permission to access it'
       });
+    }
+
+    // Validate and map status to valid ENUM values
+    // Valid values: 'pending', 'in_progress', 'completed', 'cancelled'
+    const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+    let validStatus = status || 'pending'; // Default to 'pending' not 'not-started'
+    
+    // Map common invalid status values to valid ones
+    const statusMap = {
+      'not-started': 'pending',
+      'not_started': 'pending',
+      'notstarted': 'pending',
+      'in-progress': 'in_progress',
+      'in progress': 'in_progress',
+      'inprocess': 'in_progress',
+      'active': 'in_progress',
+      'done': 'completed',
+      'finished': 'completed'
+    };
+    
+    // Check if status needs mapping
+    if (statusMap[validStatus.toLowerCase()]) {
+      validStatus = statusMap[validStatus.toLowerCase()];
+    }
+    
+    // Ensure status is valid
+    if (!validStatuses.includes(validStatus)) {
+      validStatus = 'pending'; // Default to 'pending' if invalid
+    }
+
+    // Validate priority
+    const validPriorities = ['low', 'medium', 'high'];
+    let validPriority = priority || 'medium';
+    if (!validPriorities.includes(validPriority.toLowerCase())) {
+      validPriority = 'medium';
+    } else {
+      validPriority = validPriority.toLowerCase();
     }
 
     const result = await runQuery(`
       INSERT INTO main_objectives (treatmentPlanId, title, description, category, priority, status)
-      VALUES (?, ?, ?, ?, ?, 'not-started')
-    `, [treatmentPlanId, title, description, category || 'General', priority || 'medium']);
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [treatmentPlanId, title, description || null, category || 'General', validPriority, validStatus]);
+
+    // Calculate and update treatment plan overall progress
+    const newOverallProgress = await calculateTreatmentPlanProgress(treatmentPlanId);
+    await runQuery(`
+      UPDATE treatment_plans 
+      SET overallProgress = ?, updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, [newOverallProgress, treatmentPlanId]);
 
     res.status(201).json({
       success: true,
@@ -345,9 +399,30 @@ const createMainObjective = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating main objective:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage,
+      stack: error.stack
+    });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to create main objective';
+    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      errorMessage = 'Invalid treatment plan reference';
+    } else if (error.code === 'ER_DATA_TOO_LONG') {
+      errorMessage = 'One or more fields exceed maximum length';
+    } else if (error.code === 'WARN_DATA_TRUNCATED') {
+      errorMessage = 'Invalid data format. Please check status and priority values.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     res.status(500).json({
       success: false,
-      error: 'Failed to create main objective'
+      error: errorMessage
     });
   }
 };
