@@ -121,22 +121,37 @@ Keep the language neutral, objective, and appropriate for pediatric occupational
 
 // Template 3: For Combined Assessment (Interview + Observation)
 const getCombinedAssessmentPrompt = (patientData, interviewQuestions, observations) => {
+  // Ensure interviewQuestions is an array
+  const questions = Array.isArray(interviewQuestions) ? interviewQuestions : [];
+  
+  // Format interview questions safely
+  const formattedQuestions = questions.length > 0 
+    ? questions.map((q, index) => {
+        const question = q?.question || q?.Question || 'Question not provided';
+        const answer = q?.answer || q?.Answer || q?.response || 'Not provided';
+        return `${index + 1}. Question: ${question}\n   Response: ${answer}`;
+      }).join('\n')
+    : 'No interview questions provided';
+  
+  // Ensure observations is a string
+  const formattedObservations = observations || 'No observations recorded';
+  
   return `
 ${getSystemPrompt()}
 
 CONTEXT: Comprehensive OT Assessment
-Child: ${patientData.firstName} ${patientData.lastName}
-Age: ${patientData.age || 'Not specified'}
-Current Diagnosis: ${patientData.diagnosis || 'Not specified'}
-Therapy Goals: ${patientData.therapyGoals || 'Not specified'}
+Child: ${patientData?.firstName || 'Unknown'} ${patientData?.lastName || ''}
+Age: ${patientData?.age || 'Not specified'}
+Current Diagnosis: ${patientData?.diagnosis || 'Not specified'}
+Therapy Goals: ${patientData?.therapyGoals || 'Not specified'}
 
 ASSESSMENT DATA:
 
 Caregiver Interview Responses:
-${interviewQuestions.map((q, index) => `${index + 1}. Question: ${q.question}\n   Response: ${q.answer || 'Not provided'}`).join('\n')}
+${formattedQuestions}
 
 Clinical Observation Notes:
-${observations || 'No observations recorded'}
+${formattedObservations}
 
 INSTRUCTIONS:
 Based on the caregiver interview and observation notes, synthesize insights into the child's functional profile. Use pediatric occupational therapy frameworks (PEO, MOHO, Sensory Integration, Developmental Milestones).
@@ -173,16 +188,21 @@ Remember: You are not a medical doctor. Provide structured, professional occupat
 
 // Template 4: For Generating Therapist-Friendly Insights
 const getTherapistFriendlyPrompt = (patientData, assessmentData) => {
+  // Ensure assessmentData is properly formatted
+  const formattedAssessmentData = assessmentData 
+    ? (typeof assessmentData === 'string' ? assessmentData : JSON.stringify(assessmentData, null, 2))
+    : 'No assessment data provided';
+  
   return `
 ${getSystemPrompt()}
 
 CONTEXT: Therapist-Friendly Insight Generation
-Child: ${patientData.firstName} ${patientData.lastName}
-Age: ${patientData.age || 'Not specified'}
-Current Diagnosis: ${patientData.diagnosis || 'Not specified'}
+Child: ${patientData?.firstName || 'Unknown'} ${patientData?.lastName || ''}
+Age: ${patientData?.age || 'Not specified'}
+Current Diagnosis: ${patientData?.diagnosis || 'Not specified'}
 
 ASSESSMENT DATA:
-${assessmentData}
+${formattedAssessmentData}
 
 INSTRUCTIONS:
 You are assisting a pediatric occupational therapist. Using the assessment data provided, generate a professional insight summary highlighting the child's functional abilities and barriers.
@@ -215,16 +235,21 @@ Ensure your wording is objective, child-centered, and consistent with occupation
 
 // Template 5: For Sensory Processing Assessment
 const getSensoryProcessingPrompt = (patientData, assessmentData) => {
+  // Ensure assessmentData is properly formatted
+  const formattedAssessmentData = assessmentData 
+    ? (typeof assessmentData === 'string' ? assessmentData : JSON.stringify(assessmentData, null, 2))
+    : 'No assessment data provided';
+  
   return `
 ${getSystemPrompt()}
 
 CONTEXT: Sensory Processing Assessment
-Child: ${patientData.firstName} ${patientData.lastName}
-Age: ${patientData.age || 'Not specified'}
-Current Diagnosis: ${patientData.diagnosis || 'Not specified'}
+Child: ${patientData?.firstName || 'Unknown'} ${patientData?.lastName || ''}
+Age: ${patientData?.age || 'Not specified'}
+Current Diagnosis: ${patientData?.diagnosis || 'Not specified'}
 
 ASSESSMENT DATA:
-${assessmentData}
+${formattedAssessmentData}
 
 INSTRUCTIONS:
 Analyze the assessment data focusing specifically on sensory processing patterns and their impact on occupational performance. Use Sensory Integration theory and frameworks.
@@ -259,16 +284,21 @@ Use professional sensory integration terminology and focus on functional implica
 
 // Template 6: For Motor Skills Assessment
 const getMotorSkillsPrompt = (patientData, assessmentData) => {
+  // Ensure assessmentData is properly formatted
+  const formattedAssessmentData = assessmentData 
+    ? (typeof assessmentData === 'string' ? assessmentData : JSON.stringify(assessmentData, null, 2))
+    : 'No assessment data provided';
+  
   return `
 ${getSystemPrompt()}
 
 CONTEXT: Motor Skills Assessment
-Child: ${patientData.firstName} ${patientData.lastName}
-Age: ${patientData.age || 'Not specified'}
-Current Diagnosis: ${patientData.diagnosis || 'Not specified'}
+Child: ${patientData?.firstName || 'Unknown'} ${patientData?.lastName || ''}
+Age: ${patientData?.age || 'Not specified'}
+Current Diagnosis: ${patientData?.diagnosis || 'Not specified'}
 
 ASSESSMENT DATA:
-${assessmentData}
+${formattedAssessmentData}
 
 INSTRUCTIONS:
 Analyze the assessment data focusing specifically on fine motor, gross motor, and visual-motor skills and their impact on occupational performance.
