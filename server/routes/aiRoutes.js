@@ -61,10 +61,13 @@ router.post('/analyze-assessment', [
     }
   } catch (error) {
     console.error('Assessment analysis error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
     res.status(500).json({
       success: false,
       message: 'Internal server error during assessment analysis',
       error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
