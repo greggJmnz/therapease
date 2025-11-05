@@ -988,30 +988,46 @@ const createTables = async () => {
 
     // Add missing columns to notifications table if they don't exist
     try {
-      // Check if priority column exists
-      const [priorityColumns] = await pool.execute(`
+      // Check which columns exist
+      const [existingColumns] = await pool.execute(`
         SELECT COLUMN_NAME 
         FROM INFORMATION_SCHEMA.COLUMNS 
         WHERE TABLE_SCHEMA = DATABASE() 
-        AND TABLE_NAME = 'notifications' 
-        AND COLUMN_NAME = 'priority'
+        AND TABLE_NAME = 'notifications'
       `);
       
-      if (priorityColumns.length === 0) {
-        console.log('📊 Adding priority column to notifications table...');
-        await pool.execute(`ALTER TABLE notifications ADD COLUMN priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal'`);
-        console.log('✅ Added priority column to notifications table');
-      } else {
-        console.log('ℹ️  Priority column already exists in notifications table');
+      const existingColumnNames = existingColumns.map(col => col.COLUMN_NAME);
+      
+      // Required columns for notifications table
+      const requiredColumns = [
+        { name: 'priority', sql: `ALTER TABLE notifications ADD COLUMN priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal'` },
+        { name: 'relatedId', sql: `ALTER TABLE notifications ADD COLUMN relatedId INT DEFAULT NULL` },
+        { name: 'smsMessageId', sql: `ALTER TABLE notifications ADD COLUMN smsMessageId VARCHAR(255) DEFAULT NULL` },
+        { name: 'smsStatus', sql: `ALTER TABLE notifications ADD COLUMN smsStatus ENUM('pending', 'sent', 'delivered', 'failed', 'error') DEFAULT NULL` },
+        { name: 'smsSentAt', sql: `ALTER TABLE notifications ADD COLUMN smsSentAt TIMESTAMP NULL` },
+        { name: 'updatedAt', sql: `ALTER TABLE notifications ADD COLUMN updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP` }
+      ];
+      
+      for (const column of requiredColumns) {
+        if (!existingColumnNames.includes(column.name)) {
+          try {
+            console.log(`📊 Adding ${column.name} column to notifications table...`);
+            await pool.execute(column.sql);
+            console.log(`✅ Added ${column.name} column to notifications table`);
+          } catch (error) {
+            if (error.code === 'ER_DUP_FIELDNAME' || error.message.includes('Duplicate column name')) {
+              console.log(`ℹ️  ${column.name} column already exists in notifications table`);
+            } else {
+              console.error(`⚠️  Error adding ${column.name} column:`, error.message);
+            }
+          }
+        } else {
+          console.log(`ℹ️  ${column.name} column already exists in notifications table`);
+        }
       }
     } catch (error) {
-      // Log error but don't fail - query will handle missing column gracefully
-      if (error.code === 'ER_DUP_FIELDNAME' || error.message.includes('Duplicate column name')) {
-        console.log('ℹ️  Priority column already exists in notifications table');
-      } else {
-        console.error('⚠️  Error adding priority column to notifications table:', error.message);
-        console.error('   The application will handle missing priority column gracefully');
-      }
+      console.error('⚠️  Error checking notifications table columns:', error.message);
+      console.error('   The application will handle missing columns gracefully');
     }
 
     console.log('Database tables created successfully');

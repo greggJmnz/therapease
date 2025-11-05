@@ -70,24 +70,51 @@ const getNotifications = async (req, res) => {
     const [countResult] = await getAll(countSql, params);
     const total = countResult.total;
 
-    // Get notifications
-    const sql = `
-      SELECT 
-        n.id,
-        n.userId,
-        n.title,
-        n.message,
-        n.type,
-        n.isRead,
-        n.priority,
-        n.createdAt
-      FROM notifications n
-      ${whereClause}
-      ORDER BY n.createdAt DESC
-      LIMIT ${parseInt(limit)} OFFSET ${offset}
-    `;
-
-    const notifications = await getAll(sql, params);
+    // Get notifications - handle missing priority column gracefully
+    let notifications;
+    try {
+      // Try with priority column first
+      const sql = `
+        SELECT 
+          n.id,
+          n.userId,
+          n.title,
+          n.message,
+          n.type,
+          n.isRead,
+          n.priority,
+          n.createdAt
+        FROM notifications n
+        ${whereClause}
+        ORDER BY n.createdAt DESC
+        LIMIT ${parseInt(limit)} OFFSET ${offset}
+      `;
+      notifications = await getAll(sql, params);
+    } catch (error) {
+      // If priority column doesn't exist, query without it
+      if (error.code === 'ER_BAD_FIELD_ERROR' && error.message.includes('priority')) {
+        console.warn('⚠️ Priority column not found in notifications table, querying without it');
+        const sql = `
+          SELECT 
+            n.id,
+            n.userId,
+            n.title,
+            n.message,
+            n.type,
+            n.isRead,
+            n.createdAt
+          FROM notifications n
+          ${whereClause}
+          ORDER BY n.createdAt DESC
+          LIMIT ${parseInt(limit)} OFFSET ${offset}
+        `;
+        notifications = await getAll(sql, params);
+        // Add default priority for backward compatibility
+        notifications = notifications.map(n => ({ ...n, priority: 'normal' }));
+      } else {
+        throw error; // Re-throw if it's a different error
+      }
+    }
 
     // Format notification data with date and time
     // Note: Frontend will format using user's local timezone from createdAt ISO string
