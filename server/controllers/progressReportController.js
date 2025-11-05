@@ -50,8 +50,8 @@ const uploadProgressReport = async (req, res) => {
     // Insert progress report record
     const insertSql = `
       INSERT INTO progress_reports 
-      (patientId, therapistId, title, description, fileName, originalFileName, filePath, fileSize, mimeType)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (patientId, therapistId, reportDate, title, description, fileName, originalFileName, filePath, fileSize, mimeType)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const filePath = req.file.path;
@@ -59,10 +59,12 @@ const uploadProgressReport = async (req, res) => {
     const originalFileName = req.file.originalname;
     const fileSize = req.file.size;
     const mimeType = req.file.mimetype;
+    const reportDate = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
     
     const result = await runQuery(insertSql, [
       patientId,
       therapistId,
+      reportDate,
       title,
       description || null,
       fileName,

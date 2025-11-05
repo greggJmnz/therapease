@@ -938,6 +938,16 @@ const createTables = async () => {
         }
       }
       
+      // Modify reportDate to allow NULL or have a default value for file uploads
+      try {
+        await pool.execute('ALTER TABLE progress_reports MODIFY COLUMN reportDate DATE NULL');
+      } catch (err) {
+        // Column modification might fail if column doesn't exist or is already modified
+        if (!err.message.includes('Duplicate column name') && !err.message.includes('Unknown column')) {
+          console.log('Note: Could not modify reportDate column:', err.message);
+        }
+      }
+      
     } catch (error) {
       // Ignore error if columns already exist
       if (!error.message.includes('Duplicate column name')) {
