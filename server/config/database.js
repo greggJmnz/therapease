@@ -998,13 +998,19 @@ const createTables = async () => {
       `);
       
       if (priorityColumns.length === 0) {
+        console.log('📊 Adding priority column to notifications table...');
         await pool.execute(`ALTER TABLE notifications ADD COLUMN priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal'`);
         console.log('✅ Added priority column to notifications table');
+      } else {
+        console.log('ℹ️  Priority column already exists in notifications table');
       }
     } catch (error) {
-      // Ignore error if column already exists
-      if (!error.message.includes('Duplicate column name')) {
-        console.log('Note: Notifications priority column may already exist');
+      // Log error but don't fail - query will handle missing column gracefully
+      if (error.code === 'ER_DUP_FIELDNAME' || error.message.includes('Duplicate column name')) {
+        console.log('ℹ️  Priority column already exists in notifications table');
+      } else {
+        console.error('⚠️  Error adding priority column to notifications table:', error.message);
+        console.error('   The application will handle missing priority column gracefully');
       }
     }
 

@@ -1601,13 +1601,33 @@ const getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
     
-    // Get notifications
-    const notifications = await getAll(`
-      SELECT id, title, message, type, isRead, priority, createdAt
-      FROM notifications
-      WHERE userId = ?
-      ORDER BY createdAt DESC
-    `, [userId]);
+    // Get notifications - handle missing priority column gracefully
+    // Check if priority column exists first, then use appropriate query
+    let notifications;
+    try {
+      // Try with priority column first
+      notifications = await getAll(`
+        SELECT id, title, message, type, isRead, priority, createdAt
+        FROM notifications
+        WHERE userId = ?
+        ORDER BY createdAt DESC
+      `, [userId]);
+    } catch (error) {
+      // If priority column doesn't exist, query without it
+      if (error.code === 'ER_BAD_FIELD_ERROR' && error.message.includes('priority')) {
+        console.warn('⚠️ Priority column not found in notifications table, querying without it');
+        notifications = await getAll(`
+          SELECT id, title, message, type, isRead, createdAt
+          FROM notifications
+          WHERE userId = ?
+          ORDER BY createdAt DESC
+        `, [userId]);
+        // Add default priority for backward compatibility
+        notifications = notifications.map(n => ({ ...n, priority: 'normal' }));
+      } else {
+        throw error; // Re-throw if it's a different error
+      }
+    }
 
     // Format notification data with date and time (same as admin and therapist)
     const formattedNotifications = notifications.map(notification => {
