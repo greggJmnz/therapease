@@ -5,7 +5,6 @@ import {
   Search, 
   Filter, 
   Edit, 
-  Trash2, 
   Eye,
   Users,
   X,
@@ -135,8 +134,6 @@ const AdminPatients = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const dropdownRefs = useRef({});
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [patientToDelete, setPatientToDelete] = useState(null);
 
   // Reset to first page when search or filter changes
   useEffect(() => {
@@ -428,35 +425,6 @@ const AdminPatients = () => {
     }
   };
 
-  const handleDeletePatient = (patientId) => {
-    setPatientToDelete(patientId);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDeletePatient = async () => {
-    if (!patientToDelete) return;
-    
-    try {
-      await adminAPI.deleteUser(patientToDelete);
-      toast.success('Patient deleted successfully');
-      refetch(); // Refresh data from API
-      setShowDeleteModal(false);
-      setPatientToDelete(null);
-    } catch (error) {
-      console.error('Error deleting patient:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to delete patient';
-      toast.error(errorMessage);
-      
-      // If user not found, refresh the list to remove stale data
-      if (error.response?.status === 404) {
-        console.log('User not found, refreshing patient list...');
-        refetch(); // Refresh to remove stale data
-      }
-      
-      setShowDeleteModal(false);
-      setPatientToDelete(null);
-    }
-  };
 
   const handleViewPatient = (patient) => {
     console.log('View patient clicked:', patient);
@@ -836,17 +804,6 @@ const AdminPatients = () => {
                                  >
                                    <Activity size={16} className="text-green-500" />
                                    Add Therapist
-                                 </button>
-                                 <button 
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     handleDeletePatient(patient.id);
-                                     closeAllDropdowns();
-                                   }}
-                                   className="dropdown-item danger"
-                                 >
-                                   <Trash2 size={16} />
-                                   Delete Patient
                                  </button>
                                </div>
                              )}
@@ -1643,13 +1600,6 @@ const AdminPatients = () => {
                   <Edit size={18} />
                   Edit Patient
                 </button>
-                <button 
-                  onClick={() => handleDeletePatient(selectedPatient.id)}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  <Trash2 size={18} />
-                  Delete Patient
-                </button>
               </div>
             </div>
           </div>
@@ -1657,20 +1607,6 @@ const AdminPatients = () => {
       </div>
     )}
     
-    {/* Confirmation Modal */}
-    <ConfirmationModal
-      isOpen={showDeleteModal}
-      onClose={() => {
-        setShowDeleteModal(false);
-        setPatientToDelete(null);
-      }}
-      onConfirm={confirmDeletePatient}
-      title="Delete Patient"
-      message="Are you sure you want to delete this patient? This action cannot be undone."
-      confirmText="Delete"
-      cancelText="Cancel"
-      type="danger"
-    />
     </>
   );
 };
