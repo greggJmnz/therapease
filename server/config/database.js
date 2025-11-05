@@ -46,7 +46,17 @@ const dbConfig = {
   keepAliveInitialDelay: 0,
   // Pool settings for better throughput
   maxIdle: 10,
-  idleTimeout: 300000 // 5 minutes
+  idleTimeout: 300000, // 5 minutes
+  // Additional pool optimizations
+  acquireTimeout: 60000, // Time to wait for connection from pool
+  reconnect: true, // Automatically reconnect on connection loss
+  // Connection pooling performance
+  supportBigNumbers: true,
+  bigNumberStrings: true,
+  dateStrings: false,
+  debug: false,
+  // Multiple statements (disabled for security)
+  multipleStatements: false
 };
 
 // Create connection pool
@@ -1307,10 +1317,28 @@ const seedTherapistDefaults = async () => {
   }
 };
 
-// Helper function to run queries
-const runQuery = async (sql, params = []) => {
+// Helper function to run queries with optional caching
+const runQuery = async (sql, params = [], options = {}) => {
+  const { useCache = false, cacheTTL = null } = options;
+  
+  // Check cache if enabled
+  if (useCache) {
+    const queryCache = require('../utils/queryCache');
+    const cached = queryCache.get(sql, params);
+    if (cached !== null) {
+      return cached;
+    }
+  }
+
   try {
     const [result] = await pool.execute(sql, params);
+    
+    // Store in cache if enabled
+    if (useCache) {
+      const queryCache = require('../utils/queryCache');
+      queryCache.set(sql, params, result, cacheTTL);
+    }
+    
     return result;
   } catch (error) {
     console.error('Query error:', error);
@@ -1318,21 +1346,58 @@ const runQuery = async (sql, params = []) => {
   }
 };
 
-// Helper function to get single row
-const getRow = async (sql, params = []) => {
+// Helper function to get single row with optional caching
+const getRow = async (sql, params = [], options = {}) => {
+  const { useCache = false, cacheTTL = null } = options;
+  
+  // Check cache if enabled
+  if (useCache) {
+    const queryCache = require('../utils/queryCache');
+    const cached = queryCache.get(sql, params);
+    if (cached !== null) {
+      return cached;
+    }
+  }
+
   try {
     const [rows] = await pool.execute(sql, params);
-    return rows[0] || null;
+    const result = rows[0] || null;
+    
+    // Store in cache if enabled
+    if (useCache && result) {
+      const queryCache = require('../utils/queryCache');
+      queryCache.set(sql, params, result, cacheTTL);
+    }
+    
+    return result;
   } catch (error) {
     console.error('Query error:', error);
     throw error;
   }
 };
 
-// Helper function to get multiple rows
-const getAll = async (sql, params = []) => {
+// Helper function to get multiple rows with optional caching
+const getAll = async (sql, params = [], options = {}) => {
+  const { useCache = false, cacheTTL = null } = options;
+  
+  // Check cache if enabled
+  if (useCache) {
+    const queryCache = require('../utils/queryCache');
+    const cached = queryCache.get(sql, params);
+    if (cached !== null) {
+      return cached;
+    }
+  }
+
   try {
     const [rows] = await pool.execute(sql, params);
+    
+    // Store in cache if enabled
+    if (useCache) {
+      const queryCache = require('../utils/queryCache');
+      queryCache.set(sql, params, rows, cacheTTL);
+    }
+    
     return rows;
   } catch (error) {
     console.error('Query error:', error);
@@ -1640,5 +1705,13 @@ module.exports = {
   setupEnvironmentConfig,
   setupSSLCertificates,
   setupVAPIDKeys,
-  createDatabase
+  createDatabase,
+  // Export pool stats helper
+  getPoolStats: () => {
+    return {
+      totalConnections: pool.pool?._allConnections?.length || 0,
+      freeConnections: pool.pool?._freeConnections?.length || 0,
+      queuedRequests: pool.pool?._connectionQueue?.length || 0
+    };
+  }
 };
