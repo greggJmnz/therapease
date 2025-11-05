@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 const ConfirmationModal = ({ 
@@ -45,8 +46,8 @@ const ConfirmationModal = ({
 
   const styles = getTypeStyles();
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  const modalContent = (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ zIndex: 9999 }}>
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -96,6 +97,9 @@ const ConfirmationModal = ({
       </div>
     </div>
   );
+
+  // Use React Portal to render modal at document body level to ensure it floats above everything
+  return createPortal(modalContent, document.body);
 };
 
 export default ConfirmationModal;
