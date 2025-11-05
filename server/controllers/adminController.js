@@ -3269,22 +3269,23 @@ const getPatientsWithAssignments = async (req, res) => {
         email: patient.email,
         phone: patient.phone,
         dateOfBirth: patient.dateOfBirth,
-      gender: patient.gender,
-      address: patient.address,
-      city: patient.city,
-      state: patient.state,
-      zipCode: patient.zipCode,
-      country: patient.country,
-      diagnosis: patient.diagnosis,
-      medicalHistory: patient.medicalHistory,
-      goals: patient.goals,
-      status: patient.status,
-      primaryTherapistId: patient.primaryTherapistId,
-      primaryTherapistName: patient.primaryTherapistName,
-      createdAt: patient.createdAt,
-      updatedAt: patient.updatedAt,
-      therapistAssignments: patient.therapistAssignments || []
-    }));
+        gender: patient.gender,
+        address: patient.address,
+        city: patient.city,
+        state: patient.state,
+        zipCode: patient.zipCode,
+        country: patient.country,
+        diagnosis: patient.diagnosis,
+        medicalHistory: patient.medicalHistory,
+        goals: patient.goals,
+        status: patient.status,
+        primaryTherapistId: patient.primaryTherapistId,
+        primaryTherapistName: patient.primaryTherapistName,
+        createdAt: patient.createdAt,
+        updatedAt: patient.updatedAt,
+        therapistAssignments: assignments
+      };
+    });
 
     res.json({
       success: true,
