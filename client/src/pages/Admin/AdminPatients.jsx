@@ -444,7 +444,17 @@ const AdminPatients = () => {
       setPatientToDelete(null);
     } catch (error) {
       console.error('Error deleting patient:', error);
-      toast.error('Failed to delete patient');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to delete patient';
+      toast.error(errorMessage);
+      
+      // If user not found, refresh the list to remove stale data
+      if (error.response?.status === 404) {
+        console.log('User not found, refreshing patient list...');
+        refetch(); // Refresh to remove stale data
+      }
+      
+      setShowDeleteModal(false);
+      setPatientToDelete(null);
     }
   };
 

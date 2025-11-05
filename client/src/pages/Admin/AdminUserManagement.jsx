@@ -155,12 +155,19 @@ const AdminUserManagement = () => {
         setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
       },
       onError: (error) => {
+        const errorMessage = error.response?.data?.error || error.message || 'Failed to delete user';
         setNotification({
           show: true,
-          message: `Failed to delete user: ${error.response?.data?.error || error.message}`,
+          message: `Failed to delete user: ${errorMessage}`,
           type: 'error'
         });
         setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 5000);
+        
+        // If user not found, refresh the list to remove stale data
+        if (error.response?.status === 404) {
+          console.log('User not found, refreshing user list...');
+          queryClient.invalidateQueries(['adminUsers']);
+        }
       }
     }
   );
@@ -307,6 +314,14 @@ const AdminUserManagement = () => {
     
     // Find the user to get their role
     const user = users.find(u => u.id === userToDelete);
+    if (!user) {
+      toast.error('User not found in current list. Refreshing...');
+      refetch(); // Refresh to get latest data
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+      return;
+    }
+    
     deleteUserMutation.mutate({ userId: userToDelete, userRole: user?.role });
     setShowDeleteModal(false);
     setUserToDelete(null);
