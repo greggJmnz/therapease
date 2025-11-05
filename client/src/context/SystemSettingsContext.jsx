@@ -15,7 +15,7 @@ export const useSystemSettings = () => {
 
 export const SystemSettingsProvider = ({ children }) => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [systemSettings, setSystemSettings] = useState({
     systemName: 'TherapEase',
     sessionTimeout: 30,
@@ -27,7 +27,8 @@ export const SystemSettingsProvider = ({ children }) => {
   const shouldFetchSettings = user?.role === 'admin';
   
   // Check if token is available before making requests (must be boolean)
-  const hasToken = Boolean(typeof window !== 'undefined' && localStorage.getItem('token'));
+  // Use isAuthenticated from AuthContext as it's reactive to token changes
+  const hasToken = Boolean(isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('token'));
 
   // Fetch system settings (only for admin users)
   const { data: settingsData, isLoading, error, refetch } = useQuery(
