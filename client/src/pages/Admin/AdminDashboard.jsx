@@ -342,17 +342,9 @@ const AdminDashboard = () => {
 
 
 
-  // Loading state
-  if (dashboardLoading || patientsLoading || therapistsLoading || appointmentsLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard data...</p>
-        </div>
-      </div>
-    );
-  }
+  // CRITICAL FIX: Don't block dashboard rendering - allow UI to show immediately
+  // Show loading indicators inline instead of blocking entire page
+  // This prevents 5-10 minute delays if queries fail or timeout
 
   // Error state
   if (dashboardError || patientsError || therapistsError || appointmentsError) {
