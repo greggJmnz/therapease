@@ -22,7 +22,7 @@ const isCrossOrigin = apiBaseUrl.startsWith('http://') || apiBaseUrl.startsWith(
 
 export const api = axios.create({
   baseURL: apiBaseUrl,
-  timeout: 10000,
+  timeout: 10000, // 10 seconds for regular API calls
   headers: {
     'Content-Type': 'application/json',
   },
@@ -30,8 +30,32 @@ export const api = axios.create({
   withCredentials: isCrossOrigin,
 });
 
+// Create separate axios instance for AI endpoints with longer timeout
+// AI insights generation can take 1-3 minutes
+export const aiApi = axios.create({
+  baseURL: apiBaseUrl,
+  timeout: 180000, // 3 minutes (180 seconds) for AI endpoints
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: isCrossOrigin,
+});
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token to aiApi
+aiApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Request interceptor to add auth token to regular api
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -354,14 +378,16 @@ export const patientAPI = {
 };
 
 // AI API endpoints
+// Use aiApi for analyzeAssessment (longer timeout for AI generation)
+// Use regular api for other AI endpoints (data storage, etc.)
 export const aiAPI = {
-  analyzeAssessment: (data) => api.post('/ai/analyze-assessment', data),
+  analyzeAssessment: (data) => aiApi.post('/ai/analyze-assessment', data),
   
-  // AI Assessment Data Storage
+  // AI Assessment Data Storage (regular timeout is fine)
   saveAssessmentData: (data) => api.post('/ai/assessment-data', data),
   getAssessmentData: (patientId) => api.get(`/ai/assessment-data/${patientId}`),
   
-  // AI PDF Records Storage
+  // AI PDF Records Storage (regular timeout is fine)
   savePDFRecord: (data) => api.post('/ai/pdf-records', data),
   getPDFRecords: (patientId) => api.get(`/ai/pdf-records/${patientId}`),
 };
