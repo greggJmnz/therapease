@@ -23,8 +23,7 @@ TherapEase implements enterprise-grade security measures to protect patient heal
 - **Security Headers**: Comprehensive security headers
 - **CORS Protection**: Cross-origin request security
 
-### 📊 Audit & Compliance
-- **Audit Logging**: Complete activity tracking
+### 📊 Compliance
 - **HIPAA Compliance**: Healthcare data protection
 - **Access Logging**: User access monitoring
 - **Breach Detection**: Automated security monitoring
@@ -57,7 +56,6 @@ TherapEase implements enterprise-grade security measures to protect patient heal
 - ✅ Technical Safeguards
 - ✅ Data Encryption
 - ✅ Access Controls
-- ✅ Audit Logs
 
 ## Support
 For security questions or concerns, contact the development team.
