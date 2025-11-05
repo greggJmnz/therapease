@@ -24,7 +24,7 @@ for (const file of possibleEnvFiles) {
   }
 }
 
-const { pool } = require('../config/database');
+const mysql = require('mysql2/promise');
 
 // Optimization indexes recommended by EXPLAIN analysis
 const optimizationIndexes = [
@@ -46,11 +46,24 @@ async function addOptimizationIndexes() {
   console.log('🔍 Adding Optimization Indexes');
   console.log('================================\n');
 
+  // Create a separate connection for this script (don't use shared pool)
+  const dbConfig = {
+    host: process.env.DB_HOST || '127.0.0.1',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'therapease',
+    port: parseInt(process.env.DB_PORT || '3306')
+  };
+
+  let connection;
   try {
+    connection = await mysql.createConnection(dbConfig);
+    console.log('✅ Connected to MySQL database successfully\n');
+
     for (const index of optimizationIndexes) {
       try {
         // Check if index already exists
-        const [existing] = await pool.execute(`
+        const [existing] = await connection.execute(`
           SELECT COUNT(*) as count 
           FROM information_schema.statistics 
           WHERE table_schema = DATABASE() 
@@ -67,7 +80,7 @@ async function addOptimizationIndexes() {
         const columns = index.columns.join(', ');
         const sql = `CREATE INDEX ${index.name} ON ${index.table}(${columns})`;
         
-        await pool.execute(sql);
+        await connection.execute(sql);
         console.log(`✅ Created index: ${index.name}`);
         console.log(`   Table: ${index.table}`);
         console.log(`   Columns: ${columns}`);
@@ -92,7 +105,9 @@ async function addOptimizationIndexes() {
     console.error('❌ Error adding optimization indexes:', error);
     process.exit(1);
   } finally {
-    await pool.end();
+    if (connection) {
+      await connection.end();
+    }
   }
 }
 
