@@ -50,7 +50,16 @@ const getDashboard = async (req, res) => {
     `;
 
     const statsResult = await getRow(statsSql);
-    const stats = statsResult;
+    // Ensure all stats are numbers (not null) - MySQL COUNT() returns BIGINT, but subqueries might return null
+    const stats = {
+      totalTherapists: parseInt(statsResult?.totalTherapists || 0),
+      totalPatients: parseInt(statsResult?.totalPatients || 0),
+      totalAdmins: parseInt(statsResult?.totalAdmins || 0),
+      totalAssessments: parseInt(statsResult?.totalAssessments || 0),
+      totalAppointments: parseInt(statsResult?.totalAppointments || 0),
+      totalDailyNotes: parseInt(statsResult?.totalDailyNotes || 0),
+      totalProgressEntries: parseInt(statsResult?.totalProgressEntries || 0)
+    };
 
     // Get recent user registrations
     const recentUsersSql = `
@@ -79,7 +88,14 @@ const getDashboard = async (req, res) => {
     `;
 
     const systemHealthResult = await getRow(systemHealthSql);
-    const systemHealth = systemHealthResult;
+    // Ensure all health metrics are numbers
+    const systemHealth = {
+      newUsersThisWeek: parseInt(systemHealthResult?.newUsersThisWeek || 0),
+      newAssessmentsThisWeek: parseInt(systemHealthResult?.newAssessmentsThisWeek || 0),
+      newAppointmentsThisWeek: parseInt(systemHealthResult?.newAppointmentsThisWeek || 0),
+      newDailyNotesThisWeek: parseInt(systemHealthResult?.newDailyNotesThisWeek || 0),
+      newProgressEntriesThisWeek: parseInt(systemHealthResult?.newProgressEntriesThisWeek || 0)
+    };
 
     // Get user growth over time (last 12 months for better coverage)
     const userGrowthSql = `
@@ -160,12 +176,27 @@ const getDashboard = async (req, res) => {
     `;
 
     const analyticsResult = await getRow(analyticsSql);
-    const analytics = analyticsResult;
+    // Ensure all analytics are numbers (handle null/undefined from AVG)
+    const analytics = {
+      completedAssessments: parseInt(analyticsResult?.completedAssessments || 0),
+      inProgressAssessments: parseInt(analyticsResult?.inProgressAssessments || 0),
+      scheduledAssessments: parseInt(analyticsResult?.scheduledAssessments || 0),
+      avgAssessmentScore: parseFloat(analyticsResult?.avgAssessmentScore || 0) || 0,
+      completedAppointmentsThisMonth: parseInt(analyticsResult?.completedAppointmentsThisMonth || 0),
+      cancelledAppointmentsThisMonth: parseInt(analyticsResult?.cancelledAppointmentsThisMonth || 0),
+      avgAppointmentDuration: parseFloat(analyticsResult?.avgAppointmentDuration || 0) || 0,
+      sessionsThisMonth: parseInt(analyticsResult?.sessionsThisMonth || 0)
+    };
 
-    // Calculate key performance indicators
-    const totalActiveAppointments = stats.totalAppointments - (appointmentStats.find(s => s.status === 'cancelled')?.count || 0);
+    // Calculate key performance indicators with proper null handling
+    const cancelledAppointments = appointmentStats.find(s => s.status === 'cancelled');
+    const cancelledCount = cancelledAppointments ? parseInt(cancelledAppointments.count || 0) : 0;
+    const totalActiveAppointments = Math.max(0, stats.totalAppointments - cancelledCount);
+    
+    const completedAppointments = appointmentStats.find(s => s.status === 'completed');
+    const completedCount = completedAppointments ? parseInt(completedAppointments.count || 0) : 0;
     const appointmentCompletionRate = totalActiveAppointments > 0 ? 
-      Math.round(((appointmentStats.find(s => s.status === 'completed')?.count || 0) / totalActiveAppointments) * 100) : 0;
+      Math.round((completedCount / totalActiveAppointments) * 100) : 0;
     
     const assessmentCompletionRate = stats.totalAssessments > 0 ? 
       Math.round((analytics.completedAssessments / stats.totalAssessments) * 100) : 0;
