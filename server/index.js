@@ -508,6 +508,21 @@ app.get('/api/test-upload-file/:filename', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 
+// Debug middleware for all API requests
+app.use('/api/admin', (req, res, next) => {
+  if (req.method === 'DELETE' && req.path.includes('users')) {
+    console.log('🔍 DELETE /api/admin/users request received:', {
+      method: req.method,
+      path: req.path,
+      originalUrl: req.originalUrl,
+      url: req.url,
+      baseUrl: req.baseUrl,
+      params: req.params
+    });
+  }
+  next();
+});
+
 // Admin routes (no maintenance mode check - admins can always access)
 app.use('/api/admin', adminRoutes);
 

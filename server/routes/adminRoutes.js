@@ -105,5 +105,22 @@ router.patch('/notifications/:id/read', adminController.markNotificationAsRead);
 router.patch('/notifications/read-all', adminController.markAllNotificationsAsRead);
 router.delete('/notifications/:id', adminController.deleteNotification);
 
+// Catch-all route for debugging (should be last)
+router.use((req, res, next) => {
+  console.log('⚠️ Unmatched admin route:', {
+    method: req.method,
+    path: req.path,
+    originalUrl: req.originalUrl,
+    url: req.url,
+    baseUrl: req.baseUrl
+  });
+  res.status(404).json({
+    success: false,
+    error: 'Route not found',
+    method: req.method,
+    path: req.path,
+    originalUrl: req.originalUrl
+  });
+});
 
 module.exports = router;
