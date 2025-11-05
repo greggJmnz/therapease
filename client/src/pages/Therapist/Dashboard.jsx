@@ -161,7 +161,7 @@ const TherapistDashboard = () => {
   return (
     <div className="therapist-dashboard">
       {/* Loading indicator for real-time updates */}
-      {isRefreshing && (
+      {isStatsRefreshing && (
         <div className="fixed top-4 right-4 z-50 bg-green-100 text-green-800 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
           <span className="text-sm font-medium">Updating data...</span>
@@ -294,7 +294,14 @@ const TherapistDashboard = () => {
 
 
       {/* Recent Assessments */}
-      {recentAssessments && recentAssessments.length > 0 && (
+      {isRecentLoading ? (
+        <div className="mt-8 bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+            <span className="ml-3 text-gray-600">Loading recent assessments...</span>
+          </div>
+        </div>
+      ) : recentAssessments && recentAssessments.length > 0 && (
         <div className="mt-8 bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Assessments</h3>
@@ -339,7 +346,12 @@ const TherapistDashboard = () => {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Patients</h3>
             <div className="flow-root">
-              {recentPatients.length > 0 ? (
+              {isRecentLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+                  <span className="ml-2 text-sm text-gray-600">Loading recent patients...</span>
+                </div>
+              ) : recentPatients.length > 0 ? (
                 <ul className="-my-5 divide-y divide-gray-200">
                   {recentPatients.map((patient) => (
                     <li key={patient.patientId} className="py-4">
@@ -395,7 +407,12 @@ const TherapistDashboard = () => {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Upcoming Appointments</h3>
             <div className="flow-root">
-              {recentAppointments.length > 0 ? (
+              {isRecentLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+                  <span className="ml-2 text-sm text-gray-600">Loading upcoming appointments...</span>
+                </div>
+              ) : recentAppointments.length > 0 ? (
                 <ul className="-my-5 divide-y divide-gray-200">
                   {recentAppointments.slice(0, 5).map((appointment) => (
                     <li key={appointment.id} className="py-4">
@@ -443,7 +460,14 @@ const TherapistDashboard = () => {
       </div>
 
       {/* Progress by Area */}
-      {progress.byArea && progress.byArea.length > 0 && (
+      {isProgressLoading ? (
+        <div className="mt-8 bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+            <span className="ml-3 text-gray-600">Loading progress data...</span>
+          </div>
+        </div>
+      ) : progress.byArea && progress.byArea.length > 0 && (
         <div className="mt-8 bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Progress by Area</h3>
