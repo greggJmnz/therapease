@@ -3158,6 +3158,7 @@ const getPatientTherapists = async (req, res) => {
 };
 
 // Get patients with their therapist assignments for admin scheduling
+// OPTIMIZED: Single query with JSON_ARRAYAGG instead of N+1 queries
 const getPatientsWithAssignments = async (req, res) => {
   try {
     const sql = `
@@ -3182,83 +3183,92 @@ const getPatientsWithAssignments = async (req, res) => {
         u.state,
         u.zipCode,
         u.country,
-        (SELECT CONCAT(u2.firstName, ' ', u2.lastName) FROM users u2 WHERE u2.id = p.therapistId) as primaryTherapistName
+        (SELECT CONCAT(u_primary.firstName, ' ', u_primary.lastName) 
+         FROM users u_primary 
+         WHERE u_primary.id = p.therapistId) as primaryTherapistName,
+        
+        -- Use JSON_ARRAYAGG to get all assigned therapists in a single JSON array
+        JSON_ARRAYAGG(
+          -- Only add to the array if an assignment exists
+          IF(
+            pta.id IS NOT NULL,
+            JSON_OBJECT(
+              'id', pta.id,
+              'assignmentType', pta.assignmentType,
+              'assignedAt', pta.assignedAt,
+              'assignmentStatus', pta.status,
+              'notes', pta.notes,
+              'therapistId', tu.id,
+              'firstName', tu.firstName,
+              'lastName', tu.lastName,
+              'email', tu.email,
+              'specialization', t.specialization,
+              'yearsOfExperience', t.yearsOfExperience,
+              'therapistName', CONCAT(tu.firstName, ' ', tu.lastName)
+            ),
+            NULL
+          )
+        ) AS therapistAssignments
+        
       FROM patients p
       JOIN users u ON p.userId = u.id
+      
+      -- LEFT JOIN to include patients with NO therapists
+      LEFT JOIN patient_therapist_assignments pta ON p.id = pta.patientId AND pta.status = 'active'
+      LEFT JOIN users tu ON pta.therapistId = tu.id
+      LEFT JOIN therapists t ON tu.id = t.userId
+
       WHERE u.role = 'patient'
+      
+      -- Group by the patient to aggregate therapist assignments
+      GROUP BY p.id, u.id
+      
       ORDER BY u.firstName, u.lastName
     `;
 
     const patients = await getAll(sql);
 
-    // Get therapist assignments for each patient (including primary therapist)
-    const patientsWithAssignments = await Promise.all(patients.map(async (patient) => {
-      // Get assigned therapists from patient_therapist_assignments table
-      const assignmentSql = `
-        SELECT 
-          pta.id,
-          pta.assignmentType,
-          pta.assignedAt,
-          pta.status as assignmentStatus,
-          pta.notes,
-          u.id as therapistId,
-          u.firstName,
-          u.lastName,
-          u.email,
-          t.specialization,
-          t.yearsOfExperience,
-          CONCAT(u.firstName, ' ', u.lastName) as therapistName
-        FROM patient_therapist_assignments pta
-        JOIN users u ON pta.therapistId = u.id
-        LEFT JOIN therapists t ON u.id = t.userId
-        WHERE pta.patientId = ? AND pta.status = 'active'
-        ORDER BY pta.assignmentType, pta.assignedAt
-      `;
-      
-      const assignments = await getAll(assignmentSql, [patient.id]);
-      
-      // If patient has a primary therapist in the patients table, add it to assignments
-      let allAssignments = [...assignments];
-      if (patient.primaryTherapistId && patient.primaryTherapistName) {
-        // Check if primary therapist is already in assignments
-        const hasPrimaryInAssignments = assignments.some(assignment => 
-          assignment.therapistId === patient.primaryTherapistId && assignment.assignmentType === 'primary'
-        );
-        
-        if (!hasPrimaryInAssignments) {
-          // Add primary therapist to assignments
-          allAssignments.unshift({
-            id: `primary-${patient.id}`,
-            assignmentType: 'primary',
-            assignedAt: patient.createdAt,
-            assignmentStatus: 'active',
-            notes: 'Primary therapist',
-            therapistId: patient.primaryTherapistId,
-            firstName: patient.primaryTherapistName.split(' ')[0],
-            lastName: patient.primaryTherapistName.split(' ')[1] || '',
-            email: '',
-            specialization: '',
-            yearsOfExperience: 0,
-            therapistName: patient.primaryTherapistName
-          });
-        }
-      }
-      
-      return {
-        ...patient,
-        therapistAssignments: allAssignments
-      };
-    }));
-
     // Format patient data
-    const formattedPatients = patientsWithAssignments.map(patient => ({
-      id: patient.id,
-      userId: patient.userId,
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      email: patient.email,
-      phone: patient.phone,
-      dateOfBirth: patient.dateOfBirth,
+    const formattedPatients = patients.map(patient => {
+      
+      // The therapistAssignments column is a JSON string, parse it.
+      // Filter out any NULL values that result from patients with no assignments.
+      let assignments = [];
+      if (patient.therapistAssignments) {
+          try {
+              // Check if it's a string (from JSON_ARRAYAGG) or already an array
+              const parsed = typeof patient.therapistAssignments === 'string' 
+                  ? JSON.parse(patient.therapistAssignments) 
+                  : patient.therapistAssignments;
+              
+              assignments = (parsed || []).filter(Boolean); // Filter out any [null] entries
+          } catch (e) {
+              console.error("Failed to parse therapistAssignments JSON:", e);
+              assignments = [];
+          }
+      }
+
+      // Add the (legacy) primary therapist to the list if they aren't already there
+      if (patient.primaryTherapistId && !assignments.some(a => a.therapistId === patient.primaryTherapistId)) {
+        assignments.unshift({
+          id: `primary-${patient.id}`,
+          assignmentType: 'primary',
+          assignedAt: patient.createdAt,
+          assignmentStatus: 'active',
+          notes: 'Primary therapist',
+          therapistId: patient.primaryTherapistId,
+          therapistName: patient.primaryTherapistName || 'Primary Therapist'
+        });
+      }
+
+      return {
+        id: patient.id,
+        userId: patient.userId,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        email: patient.email,
+        phone: patient.phone,
+        dateOfBirth: patient.dateOfBirth,
       gender: patient.gender,
       address: patient.address,
       city: patient.city,

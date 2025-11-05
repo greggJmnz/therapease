@@ -132,7 +132,6 @@ const AdminPatients = () => {
   const [addTherapistPatient, setAddTherapistPatient] = useState(null);
   const [activeTab, setActiveTab] = useState('personal');
   const [actionDropdowns, setActionDropdowns] = useState({});
-  const [patientTherapists, setPatientTherapists] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const dropdownRefs = useRef({});
@@ -143,21 +142,6 @@ const AdminPatients = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus]);
-
-  // Fetch patient therapists
-  const fetchPatientTherapists = async (patientId) => {
-    try {
-      const response = await adminAPI.getPatientTherapists(patientId);
-      if (response.data.success) {
-        setPatientTherapists(prev => ({
-          ...prev,
-          [patientId]: response.data.data?.therapists || []
-        }));
-      }
-    } catch (error) {
-      console.error('Error fetching patient therapists:', error);
-    }
-  };
 
   // Fetch patients data from API
   const { data: patientsData, isLoading, error, refetch } = useQuery(
@@ -181,18 +165,6 @@ const AdminPatients = () => {
   useEffect(() => {
     refetch();
   }, []);
-
-  // Load patient therapists when patients data is available
-  useEffect(() => {
-    if (patientsData?.data?.data?.patients || patientsData?.data?.patients) {
-      const patients = patientsData.data.data?.patients || patientsData.data.patients || [];
-      patients.forEach(patient => {
-        if (patient.id) {
-          fetchPatientTherapists(patient.id);
-        }
-      });
-    }
-  }, [patientsData]);
 
   // Close all dropdowns
   const closeAllDropdowns = () => {
@@ -736,8 +708,8 @@ const AdminPatients = () => {
                 </td>
                     <td className="px-6 py-4">
                       {(() => {
-                        const patientId = patient.patient?.id;
-                        const therapists = patientTherapists[patientId] || [];
+                        // Use the data that was already loaded from the main query
+                        const therapists = patient.therapistAssignments || [];
                         if (therapists.length === 0) {
                           return (
                             <div>
@@ -749,8 +721,8 @@ const AdminPatients = () => {
                         return (
                           <div className="space-y-1">
                             {therapists.slice(0, 2).map((therapist, index) => (
-                              <div key={therapist.id} className="flex items-center gap-2">
-                                <div className="text-sm text-gray-900">{therapist.name}</div>
+                              <div key={therapist.id || index} className="flex items-center gap-2">
+                                <div className="text-sm text-gray-900">{therapist.therapistName || therapist.name || `${therapist.firstName} ${therapist.lastName}`}</div>
                                 <span className={`px-2 py-1 text-xs rounded-full ${
                                   therapist.assignmentType === 'primary' ? 'bg-blue-100 text-blue-800' :
                                   therapist.assignmentType === 'secondary' ? 'bg-gray-100 text-gray-800' :
