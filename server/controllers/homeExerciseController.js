@@ -301,7 +301,11 @@ const updateExercise = async (req, res) => {
     }
 
     // Verify therapist owns this exercise (therapistId in table is user ID)
-    if (existingExercise.therapistId !== therapistUserId) {
+    // Convert both to numbers for comparison (handle string/int mismatch)
+    const existingTherapistId = parseInt(existingExercise.therapistId);
+    const currentTherapistId = parseInt(therapistUserId);
+    
+    if (existingTherapistId !== currentTherapistId) {
       // Admin can update any exercise
       if (req.user.role !== 'admin') {
         return res.status(403).json({ 
