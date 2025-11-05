@@ -149,7 +149,33 @@ const getDashboard = async (req, res) => {
       count: parseInt(item.count || 0)
     }));
 
-    // Assessment stats already fetched above in parallel
+    // Get assessment statistics by type
+    const assessmentStatsSql = `
+      SELECT 
+        type,
+        COUNT(*) as count,
+        AVG(score) as avgScore
+      FROM assessments
+      GROUP BY type
+      ORDER BY count DESC
+    `;
+
+    // Get appointment statistics by status
+    const appointmentStatsSql = `
+      SELECT 
+        status,
+        COUNT(*) as count
+      FROM appointments
+      GROUP BY status
+      ORDER BY count DESC
+    `;
+
+    // OPTIMIZED: Execute assessment and appointment stats queries in parallel
+    const [assessmentStatsRaw, appointmentStatsRaw] = await Promise.all([
+      getAll(assessmentStatsSql),
+      getAll(appointmentStatsSql)
+    ]);
+
     // Ensure counts are numbers and handle null avgScore
     const assessmentStats = assessmentStatsRaw.map(stat => ({
       type: stat.type || 'Unknown',
@@ -157,7 +183,6 @@ const getDashboard = async (req, res) => {
       avgScore: parseFloat(stat.avgScore || 0) || 0
     }));
 
-    // Appointment stats already fetched above in parallel
     // Ensure counts are numbers
     const appointmentStats = appointmentStatsRaw.map(stat => ({
       status: stat.status || 'Unknown',
