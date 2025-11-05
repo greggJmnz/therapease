@@ -175,10 +175,15 @@ export const AuthProvider = ({ children }) => {
         // Clear React Query cache
         queryClient.clear();
         
+        // Store token FIRST before any state updates to ensure it's available for subsequent requests
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('userRole', data.data.user.role);
         localStorage.setItem('userId', data.data.user.id);
+
+        // Use a small delay to ensure localStorage is fully written before state updates
+        // This prevents race conditions where components try to make API calls before token is available
+        await new Promise(resolve => setTimeout(resolve, 50));
 
         setUser(userData);
         setToken(data.data.token);

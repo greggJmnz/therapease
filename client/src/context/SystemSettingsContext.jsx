@@ -25,13 +25,16 @@ export const SystemSettingsProvider = ({ children }) => {
 
   // Only fetch system settings for admin users
   const shouldFetchSettings = user?.role === 'admin';
+  
+  // Check if token is available before making requests
+  const hasToken = typeof window !== 'undefined' && localStorage.getItem('token');
 
   // Fetch system settings (only for admin users)
   const { data: settingsData, isLoading, error, refetch } = useQuery(
     'systemSettings',
     adminAPI.getSystemSettings,
     {
-      enabled: shouldFetchSettings, // Only fetch if user is admin
+      enabled: shouldFetchSettings && hasToken, // Only fetch if user is admin AND token exists
       onSuccess: (data) => {
         if (data?.data?.general) {
           const newSettings = {
