@@ -47,9 +47,6 @@ const dbConfig = {
   // Pool settings for better throughput
   maxIdle: 10,
   idleTimeout: 300000, // 5 minutes
-  // Additional pool optimizations
-  acquireTimeout: 60000, // Time to wait for connection from pool
-  reconnect: true, // Automatically reconnect on connection loss
   // Connection pooling performance
   supportBigNumbers: true,
   bigNumberStrings: true,

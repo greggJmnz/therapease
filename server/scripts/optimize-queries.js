@@ -4,6 +4,14 @@
  * Analyzes slow queries using EXPLAIN and provides optimization recommendations
  */
 
+const path = require('path');
+
+// Load environment variables before requiring database config
+const envFile = process.env.NODE_ENV === 'production' 
+  ? path.join(__dirname, '../.env.production')
+  : path.join(__dirname, '../../.env');
+require('dotenv').config({ path: envFile });
+
 const queryOptimizer = require('../utils/queryOptimizer');
 const { getAll } = require('../config/database');
 
