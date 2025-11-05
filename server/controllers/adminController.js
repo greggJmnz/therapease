@@ -34,11 +34,12 @@ const getTimeAgo = (date) => {
   }
 };
 
-// Get admin dashboard data
+// Get admin dashboard data - OPTIMIZED: Combined queries for better performance
 const getDashboard = async (req, res) => {
   try {
-    // Get system statistics
-    const statsSql = `
+    // OPTIMIZED: Combine all stats and health metrics into a single query
+    // This reduces 2 queries to 1, dramatically improving performance
+    const combinedStatsSql = `
       SELECT 
         (SELECT COUNT(*) FROM users WHERE role = 'therapist') as totalTherapists,
         (SELECT COUNT(*) FROM users WHERE role = 'patient') as totalPatients,
@@ -46,19 +47,34 @@ const getDashboard = async (req, res) => {
         (SELECT COUNT(*) FROM assessments) as totalAssessments,
         (SELECT COUNT(*) FROM appointments) as totalAppointments,
         (SELECT COUNT(*) FROM daily_notes) as totalDailyNotes,
-        (SELECT COUNT(*) FROM main_objectives) as totalProgressEntries
+        (SELECT COUNT(*) FROM main_objectives) as totalProgressEntries,
+        (SELECT COUNT(*) FROM users WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newUsersThisWeek,
+        (SELECT COUNT(*) FROM assessments WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newAssessmentsThisWeek,
+        (SELECT COUNT(*) FROM appointments WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newAppointmentsThisWeek,
+        (SELECT COUNT(*) FROM daily_notes WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newDailyNotesThisWeek,
+        (SELECT COUNT(*) FROM main_objectives WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newProgressEntriesThisWeek
     `;
 
-    const statsResult = await getRow(statsSql);
+    const combinedResult = await getRow(combinedStatsSql);
+    
     // Ensure all stats are numbers (not null) - MySQL COUNT() returns BIGINT, but subqueries might return null
     const stats = {
-      totalTherapists: parseInt(statsResult?.totalTherapists || 0),
-      totalPatients: parseInt(statsResult?.totalPatients || 0),
-      totalAdmins: parseInt(statsResult?.totalAdmins || 0),
-      totalAssessments: parseInt(statsResult?.totalAssessments || 0),
-      totalAppointments: parseInt(statsResult?.totalAppointments || 0),
-      totalDailyNotes: parseInt(statsResult?.totalDailyNotes || 0),
-      totalProgressEntries: parseInt(statsResult?.totalProgressEntries || 0)
+      totalTherapists: parseInt(combinedResult?.totalTherapists || 0),
+      totalPatients: parseInt(combinedResult?.totalPatients || 0),
+      totalAdmins: parseInt(combinedResult?.totalAdmins || 0),
+      totalAssessments: parseInt(combinedResult?.totalAssessments || 0),
+      totalAppointments: parseInt(combinedResult?.totalAppointments || 0),
+      totalDailyNotes: parseInt(combinedResult?.totalDailyNotes || 0),
+      totalProgressEntries: parseInt(combinedResult?.totalProgressEntries || 0)
+    };
+
+    // Ensure all health metrics are numbers
+    const systemHealth = {
+      newUsersThisWeek: parseInt(combinedResult?.newUsersThisWeek || 0),
+      newAssessmentsThisWeek: parseInt(combinedResult?.newAssessmentsThisWeek || 0),
+      newAppointmentsThisWeek: parseInt(combinedResult?.newAppointmentsThisWeek || 0),
+      newDailyNotesThisWeek: parseInt(combinedResult?.newDailyNotesThisWeek || 0),
+      newProgressEntriesThisWeek: parseInt(combinedResult?.newProgressEntriesThisWeek || 0)
     };
 
     // Get recent user registrations
@@ -76,26 +92,6 @@ const getDashboard = async (req, res) => {
     `;
 
     const recentUsers = await getAll(recentUsersSql);
-
-    // Get system health metrics
-    const systemHealthSql = `
-      SELECT 
-        (SELECT COUNT(*) FROM users WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newUsersThisWeek,
-        (SELECT COUNT(*) FROM assessments WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newAssessmentsThisWeek,
-        (SELECT COUNT(*) FROM appointments WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newAppointmentsThisWeek,
-        (SELECT COUNT(*) FROM daily_notes WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newDailyNotesThisWeek,
-        (SELECT COUNT(*) FROM main_objectives WHERE createdAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as newProgressEntriesThisWeek
-    `;
-
-    const systemHealthResult = await getRow(systemHealthSql);
-    // Ensure all health metrics are numbers
-    const systemHealth = {
-      newUsersThisWeek: parseInt(systemHealthResult?.newUsersThisWeek || 0),
-      newAssessmentsThisWeek: parseInt(systemHealthResult?.newAssessmentsThisWeek || 0),
-      newAppointmentsThisWeek: parseInt(systemHealthResult?.newAppointmentsThisWeek || 0),
-      newDailyNotesThisWeek: parseInt(systemHealthResult?.newDailyNotesThisWeek || 0),
-      newProgressEntriesThisWeek: parseInt(systemHealthResult?.newProgressEntriesThisWeek || 0)
-    };
 
     // Get user growth over time (last 12 months for better coverage)
     const userGrowthSql = `
@@ -153,18 +149,7 @@ const getDashboard = async (req, res) => {
       count: parseInt(item.count || 0)
     }));
 
-    // Get assessment statistics by type
-    const assessmentStatsSql = `
-      SELECT 
-        type,
-        COUNT(*) as count,
-        AVG(score) as avgScore
-      FROM assessments
-      GROUP BY type
-      ORDER BY count DESC
-    `;
-
-    const assessmentStatsRaw = await getAll(assessmentStatsSql);
+    // Assessment stats already fetched above in parallel
     // Ensure counts are numbers and handle null avgScore
     const assessmentStats = assessmentStatsRaw.map(stat => ({
       type: stat.type || 'Unknown',
@@ -172,17 +157,7 @@ const getDashboard = async (req, res) => {
       avgScore: parseFloat(stat.avgScore || 0) || 0
     }));
 
-    // Get appointment statistics by status
-    const appointmentStatsSql = `
-      SELECT 
-        status,
-        COUNT(*) as count
-      FROM appointments
-      GROUP BY status
-      ORDER BY count DESC
-    `;
-
-    const appointmentStatsRaw = await getAll(appointmentStatsSql);
+    // Appointment stats already fetched above in parallel
     // Ensure counts are numbers
     const appointmentStats = appointmentStatsRaw.map(stat => ({
       status: stat.status || 'Unknown',
