@@ -919,7 +919,9 @@ const createTables = async () => {
       const progressReportsColumnsToAdd = [
         { name: 'title', sql: 'ALTER TABLE progress_reports ADD COLUMN title VARCHAR(255)' },
         { name: 'description', sql: 'ALTER TABLE progress_reports ADD COLUMN description TEXT' },
+        { name: 'fileName', sql: 'ALTER TABLE progress_reports ADD COLUMN fileName VARCHAR(255)' },
         { name: 'originalFileName', sql: 'ALTER TABLE progress_reports ADD COLUMN originalFileName VARCHAR(255)' },
+        { name: 'filePath', sql: 'ALTER TABLE progress_reports ADD COLUMN filePath VARCHAR(500)' },
         { name: 'fileSize', sql: 'ALTER TABLE progress_reports ADD COLUMN fileSize INT' },
         { name: 'mimeType', sql: 'ALTER TABLE progress_reports ADD COLUMN mimeType VARCHAR(100)' },
         { name: 'uploadedAt', sql: 'ALTER TABLE progress_reports ADD COLUMN uploadedAt TIMESTAMP NULL' }
