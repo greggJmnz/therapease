@@ -193,7 +193,7 @@ const createTables = async () => {
     try {
       await pool.execute(`
         ALTER TABLE notifications 
-        ADD COLUMN IF NOT EXISTS priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium'
+        ADD COLUMN IF NOT EXISTS priority ENUM('low', 'medium', 'high') DEFAULT 'medium'
       `);
     } catch (error) {
       // Ignore error if columns already exist
