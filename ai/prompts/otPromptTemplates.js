@@ -27,16 +27,28 @@ Core Principles:
 
 // Template 1: For Interview Data (Parent/Caregiver Q&A)
 const getInterviewAnalysisPrompt = (patientData, interviewQuestions) => {
+  // Ensure interviewQuestions is an array
+  const questions = Array.isArray(interviewQuestions) ? interviewQuestions : [];
+  
+  // Format interview questions safely
+  const formattedQuestions = questions.length > 0 
+    ? questions.map((q, index) => {
+        const question = q?.question || q?.Question || 'Question not provided';
+        const answer = q?.answer || q?.Answer || q?.response || 'Not provided';
+        return `${index + 1}. Question: ${question}\n   Response: ${answer}`;
+      }).join('\n')
+    : 'No interview questions provided';
+  
   return `
 ${getSystemPrompt()}
 
 CONTEXT: Caregiver Interview Analysis
-Child: ${patientData.firstName} ${patientData.lastName}
-Age: ${patientData.age || 'Not specified'}
-Current Diagnosis: ${patientData.diagnosis || 'Not specified'}
+Child: ${patientData?.firstName || 'Unknown'} ${patientData?.lastName || ''}
+Age: ${patientData?.age || 'Not specified'}
+Current Diagnosis: ${patientData?.diagnosis || 'Not specified'}
 
 CAREGIVER INTERVIEW RESPONSES:
-${interviewQuestions.map((q, index) => `${index + 1}. Question: ${q.question}\n   Response: ${q.answer || 'Not provided'}`).join('\n')}
+${formattedQuestions}
 
 INSTRUCTIONS:
 Analyze the caregiver interview transcript. Summarize the child's functional abilities and challenges in relation to daily living skills, play, school readiness, sensory behaviors, and motor development.

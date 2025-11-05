@@ -11,6 +11,16 @@ class GPTService {
 
   async generateResponse(prompt, options = {}) {
     try {
+      // Validate API key
+      if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your-api-key-here') {
+        throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in environment variables.');
+      }
+      
+      // Validate prompt
+      if (!prompt || typeof prompt !== 'string') {
+        throw new Error('Invalid prompt: prompt must be a non-empty string');
+      }
+      
       // Prepare messages array
       const messages = [];
       
@@ -33,7 +43,12 @@ class GPTService {
         content: prompt
       });
 
-      const model = options.model || this.model;
+      // Validate model - use gpt-4o if gpt-4.1 is not available
+      let model = options.model || this.model;
+      if (model === 'gpt-4.1') {
+        // gpt-4.1 might not exist, try gpt-4o as fallback
+        model = 'gpt-4o';
+      }
       
       const response = await openai.chat.completions.create({
         model: model,
@@ -80,46 +95,114 @@ class GPTService {
 
   // Method to select appropriate prompt template based on assessment type
   selectPromptTemplate(assessmentType, patientData, assessmentData) {
-    const { interviewQuestions, observations } = assessmentData;
-    
-    switch (assessmentType) {
-      case 'interview-only':
-        return otPromptTemplates.getInterviewAnalysisPrompt(patientData, interviewQuestions);
+    try {
+      const { interviewQuestions, observations } = assessmentData || {};
       
-      case 'observation-only':
-        return otPromptTemplates.getObservationAnalysisPrompt(patientData, observations);
+      // Ensure patientData has required fields
+      if (!patientData) {
+        throw new Error('Patient data is required');
+      }
       
-      case 'sensory-processing':
-        return otPromptTemplates.getSensoryProcessingPrompt(patientData, assessmentData);
+      // Ensure patientData has at least firstName and lastName
+      if (!patientData.firstName && !patientData.lastName) {
+        throw new Error('Patient data must include at least firstName or lastName');
+      }
       
-      case 'motor-skills':
-        return otPromptTemplates.getMotorSkillsPrompt(patientData, assessmentData);
+      // Normalize patient data to ensure all fields exist
+      const normalizedPatientData = {
+        firstName: patientData.firstName || 'Unknown',
+        lastName: patientData.lastName || 'Unknown',
+        age: patientData.age || patientData.dateOfBirth ? (new Date().getFullYear() - new Date(patientData.dateOfBirth).getFullYear()) : 'Not specified',
+        diagnosis: patientData.diagnosis || 'Not specified',
+        ...patientData
+      };
       
-      case 'therapist-friendly':
-        return otPromptTemplates.getTherapistFriendlyPrompt(patientData, assessmentData);
+      // Ensure interviewQuestions and observations are arrays/strings
+      const normalizedInterviewQuestions = Array.isArray(interviewQuestions) ? interviewQuestions : [];
+      const normalizedObservations = observations || 'No observations recorded';
       
-      case 'combined':
-      default:
-        return otPromptTemplates.getCombinedAssessmentPrompt(patientData, interviewQuestions, observations);
+      switch (assessmentType) {
+        case 'interview-only':
+          if (!normalizedInterviewQuestions || normalizedInterviewQuestions.length === 0) {
+            throw new Error('Interview questions are required for interview-only assessment type');
+          }
+          return otPromptTemplates.getInterviewAnalysisPrompt(normalizedPatientData, normalizedInterviewQuestions);
+        
+        case 'observation-only':
+          if (!normalizedObservations || normalizedObservations === 'No observations recorded') {
+            throw new Error('Observations are required for observation-only assessment type');
+          }
+          return otPromptTemplates.getObservationAnalysisPrompt(normalizedPatientData, normalizedObservations);
+        
+        case 'sensory-processing':
+          return otPromptTemplates.getSensoryProcessingPrompt(normalizedPatientData, assessmentData);
+        
+        case 'motor-skills':
+          return otPromptTemplates.getMotorSkillsPrompt(normalizedPatientData, assessmentData);
+        
+        case 'therapist-friendly':
+          return otPromptTemplates.getTherapistFriendlyPrompt(normalizedPatientData, assessmentData);
+        
+        case 'combined':
+        default:
+          return otPromptTemplates.getCombinedAssessmentPrompt(normalizedPatientData, normalizedInterviewQuestions, normalizedObservations);
+      }
+    } catch (error) {
+      console.error('Error in selectPromptTemplate:', error);
+      throw error;
     }
   }
 
   async analyzeAssessmentData(patientData, assessmentData, options = {}) {
-    const { interviewQuestions, observations, assessmentType = 'combined' } = assessmentData;
-    
-    // Select appropriate prompt template based on assessment type
-    const prompt = this.selectPromptTemplate(assessmentType, patientData, assessmentData);
-    
-    // Add system prompt for enhanced OT context
-    const systemPrompt = otPromptTemplates.getSystemPrompt();
-    
-    // Use enhanced prompt with system context
-    const enhancedOptions = {
-      ...options,
-      systemPrompt: systemPrompt
-    };
+    try {
+      const { interviewQuestions, observations, assessmentType = 'combined' } = assessmentData;
+      
+      // Validate required data
+      if (!patientData) {
+        throw new Error('Patient data is required');
+      }
+      
+      if (!assessmentData) {
+        throw new Error('Assessment data is required');
+      }
+      
+      // Select appropriate prompt template based on assessment type
+      let prompt;
+      try {
+        prompt = this.selectPromptTemplate(assessmentType, patientData, assessmentData);
+      } catch (error) {
+        console.error('Error selecting prompt template:', error);
+        throw new Error(`Failed to select prompt template: ${error.message}`);
+      }
+      
+      if (!prompt || typeof prompt !== 'string') {
+        throw new Error('Invalid prompt generated from template');
+      }
+      
+      // Add system prompt for enhanced OT context
+      let systemPrompt;
+      try {
+        systemPrompt = otPromptTemplates.getSystemPrompt();
+      } catch (error) {
+        console.error('Error getting system prompt:', error);
+        // Fallback to default OTPF framework prompt
+        systemPrompt = otpfFrameworkPrompt;
+      }
+      
+      // Use enhanced prompt with system context
+      const enhancedOptions = {
+        ...options,
+        systemPrompt: systemPrompt
+      };
 
-    return await this.generateResponse(prompt, enhancedOptions);
+      return await this.generateResponse(prompt, enhancedOptions);
+    } catch (error) {
+      console.error('Error in analyzeAssessmentData:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to analyze assessment data'
+      };
+    }
   }
 
   // Specialized OT Assessment Methods
