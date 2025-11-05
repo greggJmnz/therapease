@@ -192,6 +192,9 @@ app.use((req, res, next) => {
       req.path.startsWith('/uploads/') || 
       req.path.startsWith('/public-website/') ||
       (req.method === 'DELETE' && req.path.startsWith('/api/admin/'))) {
+    if (req.method === 'DELETE' && req.path.startsWith('/api/admin/')) {
+      console.log('⏭️ Skipping encryption for DELETE admin route:', req.path);
+    }
     return next();
   }
   return encryptRequestData(req, res, next);
@@ -203,6 +206,9 @@ app.use((req, res, next) => {
       req.path.startsWith('/uploads/') || 
       req.path.startsWith('/public-website/') ||
       (req.method === 'DELETE' && req.path.startsWith('/api/admin/'))) {
+    if (req.method === 'DELETE' && req.path.startsWith('/api/admin/')) {
+      console.log('⏭️ Skipping decryption for DELETE admin route:', req.path);
+    }
     return next();
   }
   return decryptResponseData(req, res, next);

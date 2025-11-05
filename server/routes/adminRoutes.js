@@ -11,6 +11,20 @@ const systemSettingsController = require('../controllers/systemSettingsControlle
 router.use(authenticateToken);
 router.use(authorizeRole(['admin']));
 
+// Debug middleware to log all admin requests
+router.use((req, res, next) => {
+  if (req.method === 'DELETE' && req.path.includes('users')) {
+    console.log('🔍 Admin DELETE request:', {
+      method: req.method,
+      path: req.path,
+      originalUrl: req.originalUrl,
+      baseUrl: req.baseUrl,
+      url: req.url
+    });
+  }
+  next();
+});
+
 // Dashboard
 router.get('/dashboard', adminController.getDashboard);
 
@@ -49,7 +63,18 @@ router.put('/users/:userId/status', adminController.updateUserStatus);
 router.post('/users/:userId/reset-password', adminController.resetUserPassword);
 router.post('/users/:userId/send-reset-link', adminController.sendPasswordResetLink);
 router.put('/users/:userId', adminController.updateUser);
-router.delete('/users/:userId', adminController.deleteUser);
+
+// DELETE route with logging middleware
+router.delete('/users/:userId', (req, res, next) => {
+  console.log('🔍 DELETE /users/:userId route hit:', {
+    method: req.method,
+    path: req.path,
+    originalUrl: req.originalUrl,
+    params: req.params,
+    userId: req.params.userId
+  });
+  next();
+}, adminController.deleteUser);
 
 
 // Reports
