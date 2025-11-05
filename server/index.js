@@ -418,6 +418,28 @@ app.get('/api/test-columns', async (req, res) => {
   }
 });
 
+// Root API endpoint - provides API information
+app.get('/api', (req, res) => {
+  res.json({
+    success: true,
+    message: 'TherapEase API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      admin: '/api/admin',
+      therapist: '/api/therapist',
+      patient: '/api/patient',
+      ai: '/api/ai',
+      notifications: '/api/notifications',
+      treatmentPlans: '/api/treatment-plans',
+      homeExercises: '/api/home-exercises',
+      progressReports: '/api/progress-reports'
+    },
+    documentation: 'See API documentation for endpoint details'
+  });
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 
