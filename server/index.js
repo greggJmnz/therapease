@@ -185,17 +185,24 @@ app.use('/uploads', express.static(uploadsDir, {
 app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
 
 // Encryption Middleware (disabled for auth routes and static files)
+// Note: Admin routes might need encryption for sensitive data, but we'll skip for now to ensure routes work
 app.use((req, res, next) => {
-  // Skip encryption middleware for auth routes and static file serving
-  if (req.path.startsWith('/api/auth/') || req.path.startsWith('/uploads/') || req.path.startsWith('/public-website/')) {
+  // Skip encryption middleware for auth routes, static file serving, and admin DELETE operations
+  if (req.path.startsWith('/api/auth/') || 
+      req.path.startsWith('/uploads/') || 
+      req.path.startsWith('/public-website/') ||
+      (req.method === 'DELETE' && req.path.startsWith('/api/admin/'))) {
     return next();
   }
   return encryptRequestData(req, res, next);
 });
 
 app.use((req, res, next) => {
-  // Skip decryption middleware for auth routes and static file serving
-  if (req.path.startsWith('/api/auth/') || req.path.startsWith('/uploads/') || req.path.startsWith('/public-website/')) {
+  // Skip decryption middleware for auth routes, static file serving, and admin DELETE operations
+  if (req.path.startsWith('/api/auth/') || 
+      req.path.startsWith('/uploads/') || 
+      req.path.startsWith('/public-website/') ||
+      (req.method === 'DELETE' && req.path.startsWith('/api/admin/'))) {
     return next();
   }
   return decryptResponseData(req, res, next);

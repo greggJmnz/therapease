@@ -734,10 +734,13 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { userId } = req.params;
+    
+    console.log('🗑️ Delete user request:', { userId, method: req.method, path: req.path, originalUrl: req.originalUrl });
 
     // Check if user exists
     const existingUser = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(userId)]);
     if (!existingUser) {
+      console.log('❌ User not found:', userId);
       return res.status(404).json({
         success: false,
         error: 'User not found'

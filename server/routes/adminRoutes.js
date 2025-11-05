@@ -42,13 +42,14 @@ router.post('/appointments/:appointmentId/approve', adminController.approveAppoi
 router.post('/appointments/:appointmentId/reject', adminController.rejectAppointment);
 
 // User management
+// Note: More specific routes should come before less specific ones
 router.get('/users', adminController.getAllUsers);
 router.post('/users', adminController.createUser);
-router.put('/users/:userId', adminController.updateUser);
-router.delete('/users/:userId', adminController.deleteUser);
 router.put('/users/:userId/status', adminController.updateUserStatus);
 router.post('/users/:userId/reset-password', adminController.resetUserPassword);
 router.post('/users/:userId/send-reset-link', adminController.sendPasswordResetLink);
+router.put('/users/:userId', adminController.updateUser);
+router.delete('/users/:userId', adminController.deleteUser);
 
 
 // Reports
