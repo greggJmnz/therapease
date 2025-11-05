@@ -79,7 +79,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Fetch dashboard data from API
+  // OPTIMIZED: Fetch dashboard data - Priority load (critical stats)
   const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError, refetch: refetchDashboard } = useQuery(
     'adminDashboard',
     adminAPI.getDashboard,
@@ -87,7 +87,10 @@ const AdminDashboard = () => {
       staleTime: 30000, // 30 seconds
       cacheTime: 300000, // 5 minutes
       refetchOnWindowFocus: false,
-      retry: 3,
+      refetchOnMount: false, // Don't refetch on mount if cached
+      retry: 1, // Reduce retries for faster failure
+      retryDelay: 500,
+      placeholderData: (previousData) => previousData, // Use cached data while loading
       onError: (error) => {
         console.error('Error fetching dashboard data:', error);
       },
@@ -100,29 +103,36 @@ const AdminDashboard = () => {
   // Enable real-time updates for admin dashboard
   useRealtimeData('adminDashboard', refetchDashboard);
 
-  // Fetch patients data from API
+  // OPTIMIZED: Defer non-critical queries - Load after dashboard is visible
+  // Fetch patients data - Deferred (load after dashboard loads)
   const { data: patientsData, isLoading: patientsLoading, error: patientsError } = useQuery(
     'adminPatients',
     adminAPI.getPatients,
     {
+      enabled: !dashboardLoading, // Only fetch after dashboard loads
+      refetchOnMount: false,
+      placeholderData: (previousData) => previousData,
       onError: (error) => {
         console.error('Error fetching patients data:', error);
       }
     }
   );
 
-  // Fetch therapists data from API
+  // Fetch therapists data - Deferred (load after dashboard loads)
   const { data: therapistsData, isLoading: therapistsLoading, error: therapistsError } = useQuery(
     'adminTherapists',
     adminAPI.getTherapists,
     {
+      enabled: !dashboardLoading, // Only fetch after dashboard loads
+      refetchOnMount: false,
+      placeholderData: (previousData) => previousData,
       onError: (error) => {
         console.error('Error fetching therapists data:', error);
       }
     }
   );
 
-  // Fetch notifications data from API
+  // Fetch notifications data - Priority (load immediately but with placeholder)
   const { data: notificationsData, isLoading: notificationsLoading, error: notificationsError } = useQuery(
     'adminNotificationsDashboard',
     adminAPI.getNotifications,
@@ -130,19 +140,24 @@ const AdminDashboard = () => {
       staleTime: 300000, // 5 minutes - match header query
       cacheTime: 600000, // 10 minutes
       refetchOnWindowFocus: false,
+      refetchOnMount: false,
       refetchInterval: false, // Disable automatic refetching
-      retry: 3,
+      retry: 1,
+      placeholderData: (previousData) => previousData,
       onError: (error) => {
         console.error('Error fetching notifications:', error);
       }
     }
   );
 
-  // Fetch appointments data from API
+  // Fetch appointments data - Deferred (load after dashboard loads)
   const { data: appointmentsData, isLoading: appointmentsLoading, error: appointmentsError } = useQuery(
     'adminAppointments',
     adminAPI.getAppointments,
     {
+      enabled: !dashboardLoading, // Only fetch after dashboard loads
+      refetchOnMount: false,
+      placeholderData: (previousData) => previousData,
       onError: (error) => {
         console.error('Error fetching appointments data:', error);
       }
