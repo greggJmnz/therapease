@@ -125,6 +125,21 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Serve uploaded files FIRST (before encryption middleware)
+// This ensures static files are served without encryption
+const uploadsDir = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsDir, {
+  setHeaders: (res, filePath) => {
+    // Set proper headers for file serving
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow cross-origin requests
+  }
+}));
+
+// Serve static files from public-website directory
+app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
+
 // Encryption Middleware (disabled for auth routes and static files)
 app.use((req, res, next) => {
   // Skip encryption middleware for auth routes and static file serving
@@ -208,19 +223,6 @@ app.get('/ws', (req, res) => {
   });
 });
 
-// Serve static files from public-website directory
-app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
-
-// Serve uploaded files with proper headers and error handling
-// This must be before encryption middleware to avoid encryption issues
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: (res, filePath) => {
-    // Set proper headers for file serving
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow cross-origin requests
-  }
-}));
 
 // Serve root-level assets
 app.use(express.static(path.join(__dirname, 'public')));
