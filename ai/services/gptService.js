@@ -43,22 +43,40 @@ class GPTService {
         content: prompt
       });
 
-      // Validate model - use gpt-4o if gpt-4.1 is not available
+      // Use the specified model (default: gpt-4.1)
       let model = options.model || this.model;
-      if (model === 'gpt-4.1') {
-        // gpt-4.1 might not exist, try gpt-4o as fallback
-        model = 'gpt-4o';
-      }
       
-      const response = await openai.chat.completions.create({
-        model: model,
-        messages: messages,
-        max_tokens: options.maxTokens || this.maxTokens,
-        temperature: options.temperature || this.temperature,
-        top_p: options.topP || 1,
-        frequency_penalty: options.frequencyPenalty || 0,
-        presence_penalty: options.presencePenalty || 0
-      });
+      // Try the requested model first, fall back to gpt-4o only if it fails
+      let response;
+      try {
+        response = await openai.chat.completions.create({
+          model: model,
+          messages: messages,
+          max_tokens: options.maxTokens || this.maxTokens,
+          temperature: options.temperature || this.temperature,
+          top_p: options.topP || 1,
+          frequency_penalty: options.frequencyPenalty || 0,
+          presence_penalty: options.presencePenalty || 0
+        });
+      } catch (modelError) {
+        // If model doesn't exist (e.g., gpt-4.1 not available), fall back to gpt-4o
+        if (model === 'gpt-4.1' && (modelError.message?.includes('model') || modelError.code === 'invalid_model')) {
+          console.warn('⚠️ gpt-4.1 not available, falling back to gpt-4o');
+          model = 'gpt-4o';
+          response = await openai.chat.completions.create({
+            model: model,
+            messages: messages,
+            max_tokens: options.maxTokens || this.maxTokens,
+            temperature: options.temperature || this.temperature,
+            top_p: options.topP || 1,
+            frequency_penalty: options.frequencyPenalty || 0,
+            presence_penalty: options.presencePenalty || 0
+          });
+        } else {
+          // Re-throw other errors
+          throw modelError;
+        }
+      }
 
       // Handle different response formats for different models
       let content = '';
