@@ -1,84 +1,79 @@
 const { runQuery, getRow, getAll } = require('../config/database');
 
-// Get therapist dashboard data
+// Get therapist dashboard data - OPTIMIZED: Combined queries for better performance
 const getDashboard = async (req, res) => {
   try {
     // Get therapist ID from authenticated user (therapistId in patients table refers to userId)
     const therapistId = req.user.id;
 
-    // Get patient count from patient_therapist_assignments table
-    const patientCountSql = `
-      SELECT COUNT(DISTINCT pta.patientId) as total
-      FROM patient_therapist_assignments pta
-      WHERE pta.therapistId = ? AND pta.status = 'active'
+    // OPTIMIZED: Combine all overview stats into a single query using subqueries
+    // This reduces 6 database queries to 1, dramatically improving performance
+    const overviewStatsSql = `
+      SELECT
+        (SELECT COUNT(DISTINCT pta.patientId) 
+         FROM patient_therapist_assignments pta
+         WHERE pta.therapistId = ? AND pta.status = 'active') as totalPatients,
+        
+        (SELECT COUNT(*) FROM assessments a WHERE a.therapistId = ?) as totalAssessments,
+        (SELECT COUNT(CASE WHEN status = 'completed' THEN 1 END) FROM assessments a WHERE a.therapistId = ?) as assessmentsCompleted,
+        (SELECT COUNT(CASE WHEN status = 'in-progress' THEN 1 END) FROM assessments a WHERE a.therapistId = ?) as assessmentsInProgress,
+        (SELECT COUNT(CASE WHEN status = 'scheduled' THEN 1 END) FROM assessments a WHERE a.therapistId = ?) as assessmentsScheduled,
+        
+        (SELECT COUNT(*) FROM appointments a WHERE a.therapistId = ?) as totalAppointments,
+        (SELECT COUNT(CASE WHEN status = 'scheduled' THEN 1 END) FROM appointments a WHERE a.therapistId = ?) as appointmentsScheduled,
+        (SELECT COUNT(CASE WHEN status = 'confirmed' THEN 1 END) FROM appointments a WHERE a.therapistId = ?) as appointmentsConfirmed,
+        (SELECT COUNT(CASE WHEN status = 'completed' THEN 1 END) FROM appointments a WHERE a.therapistId = ?) as appointmentsCompleted,
+        (SELECT COUNT(CASE WHEN status = 'cancelled' THEN 1 END) FROM appointments a WHERE a.therapistId = ?) as appointmentsCancelled,
+        
+        (SELECT COUNT(*) FROM appointments a 
+         WHERE a.therapistId = ? AND a.appointmentDate >= CURDATE() AND a.status = 'scheduled') as upcomingAppointments,
+        
+        (SELECT COUNT(*) FROM daily_notes dn 
+         WHERE dn.therapistId = ? AND dn.sessionDate = CURDATE()) as todayNotes,
+        
+        (SELECT COUNT(DISTINCT mo.id) 
+         FROM main_objectives mo
+         JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
+         JOIN patients p ON tp.patientId = p.id
+         LEFT JOIN patient_therapist_assignments pta ON p.id = pta.patientId
+         WHERE p.therapistId = ? OR (pta.therapistId = ? AND pta.status = 'active')) as totalProgressEntries
     `;
 
-    const patientCountResult = await getAll(patientCountSql, [therapistId]);
-    const totalPatients = patientCountResult[0]?.total || 0;
+    // Execute single combined query (pass therapistId multiple times for subqueries)
+    const overviewResult = await getRow(overviewStatsSql, [
+      therapistId, // totalPatients
+      therapistId, // totalAssessments
+      therapistId, // assessmentsCompleted
+      therapistId, // assessmentsInProgress
+      therapistId, // assessmentsScheduled
+      therapistId, // totalAppointments
+      therapistId, // appointmentsScheduled
+      therapistId, // appointmentsConfirmed
+      therapistId, // appointmentsCompleted
+      therapistId, // appointmentsCancelled
+      therapistId, // upcomingAppointments
+      therapistId, // todayNotes
+      therapistId, therapistId // totalProgressEntries
+    ]);
 
-    // Get assessment count (only assessments created by this therapist)
-    const assessmentCountSql = `
-      SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
-        COUNT(CASE WHEN status = 'in-progress' THEN 1 END) as inProgress,
-        COUNT(CASE WHEN status = 'scheduled' THEN 1 END) as scheduled
-      FROM assessments a
-      WHERE a.therapistId = ?
-    `;
-
-    const assessmentCountResult = await getAll(assessmentCountSql, [therapistId]);
-    const assessmentStats = assessmentCountResult[0] || { total: 0, completed: 0, inProgress: 0, scheduled: 0 };
-
-    // Get appointment count (only appointments created by this therapist)
-    const appointmentCountSql = `
-      SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN status = 'scheduled' THEN 1 END) as scheduled,
-        COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmed,
-        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
-        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled
-      FROM appointments a
-      WHERE a.therapistId = ?
-    `;
-
-    const appointmentCountResult = await getAll(appointmentCountSql, [therapistId]);
-    const appointmentStats = appointmentCountResult[0] || { total: 0, scheduled: 0, confirmed: 0, completed: 0, cancelled: 0 };
-
-    // Get upcoming appointments count (not completed or past)
-    const upcomingAppointmentsCountSql = `
-      SELECT COUNT(*) as upcomingCount
-      FROM appointments a
-      WHERE a.therapistId = ? 
-      AND a.appointmentDate >= CURDATE()
-      AND a.status = 'scheduled'
-    `;
-
-    const upcomingAppointmentsCountResult = await getAll(upcomingAppointmentsCountSql, [therapistId]);
-    const upcomingAppointmentsCount = upcomingAppointmentsCountResult[0]?.upcomingCount || 0;
-
-    // Get daily notes count (only notes created by this therapist)
-    const dailyNotesCountSql = `
-      SELECT COUNT(*) as total
-      FROM daily_notes dn
-      WHERE dn.therapistId = ? AND dn.sessionDate = CURDATE()
-    `;
-
-    const dailyNotesCountResult = await getAll(dailyNotesCountSql, [therapistId]);
-    const todayNotes = dailyNotesCountResult[0]?.total || 0;
-
-    // Get progress tracking count (treatment plan objectives for patients assigned to this therapist)
-    const progressCountSql = `
-      SELECT COUNT(DISTINCT mo.id) as total
-      FROM main_objectives mo
-      JOIN treatment_plans tp ON mo.treatmentPlanId = tp.id
-      JOIN patients p ON tp.patientId = p.id
-      LEFT JOIN patient_therapist_assignments pta ON p.id = pta.patientId
-      WHERE p.therapistId = ? OR (pta.therapistId = ? AND pta.status = 'active')
-    `;
-
-    const progressCountResult = await getAll(progressCountSql, [therapistId, therapistId]);
-    const totalProgressEntries = progressCountResult[0]?.total || 0;
+    const overview = overviewResult || {};
+    const totalPatients = overview.totalPatients || 0;
+    const assessmentStats = {
+      total: overview.totalAssessments || 0,
+      completed: overview.assessmentsCompleted || 0,
+      inProgress: overview.assessmentsInProgress || 0,
+      scheduled: overview.assessmentsScheduled || 0
+    };
+    const appointmentStats = {
+      total: overview.totalAppointments || 0,
+      scheduled: overview.appointmentsScheduled || 0,
+      confirmed: overview.appointmentsConfirmed || 0,
+      completed: overview.appointmentsCompleted || 0,
+      cancelled: overview.appointmentsCancelled || 0
+    };
+    const upcomingAppointmentsCount = overview.upcomingAppointments || 0;
+    const todayNotes = overview.todayNotes || 0;
+    const totalProgressEntries = overview.totalProgressEntries || 0;
 
     // Get recent assessments
     const recentAssessmentsSql = `
@@ -188,29 +183,21 @@ const getDashboard = async (req, res) => {
 
     const patientGrowth = await getAll(patientGrowthSql, [therapistId, currentYear]);
 
-    // Get assessment completion rate
-    const completionRateSql = `
-      SELECT 
-        ROUND(
-          (COUNT(CASE WHEN status = 'completed' THEN 1 END) * 100.0 / COUNT(*)), 2
-        ) as completionRate
-      FROM assessments a
-      WHERE a.therapistId = ?
+    // OPTIMIZED: Combine completion rate and avg session duration into single query
+    const additionalStatsSql = `
+      SELECT
+        (SELECT ROUND(
+          (COUNT(CASE WHEN status = 'completed' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)), 2
+        ) FROM assessments a WHERE a.therapistId = ?) as completionRate,
+        
+        (SELECT ROUND(AVG(sessionDuration), 2) 
+         FROM daily_notes dn 
+         WHERE dn.therapistId = ? AND dn.sessionDuration IS NOT NULL) as avgSessionDuration
     `;
 
-    const completionRateResult = await getAll(completionRateSql, [therapistId]);
-    const completionRate = completionRateResult[0]?.completionRate || 0;
-
-    // Get average session duration
-    const avgSessionDurationSql = `
-      SELECT 
-        ROUND(AVG(sessionDuration), 2) as avgDuration
-      FROM daily_notes dn
-      WHERE dn.therapistId = ? AND dn.sessionDuration IS NOT NULL
-    `;
-
-    const avgSessionDurationResult = await getAll(avgSessionDurationSql, [therapistId]);
-    const avgSessionDuration = avgSessionDurationResult[0]?.avgDuration || 0;
+    const additionalStatsResult = await getRow(additionalStatsSql, [therapistId, therapistId]);
+    const completionRate = additionalStatsResult?.completionRate || 0;
+    const avgSessionDuration = additionalStatsResult?.avgDuration || 0;
 
     res.json({
       success: true,
