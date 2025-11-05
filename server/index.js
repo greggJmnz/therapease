@@ -128,13 +128,48 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files FIRST (before encryption middleware)
 // This ensures static files are served without encryption
 const uploadsDir = path.join(__dirname, 'uploads');
+const fs = require('fs');
+
+// Middleware to log upload requests and handle errors
+app.use('/uploads', (req, res, next) => {
+  // Log the request for debugging
+  if (req.method === 'GET') {
+    const requestedPath = req.path.replace('/uploads/', '');
+    const fullPath = path.join(uploadsDir, requestedPath);
+    
+    // Security: prevent directory traversal
+    const normalizedPath = path.normalize(fullPath);
+    if (!normalizedPath.startsWith(path.normalize(uploadsDir))) {
+      console.error(`⚠️ Directory traversal attempt: ${req.path}`);
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Check if file exists (for logging/debugging)
+    fs.access(fullPath, fs.constants.F_OK, (err) => {
+      if (err) {
+        console.error(`❌ File not found: ${fullPath} (requested: ${req.path})`);
+        console.error(`   Uploads directory: ${uploadsDir}`);
+        console.error(`   Requested file: ${requestedPath}`);
+      } else {
+        console.log(`✅ Serving file: ${fullPath}`);
+      }
+      // Continue to express.static regardless (it will handle 404)
+      next();
+    });
+  } else {
+    next();
+  }
+});
+
+// Serve static files from uploads directory
 app.use('/uploads', express.static(uploadsDir, {
   setHeaders: (res, filePath) => {
     // Set proper headers for file serving
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow cross-origin requests
-  }
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  },
+  fallthrough: false // Don't continue to next middleware if file not found
 }));
 
 // Serve static files from public-website directory
