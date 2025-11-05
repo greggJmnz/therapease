@@ -109,7 +109,13 @@ const getDashboard = async (req, res) => {
       ORDER BY month, role
     `;
 
-    const userGrowth = await getAll(userGrowthSql);
+    const userGrowthRaw = await getAll(userGrowthSql);
+    // Ensure counts are numbers
+    const userGrowth = userGrowthRaw.map(item => ({
+      month: item.month || '',
+      role: item.role || 'Unknown',
+      count: parseInt(item.count || 0)
+    }));
 
     // Get appointment trends over time (last 12 months)
     const appointmentTrendsSql = `
@@ -122,7 +128,12 @@ const getDashboard = async (req, res) => {
       ORDER BY month
     `;
 
-    const appointmentTrends = await getAll(appointmentTrendsSql);
+    const appointmentTrendsRaw = await getAll(appointmentTrendsSql);
+    // Ensure counts are numbers
+    const appointmentTrends = appointmentTrendsRaw.map(item => ({
+      month: item.month || '',
+      count: parseInt(item.count || 0)
+    }));
 
     // Get assessment trends over time (last 12 months)
     const assessmentTrendsSql = `
@@ -135,7 +146,12 @@ const getDashboard = async (req, res) => {
       ORDER BY month
     `;
 
-    const assessmentTrends = await getAll(assessmentTrendsSql);
+    const assessmentTrendsRaw = await getAll(assessmentTrendsSql);
+    // Ensure counts are numbers
+    const assessmentTrends = assessmentTrendsRaw.map(item => ({
+      month: item.month || '',
+      count: parseInt(item.count || 0)
+    }));
 
     // Get assessment statistics by type
     const assessmentStatsSql = `
@@ -148,7 +164,13 @@ const getDashboard = async (req, res) => {
       ORDER BY count DESC
     `;
 
-    const assessmentStats = await getAll(assessmentStatsSql);
+    const assessmentStatsRaw = await getAll(assessmentStatsSql);
+    // Ensure counts are numbers and handle null avgScore
+    const assessmentStats = assessmentStatsRaw.map(stat => ({
+      type: stat.type || 'Unknown',
+      count: parseInt(stat.count || 0),
+      avgScore: parseFloat(stat.avgScore || 0) || 0
+    }));
 
     // Get appointment statistics by status
     const appointmentStatsSql = `
@@ -160,7 +182,12 @@ const getDashboard = async (req, res) => {
       ORDER BY count DESC
     `;
 
-    const appointmentStats = await getAll(appointmentStatsSql);
+    const appointmentStatsRaw = await getAll(appointmentStatsSql);
+    // Ensure counts are numbers
+    const appointmentStats = appointmentStatsRaw.map(stat => ({
+      status: stat.status || 'Unknown',
+      count: parseInt(stat.count || 0)
+    }));
 
     // Get additional analytics data
     const analyticsSql = `
