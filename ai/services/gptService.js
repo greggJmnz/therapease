@@ -80,9 +80,35 @@ class GPTService {
       };
     } catch (error) {
       console.error('GPT API Error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        code: error.code,
+        type: error.constructor.name
+      });
+      
+      // Provide more specific error messages based on error type
+      let errorMessage = 'Failed to generate AI response';
+      
+      if (error.message?.includes('API key')) {
+        errorMessage = 'OpenAI API key is not configured or invalid. Please check OPENAI_API_KEY environment variable.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'OpenAI API key is invalid or expired. Please check your API key.';
+      } else if (error.response?.status === 429) {
+        errorMessage = 'OpenAI API rate limit exceeded. Please try again later.';
+      } else if (error.response?.status === 500 || error.response?.status === 502 || error.response?.status === 503) {
+        errorMessage = 'OpenAI API server error. Please try again later.';
+      } else if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        errorMessage = 'Cannot connect to OpenAI API. Please check your internet connection.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       return {
         success: false,
-        error: error.message || 'Failed to generate AI response'
+        error: errorMessage
       };
     }
   }
