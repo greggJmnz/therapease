@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background with blue-to-indigo gradient matching login form -->
+  <defs>
+    <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded rectangle background (rounded-2xl style) -->
+  <rect x="32" y="32" width="448" height="448" rx="32" ry="32" fill="url(#iconGradient)"/>
+  
+  <!-- Heart Pulse Icon - Font Awesome fa-heart-pulse -->
+  <!-- Heart shape (white) -->
+  <path fill="#ffffff" d="M228.3 469.1L47.6 300.4c-11.5-10.5-18.1-25.5-18.1-41.5c0-33.1 26.9-60 60-60c20.5 0 39 10.1 50.5 25.6l35.1 42.9 35.1-42.9c11.5-15.5 30-25.6 50.5-25.6c33.1 0 60 26.9 60 60c0 16-6.6 31-18.1 41.5L283.7 469.1c-12.5 11.5-32.7 11.5-45.2 0z"/>
+  
+  <!-- Pulse lines (EKG style) on left side of heart -->
+  <path fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" 
+        d="M120 216 L152 216 L160 192 L168 240 L176 184 L184 256 L192 216 L216 216"/>
+  
+  <!-- Pulse lines (EKG style) on right side of heart -->
+  <path fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" 
+        d="M296 216 L328 216 L336 192 L344 240 L352 184 L360 256 L368 216 L392 216"/>
+</svg>
+
