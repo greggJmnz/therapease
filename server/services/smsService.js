@@ -17,23 +17,22 @@ class SMSService {
   loadConfig() {
     this.apiToken = process.env.PHILSMS_API_TOKEN;
     this.baseUrl = process.env.PHILSMS_BASE_URL || 'https://app.philsms.com/api/v3';
-    // Sender ID is optional - only use if set in environment
-    // If set to "TherapEase" and not approved, it will be ignored
+    // Sender ID configuration
+    // If set to "TherapEase" and not approved, it will be ignored and "PhilSMS" will be used
     const envSenderId = process.env.PHILSMS_SENDER_ID || null;
-    // Use "PhilSMS" as default if no sender ID is set, or if "TherapEase" is not approved
-    // You can set PHILSMS_SENDER_ID=PhilSMS in .env.production to use the default approved sender ID
-    // Or leave it empty/unset to use PhilSMS default
+    // Store the configured sender ID (will use "PhilSMS" as default in sendSMS if not approved)
     this.senderId = (envSenderId && envSenderId.trim() !== 'TherapEase') ? envSenderId.trim() : null;
     this.enabled = process.env.SMS_ENABLED === 'true' && !!this.apiToken;
     
     if (!this.enabled) {
       console.warn('SMS Service disabled: Missing PHILSMS_API_TOKEN or SMS_ENABLED=false');
-    } else if (!this.senderId) {
-      console.log('✅ SMS Service enabled and configured');
-      console.log('   Note: Using default sender ID (PhilSMS). Custom sender ID not set or not approved.');
     } else {
       console.log('✅ SMS Service enabled and configured');
-      console.log(`   Sender ID: ${this.senderId}`);
+      if (this.senderId) {
+        console.log(`   Sender ID: ${this.senderId}`);
+      } else {
+        console.log('   Sender ID: PhilSMS (default - custom sender ID not set or not approved)');
+      }
     }
   }
 
@@ -83,22 +82,23 @@ class SMSService {
         throw new Error('Invalid phone number format');
       }
 
-      // Build payload - only include sender_id if it's set and approved
+      // Build payload - always include sender_id (use "PhilSMS" as default if not set)
       const payload = {
         recipient: formattedNumber,
         message: message
       };
       
-      // Only include sender_id if it's set (either from options or environment)
-      // Note: If sender ID is not approved, don't include it (PhilSMS will use default)
+      // Determine sender ID - use "PhilSMS" as default if no approved sender ID is set
       const senderId = options.sender_id || this.senderId;
-      // Only add sender_id if it's explicitly set and not empty
-      // If sender ID is not approved, PhilSMS will use their default
+      
+      // Always include sender_id - use "PhilSMS" as default if not set or if "TherapEase" is not approved
       if (senderId && senderId.trim() && senderId.trim() !== 'TherapEase') {
-        // Only use approved sender IDs (e.g., "PhilSMS" or other approved ones)
+        // Use the approved sender ID
         payload.sender_id = senderId.trim();
+      } else {
+        // Use "PhilSMS" as default approved sender ID
+        payload.sender_id = 'PhilSMS';
       }
-      // If senderId is "TherapEase" and it's not approved, don't include it
 
       const response = await axios.post(
         `${this.baseUrl}/sms/send`,
