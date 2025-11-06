@@ -123,11 +123,18 @@ export const AuthProvider = ({ children }) => {
           // Verify token to refresh session
           const response = await authAPI.verify();
           if (response.data.success) {
+            // Token is still valid - session maintained
           } else {
+            // Token is invalid - logout
             logout();
           }
         } catch (error) {
-          logout();
+          // IMPORTANT: Don't logout on network errors during background refresh
+          // Only logout if token is explicitly invalid (401)
+          if (error.response?.status === 401) {
+            logout();
+          }
+          // Otherwise, keep user logged in even if refresh fails
         }
       }
     }, 30 * 60 * 1000); // Check every 30 minutes
