@@ -79,12 +79,36 @@ async function testSendSMS() {
       console.log(`   Message ID: ${result.messageId || 'N/A'}`);
       console.log(`   Status: ${result.status || 'sent'}`);
       console.log(`   To: ${result.to || phoneNumber}`);
+      
+      // Check delivery status if message ID is available
+      if (result.messageId && result.messageId !== 'unknown') {
+        console.log('\n📊 Checking delivery status...');
+        try {
+          const statusResult = await smsService.getDeliveryStatus(result.messageId);
+          if (statusResult.success) {
+            console.log(`   Delivery Status: ${statusResult.status || 'unknown'}`);
+            if (statusResult.data) {
+              console.log(`   Details: ${JSON.stringify(statusResult.data, null, 2)}`);
+            }
+          } else {
+            console.log(`   Could not check status: ${statusResult.error || 'Unknown error'}`);
+          }
+        } catch (statusError) {
+          console.log(`   Could not check delivery status: ${statusError.message}`);
+        }
+      }
+      
       console.log('\n💡 Check your phone for the test message.');
       console.log('   If you don\'t receive it within a few minutes:');
-      console.log('   1. Verify your phone number is correct');
-      console.log('   2. Check if your PhilSMS account has credits');
-      console.log('   3. Verify the Sender ID is approved (if using one)');
-      console.log('   4. Check PhilSMS dashboard for delivery status');
+      console.log('   1. Check your phone\'s spam/filtered messages folder');
+      console.log('   2. Verify your phone number is correct and active');
+      console.log('   3. Check if your carrier is blocking messages (some carriers filter SMS)');
+      console.log('   4. Try sending to a different phone number to test');
+      console.log('   5. Check PhilSMS dashboard for detailed delivery status');
+      console.log('   6. Contact your carrier if messages are consistently not received');
+      console.log('\n   Note: Some carriers may delay or filter SMS messages.');
+      console.log('   If PhilSMS shows "delivered" but you don\'t receive it,');
+      console.log('   the issue is likely with your carrier or phone settings.');
     } else {
       console.log('❌ Failed to send SMS');
       console.log(`   Error: ${result.error || result.message || 'Unknown error'}`);

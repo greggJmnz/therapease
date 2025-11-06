@@ -308,7 +308,7 @@ class SMSService {
 
   /**
    * Get SMS delivery status
-   * @param {string} messageId - Message ID to check
+   * @param {string} messageId - Message ID (uid) to check
    * @returns {Promise<Object>} - Delivery status
    */
   async getDeliveryStatus(messageId) {
@@ -317,20 +317,38 @@ class SMSService {
     }
 
     try {
-      // PhilSMS API endpoint for delivery status (may vary based on their API)
+      // PhilSMS API endpoint: GET /api/v3/sms/{uid}
+      // According to documentation: https://app.philsms.com/api/v3/sms/{uid}
       const response = await axios.get(
-        `${this.baseUrl}/sms/status/${messageId}`,
+        `${this.baseUrl}/sms/${messageId}`,
         {
           headers: {
             'Authorization': `Bearer ${this.apiToken}`,
+            'Content-Type': 'application/json',
             'Accept': 'application/json'
           }
         }
       );
 
+      // Response format: { status: "success", data: "sms data with all details" }
+      if (response.data && response.data.status === 'success') {
+        const smsData = response.data.data;
+        return {
+          success: true,
+          status: smsData?.status || smsData?.delivery_status || 'unknown',
+          data: smsData,
+          raw: response.data
+        };
+      } else if (response.data && response.data.status === 'error') {
+        return {
+          success: false,
+          error: response.data.message || 'Failed to get delivery status'
+        };
+      }
+
       return {
         success: true,
-        status: response.data.status || response.data.delivery_status || 'unknown',
+        status: 'unknown',
         data: response.data
       };
 
@@ -338,7 +356,8 @@ class SMSService {
       console.error('SMS delivery status error:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.message || error.response?.data?.error || error.message
+        error: error.response?.data?.message || error.response?.data?.error || error.message,
+        details: error.response?.data
       };
     }
   }
