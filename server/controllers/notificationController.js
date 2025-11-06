@@ -652,7 +652,6 @@ const createAppointmentReminderForPatient = async (appointmentId) => {
         a.endTime,
         a.type,
         a.patientId,
-        a.location,
         p.userId as patientUserId,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
         u.phone as patientPhone,
@@ -704,8 +703,7 @@ const createAppointmentReminderForPatient = async (appointmentId) => {
         therapistName: appointment.therapistName,
         appointmentDate: appointment.appointmentDate,
         startTime: appointment.startTime,
-        endTime: appointment.endTime || null,
-        location: appointment.location || null
+        endTime: appointment.endTime || null
       }
     };
 
@@ -802,7 +800,6 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
         a.endTime,
         a.type,
         a.patientId,
-        a.location,
         p.userId as patientUserId,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
         u.phone as patientPhone,
@@ -854,8 +851,7 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
         therapistName: appointment.therapistName,
         appointmentDate: appointment.appointmentDate,
         startTime: appointment.startTime,
-        endTime: appointment.endTime || null,
-        location: appointment.location || null
+        endTime: appointment.endTime || null
       }
     };
 
