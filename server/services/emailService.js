@@ -479,14 +479,165 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
     return crypto.randomBytes(32).toString('hex');
   }
 
+  // Send appointment notification email
+  async sendAppointmentNotificationEmail(email, userFirstName, appointmentDetails) {
+    try {
+      const { type, therapistName, appointmentDate, startTime, endTime, location } = appointmentDetails;
+      
+      const formattedDate = new Date(appointmentDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      const formattedStartTime = new Date(`2000-01-01T${startTime}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      
+      const formattedEndTime = endTime ? new Date(`2000-01-01T${endTime}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }) : null;
+
+      const html = this.getAppointmentNotificationEmailTemplate(
+        userFirstName, 
+        type, 
+        therapistName, 
+        formattedDate, 
+        formattedStartTime,
+        formattedEndTime,
+        location
+      );
+      const text = this.getAppointmentNotificationEmailText(
+        userFirstName, 
+        type, 
+        therapistName, 
+        formattedDate, 
+        formattedStartTime,
+        formattedEndTime,
+        location
+      );
+      
+      // Use SendGrid API if configured
+      if (this.useSendGridAPI) {
+        const result = await this.sendViaSendGridAPI(
+          email,
+          'Appointment Scheduled - TherapEase',
+          html,
+          text,
+          process.env.EMAIL_FROM || 'therapease16@gmail.com'
+        );
+        return result;
+      }
+
+      // Check if email service is enabled
+      if (!this.transporter) {
+        return { 
+          success: false, 
+          error: 'Email service is disabled. Please enable email service in environment variables to send appointment notifications.' 
+        };
+      }
+
+      const mailOptions = {
+        from: {
+          name: 'TherapEase Team',
+          address: process.env.EMAIL_USER || 'therapease16@gmail.com'
+        },
+        to: email,
+        subject: 'Appointment Scheduled - TherapEase',
+        html: html,
+        text: text
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error('Error sending appointment notification email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Appointment notification email template
+  getAppointmentNotificationEmailTemplate(firstName, type, therapistName, date, startTime, endTime, location) {
+    const timeRange = endTime ? `${startTime} - ${endTime}` : startTime;
+    const locationHtml = location ? `<p><strong>Location:</strong> ${location}</p>` : '';
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Appointment Scheduled - TherapEase</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0;">Appointment Scheduled</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <p>Hi ${firstName},</p>
+          <p>Your appointment has been successfully scheduled!</p>
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
+            <h2 style="color: #667eea; margin-top: 0;">Appointment Details</h2>
+            <p><strong>Type:</strong> ${type}</p>
+            <p><strong>Therapist:</strong> ${therapistName}</p>
+            <p><strong>Date:</strong> ${date}</p>
+            <p><strong>Time:</strong> ${timeRange}</p>
+            ${locationHtml}
+          </div>
+          <p>Please arrive 10 minutes early for your appointment.</p>
+          <p>You'll receive a reminder the day before your appointment.</p>
+          <p>If you need to reschedule or cancel, please contact us as soon as possible.</p>
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <p style="color: #666; font-size: 14px;">This email was sent from TherapEase - Your trusted occupational therapy platform</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `.trim();
+  }
+
+  // Appointment notification email text version
+  getAppointmentNotificationEmailText(firstName, type, therapistName, date, startTime, endTime, location) {
+    const timeRange = endTime ? `${startTime} - ${endTime}` : startTime;
+    
+    return `
+Hi ${firstName},
+
+Your appointment has been successfully scheduled!
+
+Appointment Details:
+- Type: ${type}
+- Therapist: ${therapistName}
+- Date: ${date}
+- Time: ${timeRange}
+${location ? `- Location: ${location}` : ''}
+
+Please arrive 10 minutes early for your appointment.
+
+You'll receive a reminder the day before your appointment.
+
+If you need to reschedule or cancel, please contact us as soon as possible.
+
+This email was sent from TherapEase - Your trusted occupational therapy platform
+    `.trim();
+  }
+
   // Test email functionality
   async testEmailConnection() {
     try {
-      if (!this.transporter) {
+      if (!this.transporter && !this.useSendGridAPI) {
         return { 
           success: false, 
           error: 'Email service is disabled. Set EMAIL_ENABLED=true and provide EMAIL_USER and EMAIL_PASSWORD to enable email service.' 
         };
+      }
+      if (this.useSendGridAPI) {
+        return { success: true, message: 'Email service is properly configured (SendGrid API)' };
       }
       await this.transporter.verify();
       return { success: true, message: 'Email service is properly configured' };

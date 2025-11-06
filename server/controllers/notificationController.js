@@ -1,5 +1,6 @@
 const { runQuery, getRow, getAll } = require('../config/database');
 const smsService = require('../services/smsService');
+const emailService = require('../services/emailService');
 const webpush = require('web-push');
 const websocketService = require('../services/websocketService');
 
@@ -334,6 +335,132 @@ const deleteAllNotifications = async (req, res) => {
 };
 
 // Create notification (for system use)
+// Multi-channel notification function
+const sendMultiChannelNotification = async (userId, title, message, type = 'system', options = {}) => {
+  const results = {
+    sms: { success: false, attempted: false },
+    email: { success: false, attempted: false },
+    push: { success: false, attempted: false }
+  };
+
+  // Get user information for multi-channel delivery
+  let userInfo = null;
+  if (options.userInfo) {
+    userInfo = options.userInfo;
+  } else {
+    try {
+      userInfo = await getRow(
+        'SELECT id, email, firstName, lastName, phone FROM users WHERE id = ?',
+        [userId]
+      );
+    } catch (error) {
+      console.error('Error fetching user info for multi-channel notification:', error);
+    }
+  }
+
+  // Channel 1: Try SMS first (if enabled and phone number available)
+  if (options.sendSMS && options.phoneNumber) {
+    results.sms.attempted = true;
+    try {
+      const smsResult = await smsService.sendSMS(options.phoneNumber, message);
+      results.sms.success = smsResult.success;
+      results.sms.messageId = smsResult.messageId;
+      results.sms.error = smsResult.error;
+      
+      if (results.sms.success) {
+        console.log(`✅ SMS sent successfully to ${options.phoneNumber}`);
+      } else {
+        console.log(`⚠️ SMS failed: ${results.sms.error}`);
+      }
+    } catch (smsError) {
+      console.error('SMS send error:', smsError);
+      results.sms.error = smsError.message;
+    }
+  } else if (userInfo && userInfo.phone && options.sendSMS !== false) {
+    // Try SMS if user has phone number and SMS is not explicitly disabled
+    results.sms.attempted = true;
+    try {
+      const smsResult = await smsService.sendSMS(userInfo.phone, message);
+      results.sms.success = smsResult.success;
+      results.sms.messageId = smsResult.messageId;
+      results.sms.error = smsResult.error;
+      
+      if (results.sms.success) {
+        console.log(`✅ SMS sent successfully to ${userInfo.phone}`);
+      } else {
+        console.log(`⚠️ SMS failed: ${results.sms.error}`);
+      }
+    } catch (smsError) {
+      console.error('SMS send error:', smsError);
+      results.sms.error = smsError.message;
+    }
+  }
+
+  // Channel 2: Send Email (if SMS failed or not attempted, or if explicitly requested)
+  const shouldSendEmail = !results.sms.success || options.sendEmail === true;
+  if (shouldSendEmail && userInfo && userInfo.email) {
+    results.email.attempted = true;
+    try {
+      // For appointment notifications, use specialized email template
+      if (type === 'appointment_created' && options.appointmentDetails) {
+        const emailResult = await emailService.sendAppointmentNotificationEmail(
+          userInfo.email,
+          userInfo.firstName || 'User',
+          options.appointmentDetails
+        );
+        results.email.success = emailResult.success;
+        results.email.messageId = emailResult.messageId;
+        results.email.error = emailResult.error;
+      } else {
+        // Generic email notification
+        const emailResult = await emailService.sendViaSendGridAPI(
+          userInfo.email,
+          title,
+          `<p>${message}</p>`,
+          message,
+          process.env.EMAIL_FROM || 'therapease16@gmail.com'
+        );
+        results.email.success = emailResult.success;
+        results.email.messageId = emailResult.messageId;
+        results.email.error = emailResult.error;
+      }
+      
+      if (results.email.success) {
+        console.log(`✅ Email sent successfully to ${userInfo.email}`);
+      } else {
+        console.log(`⚠️ Email failed: ${results.email.error}`);
+      }
+    } catch (emailError) {
+      console.error('Email send error:', emailError);
+      results.email.error = emailError.message;
+    }
+  }
+
+  // Channel 3: Send Push Notification (always attempt if user has subscription)
+  if (options.sendPush !== false) {
+    results.push.attempted = true;
+    try {
+      const pushResult = await sendPushNotification(userId, title, message, {
+        tag: type,
+        data: { notificationId: options.relatedId }
+      });
+      results.push.success = pushResult.success;
+      results.push.error = pushResult.message || pushResult.error;
+      
+      if (results.push.success) {
+        console.log(`✅ Push notification sent successfully to user ${userId}`);
+      } else {
+        console.log(`⚠️ Push notification failed: ${results.push.error}`);
+      }
+    } catch (pushError) {
+      console.error('Push notification error:', pushError);
+      results.push.error = pushError.message;
+    }
+  }
+
+  return results;
+};
+
 const createNotification = async (userId, title, message, type = 'system', options = {}) => {
   try {
     const priority = options.priority || 'medium';
@@ -345,29 +472,60 @@ const createNotification = async (userId, title, message, type = 'system', optio
     const result = await runQuery(insertSql, [userId, title, message, type, options.relatedId || null]);
     const notificationId = result.insertId;
 
-    // Send SMS if requested and user has phone number
-    if (options.sendSMS && options.phoneNumber) {
-      try {
-        const smsResult = await smsService.sendSMS(options.phoneNumber, message);
-        
-        // Update notification with SMS status
-        if (smsResult.success) {
-          await runQuery(
-            'UPDATE notifications SET smsMessageId = ?, smsStatus = ? WHERE id = ?',
-            [smsResult.messageId, 'sent', notificationId]
-          );
-        } else {
+    // Use multi-channel notification if enabled (default for appointment notifications)
+    const useMultiChannel = options.useMultiChannel !== false && 
+                           (type === 'appointment_created' || type === 'appointment_reminder' || options.useMultiChannel === true);
+
+    if (useMultiChannel) {
+      // Send via multiple channels with fallback
+      const channelResults = await sendMultiChannelNotification(userId, title, message, type, {
+        ...options,
+        notificationId
+      });
+
+      // Update notification with channel statuses
+      const smsStatus = channelResults.sms.success ? 'sent' : 
+                       (channelResults.sms.attempted ? 'failed' : null);
+      const emailStatus = channelResults.email.success ? 'sent' : 
+                         (channelResults.email.attempted ? 'failed' : null);
+      const pushStatus = channelResults.push.success ? 'sent' : 
+                        (channelResults.push.attempted ? 'failed' : null);
+
+      // Update notification with SMS status if attempted
+      if (channelResults.sms.attempted) {
+        await runQuery(
+          'UPDATE notifications SET smsMessageId = ?, smsStatus = ? WHERE id = ?',
+          [channelResults.sms.messageId || null, smsStatus, notificationId]
+        );
+      }
+
+      // Log channel results
+      console.log(`📧 Multi-channel notification sent - SMS: ${smsStatus || 'not attempted'}, Email: ${emailStatus || 'not attempted'}, Push: ${pushStatus || 'not attempted'}`);
+    } else {
+      // Legacy: Send SMS only if requested
+      if (options.sendSMS && options.phoneNumber) {
+        try {
+          const smsResult = await smsService.sendSMS(options.phoneNumber, message);
+          
+          // Update notification with SMS status
+          if (smsResult.success) {
+            await runQuery(
+              'UPDATE notifications SET smsMessageId = ?, smsStatus = ? WHERE id = ?',
+              [smsResult.messageId, 'sent', notificationId]
+            );
+          } else {
+            await runQuery(
+              'UPDATE notifications SET smsStatus = ? WHERE id = ?',
+              ['failed', notificationId]
+            );
+          }
+        } catch (smsError) {
+          console.error('SMS send error:', smsError);
           await runQuery(
             'UPDATE notifications SET smsStatus = ? WHERE id = ?',
-            ['failed', notificationId]
+            ['error', notificationId]
           );
         }
-      } catch (smsError) {
-        console.error('SMS send error:', smsError);
-        await runQuery(
-          'UPDATE notifications SET smsStatus = ? WHERE id = ?',
-          ['error', notificationId]
-        );
       }
     }
 
@@ -483,15 +641,20 @@ const createProgressReviewNotification = async (patientId, area) => {
 // Create appointment reminder notification for patient (day before)
 const createAppointmentReminderForPatient = async (appointmentId) => {
   try {
-    // Get appointment details with patient information
+    // Get appointment details with patient information including phone number and email
     const appointmentSql = `
       SELECT 
         a.appointmentDate,
         a.startTime,
+        a.endTime,
         a.type,
         a.patientId,
+        a.location,
         p.userId as patientUserId,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        u.phone as patientPhone,
+        u.email as patientEmail,
+        u.firstName as patientFirstName,
         CONCAT(t.firstName, ' ', t.lastName) as therapistName
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
@@ -520,10 +683,36 @@ const createAppointmentReminderForPatient = async (appointmentId) => {
     const message = `Reminder: You have a ${appointment.type} appointment with ${appointment.therapistName} tomorrow (${formattedDate}) at ${formattedTime}. Please arrive 10 minutes early.`;
     const type = 'appointment_reminder';
 
-    return await createNotification(appointment.patientUserId, title, message, type, {
+    // Multi-channel notification options
+    const options = {
       relatedId: appointmentId,
-      priority: 'high'
-    });
+      priority: 'high',
+      useMultiChannel: true, // Enable multi-channel for appointment reminders
+      sendEmail: true, // Always send email as fallback
+      sendPush: true, // Always send push notification
+      userInfo: {
+        id: appointment.patientUserId,
+        email: appointment.patientEmail,
+        firstName: appointment.patientFirstName,
+        phone: appointment.patientPhone
+      },
+      appointmentDetails: {
+        type: appointment.type,
+        therapistName: appointment.therapistName,
+        appointmentDate: appointment.appointmentDate,
+        startTime: appointment.startTime,
+        endTime: appointment.endTime || null,
+        location: appointment.location || null
+      }
+    };
+
+    // Add SMS sending if patient has phone number
+    if (appointment.patientPhone && appointment.patientPhone.trim()) {
+      options.sendSMS = true;
+      options.phoneNumber = appointment.patientPhone.trim();
+    }
+
+    return await createNotification(appointment.patientUserId, title, message, type, options);
 
   } catch (error) {
     console.error('Create appointment reminder for patient error:', error);
@@ -602,16 +791,20 @@ const createExerciseReminderNotificationForPatient = async (exerciseId) => {
 // Create appointment creation notification for patient (immediate)
 const createAppointmentCreationNotificationForPatient = async (appointmentId) => {
   try {
-    // Get appointment details with patient information including phone number
+    // Get appointment details with patient information including phone number and email
     const appointmentSql = `
       SELECT 
         a.appointmentDate,
         a.startTime,
+        a.endTime,
         a.type,
         a.patientId,
+        a.location,
         p.userId as patientUserId,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
         u.phone as patientPhone,
+        u.email as patientEmail,
+        u.firstName as patientFirstName,
         CONCAT(t.firstName, ' ', t.lastName) as therapistName
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
@@ -640,10 +833,27 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
     const message = `Your ${appointment.type} appointment with ${appointment.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before.`;
     const type = 'appointment_created';
 
-    // Send SMS if patient has a phone number
+    // Multi-channel notification options
     const options = {
       relatedId: appointmentId,
-      priority: 'high'
+      priority: 'high',
+      useMultiChannel: true, // Enable multi-channel for appointment notifications
+      sendEmail: true, // Always send email as fallback
+      sendPush: true, // Always send push notification
+      userInfo: {
+        id: appointment.patientUserId,
+        email: appointment.patientEmail,
+        firstName: appointment.patientFirstName,
+        phone: appointment.patientPhone
+      },
+      appointmentDetails: {
+        type: appointment.type,
+        therapistName: appointment.therapistName,
+        appointmentDate: appointment.appointmentDate,
+        startTime: appointment.startTime,
+        endTime: appointment.endTime || null,
+        location: appointment.location || null
+      }
     };
 
     // Add SMS sending if patient has phone number
