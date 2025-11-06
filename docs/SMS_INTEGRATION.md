@@ -1,8 +1,8 @@
-# 📱 SMS Integration with Vonage - TherapEase
+# 📱 SMS Integration with PhilSMS - TherapEase
 
 ## Overview
 
-TherapEase now includes SMS notification capabilities powered by Vonage's SMS API. This integration allows the system to send automated SMS reminders for appointments only.
+TherapEase now includes SMS notification capabilities powered by PhilSMS API. This integration allows the system to send automated SMS reminders for appointments only.
 
 ## 🚀 Features
 
@@ -35,18 +35,42 @@ Add the following variables to your `.env` file:
 ```bash
 # SMS Configuration
 SMS_ENABLED=true
-VONAGE_API_KEY=your_vonage_api_key_here
-VONAGE_API_SECRET=your_vonage_api_secret_here
-VONAGE_BASE_URL=https://api.nexmo.com
-VONAGE_FROM_NUMBER=TherapEase
+PHILSMS_API_TOKEN=your_philsms_api_token_here
+PHILSMS_BASE_URL=https://app.philsms.com/api/v3
+# Sender ID is OPTIONAL - only set if you have registered and approved it with PhilSMS
+# Leave empty or remove this line if sender ID is not approved yet
+PHILSMS_SENDER_ID=TherapEase
 API_BASE_URL=http://localhost:3000
 ```
 
-### Vonage Account Setup
+### Production Environment (.env.production)
 
-1. **Create Vonage Account**: Sign up at [vonage.com](https://www.vonage.com)
-2. **Get API Credentials**: Generate your API key and secret from the Vonage dashboard
-3. **Configure From Number**: Set up your sender number or name (e.g., "TherapEase")
+For production deployments on VPS, ensure your `.env.production` file includes:
+
+```bash
+# SMS Configuration
+SMS_ENABLED=true
+PHILSMS_API_TOKEN=3531|YOfAHwjNVINx3Ch3BFl7XR6oDoMUd7wNq3y59LnE
+PHILSMS_BASE_URL=https://app.philsms.com/api/v3
+# Optional: Only set if sender ID is approved
+# PHILSMS_SENDER_ID=TherapEase
+```
+
+**Note**: If `PHILSMS_SENDER_ID` is not set or not approved, the system will send SMS without a sender ID. The system handles this gracefully.
+
+### PhilSMS Account Setup
+
+1. **Create PhilSMS Account**: Sign up at [app.philsms.com](https://app.philsms.com)
+2. **Get API Token**: Generate your API token from the PhilSMS dashboard
+3. **Register Sender ID** (Optional but Recommended):
+   - Log in to your PhilSMS dashboard
+   - Navigate to Sender ID registration
+   - Request approval for your desired Sender ID (e.g., "TherapEase")
+   - **Approval Process**: Takes 2-3 days for telecom operator approval
+   - **Requirements**: 
+     - Alphanumeric, max 11 characters
+     - Must comply with PhilSMS terms and conditions
+     - Should not misrepresent your brand
 4. **Add Webhook URL**: Configure delivery status webhook: `https://therapease.site/api/notifications/sms/delivery-status`
 
 ## 📊 Database Schema Updates
@@ -155,18 +179,19 @@ Hi {name}! Reminder: You have a {type} appointment with {therapistName} on {date
 
 ### Delivery Status Webhook
 
-Vonage will send delivery status updates to your webhook URL:
+PhilSMS will send delivery status updates to your webhook URL:
 
 ```javascript
-// Webhook payload example
+// Webhook payload example (may vary based on PhilSMS API)
 {
-  "message_uuid": "12345678-1234-1234-1234-123456789012",
-  "to": "1234567890",
-  "from": "TherapEase",
+  "id": "12345678-1234-1234-1234-123456789012",
+  "message_id": "12345678-1234-1234-1234-123456789012",
+  "recipient": "639123456789",
+  "sender_id": "TherapEase",
   "timestamp": "2024-01-01T12:00:00.000Z",
   "status": "delivered",
-  "error-code": "0",
-  "error-code-label": "Success"
+  "delivery_status": "delivered",
+  "error": null
 }
 ```
 
@@ -328,21 +353,24 @@ DEBUG_SMS=true
 
 ## 📚 Additional Resources
 
-- [Infobip SMS API Documentation](https://www.infobip.com/docs/api/channels/sms)
-- [Phone Number Formatting Guide](https://www.infobip.com/docs/api/channels/sms/send-sms-message)
-- [Webhook Configuration Guide](https://www.infobip.com/docs/api/channels/sms/sms-webhooks)
-- [Error Codes Reference](https://www.infobip.com/docs/api/channels/sms/sms-error-codes)
+- [PhilSMS API Documentation](https://app.philsms.com/developers/docs)
+- [PhilSMS Dashboard](https://app.philsms.com)
+- [Phone Number Formatting Guide](https://app.philsms.com/developers/docs)
+- [Webhook Configuration Guide](https://app.philsms.com/developers/docs)
 
 ## 🔄 Migration Guide
 
-### From Mock SMS to Infobip
+### From Vonage to PhilSMS
 
-1. **Install Dependencies**: `npm install axios`
-2. **Update Environment**: Add Infobip configuration
-3. **Run Database Migration**: Update notifications table
-4. **Test Integration**: Use test endpoints
-5. **Configure Webhooks**: Set up delivery status webhook
-6. **Monitor Usage**: Track SMS usage and costs
+1. **Update Environment Variables**: Replace Vonage variables with PhilSMS variables
+   - `VONAGE_API_KEY` → `PHILSMS_API_TOKEN`
+   - `VONAGE_API_SECRET` → (no longer needed, using token)
+   - `VONAGE_BASE_URL` → `PHILSMS_BASE_URL`
+   - `VONAGE_FROM_NUMBER` → `PHILSMS_SENDER_ID`
+2. **Update Environment File**: Add PhilSMS API token
+3. **Test Integration**: Use test endpoints
+4. **Configure Webhooks**: Set up delivery status webhook in PhilSMS dashboard
+5. **Monitor Usage**: Track SMS usage and costs
 
 ### Rollback Plan
 
@@ -358,10 +386,10 @@ If issues arise:
 
 For SMS integration support:
 - **Technical Issues**: Check logs and error messages
-- **Infobip Support**: Contact Infobip support for API issues
+- **PhilSMS Support**: Contact PhilSMS support for API issues
 - **TherapEase Support**: Contact development team for integration issues
 
 ---
 
 *Last updated: January 2024*
-*Version: 1.0.0*
+*Version: 2.0.0 (PhilSMS Integration)*

@@ -784,29 +784,36 @@ const testSMSService = async (req, res) => {
 // Handle SMS delivery status webhook
 const handleSMSDeliveryStatus = async (req, res) => {
   try {
-    const { message_uuid, status, error_code, error_code_label } = req.body;
+    // PhilSMS webhook format - may use different field names
+    // Support both PhilSMS and legacy formats for compatibility
+    const messageId = req.body.message_uuid || req.body.message_id || req.body.id || 
+                     req.body.uuid || req.body.messageId;
+    const status = req.body.status || req.body.delivery_status || req.body.state;
+    const errorCode = req.body.error_code || req.body.error_code_label || req.body.error;
 
-    if (!message_uuid) {
+    if (!messageId) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid delivery status data - missing message_uuid'
+        error: 'Invalid delivery status data - missing message ID'
       });
     }
 
-    // Map Vonage status to our internal status
+    // Map PhilSMS status to our internal status
     let mappedStatus = 'unknown';
-    if (status === 'delivered') {
+    const statusLower = (status || '').toLowerCase();
+    
+    if (statusLower === 'delivered' || statusLower === 'success' || statusLower === 'sent') {
       mappedStatus = 'delivered';
-    } else if (status === 'failed' || error_code !== '0') {
+    } else if (statusLower === 'failed' || statusLower === 'error' || errorCode) {
       mappedStatus = 'failed';
-    } else if (status === 'accepted') {
+    } else if (statusLower === 'accepted' || statusLower === 'pending' || statusLower === 'queued') {
       mappedStatus = 'sent';
     }
 
     // Update notification with delivery status
     await runQuery(
       'UPDATE notifications SET smsStatus = ? WHERE smsMessageId = ?',
-      [mappedStatus, message_uuid]
+      [mappedStatus, messageId]
     );
     
 

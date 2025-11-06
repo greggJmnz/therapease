@@ -2,19 +2,22 @@ const axios = require('axios');
 const { validatePhilippineNumber } = require('../utils/phoneValidation');
 
 /**
- * Vonage SMS Service for TherapEase
- * Handles appointment reminder SMS notifications through Vonage API
+ * PhilSMS Service for TherapEase
+ * Handles appointment reminder SMS notifications through PhilSMS API
  */
 class SMSService {
   constructor() {
-    this.apiKey = process.env.VONAGE_API_KEY;
-    this.apiSecret = process.env.VONAGE_API_SECRET;
-    this.baseUrl = process.env.VONAGE_BASE_URL || 'https://api.nexmo.com';
-    this.fromNumber = process.env.VONAGE_FROM_NUMBER || 'TherapEase';
-    this.enabled = process.env.SMS_ENABLED === 'true' && !!this.apiKey && !!this.apiSecret;
+    this.apiToken = process.env.PHILSMS_API_TOKEN;
+    this.baseUrl = process.env.PHILSMS_BASE_URL || 'https://app.philsms.com/api/v3';
+    // Sender ID is optional - only use if set in environment
+    this.senderId = process.env.PHILSMS_SENDER_ID || null;
+    this.enabled = process.env.SMS_ENABLED === 'true' && !!this.apiToken;
     
     if (!this.enabled) {
-      console.warn('SMS Service disabled: Missing VONAGE_API_KEY, VONAGE_API_SECRET or SMS_ENABLED=false');
+      console.warn('SMS Service disabled: Missing PHILSMS_API_TOKEN or SMS_ENABLED=false');
+    } else if (!this.senderId) {
+      console.warn('SMS Service: PHILSMS_SENDER_ID not set. Messages will be sent without sender ID.');
+      console.warn('Note: To register a Sender ID, visit https://app.philsms.com and request approval.');
     }
   }
 
@@ -33,13 +36,13 @@ class SMSService {
 
     try {
       // Validate phone number format (prioritize Philippine numbers)
-      let formattedNumber = this.formatPhoneNumber(to);
+      let formattedNumber = this.formatPhoneNumberForPhilSMS(to);
       
       // If it's a Philippine number, use specialized validation
       if (to.includes('9') && (to.startsWith('09') || to.startsWith('+639') || to.startsWith('639'))) {
         const phValidation = validatePhilippineNumber(to);
         if (phValidation.valid) {
-          formattedNumber = phValidation.formatted;
+          formattedNumber = this.formatPhoneNumberForPhilSMS(phValidation.formatted);
         } else {
           throw new Error(`Invalid Philippine phone number: ${phValidation.error}`);
         }
@@ -47,22 +50,24 @@ class SMSService {
         throw new Error('Invalid phone number format');
       }
 
+      // Build payload - only include sender_id if it's set
       const payload = {
-        from: this.fromNumber,
-        to: formattedNumber,
-        text: message,
-        ...options
+        recipient: formattedNumber,
+        message: message
       };
+      
+      // Only include sender_id if it's set (either from options or environment)
+      const senderId = options.sender_id || this.senderId;
+      if (senderId && senderId.trim()) {
+        payload.sender_id = senderId.trim();
+      }
 
       const response = await axios.post(
-        `${this.baseUrl}/v0.1/messages`,
+        `${this.baseUrl}/sms/send`,
         payload,
         {
-          auth: {
-            username: this.apiKey,
-            password: this.apiSecret
-          },
           headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
@@ -70,25 +75,45 @@ class SMSService {
         }
       );
 
-      if (response.data && response.data.message_uuid) {
-        return {
-          success: true,
-          messageId: response.data.message_uuid,
-          status: 'accepted',
-          to: formattedNumber,
-          message: message
-        };
+      // PhilSMS response format may vary, handle both success and error cases
+      if (response.data) {
+        // Check for success indicators in response
+        const messageId = response.data.id || response.data.message_id || response.data.messageId || 
+                         response.data.uuid || response.data.message_uuid;
+        
+        if (messageId || response.data.success !== false) {
+          return {
+            success: true,
+            messageId: messageId || 'unknown',
+            status: response.data.status || 'sent',
+            to: formattedNumber,
+            message: message,
+            data: response.data
+          };
+        }
       }
 
       throw new Error('No message data in response');
 
     } catch (error) {
       console.error('SMS send error:', error.response?.data || error.message);
+      const errorNumber = formattedNumber || this.formatPhoneNumberForPhilSMS(to) || to;
+      
+      // Check if error is related to sender_id
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+      const errorString = JSON.stringify(error.response?.data || error.message || '').toLowerCase();
+      
+      if (errorString.includes('sender') || errorString.includes('sender_id') || errorString.includes('sender id')) {
+        console.warn('⚠️  Sender ID error detected. If PHILSMS_SENDER_ID is not approved,');
+        console.warn('   you may need to register it at https://app.philsms.com or remove it from .env.production');
+      }
+      
       return {
         success: false,
-        error: error.response?.data?.detail || error.message,
-        to: formattedNumber,
-        message: message
+        error: errorMessage,
+        to: errorNumber,
+        message: message,
+        details: error.response?.data || null
       };
     }
   }
@@ -103,13 +128,69 @@ class SMSService {
   async sendAppointmentReminder(appointment, recipientPhone, recipientName) {
     const message = `Hi ${recipientName}! Reminder: You have a ${appointment.type} appointment with ${appointment.therapistName} on ${appointment.appointmentDate} at ${appointment.startTime}. TherapEase Team`;
     
-    return await this.sendSMS(recipientPhone, message, {
-      notifyUrl: `${process.env.API_BASE_URL}/api/notifications/sms/delivery-status`
-    });
+    return await this.sendSMS(recipientPhone, message);
   }
 
   /**
-   * Format phone number to international format
+   * Format phone number for PhilSMS API (needs 639XXXXXXXXX format, no +)
+   * @param {string} phoneNumber - Phone number to format
+   * @returns {string|null} - Formatted phone number or null if invalid
+   */
+  formatPhoneNumberForPhilSMS(phoneNumber) {
+    if (!phoneNumber) return null;
+    
+    // Remove all non-digit characters
+    const cleaned = phoneNumber.replace(/\D/g, '');
+    
+    // Philippine mobile number patterns for PhilSMS
+    // PhilSMS expects format: 639XXXXXXXXX (12 digits, no +)
+    
+    // If it's 11 digits and starts with 09, convert to 639XXXXXXXXX
+    if (cleaned.length === 11 && cleaned.startsWith('09')) {
+      return `63${cleaned.substring(1)}`; // Convert 09XX to 639XX
+    }
+    
+    // If it's 12 digits and starts with 639, it's already correct
+    if (cleaned.length === 12 && cleaned.startsWith('639')) {
+      return cleaned;
+    }
+    
+    // If it's 10 digits and starts with 9, add 63 prefix
+    if (cleaned.length === 10 && cleaned.startsWith('9')) {
+      return `63${cleaned}`;
+    }
+    
+    // If it starts with +63, remove the + and return
+    if (phoneNumber.startsWith('+63')) {
+      return phoneNumber.replace('+', '');
+    }
+    
+    // If it's already 12 digits starting with 63, return as is
+    if (cleaned.length === 12 && cleaned.startsWith('63')) {
+      return cleaned;
+    }
+    
+    // For other international numbers, try to format
+    // If it starts with +1 (US/Canada), remove + and return
+    if (phoneNumber.startsWith('+1')) {
+      return phoneNumber.replace('+', '');
+    }
+    
+    // If it already starts with +, remove + and return
+    if (phoneNumber.startsWith('+')) {
+      return phoneNumber.replace('+', '');
+    }
+    
+    // If it starts with country code, return as is
+    if (cleaned.length >= 10) {
+      return cleaned;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Format phone number to international format (for display/logging)
    * @param {string} phoneNumber - Phone number to format
    * @returns {string|null} - Formatted phone number or null if invalid
    */
@@ -179,14 +260,12 @@ class SMSService {
     }
 
     try {
+      // PhilSMS API endpoint for delivery status (may vary based on their API)
       const response = await axios.get(
-        `${this.baseUrl}/v0.1/messages/${messageId}`,
+        `${this.baseUrl}/sms/status/${messageId}`,
         {
-          auth: {
-            username: this.apiKey,
-            password: this.apiSecret
-          },
           headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
             'Accept': 'application/json'
           }
         }
@@ -194,7 +273,7 @@ class SMSService {
 
       return {
         success: true,
-        status: response.data.status || 'unknown',
+        status: response.data.status || response.data.delivery_status || 'unknown',
         data: response.data
       };
 
@@ -202,7 +281,7 @@ class SMSService {
       console.error('SMS delivery status error:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.detail || error.message
+        error: error.response?.data?.message || error.response?.data?.error || error.message
       };
     }
   }
@@ -217,14 +296,12 @@ class SMSService {
     }
 
     try {
+      // PhilSMS API endpoint for account balance (may vary based on their API)
       const response = await axios.get(
         `${this.baseUrl}/account/balance`,
         {
-          auth: {
-            username: this.apiKey,
-            password: this.apiSecret
-          },
           headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
             'Accept': 'application/json'
           }
         }
@@ -232,15 +309,15 @@ class SMSService {
 
       return {
         success: true,
-        balance: response.data.value,
-        currency: response.data.currency || 'EUR'
+        balance: response.data.balance || response.data.credits || response.data.value || 0,
+        currency: response.data.currency || 'PHP'
       };
 
     } catch (error) {
       console.error('SMS balance error:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.detail || error.message
+        error: error.response?.data?.message || error.response?.data?.error || error.message
       };
     }
   }

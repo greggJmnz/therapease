@@ -1148,13 +1148,18 @@ const createAppointment = async (req, res) => {
     try {
       const notificationController = require('./notificationController');
       
-      // Create notification for therapist
+      // Create notification for therapist with SMS
+      const therapistMessage = `Hi ${therapist.therapistName}! You have a new ${type} appointment with ${patient.patientName} on ${date} at ${formatTime12Hour(time)}. TherapEase Team`;
       await notificationController.createNotification(
         therapist.userId, // Use therapist user ID
         'New Appointment Scheduled',
-        `You have a new ${type} appointment with ${patient.patientName} on ${date} at ${formatTime12Hour(time)}`,
+        therapistMessage,
         'appointment',
-        { relatedId: appointmentId }
+        { 
+          relatedId: appointmentId,
+          sendSMS: true,
+          phoneNumber: therapist.therapistPhone
+        }
       );
 
       // Create notification for patient
@@ -3550,6 +3555,12 @@ const approveAppointment = async (req, res) => {
     // Create notifications
     const notificationController = require('./notificationController');
     
+    // Get therapist phone number for SMS
+    const therapistInfo = await getRow(`
+      SELECT CONCAT(firstName, ' ', lastName) as therapistName, phone as therapistPhone
+      FROM users WHERE id = ?
+    `, [appointment.therapistId]);
+    
     // Notify patient
     await notificationController.createNotification(
       appointment.patientUserId,
@@ -3559,13 +3570,18 @@ const approveAppointment = async (req, res) => {
       { relatedId: appointmentId }
     );
 
-    // Notify therapist
+    // Notify therapist with SMS
+    const therapistMessage = `Hi ${therapistInfo.therapistName}! The appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved. TherapEase Team`;
     await notificationController.createNotification(
       appointment.therapistId,
       'Appointment Approved',
-      `The appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved.`,
+      therapistMessage,
       'appointment',
-      { relatedId: appointmentId }
+      { 
+        relatedId: appointmentId,
+        sendSMS: true,
+        phoneNumber: therapistInfo.therapistPhone
+      }
     );
 
     res.json({

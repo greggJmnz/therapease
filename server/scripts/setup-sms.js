@@ -2,7 +2,7 @@
 
 /**
  * SMS Setup Script for TherapEase
- * Helps configure Vonage SMS integration
+ * Helps configure PhilSMS integration
  */
 
 const fs = require('fs');
@@ -22,7 +22,7 @@ function question(prompt) {
 
 async function setupSMS() {
   console.log('🚀 TherapEase SMS Integration Setup\n');
-  console.log('This script will help you configure Vonage SMS integration.\n');
+  console.log('This script will help you configure PhilSMS integration.\n');
 
   // Check if .env file exists
   const envPath = path.join(__dirname, '../.env');
@@ -36,26 +36,23 @@ async function setupSMS() {
 
   console.log('📋 Current SMS Configuration:');
   console.log(`   SMS_ENABLED: ${process.env.SMS_ENABLED || 'Not set'}`);
-  console.log(`   VONAGE_API_KEY: ${process.env.VONAGE_API_KEY ? 'Set' : 'Not set'}`);
-  console.log(`   VONAGE_API_SECRET: ${process.env.VONAGE_API_SECRET ? 'Set' : 'Not set'}`);
-  console.log(`   VONAGE_BASE_URL: ${process.env.VONAGE_BASE_URL || 'Not set'}`);
-  console.log(`   VONAGE_FROM_NUMBER: ${process.env.VONAGE_FROM_NUMBER || 'Not set'}\n`);
+  console.log(`   PHILSMS_API_TOKEN: ${process.env.PHILSMS_API_TOKEN ? 'Set' : 'Not set'}`);
+  console.log(`   PHILSMS_BASE_URL: ${process.env.PHILSMS_BASE_URL || 'Not set'}`);
+  console.log(`   PHILSMS_SENDER_ID: ${process.env.PHILSMS_SENDER_ID || 'Not set'}\n');
 
   // Get configuration from user
   const smsEnabled = await question('Enable SMS service? (y/n): ');
-  const apiKey = await question('Enter your Vonage API key: ');
-  const apiSecret = await question('Enter your Vonage API secret: ');
-  const baseUrl = await question('Enter Vonage base URL (press Enter for default): ');
-  const fromNumber = await question('Enter from number/name (press Enter for "TherapEase"): ');
+  const apiToken = await question('Enter your PhilSMS API token: ');
+  const baseUrl = await question('Enter PhilSMS base URL (press Enter for default): ');
+  const senderId = await question('Enter sender ID (press Enter for "TherapEase"): ');
   const apiBaseUrl = await question('Enter your API base URL (press Enter for http://localhost:3000): ');
 
   // Prepare configuration
   const config = {
     SMS_ENABLED: smsEnabled.toLowerCase() === 'y' ? 'true' : 'false',
-    VONAGE_API_KEY: apiKey.trim(),
-    VONAGE_API_SECRET: apiSecret.trim(),
-    VONAGE_BASE_URL: baseUrl.trim() || 'https://api.nexmo.com',
-    VONAGE_FROM_NUMBER: fromNumber.trim() || 'TherapEase',
+    PHILSMS_API_TOKEN: apiToken.trim(),
+    PHILSMS_BASE_URL: baseUrl.trim() || 'https://app.philsms.com/api/v3',
+    PHILSMS_SENDER_ID: senderId.trim() || 'TherapEase',
     API_BASE_URL: apiBaseUrl.trim() || 'http://localhost:3000'
   };
 
@@ -86,12 +83,12 @@ async function setupSMS() {
   console.log('\n🧪 Next Steps:');
   console.log('   1. Run: npm run sms:test');
   console.log('   2. Test SMS service connection');
-  console.log('   3. Configure webhook URL in Vonage dashboard');
+  console.log('   3. Configure webhook URL in PhilSMS dashboard');
   console.log('   4. Test with real phone numbers');
 
   console.log('\n📚 Documentation:');
   console.log('   - SMS Integration Guide: docs/SMS_INTEGRATION.md');
-  console.log('   - Vonage API Docs: https://developer.vonage.com/messages/overview');
+  console.log('   - PhilSMS API Docs: https://app.philsms.com/developers/docs');
 
   rl.close();
 }

@@ -22,8 +22,8 @@ const getSchedule = async (req, res) => {
     const { date, startDate, endDate, status } = req.query;
     
 
-    // Build WHERE clause (only show approved appointments for this therapist)
-    let whereConditions = ['a.therapistId = ?', 'a.approvalStatus = "approved"'];
+    // Build WHERE clause (show approved appointments and pending appointments for this therapist)
+    let whereConditions = ['a.therapistId = ?', '(a.approvalStatus = "approved" OR a.approvalStatus = "pending")'];
     let params = [therapistId];
 
     if (date) {
@@ -719,11 +719,115 @@ const getAppointmentStats = async (req, res) => {
   }
 };
 
+// Approve appointment (therapist)
+const approveAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const therapistId = req.user.id;
+
+    // Get appointment details - must be pending and assigned to this therapist
+    const appointment = await getRow(`
+      SELECT 
+        a.*, 
+        p.userId as patientUserId, 
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        u.phone as patientPhone
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE a.id = ? AND a.therapistId = ? AND a.approvalStatus = 'pending'
+    `, [parseInt(id), therapistId]);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Appointment not found, not assigned to you, or already processed'
+      });
+    }
+
+    // Update appointment status
+    await runQuery(`
+      UPDATE appointments 
+      SET status = 'scheduled', 
+          approvalStatus = 'approved', 
+          approvedBy = ?, 
+          approvedAt = NOW()
+      WHERE id = ?
+    `, [therapistId, parseInt(id)]);
+
+    // Create notifications
+    const notificationController = require('./notificationController');
+    
+    // Get therapist name for notifications
+    const therapistInfo = await getRow(`
+      SELECT CONCAT(firstName, ' ', lastName) as therapistName 
+      FROM users WHERE id = ?
+    `, [therapistId]);
+    
+    // Notify patient
+    const patientMessage = `Hi ${appointment.patientName}! Your appointment with ${therapistInfo.therapistName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved. TherapEase Team`;
+    await notificationController.createNotification(
+      appointment.patientUserId,
+      'Appointment Approved',
+      patientMessage,
+      'appointment',
+      { 
+        relatedId: parseInt(id),
+        sendSMS: true,
+        phoneNumber: appointment.patientPhone
+      }
+    );
+
+    // Notify admin (get all admin users)
+    const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
+    for (const admin of adminUsers) {
+      await notificationController.createNotification(
+        admin.id,
+        'Appointment Approved by Therapist',
+        `${therapistInfo.therapistName} has approved an appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)}`,
+        'appointment',
+        { relatedId: parseInt(id) }
+      );
+    }
+
+    // Broadcast appointment change via WebSocket
+    try {
+      const websocketService = require('../services/websocketService');
+      const updatedAppointment = await getRow(`
+        SELECT a.*, 
+          CONCAT(pu.firstName, ' ', pu.lastName) as patientName,
+          CONCAT(tu.firstName, ' ', tu.lastName) as therapistName
+        FROM appointments a
+        JOIN patients p ON a.patientId = p.id
+        JOIN users pu ON p.userId = pu.id
+        JOIN users tu ON a.therapistId = tu.id
+        WHERE a.id = ?
+      `, [parseInt(id)]);
+      websocketService.broadcastAppointmentChange(updatedAppointment, 'approved');
+    } catch (error) {
+      console.error('Error broadcasting appointment approval:', error);
+    }
+
+    res.json({
+      success: true,
+      message: 'Appointment approved successfully'
+    });
+
+  } catch (error) {
+    console.error('Approve appointment error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to approve appointment' 
+    });
+  }
+};
+
 module.exports = {
   getSchedule,
   createAppointment,
   updateAppointment,
   deleteAppointment,
-  getAppointmentStats
+  getAppointmentStats,
+  approveAppointment
 };
 

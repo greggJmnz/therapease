@@ -1,18 +1,18 @@
 /**
  * SMS Configuration for TherapEase
- * Vonage SMS Service Configuration
+ * PhilSMS Service Configuration
  */
 
 module.exports = {
   // SMS Service Settings
   enabled: process.env.SMS_ENABLED === 'true',
   
-  // Vonage API Configuration
-  vonage: {
-    apiKey: process.env.VONAGE_API_KEY,
-    apiSecret: process.env.VONAGE_API_SECRET,
-    baseUrl: process.env.VONAGE_BASE_URL || 'https://api.nexmo.com',
-    fromNumber: process.env.VONAGE_FROM_NUMBER || 'TherapEase'
+  // PhilSMS API Configuration
+  philsms: {
+    apiToken: process.env.PHILSMS_API_TOKEN,
+    baseUrl: process.env.PHILSMS_BASE_URL || 'https://app.philsms.com/api/v3',
+    // Sender ID is optional - only set if registered and approved with PhilSMS
+    senderId: process.env.PHILSMS_SENDER_ID || null
   },
 
   // SMS Templates - Appointment Reminders Only
