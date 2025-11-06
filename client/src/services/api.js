@@ -28,6 +28,8 @@ export const api = axios.create({
   },
   // Enable credentials for cross-origin requests to send Authorization header
   withCredentials: isCrossOrigin,
+  // OPTIMIZED: Disable axios retries - React Query will handle retries with better control
+  validateStatus: (status) => status < 500, // Don't throw on 4xx errors (only 5xx)
 });
 
 // Create separate axios instance for AI endpoints with longer timeout
