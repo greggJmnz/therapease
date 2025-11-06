@@ -119,20 +119,27 @@ const getNotifications = async (req, res) => {
     // Format notification data with date and time
     // Note: Frontend will format using user's local timezone from createdAt ISO string
     const formattedNotifications = notifications.map(notification => {
-      const createdAt = new Date(notification.createdAt);
+      // Parse createdAt as UTC to avoid timezone issues
+      // MySQL TIMESTAMP is stored in UTC but returned in server timezone
+      // We need to ensure we're working with UTC
+      const createdAt = notification.createdAt instanceof Date 
+        ? notification.createdAt 
+        : new Date(notification.createdAt + (notification.createdAt.includes('Z') ? '' : 'Z'));
       
-      // Format date and time in user's local timezone (will be formatted on frontend)
-      // Keep UTC formatting for backward compatibility, but frontend should use createdAt
+      // Format date and time in UTC to avoid server timezone issues
+      // Frontend will use createdAt ISO string for proper timezone conversion
       const date = createdAt.toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'UTC'
       });
       const time = createdAt.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
+        timeZone: 'UTC'
       });
       
       return {
