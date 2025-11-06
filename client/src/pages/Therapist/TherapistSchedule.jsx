@@ -306,13 +306,16 @@ const TherapistSchedule = () => {
     const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
     const endTime = endDateTime.toTimeString().slice(0, 5);
     
+    // Set status based on approvalStatus - if approvalStatus is pending, show pending
+    const displayStatus = appointment.approvalStatus === 'pending' ? 'pending' : (appointment.status || 'scheduled');
+    
     setEditFormData({
       appointmentDate: appointment.date || appointment.appointmentDate || '',
       startTime: startTime,
       endTime: endTime,
       duration: duration.toString(),
       type: appointment.type || '',
-      status: appointment.status || '',
+      status: displayStatus,
       notes: appointment.notes || ''
     });
     setShowEditModal(true);
@@ -390,25 +393,6 @@ const TherapistSchedule = () => {
     }
   };
 
-  const handleApproveAppointment = async (appointmentId, e) => {
-    e.stopPropagation(); // Prevent triggering the row click
-    if (!window.confirm('Are you sure you want to approve this appointment?')) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await therapistAPI.approveAppointment(appointmentId);
-      toast.success('Appointment approved successfully');
-      // Refetch schedule data
-      await refetch();
-    } catch (error) {
-      console.error('Error approving appointment:', error);
-      toast.error(error.response?.data?.error || 'Failed to approve appointment');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -700,19 +684,19 @@ const TherapistSchedule = () => {
                         </div>
                       </div>
 
-                      {/* Actions - Show approve button for pending appointments */}
+                      {/* Actions - Edit button for appointments */}
                       <div className="col-span-1 sm:col-span-2 flex items-center justify-end gap-2">
-                        {appointment.approvalStatus === 'pending' && (
-                          <button
-                            onClick={(e) => handleApproveAppointment(appointment.id, e)}
-                            disabled={isSubmitting}
-                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Approve appointment"
-                          >
-                            <CheckCircle size={14} />
-                            <span className="hidden sm:inline">Approve</span>
-                          </button>
-                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditAppointment(appointment);
+                          }}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
+                          title="Edit appointment"
+                        >
+                          <Edit size={14} />
+                          <span className="hidden sm:inline">Edit</span>
+                        </button>
                       </div>
                     </div>
                   </div>
