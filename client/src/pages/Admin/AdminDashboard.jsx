@@ -403,12 +403,15 @@ const AdminDashboard = () => {
     location: appointment.room || 'Room TBD'
   }));
 
-  const filteredPatients = patients.filter(patient => {
-    const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         patient.therapist.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || patient.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  // Use debounced search term for filtering to improve performance
+  const filteredPatients = useMemo(() => {
+    return patients.filter(patient => {
+      const matchesSearch = patient.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                           patient.therapist.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+      const matchesStatus = filterStatus === 'all' || patient.status === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [patients, debouncedSearchTerm, filterStatus]);
 
   const renderDashboard = () => (
     <div className="admin-dashboard">

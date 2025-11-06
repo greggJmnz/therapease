@@ -323,7 +323,7 @@ const AdminPatients = () => {
       return matchesStatus;
     }
     
-    const searchLower = searchTerm.toLowerCase().trim();
+    const searchLower = debouncedSearchTerm.toLowerCase().trim();
     const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.toLowerCase().trim();
     
     const matchesSearch = 
