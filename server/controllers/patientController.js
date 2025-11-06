@@ -1734,6 +1734,7 @@ const getNotificationStats = async (req, res) => {
       success: true,
       data: {
         total,
+        unreadCount: unreadCount,
         unread: unreadCount,
         read: total - unreadCount
       }

@@ -229,8 +229,15 @@ export const useNotificationStats = () => {
     }
   );
 
+  // Map the response data to ensure unreadCount is available
+  const stats = statsData?.data || {};
+  const mappedStats = {
+    ...stats,
+    unreadCount: stats.unreadCount || stats.unread || 0
+  };
+
   return {
-    stats: statsData?.data || {},
+    stats: mappedStats,
     isLoading,
     error
   };

@@ -47,6 +47,9 @@ router.get('/exercises', patientController.getHomeExercises);
 // Notifications
 router.get('/notifications', patientController.getNotifications);
 router.get('/notifications/stats', patientController.getNotificationStats);
+router.put('/notifications/:id/read', require('../controllers/notificationController').markAsRead);
+router.put('/notifications/read-all', require('../controllers/notificationController').markAllAsRead);
+router.delete('/notifications/:id', require('../controllers/notificationController').deleteNotification);
 
 // Profile management
 router.get('/profile', profileController.getProfile);
