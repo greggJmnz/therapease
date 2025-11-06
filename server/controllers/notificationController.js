@@ -358,7 +358,9 @@ const sendMultiChannelNotification = async (userId, title, message, type = 'syst
     }
   }
 
-  // Channel 1: Try SMS first (if enabled and phone number available)
+  // Channel 1: Try SMS (best effort - may be filtered by carrier even if "delivered")
+  // Note: SMS may show "delivered" in PhilSMS but still be filtered by carrier
+  // So we always send email as well to ensure delivery
   if (options.sendSMS && options.phoneNumber) {
     results.sms.attempted = true;
     try {
@@ -368,7 +370,7 @@ const sendMultiChannelNotification = async (userId, title, message, type = 'syst
       results.sms.error = smsResult.error;
       
       if (results.sms.success) {
-        console.log(`✅ SMS sent successfully to ${options.phoneNumber}`);
+        console.log(`✅ SMS sent to PhilSMS (may be filtered by carrier): ${options.phoneNumber}`);
       } else {
         console.log(`⚠️ SMS failed: ${results.sms.error}`);
       }
@@ -386,7 +388,7 @@ const sendMultiChannelNotification = async (userId, title, message, type = 'syst
       results.sms.error = smsResult.error;
       
       if (results.sms.success) {
-        console.log(`✅ SMS sent successfully to ${userInfo.phone}`);
+        console.log(`✅ SMS sent to PhilSMS (may be filtered by carrier): ${userInfo.phone}`);
       } else {
         console.log(`⚠️ SMS failed: ${results.sms.error}`);
       }
@@ -396,9 +398,10 @@ const sendMultiChannelNotification = async (userId, title, message, type = 'syst
     }
   }
 
-  // Channel 2: Send Email (if SMS failed or not attempted, or if explicitly requested)
-  const shouldSendEmail = !results.sms.success || options.sendEmail === true;
-  if (shouldSendEmail && userInfo && userInfo.email) {
+  // Channel 2: Always send Email (regardless of SMS status, since SMS can be filtered by carrier)
+  // SMS may show "delivered" in PhilSMS but still be filtered by carrier, so email is always sent
+  const shouldSendEmail = options.sendEmail !== false && userInfo && userInfo.email;
+  if (shouldSendEmail) {
     results.email.attempted = true;
     try {
       // For appointment notifications, use specialized email template
