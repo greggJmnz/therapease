@@ -10,14 +10,11 @@
   <!-- Heart shape -->
   <path fill="url(#heartGradient)" d="M228.3 469.1L47.6 300.4c-11.5-10.5-18.1-25.5-18.1-41.5c0-33.1 26.9-60 60-60c20.5 0 39 10.1 50.5 25.6l35.1 42.9 35.1-42.9c11.5-15.5 30-25.6 50.5-25.6c33.1 0 60 26.9 60 60c0 16-6.6 31-18.1 41.5L283.7 469.1c-12.5 11.5-32.7 11.5-45.2 0z"/>
   
-  <!-- Pulse lines (EKG style) -->
-  <path fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" 
-        d="M96 216 L128 216 L136 200 L144 232 L152 192 L160 248 L168 216 L192 216"/>
-  <path fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" 
-        d="M144 264 L176 264"/>
+  <!-- Pulse lines (EKG style on left side of heart) -->
+  <path fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" 
+        d="M120 216 L152 216 L160 192 L168 240 L176 184 L184 256 L192 216 L216 216"/>
   
-  <path fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" 
-        d="M320 216 L352 216 L360 200 L368 232 L376 192 L384 248 L392 216 L416 216"/>
-  <path fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" 
-        d="M368 264 L400 264"/>
+  <!-- Pulse lines (EKG style on right side of heart) -->
+  <path fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" 
+        d="M296 216 L328 216 L336 192 L344 240 L352 184 L360 256 L368 216 L392 216"/>
 </svg>
