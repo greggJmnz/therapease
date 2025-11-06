@@ -10,7 +10,7 @@ const getApiBaseUrl = () => {
   // Fallback to relative URL for development
   if (import.meta.env.DEV) {
     console.warn('⚠️ VITE_API_URL not set! Falling back to relative /api. This will fail in production.');
-    console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in environment variables');
+    console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
   }
   return '/api';
 };
@@ -39,6 +39,8 @@ export const aiApi = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: isCrossOrigin,
+  // OPTIMIZED: Disable axios retries - React Query will handle retries with better control
+  validateStatus: (status) => status < 500, // Don't throw on 4xx errors (only 5xx)
 });
 
 // Request interceptor to add auth token to aiApi

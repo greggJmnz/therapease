@@ -64,15 +64,28 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const profileDropdownRef = useRef(null);
-  // Fetch notifications for unread count
+  // OPTIMIZED: Defer notifications fetch to prevent blocking login
+  const [shouldFetchNotifications, setShouldFetchNotifications] = React.useState(false);
+  
+  React.useEffect(() => {
+    // Defer notifications fetch by 2 seconds after mount to prevent blocking login
+    const timer = setTimeout(() => {
+      setShouldFetchNotifications(true);
+    }, 2000); // Wait 2 seconds after layout loads
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Fetch notifications for unread count - deferred to prevent blocking login
   const { data: notificationsData, isLoading, error } = useQuery(
     'adminNotificationsHeader',
     adminAPI.getNotifications,
     {
+      enabled: shouldFetchNotifications, // Only fetch after delay
       refetchOnWindowFocus: false,
       staleTime: 300000, // 5 minutes - much longer to prevent continuous fetching
       cacheTime: 600000, // 10 minutes
       refetchInterval: false, // Disable automatic refetching
+      retry: false, // OPTIMIZED: Don't retry - if it fails, show 0 unread (don't block UI)
     }
   );
 

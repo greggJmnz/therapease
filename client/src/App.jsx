@@ -65,26 +65,19 @@ import MaintenancePage from './components/MaintenancePage';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 
 // Maintenance mode wrapper component
+// OPTIMIZED: Don't block rendering while checking maintenance status
 const MaintenanceWrapper = ({ children }) => {
   const { isMaintenanceMode, isLoading } = useMaintenanceMode();
   const { user } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show maintenance page if maintenance mode is enabled and user is not admin
-  if (isMaintenanceMode && user?.role !== 'admin') {
+  // OPTIMIZED: Don't block UI while checking maintenance - render children immediately
+  // If maintenance check fails or is slow, allow user to proceed (better UX)
+  // Only show maintenance page if we confirm maintenance mode is ON
+  if (!isLoading && isMaintenanceMode && user?.role !== 'admin') {
     return <MaintenancePage />;
   }
 
+  // Render children immediately - don't wait for maintenance check
   return children;
 };
 

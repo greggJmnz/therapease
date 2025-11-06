@@ -6,7 +6,8 @@ export const useMaintenanceMode = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
 
-  // Query to get maintenance status (public endpoint)
+  // OPTIMIZED: Query to get maintenance status (public endpoint)
+  // Don't block login - assume no maintenance if query fails
   const { isLoading, error } = useQuery(
     'maintenanceStatus',
     adminAPI.getMaintenanceStatus,
@@ -15,8 +16,9 @@ export const useMaintenanceMode = () => {
       refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
       staleTime: 300000, // Consider data fresh for 5 minutes
       cacheTime: 600000, // Keep in cache for 10 minutes
-      retry: 1, // Only retry once on failure
-      retryDelay: 5000, // Wait 5 seconds before retry
+      retry: false, // OPTIMIZED: Don't retry - if it fails, assume no maintenance (don't block login)
+      retryDelay: 0, // Don't wait for retry
+      refetchOnMount: false, // Don't refetch on mount - use cached data
       onSuccess: (data) => {
         if (data?.data?.maintenanceMode) {
           setIsMaintenanceMode(true);
@@ -27,7 +29,8 @@ export const useMaintenanceMode = () => {
         }
       },
       onError: (error) => {
-        // If we can't fetch maintenance status, assume maintenance mode is off
+        // OPTIMIZED: If we can't fetch maintenance status, assume maintenance mode is off
+        // This prevents blocking login if the API is slow or unavailable
         setIsMaintenanceMode(false);
         setMaintenanceMessage('');
       }

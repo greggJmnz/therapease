@@ -31,12 +31,26 @@ export const SystemSettingsProvider = ({ children }) => {
   const hasToken = Boolean(isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('token'));
 
          // OPTIMIZED: Fetch system settings with deferred loading
-         // Only fetch after authentication is complete to avoid blocking login
+         // Defer fetch by 1 second after login to prevent blocking navigation
+         const [shouldFetchSettingsNow, setShouldFetchSettingsNow] = React.useState(false);
+         
+         React.useEffect(() => {
+           // Defer settings fetch by 1 second after authentication to prevent blocking login
+           if (shouldFetchSettings && hasToken && isAuthenticated) {
+             const timer = setTimeout(() => {
+               setShouldFetchSettingsNow(true);
+             }, 1000); // Wait 1 second after login before fetching
+             return () => clearTimeout(timer);
+           } else {
+             setShouldFetchSettingsNow(false);
+           }
+         }, [shouldFetchSettings, hasToken, isAuthenticated]);
+         
          const { data: settingsData, isLoading, error, refetch } = useQuery(
            'systemSettings',
            adminAPI.getSystemSettings,
            {
-             enabled: shouldFetchSettings && hasToken && isAuthenticated, // Only fetch if authenticated AND admin
+             enabled: shouldFetchSettingsNow, // Only fetch after delay
              refetchOnMount: false, // Don't refetch on mount
              onSuccess: (data) => {
                if (data?.data?.general) {
@@ -64,7 +78,7 @@ export const SystemSettingsProvider = ({ children }) => {
              staleTime: 30 * 1000, // 30 seconds - reasonable cache time for system settings
              cacheTime: 5 * 60 * 1000, // 5 minutes
              refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
-             retry: false, // Don't retry on error to avoid repeated 403 errors
+             retry: false, // OPTIMIZED: Don't retry on error to avoid repeated failures blocking UI
              placeholderData: (previousData) => previousData // Use cached data while loading
            }
          );
