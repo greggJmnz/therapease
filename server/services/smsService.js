@@ -82,23 +82,30 @@ class SMSService {
         throw new Error('Invalid phone number format');
       }
 
-      // Build payload - always include sender_id (use "PhilSMS" as default if not set)
-      const payload = {
-        recipient: formattedNumber,
-        message: message
-      };
-      
-      // Determine sender ID - use "PhilSMS" as default if no approved sender ID is set
+      // Build payload - API requires: recipient, sender_id, type, and message
+      // Determine sender ID - use approved sender ID or default
       const senderId = options.sender_id || this.senderId;
       
-      // Always include sender_id - use "PhilSMS" as default if not set or if "TherapEase" is not approved
+      // Always include sender_id - required by API
+      // If "TherapEase" is not approved, we need to use an approved sender ID
+      // Note: You may need to register and approve a sender ID at https://app.philsms.com
+      let finalSenderId;
       if (senderId && senderId.trim() && senderId.trim() !== 'TherapEase') {
         // Use the approved sender ID
-        payload.sender_id = senderId.trim();
+        finalSenderId = senderId.trim();
       } else {
-        // Use "PhilSMS" as default approved sender ID
-        payload.sender_id = 'PhilSMS';
+        // If no approved sender ID, you must use an approved one
+        // Common options: "PhilSMS" (if approved), or use a phone number format
+        // For now, we'll try "PhilSMS" - if this doesn't work, you need to register a sender ID
+        finalSenderId = 'PhilSMS';
       }
+      
+      const payload = {
+        recipient: formattedNumber,
+        sender_id: finalSenderId,
+        type: 'plain', // Required: "plain" for plain text messages
+        message: message
+      };
 
       const response = await axios.post(
         `${this.baseUrl}/sms/send`,
@@ -113,21 +120,33 @@ class SMSService {
         }
       );
 
-      // PhilSMS response format may vary, handle both success and error cases
+      // PhilSMS response format: { status: "success", data: "..." } or { status: "error", message: "..." }
       if (response.data) {
-        // Check for success indicators in response
-        const messageId = response.data.id || response.data.message_id || response.data.messageId || 
-                         response.data.uuid || response.data.message_uuid;
-        
-        if (messageId || response.data.success !== false) {
+        // Check response status
+        if (response.data.status === 'success') {
+          // Success response - extract message ID from data
+          // The data field may contain the message details or a message ID
+          const messageId = response.data.data?.id || 
+                           response.data.data?.message_id || 
+                           response.data.data?.uid ||
+                           response.data.id || 
+                           response.data.message_id || 
+                           response.data.messageId || 
+                           response.data.uuid || 
+                           response.data.message_uuid ||
+                           'unknown';
+          
           return {
             success: true,
-            messageId: messageId || 'unknown',
-            status: response.data.status || 'sent',
+            messageId: messageId,
+            status: 'sent',
             to: formattedNumber,
             message: message,
             data: response.data
           };
+        } else if (response.data.status === 'error') {
+          // Error response from API
+          throw new Error(response.data.message || 'SMS send failed');
         }
       }
 
