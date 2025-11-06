@@ -136,7 +136,9 @@ const TherapistSchedule = () => {
         time: appointmentTime,
         duration: appointment.duration || 60,
         type: appointment.type || 'session',
-        status: appointment.status || (appointment.approvalStatus === 'pending' ? 'pending' : 'scheduled'),
+        // Prioritize approvalStatus: if pending, show pending regardless of status
+        // Otherwise use the actual status from database
+        status: appointment.approvalStatus === 'pending' ? 'pending' : (appointment.status || 'scheduled'),
         approvalStatus: appointment.approvalStatus || 'approved', // Include approval status
         reason: appointment.reason || '',
     notes: appointment.notes || '',
@@ -684,19 +686,9 @@ const TherapistSchedule = () => {
                         </div>
                       </div>
 
-                      {/* Actions - Edit button for appointments */}
+                      {/* Actions - Empty column (edit button is in appointment details modal) */}
                       <div className="col-span-1 sm:col-span-2 flex items-center justify-end gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditAppointment(appointment);
-                          }}
-                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
-                          title="Edit appointment"
-                        >
-                          <Edit size={14} />
-                          <span className="hidden sm:inline">Edit</span>
-                        </button>
+                        {/* Edit button removed - available in appointment details modal */}
                       </div>
                     </div>
                   </div>
