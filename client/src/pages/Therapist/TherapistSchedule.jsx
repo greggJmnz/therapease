@@ -136,7 +136,8 @@ const TherapistSchedule = () => {
         time: appointmentTime,
         duration: appointment.duration || 60,
         type: appointment.type || 'session',
-    status: appointment.status || 'scheduled',
+        status: appointment.status || (appointment.approvalStatus === 'pending' ? 'pending' : 'scheduled'),
+        approvalStatus: appointment.approvalStatus || 'approved', // Include approval status
         reason: appointment.reason || '',
     notes: appointment.notes || '',
         createdAt: appointment.createdAt || appointment.appointmentDate || appointment.sessionDate || new Date().toISOString(),
@@ -389,6 +390,26 @@ const TherapistSchedule = () => {
     }
   };
 
+  const handleApproveAppointment = async (appointmentId, e) => {
+    e.stopPropagation(); // Prevent triggering the row click
+    if (!window.confirm('Are you sure you want to approve this appointment?')) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await therapistAPI.approveAppointment(appointmentId);
+      toast.success('Appointment approved successfully');
+      // Refetch schedule data
+      await refetch();
+    } catch (error) {
+      console.error('Error approving appointment:', error);
+      toast.error(error.response?.data?.error || 'Failed to approve appointment');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSort = (field) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -612,6 +633,9 @@ const TherapistSchedule = () => {
                       )}
                     </button>
                   </div>
+                  <div className="hidden sm:flex sm:col-span-2 items-center justify-end">
+                    Actions
+                  </div>
                 </div>
               </div>
 
@@ -674,6 +698,21 @@ const TherapistSchedule = () => {
                             {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                           </span>
                         </div>
+                      </div>
+
+                      {/* Actions - Show approve button for pending appointments */}
+                      <div className="col-span-1 sm:col-span-2 flex items-center justify-end gap-2">
+                        {appointment.approvalStatus === 'pending' && (
+                          <button
+                            onClick={(e) => handleApproveAppointment(appointment.id, e)}
+                            disabled={isSubmitting}
+                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Approve appointment"
+                          >
+                            <CheckCircle size={14} />
+                            <span className="hidden sm:inline">Approve</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
