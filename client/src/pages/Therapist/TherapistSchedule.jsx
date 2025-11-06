@@ -619,9 +619,6 @@ const TherapistSchedule = () => {
                       )}
                     </button>
                   </div>
-                  <div className="hidden sm:flex sm:col-span-2 items-center justify-end">
-                    Actions
-                  </div>
                 </div>
               </div>
 

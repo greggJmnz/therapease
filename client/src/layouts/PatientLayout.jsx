@@ -67,7 +67,7 @@ const PatientLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const profileDropdownRef = useRef(null);
-  const { stats: notificationStats } = useNotificationStats();
+  const { stats: notificationStats, isLoading: notificationStatsLoading } = useNotificationStats();
   const { startNavigation, completeNavigation, canNavigate } = useNavigationState();
   const queryClient = useQueryClient();
 
@@ -480,7 +480,7 @@ const PatientLayout = () => {
               title="View Notifications"
             >
               <Bell size={16} />
-              {notificationStats?.unreadCount > 0 && (
+              {!notificationStatsLoading && notificationStats?.unreadCount > 0 && (
                 <span className="notification-count">{notificationStats.unreadCount}</span>
               )}
             </button>

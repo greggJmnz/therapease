@@ -864,8 +864,8 @@ const Appointments = () => {
 
         {/* Appointment Details Modal */}
         {showAppointmentModal && selectedAppointment && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden my-4">
               {/* Modal Header */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
                 <div className="flex items-center justify-between">
@@ -959,9 +959,9 @@ const Appointments = () => {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {getStatusIcon(selectedAppointment.status)}
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedAppointment.status)}`}>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium border whitespace-nowrap ${getStatusColor(selectedAppointment.status)}`}>
                             {selectedAppointment.status.charAt(0).toUpperCase() + selectedAppointment.status.slice(1)}
                           </span>
                         </div>
@@ -1009,11 +1009,11 @@ const Appointments = () => {
               </div>
               
               {/* Modal Footer */}
-              <div className="p-6 bg-gray-50 border-t border-gray-200">
-                <div className="flex flex-wrap gap-3 justify-end">
+              <div className="p-4 sm:p-6 bg-gray-50 border-t border-gray-200 sticky bottom-0">
+                <div className="flex flex-col sm:flex-row gap-3 justify-end">
                   <button
                     onClick={handleCloseAppointmentModal}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    className="w-full sm:w-auto px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                   >
                     Close
                   </button>
@@ -1024,7 +1024,7 @@ const Appointments = () => {
                           setShowAppointmentModal(false);
                           setShowCancelModal(true);
                         }}
-                        className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+                        className="w-full sm:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
                       >
                         Cancel Appointment
                       </button>
@@ -1035,7 +1035,7 @@ const Appointments = () => {
                           setNewAppointmentTime(selectedAppointment.time);
                           setShowPostponeModal(true);
                         }}
-                        className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors font-medium"
+                        className="w-full sm:w-auto px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors font-medium"
                       >
                         Postpone Appointment
                       </button>
