@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   ChevronUp, 
   ChevronDown, 
@@ -8,6 +8,7 @@ import {
 import ModernCard from './ModernCard';
 import ModernButton from './ModernButton';
 import { cn } from '../utils/cn';
+import { useDebounce } from '../hooks/useDebounce';
 
 const ModernDataTable = ({
   data = [],
@@ -24,20 +25,21 @@ const ModernDataTable = ({
   emptyMessage = 'No data available'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300); // Debounce search input
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({});
   const [showFilters, setShowFilters] = useState(false);
 
-  // Filter and search data
+  // Filter and search data - use debounced search term for better performance
   const filteredData = useMemo(() => {
     let filtered = [...data];
 
-    // Apply search
-    if (searchTerm) {
+    // Apply search (using debounced value)
+    if (debouncedSearchTerm) {
       filtered = filtered.filter(item =>
         Object.values(item).some(value =>
-          String(value).toLowerCase().includes(searchTerm.toLowerCase())
+          String(value).toLowerCase().includes(debouncedSearchTerm.toLowerCase())
         )
       );
     }
@@ -56,7 +58,7 @@ const ModernDataTable = ({
     });
 
     return filtered;
-  }, [data, searchTerm, filters]);
+  }, [data, debouncedSearchTerm, filters]);
 
   // Sort data
   const sortedData = useMemo(() => {

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from 'react-query';
+import { useDebounce } from '../../hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeData } from '../../hooks/useWebSocket';
 import InitialsAvatar from '../../components/InitialsAvatar';
@@ -94,6 +95,7 @@ const AdminDashboard = () => {
       placeholderData: (previousData) => previousData, // Use cached data while loading
       // CRITICAL: Don't block UI rendering - allow navigation even if query fails
       refetchOnReconnect: false,
+      refetchOnMount: false,
       // Fail fast - don't retry forever
       retryOnMount: false,
       onError: (error) => {
