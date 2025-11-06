@@ -1218,6 +1218,7 @@ const createAppointment = async (req, res) => {
 // Get notifications for admin
 const getNotifications = async (req, res) => {
   try {
+    // Use CONVERT_TZ to ensure createdAt is in UTC regardless of server timezone
     const sql = `
       SELECT 
         n.id,
@@ -1225,7 +1226,7 @@ const getNotifications = async (req, res) => {
         n.title,
         n.message,
         n.isRead,
-        n.createdAt,
+        CONVERT_TZ(n.createdAt, @@session.time_zone, '+00:00') as createdAt,
         u.firstName,
         u.lastName
       FROM notifications n
@@ -1239,10 +1240,20 @@ const getNotifications = async (req, res) => {
 
     // Format notification data
     const formattedNotifications = notifications.map(notification => {
-      // Parse createdAt as UTC to avoid timezone issues
-      const createdAt = notification.createdAt instanceof Date 
-        ? notification.createdAt 
-        : new Date(notification.createdAt + (notification.createdAt.includes('Z') ? '' : 'Z'));
+      // createdAt is already in UTC from CONVERT_TZ, parse it correctly
+      let createdAt;
+      if (notification.createdAt instanceof Date) {
+        createdAt = notification.createdAt;
+      } else if (typeof notification.createdAt === 'string') {
+        // If it's a string, ensure it's treated as UTC
+        // MySQL CONVERT_TZ returns datetime string, append 'Z' to indicate UTC
+        const dateStr = notification.createdAt.endsWith('Z') 
+          ? notification.createdAt 
+          : notification.createdAt + 'Z';
+        createdAt = new Date(dateStr);
+      } else {
+        createdAt = new Date(notification.createdAt);
+      }
       // Format in UTC to avoid server timezone issues - frontend will use createdAt ISO string
       const date = createdAt.toLocaleDateString('en-US', {
         weekday: 'short',
@@ -1266,8 +1277,8 @@ const getNotifications = async (req, res) => {
         priority: 'medium', // Default priority since column doesn't exist
         read: notification.isRead === 1,
         user: notification.firstName ? `${notification.firstName} ${notification.lastName}` : null,
-        createdAt: notification.createdAt,
-        updatedAt: notification.createdAt, // Use createdAt as updatedAt since updatedAt doesn't exist
+        createdAt: createdAt.toISOString(), // Ensure ISO string for frontend
+        updatedAt: createdAt.toISOString(), // Use createdAt as updatedAt since updatedAt doesn't exist
         date: date,
         time: time,
         timeAgo: getTimeAgo(createdAt)

@@ -71,6 +71,7 @@ const getNotifications = async (req, res) => {
     const total = countResult.total;
 
     // Get notifications - handle missing priority column gracefully
+    // Use CONVERT_TZ to ensure createdAt is in UTC regardless of server timezone
     let notifications;
     try {
       // Try with priority column first
@@ -83,7 +84,7 @@ const getNotifications = async (req, res) => {
           n.type,
           n.isRead,
           n.priority,
-          n.createdAt
+          CONVERT_TZ(n.createdAt, @@session.time_zone, '+00:00') as createdAt
         FROM notifications n
         ${whereClause}
         ORDER BY n.createdAt DESC
@@ -102,7 +103,7 @@ const getNotifications = async (req, res) => {
             n.message,
             n.type,
             n.isRead,
-            n.createdAt
+            CONVERT_TZ(n.createdAt, @@session.time_zone, '+00:00') as createdAt
           FROM notifications n
           ${whereClause}
           ORDER BY n.createdAt DESC
@@ -119,12 +120,20 @@ const getNotifications = async (req, res) => {
     // Format notification data with date and time
     // Note: Frontend will format using user's local timezone from createdAt ISO string
     const formattedNotifications = notifications.map(notification => {
-      // Parse createdAt as UTC to avoid timezone issues
-      // MySQL TIMESTAMP is stored in UTC but returned in server timezone
-      // We need to ensure we're working with UTC
-      const createdAt = notification.createdAt instanceof Date 
-        ? notification.createdAt 
-        : new Date(notification.createdAt + (notification.createdAt.includes('Z') ? '' : 'Z'));
+      // createdAt is already in UTC from CONVERT_TZ, parse it correctly
+      let createdAt;
+      if (notification.createdAt instanceof Date) {
+        createdAt = notification.createdAt;
+      } else if (typeof notification.createdAt === 'string') {
+        // If it's a string, ensure it's treated as UTC
+        // MySQL CONVERT_TZ returns datetime string, append 'Z' to indicate UTC
+        const dateStr = notification.createdAt.endsWith('Z') 
+          ? notification.createdAt 
+          : notification.createdAt + 'Z';
+        createdAt = new Date(dateStr);
+      } else {
+        createdAt = new Date(notification.createdAt);
+      }
       
       // Format date and time in UTC to avoid server timezone issues
       // Frontend will use createdAt ISO string for proper timezone conversion
@@ -144,6 +153,7 @@ const getNotifications = async (req, res) => {
       
       return {
         ...notification,
+        createdAt: createdAt.toISOString(), // Ensure ISO string for frontend
         date: date,
         time: time,
         timeAgo: getTimeAgo(createdAt)
