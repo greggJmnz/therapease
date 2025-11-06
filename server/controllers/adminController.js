@@ -1239,18 +1239,23 @@ const getNotifications = async (req, res) => {
 
     // Format notification data
     const formattedNotifications = notifications.map(notification => {
-      const createdAt = new Date(notification.createdAt);
-      // Display local server time (not UTC)
+      // Parse createdAt as UTC to avoid timezone issues
+      const createdAt = notification.createdAt instanceof Date 
+        ? notification.createdAt 
+        : new Date(notification.createdAt + (notification.createdAt.includes('Z') ? '' : 'Z'));
+      // Format in UTC to avoid server timezone issues - frontend will use createdAt ISO string
       const date = createdAt.toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'UTC'
       });
       const time = createdAt.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
+        timeZone: 'UTC'
       });
       
       return {
