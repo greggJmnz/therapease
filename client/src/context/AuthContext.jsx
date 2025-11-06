@@ -363,16 +363,21 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.changePassword({ currentPassword, newPassword });
       const data = response.data;
 
-      // Axios automatically throws errors for non-2xx status codes
-      if (data.success) {
-        return { success: true, message: data.message || 'Password changed successfully' };
-      } else {
-        return { success: false, message: data.message || 'Password change failed' };
+      // Check response success field (Axios doesn't throw on 4xx due to validateStatus)
+      if (data && data.success === false) {
+        return { success: false, message: data.error || data.message || 'Password change failed' };
       }
+      
+      if (data && data.success) {
+        return { success: true, message: data.message || 'Password changed successfully' };
+      }
+      
+      // Fallback if response structure is unexpected
+      return { success: false, message: 'Password change failed' };
     } catch (error) {
       console.error('Password change error:', error);
       if (error.response) {
-        return { success: false, message: error.response.data?.message || 'Password change failed' };
+        return { success: false, message: error.response.data?.error || error.response.data?.message || 'Password change failed' };
       } else if (error.request) {
         return { success: false, message: 'Network error. Please check your connection.' };
       } else {

@@ -172,7 +172,14 @@ const TherapistSettings = () => {
   const changePasswordMutation = useMutation(
     (passwordData) => therapistAPI.changePassword(passwordData),
     {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        // Check if the response indicates success
+        if (response.data && response.data.success === false) {
+          // Backend returned success: false, treat as error
+          toast.error(response.data.error || 'Failed to change password');
+          return;
+        }
+        
         setPasswordData({
           currentPassword: '',
           newPassword: '',

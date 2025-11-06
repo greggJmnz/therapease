@@ -238,7 +238,14 @@ const AdminSettings = () => {
   const updatePasswordMutation = useMutation(
     (passwordData) => adminAPI.changePassword(passwordData),
     {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        // Check if the response indicates success
+        if (response.data && response.data.success === false) {
+          // Backend returned success: false, treat as error
+          toast.error(response.data.error || 'Failed to update password');
+          return;
+        }
+        
         setPasswordData({
           currentPassword: '',
           newPassword: '',

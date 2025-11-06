@@ -81,7 +81,14 @@ const ProfileForm = ({ userRole, apiService }) => {
   const changePasswordMutation = useMutation(
     (passwordData) => apiService.changePassword(passwordData),
     {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        // Check if the response indicates success
+        if (response.data && response.data.success === false) {
+          // Backend returned success: false, treat as error
+          toast.error(response.data.error || 'Failed to change password');
+          return;
+        }
+        
         toast.success('Password changed successfully!');
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       },
