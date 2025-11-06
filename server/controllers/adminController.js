@@ -2599,16 +2599,60 @@ const updateAppointment = async (req, res) => {
       updateValues.push(updateData.type);
     }
     if (updateData.status) {
-      updateFields.push('status = ?');
-      updateValues.push(updateData.status);
+      // Validate status - appointments.status ENUM only allows: 'scheduled', 'completed', 'cancelled'
+      // 'pending' is for approvalStatus, not status
+      const validStatuses = ['scheduled', 'completed', 'cancelled'];
+      const validStatus = validStatuses.includes(updateData.status) ? updateData.status : null;
       
-      // If status is being changed to 'scheduled', also update approval status
-      if (updateData.status === 'scheduled') {
+      if (validStatus) {
+        updateFields.push('status = ?');
+        updateValues.push(validStatus);
+        
+        // If status is being changed to 'scheduled', also update approval status to approved
+        if (validStatus === 'scheduled') {
+          updateFields.push('approvalStatus = ?');
+          updateValues.push('approved');
+          updateFields.push('approvedBy = ?');
+          updateValues.push(req.user.id);
+          updateFields.push('approvedAt = NOW()');
+        }
+      } else if (updateData.status === 'pending') {
+        // If trying to set status to 'pending', actually set approvalStatus to 'pending'
+        // Keep the current status (don't change status column)
         updateFields.push('approvalStatus = ?');
-        updateValues.push('approved');
-        updateFields.push('approvedBy = ?');
-        updateValues.push(req.user.id);
-        updateFields.push('approvedAt = NOW()');
+        updateValues.push('pending');
+        // Clear approval fields when setting back to pending
+        updateFields.push('approvedBy = NULL');
+        updateFields.push('approvedAt = NULL');
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid status: ${updateData.status}. Valid statuses are: ${validStatuses.join(', ')}. Use approvalStatus for 'pending'.`
+        });
+      }
+    }
+    
+    // Handle approvalStatus separately if provided
+    if (updateData.approvalStatus) {
+      const validApprovalStatuses = ['pending', 'approved', 'rejected'];
+      if (validApprovalStatuses.includes(updateData.approvalStatus)) {
+        updateFields.push('approvalStatus = ?');
+        updateValues.push(updateData.approvalStatus);
+        
+        if (updateData.approvalStatus === 'approved') {
+          updateFields.push('approvedBy = ?');
+          updateValues.push(req.user.id);
+          updateFields.push('approvedAt = NOW()');
+        } else if (updateData.approvalStatus === 'pending') {
+          // Clear approval fields when setting back to pending
+          updateFields.push('approvedBy = NULL');
+          updateFields.push('approvedAt = NULL');
+        }
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid approvalStatus: ${updateData.approvalStatus}. Valid values are: ${validApprovalStatuses.join(', ')}.`
+        });
       }
     }
     if (updateData.notes !== undefined) {
