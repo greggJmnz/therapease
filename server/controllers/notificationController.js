@@ -602,7 +602,7 @@ const createExerciseReminderNotificationForPatient = async (exerciseId) => {
 // Create appointment creation notification for patient (immediate)
 const createAppointmentCreationNotificationForPatient = async (appointmentId) => {
   try {
-    // Get appointment details with patient information
+    // Get appointment details with patient information including phone number
     const appointmentSql = `
       SELECT 
         a.appointmentDate,
@@ -611,6 +611,7 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
         a.patientId,
         p.userId as patientUserId,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        u.phone as patientPhone,
         CONCAT(t.firstName, ' ', t.lastName) as therapistName
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
@@ -639,10 +640,19 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
     const message = `Your ${appointment.type} appointment with ${appointment.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before.`;
     const type = 'appointment_created';
 
-    return await createNotification(appointment.patientUserId, title, message, type, {
+    // Send SMS if patient has a phone number
+    const options = {
       relatedId: appointmentId,
       priority: 'high'
-    });
+    };
+
+    // Add SMS sending if patient has phone number
+    if (appointment.patientPhone && appointment.patientPhone.trim()) {
+      options.sendSMS = true;
+      options.phoneNumber = appointment.patientPhone.trim();
+    }
+
+    return await createNotification(appointment.patientUserId, title, message, type, options);
 
   } catch (error) {
     console.error('Create appointment creation notification for patient error:', error);
