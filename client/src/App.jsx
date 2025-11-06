@@ -81,6 +81,40 @@ const MaintenanceWrapper = ({ children }) => {
   return children;
 };
 
+// Smart root redirect component - checks authentication and redirects accordingly
+const RootRedirect = () => {
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  // Wait for auth state to be initialized
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If authenticated, redirect to appropriate dashboard based on role
+  if (isAuthenticated && user) {
+    switch (user.role) {
+      case 'admin':
+        return <Navigate to="/admin/dashboard" replace />;
+      case 'therapist':
+        return <Navigate to="/therapist/dashboard" replace />;
+      case 'patient':
+        return <Navigate to="/patient/dashboard" replace />;
+      default:
+        return <Navigate to="/auth/login" replace />;
+    }
+  }
+
+  // If not authenticated, redirect to login
+  return <Navigate to="/auth/login" replace />;
+};
+
 // Protected route component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -207,9 +241,9 @@ const AppContent = () => (
           <Route path="help" element={<LazyRoute><PatientHelp /></LazyRoute>} />
         </Route>
 
-        {/* Default redirect */}
-        <Route path="/" element={<Navigate to="/auth/login" replace />} />
-        <Route path="*" element={<Navigate to="/auth/login" replace />} />
+        {/* Default redirect - smart redirect based on authentication */}
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="*" element={<RootRedirect />} />
       </Routes>
 
       {/* Global toast notifications */}

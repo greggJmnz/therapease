@@ -27,7 +27,27 @@ const Login = () => {
   const [is2FALoading, setIs2FALoading] = useState(false);
   const [isResendingCode, setIsResendingCode] = useState(false);
   const navigate = useNavigate();
-  const { login, loginWith2FA, send2FACode } = useAuth();
+  const { login, loginWith2FA, send2FACode, isAuthenticated, user, isLoading: authLoading } = useAuth();
+
+  // Redirect authenticated users away from login page
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user) {
+      // User is already authenticated - redirect to their dashboard
+      switch (user.role) {
+        case 'admin':
+          navigate('/admin/dashboard', { replace: true });
+          break;
+        case 'therapist':
+          navigate('/therapist/dashboard', { replace: true });
+          break;
+        case 'patient':
+          navigate('/patient/dashboard', { replace: true });
+          break;
+        default:
+          navigate('/', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, authLoading, navigate]);
 
   const {
     register,
