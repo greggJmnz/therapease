@@ -68,7 +68,7 @@ const getProofImageUrl = (fileUrl) => {
         // Always use HTTPS in production
         serverBaseUrl = 'https://api.therapease.site';
         console.warn('⚠️ VITE_API_URL not set, inferred from hostname:', serverBaseUrl);
-        console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in environment variables');
+        console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
       } else {
         // Fallback: use current origin but ensure HTTPS
         serverBaseUrl = window.location.origin;
@@ -76,7 +76,7 @@ const getProofImageUrl = (fileUrl) => {
           serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
         }
         console.error('❌ VITE_API_URL not set and cannot infer server URL. Using:', serverBaseUrl);
-        console.error('💡 Set VITE_API_URL=https://api.therapease.site/api in environment variables');
+        console.error('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
       }
     }
   }

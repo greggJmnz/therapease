@@ -734,31 +734,15 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    console.log('🗑️ Delete user request:', { userId, method: req.method, path: req.path, originalUrl: req.originalUrl });
 
-    // Check if user exists - try multiple queries to find the user
-    let existingUser = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(userId)]);
-    
-    // If not found, check if there's a status filter or soft delete
+    // Check if user exists
+    const existingUser = await getRow('SELECT * FROM users WHERE id = ?', [parseInt(userId)]);
     if (!existingUser) {
-      console.log('⚠️ User not found with simple query, checking with status filter...');
-      existingUser = await getRow('SELECT * FROM users WHERE id = ? AND (status IS NULL OR status = "active" OR status = "inactive")', [parseInt(userId)]);
-    }
-    
-    // If still not found, check all users table to see what IDs exist
-    if (!existingUser) {
-      const allUsers = await getAll('SELECT id, email, role, status FROM users ORDER BY id LIMIT 10');
-      console.log('📋 First 10 users in database:', allUsers);
-      console.log('❌ User not found:', userId);
       return res.status(404).json({
         success: false,
-        error: `User with ID ${userId} not found in database`,
-        availableUserIds: allUsers.map(u => ({ id: u.id, email: u.email, role: u.role }))
+        error: 'User not found'
       });
     }
-    
-    console.log('✅ User found:', { id: existingUser.id, email: existingUser.email, role: existingUser.role, status: existingUser.status });
 
     // Prevent deletion of admin users
     if (existingUser.role === 'admin') {

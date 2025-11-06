@@ -50,6 +50,7 @@ const getCorsOrigins = () => {
     }
     // Default production origins
     return [
+      'https://therapease-gnu5.vercel.app', // Vercel production deployment
       'https://therapease.site',            // Custom domain
       'https://www.therapease.site'         // www subdomain
     ];
@@ -124,91 +125,18 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files FIRST (before encryption middleware)
-// This ensures static files are served without encryption
-const uploadsDir = path.join(__dirname, 'uploads');
-const fs = require('fs');
-
-// Middleware to log upload requests and handle errors
-app.use('/uploads', (req, res, next) => {
-  // Log the request for debugging
-  if (req.method === 'GET') {
-    const requestedPath = req.path.replace('/uploads/', '');
-    const fullPath = path.join(uploadsDir, requestedPath);
-    
-    // Security: prevent directory traversal
-    const normalizedPath = path.normalize(fullPath);
-    if (!normalizedPath.startsWith(path.normalize(uploadsDir))) {
-      console.error(`⚠️ Directory traversal attempt: ${req.path}`);
-      return res.status(403).json({ error: 'Access denied' });
-    }
-    
-    // Check if file exists synchronously (for immediate logging)
-    try {
-      if (fs.existsSync(fullPath)) {
-        console.log(`✅ Serving file: ${fullPath} (requested: ${req.path})`);
-      } else {
-        console.error(`❌ File not found: ${fullPath} (requested: ${req.path})`);
-        console.error(`   Uploads directory: ${uploadsDir}`);
-        console.error(`   Requested file: ${requestedPath}`);
-        console.error(`   Full path: ${fullPath}`);
-        // List directory to see what files exist
-        const dirPath = path.dirname(fullPath);
-        if (fs.existsSync(dirPath)) {
-          const files = fs.readdirSync(dirPath);
-          console.error(`   Files in directory: ${files.join(', ')}`);
-        }
-      }
-    } catch (err) {
-      console.error(`❌ Error checking file: ${err.message}`);
-    }
-    
-    // Continue to express.static (it will handle 404)
-    next();
-  } else {
-    next();
-  }
-});
-
-// Serve static files from uploads directory
-app.use('/uploads', express.static(uploadsDir, {
-  setHeaders: (res, filePath) => {
-    // Set proper headers for file serving
-    res.setHeader('Cache-Control', 'public, max-age=31536000');
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  },
-  fallthrough: false // Don't continue to next middleware if file not found
-}));
-
-// Serve static files from public-website directory
-app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
-
-// Encryption Middleware (disabled for auth routes and static files)
-// Note: Admin routes might need encryption for sensitive data, but we'll skip for now to ensure routes work
+// Encryption Middleware (disabled for auth routes)
 app.use((req, res, next) => {
-  // Skip encryption middleware for auth routes, static file serving, and admin DELETE operations
-  if (req.path.startsWith('/api/auth/') || 
-      req.path.startsWith('/uploads/') || 
-      req.path.startsWith('/public-website/') ||
-      (req.method === 'DELETE' && req.path.startsWith('/api/admin/'))) {
-    if (req.method === 'DELETE' && req.path.startsWith('/api/admin/')) {
-      console.log('⏭️ Skipping encryption for DELETE admin route:', req.path);
-    }
+  // Skip encryption middleware for auth routes
+  if (req.path.startsWith('/api/auth/')) {
     return next();
   }
   return encryptRequestData(req, res, next);
 });
 
 app.use((req, res, next) => {
-  // Skip decryption middleware for auth routes, static file serving, and admin DELETE operations
-  if (req.path.startsWith('/api/auth/') || 
-      req.path.startsWith('/uploads/') || 
-      req.path.startsWith('/public-website/') ||
-      (req.method === 'DELETE' && req.path.startsWith('/api/admin/'))) {
-    if (req.method === 'DELETE' && req.path.startsWith('/api/admin/')) {
-      console.log('⏭️ Skipping decryption for DELETE admin route:', req.path);
-    }
+  // Skip decryption middleware for auth routes
+  if (req.path.startsWith('/api/auth/')) {
     return next();
   }
   return decryptResponseData(req, res, next);
@@ -280,6 +208,11 @@ app.get('/ws', (req, res) => {
   });
 });
 
+// Serve static files from public-website directory
+app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve root-level assets
 app.use(express.static(path.join(__dirname, 'public')));
@@ -441,87 +374,8 @@ app.get('/api/test-columns', async (req, res) => {
   }
 });
 
-// Root API endpoint - provides API information
-app.get('/api', (req, res) => {
-  res.json({
-    success: true,
-    message: 'TherapEase API',
-    version: '1.0.0',
-    endpoints: {
-      health: '/api/health',
-      auth: '/api/auth',
-      admin: '/api/admin',
-      therapist: '/api/therapist',
-      patient: '/api/patient',
-      ai: '/api/ai',
-      notifications: '/api/notifications',
-      treatmentPlans: '/api/treatment-plans',
-      homeExercises: '/api/home-exercises',
-      progressReports: '/api/progress-reports'
-    },
-    documentation: 'See API documentation for endpoint details'
-  });
-});
-
-// Test endpoint to check file existence (for debugging)
-app.get('/api/test-upload-file/:filename', (req, res) => {
-  const { filename } = req.params;
-  const fullPath = path.join(uploadsDir, 'exercise-proofs', filename);
-  
-  try {
-    const exists = fs.existsSync(fullPath);
-    const stats = exists ? fs.statSync(fullPath) : null;
-    
-    // List directory contents
-    const dirPath = path.join(uploadsDir, 'exercise-proofs');
-    const dirExists = fs.existsSync(dirPath);
-    const files = dirExists ? fs.readdirSync(dirPath) : [];
-    
-    res.json({
-      success: true,
-      filename,
-      fullPath,
-      exists,
-      uploadsDir,
-      stats: stats ? {
-        size: stats.size,
-        created: stats.birthtime,
-        modified: stats.mtime
-      } : null,
-      directory: {
-        path: dirPath,
-        exists: dirExists,
-        fileCount: files.length,
-        files: files.slice(0, 10) // First 10 files
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      filename,
-      fullPath
-    });
-  }
-});
-
 // API routes
 app.use('/api/auth', authRoutes);
-
-// Debug middleware for all API requests
-app.use('/api/admin', (req, res, next) => {
-  if (req.method === 'DELETE' && req.path.includes('users')) {
-    console.log('🔍 DELETE /api/admin/users request received:', {
-      method: req.method,
-      path: req.path,
-      originalUrl: req.originalUrl,
-      url: req.url,
-      baseUrl: req.baseUrl,
-      params: req.params
-    });
-  }
-  next();
-});
 
 // Admin routes (no maintenance mode check - admins can always access)
 app.use('/api/admin', adminRoutes);
