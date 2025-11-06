@@ -18,16 +18,22 @@ class SMSService {
     this.apiToken = process.env.PHILSMS_API_TOKEN;
     this.baseUrl = process.env.PHILSMS_BASE_URL || 'https://app.philsms.com/api/v3';
     // Sender ID is optional - only use if set in environment
-    this.senderId = process.env.PHILSMS_SENDER_ID || null;
+    // If set to "TherapEase" and not approved, it will be ignored
+    const envSenderId = process.env.PHILSMS_SENDER_ID || null;
+    // Use "PhilSMS" as default if no sender ID is set, or if "TherapEase" is not approved
+    // You can set PHILSMS_SENDER_ID=PhilSMS in .env.production to use the default approved sender ID
+    // Or leave it empty/unset to use PhilSMS default
+    this.senderId = (envSenderId && envSenderId.trim() !== 'TherapEase') ? envSenderId.trim() : null;
     this.enabled = process.env.SMS_ENABLED === 'true' && !!this.apiToken;
     
     if (!this.enabled) {
       console.warn('SMS Service disabled: Missing PHILSMS_API_TOKEN or SMS_ENABLED=false');
     } else if (!this.senderId) {
-      console.warn('SMS Service: PHILSMS_SENDER_ID not set. Messages will be sent without sender ID.');
-      console.warn('Note: To register a Sender ID, visit https://app.philsms.com and request approval.');
+      console.log('✅ SMS Service enabled and configured');
+      console.log('   Note: Using default sender ID (PhilSMS). Custom sender ID not set or not approved.');
     } else {
       console.log('✅ SMS Service enabled and configured');
+      console.log(`   Sender ID: ${this.senderId}`);
     }
   }
 
