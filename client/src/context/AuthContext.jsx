@@ -50,24 +50,36 @@ export const AuthProvider = ({ children }) => {
         
         // Verify token and initialize WebSocket asynchronously (non-blocking)
         // This allows the UI to render immediately while verification happens in background
+        // IMPORTANT: Keep user logged in even if verification fails (network issues, etc.)
+        // Only logout if token is explicitly invalid (401 Unauthorized)
         authAPI.verify().then(response => {
           const data = response.data;
           if (!data.success) {
             // Token is invalid, clear storage
             logout();
           } else {
-            // Initialize WebSocket connection after verification (non-blocking)
+            // Token is valid - initialize WebSocket connection
             // Use setTimeout to defer WebSocket connection slightly to prioritize UI rendering
             setTimeout(() => {
               websocketService.connect(storedToken);
             }, 100);
           }
         }).catch(error => {
-          console.error('Token verification failed:', error);
-          // Don't logout on network errors - allow cached user to stay logged in
-          // Only logout if token is explicitly invalid
+          // IMPORTANT: Don't logout on network errors or timeouts
+          // Keep user logged in if there's any chance token is still valid
+          // Only logout if we get explicit 401 Unauthorized response
           if (error.response?.status === 401) {
+            // Token is explicitly invalid - logout user
+            console.warn('Token verification failed with 401 - logging out');
             logout();
+          } else {
+            // Network error, timeout, or other error - keep user logged in
+            // User can still use the app, and we'll retry verification later
+            console.warn('Token verification failed (network error) - keeping user logged in:', error.message);
+            // Still try to connect WebSocket - it might work even if verify failed
+            setTimeout(() => {
+              websocketService.connect(storedToken);
+            }, 100);
           }
         });
       } else {
