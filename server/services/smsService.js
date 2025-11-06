@@ -58,9 +58,12 @@ class SMSService {
       return { success: false, message: 'SMS service disabled' };
     }
 
+    // Initialize formattedNumber early to avoid scope issues
+    let formattedNumber = null;
+
     try {
       // Validate phone number format (prioritize Philippine numbers)
-      let formattedNumber = this.formatPhoneNumberForPhilSMS(to);
+      formattedNumber = this.formatPhoneNumberForPhilSMS(to);
       
       // If it's a Philippine number, use specialized validation
       if (to.includes('9') && (to.startsWith('09') || to.startsWith('+639') || to.startsWith('639'))) {
@@ -74,17 +77,22 @@ class SMSService {
         throw new Error('Invalid phone number format');
       }
 
-      // Build payload - only include sender_id if it's set
+      // Build payload - only include sender_id if it's set and approved
       const payload = {
         recipient: formattedNumber,
         message: message
       };
       
       // Only include sender_id if it's set (either from options or environment)
+      // Note: If sender ID is not approved, don't include it (PhilSMS will use default)
       const senderId = options.sender_id || this.senderId;
-      if (senderId && senderId.trim()) {
+      // Only add sender_id if it's explicitly set and not empty
+      // If sender ID is not approved, PhilSMS will use their default
+      if (senderId && senderId.trim() && senderId.trim() !== 'TherapEase') {
+        // Only use approved sender IDs (e.g., "PhilSMS" or other approved ones)
         payload.sender_id = senderId.trim();
       }
+      // If senderId is "TherapEase" and it's not approved, don't include it
 
       const response = await axios.post(
         `${this.baseUrl}/sms/send`,
@@ -331,17 +339,48 @@ class SMSService {
         }
       );
 
+      // Try multiple possible response formats
+      const balanceData = response.data;
+      let balance = 0;
+      let currency = 'PHP';
+
+      // Check various possible fields for balance
+      if (typeof balanceData === 'number') {
+        balance = balanceData;
+      } else if (balanceData.balance !== undefined) {
+        balance = parseFloat(balanceData.balance) || 0;
+      } else if (balanceData.credits !== undefined) {
+        balance = parseFloat(balanceData.credits) || 0;
+      } else if (balanceData.value !== undefined) {
+        balance = parseFloat(balanceData.value) || 0;
+      } else if (balanceData.amount !== undefined) {
+        balance = parseFloat(balanceData.amount) || 0;
+      } else if (balanceData.data && balanceData.data.balance !== undefined) {
+        balance = parseFloat(balanceData.data.balance) || 0;
+      } else if (balanceData.data && balanceData.data.credits !== undefined) {
+        balance = parseFloat(balanceData.data.credits) || 0;
+      }
+
+      // Check for currency
+      if (balanceData.currency) {
+        currency = balanceData.currency;
+      } else if (balanceData.data && balanceData.data.currency) {
+        currency = balanceData.data.currency;
+      }
+
       return {
         success: true,
-        balance: response.data.balance || response.data.credits || response.data.value || 0,
-        currency: response.data.currency || 'PHP'
+        balance: balance,
+        currency: currency,
+        raw: balanceData // Include raw response for debugging
       };
 
     } catch (error) {
       console.error('SMS balance error:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.message || error.response?.data?.error || error.message
+        error: error.response?.data?.message || error.response?.data?.error || error.message,
+        details: error.response?.data
       };
     }
   }
