@@ -39,8 +39,16 @@ class WebSocketService {
       
       // Check if we're on therapease.site domain - use api subdomain
       if (window.location.hostname.includes('therapease.site')) {
-        // Remove www. prefix if present, then use api subdomain
-        let apiHost = window.location.hostname.replace(/^www\./, '').replace('therapease.site', 'api.therapease.site');
+        // Fix: Always use api.therapease.site (remove www. prefix if present)
+        // Handle both www.therapease.site and therapease.site correctly
+        let apiHost = 'api.therapease.site';
+        if (window.location.hostname.startsWith('www.')) {
+          // If hostname is www.therapease.site, remove www. first
+          apiHost = window.location.hostname.replace(/^www\./, 'api.');
+        } else {
+          // If hostname is therapease.site, replace with api.therapease.site
+          apiHost = window.location.hostname.replace('therapease.site', 'api.therapease.site');
+        }
         wsUrl = `${protocol}//${apiHost}/ws?token=${token}`;
       } else {
         // For other production domains, try standard ports first
