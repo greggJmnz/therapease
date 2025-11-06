@@ -1487,8 +1487,8 @@ const AdminAppointments = () => {
 
       {/* Appointment Details Modal */}
       {showAppointmentModal && selectedAppointment && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden my-4">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
               <div className="flex items-center justify-between">
@@ -1506,7 +1506,7 @@ const AdminAppointments = () => {
             </div>
 
             {/* Modal Body */}
-            <div className="p-8 max-h-[60vh] overflow-y-auto">
+            <div className="p-8 max-h-[calc(90vh-200px)] overflow-y-auto pb-20">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Basic Information */}
                 <div className="space-y-6">
@@ -1638,17 +1638,17 @@ const AdminAppointments = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-6 bg-gray-50 border-t border-gray-200">
-              <div className="flex flex-wrap gap-3 justify-end">
+            <div className="p-4 sm:p-6 bg-gray-50 border-t border-gray-200 sticky bottom-0">
+              <div className="flex flex-col sm:flex-row gap-3 justify-end">
                 <button
                   onClick={handleCloseAppointmentModal}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  className="w-full sm:w-auto px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
                   Close
                 </button>
                 <button
                   onClick={() => handleEditAppointment(selectedAppointment)}
-                  className="btn-primary"
+                  className="w-full sm:w-auto btn-primary"
                 >
                   <Edit className="h-4 w-4" />
                   Edit Appointment

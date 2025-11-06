@@ -480,7 +480,7 @@ const PatientLayout = () => {
               title="View Notifications"
             >
               <Bell size={16} />
-              {!notificationStatsLoading && notificationStats?.unreadCount > 0 && (
+              {notificationStats?.unreadCount > 0 && (
                 <span className="notification-count">{notificationStats.unreadCount}</span>
               )}
             </button>

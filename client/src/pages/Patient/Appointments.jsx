@@ -883,7 +883,7 @@ const Appointments = () => {
               </div>
 
               {/* Modal Body */}
-              <div className="p-8 max-h-[60vh] overflow-y-auto">
+              <div className="p-8 max-h-[calc(90vh-200px)] overflow-y-auto pb-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Basic Information */}
                   <div className="space-y-6">
