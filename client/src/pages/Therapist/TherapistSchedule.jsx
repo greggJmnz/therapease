@@ -1108,10 +1108,21 @@ const TherapistSchedule = () => {
                       onChange={(e) => handleEditFormChange('status', e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
+                      <option value="pending">Pending</option>
                       <option value="scheduled">Scheduled</option>
                       <option value="completed">Completed</option>
                       <option value="cancelled">Cancelled</option>
                     </select>
+                    {editFormData.status === 'pending' && (
+                      <p className="mt-1 text-xs text-yellow-600">
+                        Setting status to "Pending" will require approval
+                      </p>
+                    )}
+                    {editFormData.status === 'scheduled' && (
+                      <p className="mt-1 text-xs text-green-600">
+                        Setting status to "Scheduled" will automatically approve the appointment
+                      </p>
+                    )}
                   </div>
                 </div>
 
