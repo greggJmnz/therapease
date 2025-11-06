@@ -2670,8 +2670,32 @@ const updateAppointment = async (req, res) => {
     updateFields.push('updatedAt = NOW()');
     updateValues.push(parseInt(id));
 
-    const updateSql = `UPDATE appointments SET ${updateFields.join(', ')} WHERE id = ?`;
-    await runQuery(updateSql, updateValues);
+    // Build SQL - handle NULL values separately
+    // Separate fields with NULL from fields with values
+    const fieldsWithValues = [];
+    const fieldsWithNull = [];
+    const valuesForQuery = [];
+    
+    updateFields.forEach((field, index) => {
+      if (field.includes('= NULL')) {
+        // Extract field name for NULL assignment
+        const fieldName = field.replace(' = NULL', '');
+        fieldsWithNull.push(`${fieldName} = NULL`);
+      } else if (field.includes('NOW()')) {
+        // Fields with NOW() don't need values
+        fieldsWithValues.push(field);
+      } else if (index < updateValues.length) {
+        fieldsWithValues.push(field);
+        valuesForQuery.push(updateValues[index]);
+      }
+    });
+    
+    // Combine all fields
+    const allFields = [...fieldsWithValues, ...fieldsWithNull];
+    valuesForQuery.push(parseInt(id));
+    
+    const updateSql = `UPDATE appointments SET ${allFields.join(', ')} WHERE id = ?`;
+    await runQuery(updateSql, valuesForQuery);
 
     // Get updated appointment
     const updatedAppointment = await getRow(`
