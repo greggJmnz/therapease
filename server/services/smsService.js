@@ -7,6 +7,14 @@ const { validatePhilippineNumber } = require('../utils/phoneValidation');
  */
 class SMSService {
   constructor() {
+    this.loadConfig();
+  }
+
+  /**
+   * Load configuration from environment variables
+   * Can be called to reload config after environment changes
+   */
+  loadConfig() {
     this.apiToken = process.env.PHILSMS_API_TOKEN;
     this.baseUrl = process.env.PHILSMS_BASE_URL || 'https://app.philsms.com/api/v3';
     // Sender ID is optional - only use if set in environment
@@ -18,7 +26,23 @@ class SMSService {
     } else if (!this.senderId) {
       console.warn('SMS Service: PHILSMS_SENDER_ID not set. Messages will be sent without sender ID.');
       console.warn('Note: To register a Sender ID, visit https://app.philsms.com and request approval.');
+    } else {
+      console.log('✅ SMS Service enabled and configured');
     }
+  }
+
+  /**
+   * Get current service status
+   * @returns {Object} Service status information
+   */
+  getStatus() {
+    return {
+      enabled: this.enabled,
+      hasApiToken: !!this.apiToken,
+      baseUrl: this.baseUrl,
+      hasSenderId: !!this.senderId,
+      senderId: this.senderId
+    };
   }
 
   /**

@@ -784,17 +784,30 @@ const getSMSBalance = async (req, res) => {
 // Test SMS service
 const testSMSService = async (req, res) => {
   try {
+    // Reload config in case environment variables were updated
+    smsService.loadConfig();
+    
+    // Get current status
+    const status = smsService.getStatus();
+    
+    // Test connection
     const result = await smsService.testConnection();
     
     res.json({
       success: result.success,
       message: result.message,
+      status: status,
       data: result
     });
 
   } catch (error) {
     console.error('Test SMS service error:', error);
-    res.status(500).json({ success: false, error: 'Failed to test SMS service' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to test SMS service',
+      status: smsService.getStatus(),
+      details: error.message 
+    });
   }
 };
 
