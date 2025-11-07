@@ -10,15 +10,12 @@ const HomeExercises = () => {
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  // Get patient ID from user data
-  const patientId = user?.id;
-
-  // Fetch home exercises data from API
+  // Fetch home exercises data from API (patient ID is automatically determined from authenticated user)
   const { data: exercisesData, isLoading, error } = useQuery(
     'patientExercises',
-    () => patientAPI.getHomeExercises(patientId),
+    () => patientAPI.getHomeExercises(),
     {
-      enabled: !!patientId,
+      enabled: !!user?.id,
       onError: (error) => {
         console.error('Error fetching exercises:', error);
       }

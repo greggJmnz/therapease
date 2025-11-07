@@ -249,6 +249,7 @@ export const therapistAPI = {
   createAppointment: (appointmentData) => api.post('/therapist/schedule', appointmentData),
   updateAppointment: (id, appointmentData) => api.put(`/therapist/schedule/${id}`, appointmentData),
   deleteAppointment: (id) => api.delete(`/therapist/schedule/${id}`),
+  approveAppointment: (id) => api.post(`/therapist/schedule/${id}/approve`),
   // Session management
   getSessions: (therapistId) => api.get(`/therapist/sessions?therapistId=${therapistId}`),
   createSession: (sessionData, therapistId) => api.post(`/therapist/sessions?therapistId=${therapistId}`, sessionData),
@@ -349,12 +350,12 @@ export const patientAPI = {
   getSessions: () => api.get(`/patient/sessions`),
   getNotifications: () => api.get(`/patient/notifications`),
   getSettings: () => api.get(`/patient/settings`),
-  getHomeExercises: (patientId) => api.get(`/home-exercises/patient/exercises?patientId=${patientId}`),
-  getHomeExercisesNew: (patientId) => api.get(`/home-exercises/patient/exercises?patientId=${patientId}`),
+  getHomeExercises: () => api.get(`/patient/exercises`),
+  getHomeExercisesNew: (patientId) => api.get(`/home-exercises/patient/exercises?patientId=${patientId || localStorage.getItem('userId') || ''}`),
   submitHomeExerciseProof: (exerciseId, formData) => api.post(`/home-exercises/patient/exercises/${exerciseId}/proof`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  getHomeExerciseProofs: (patientId) => api.get(`/home-exercises/patient/proofs?patientId=${patientId}`),
+  getHomeExerciseProofs: (patientId) => api.get(`/home-exercises/patient/proofs?patientId=${patientId || localStorage.getItem('userId') || ''}`),
   getExerciseProofs: (exerciseId) => api.get(`/home-exercises/patient/exercises/${exerciseId}/proofs`),
       getTreatmentPlan: () => api.get(`/treatment-plans/patient/current`),
   

@@ -165,8 +165,17 @@ const HomeExercisesNew = () => {
     }
   );
 
-  const exercises = Array.isArray(exercisesData?.data?.data) ? exercisesData.data.data : [];
-  const proofs = Array.isArray(proofsData?.data?.data) ? proofsData.data.data : [];
+  // Extract exercises from API response - handle both response structures
+  const exercises = Array.isArray(exercisesData?.data?.data) 
+    ? exercisesData.data.data 
+    : Array.isArray(exercisesData?.data) 
+      ? exercisesData.data 
+      : [];
+  const proofs = Array.isArray(proofsData?.data?.data) 
+    ? proofsData.data.data 
+    : Array.isArray(proofsData?.data) 
+      ? proofsData.data 
+      : [];
 
   const resetSubmissionForm = () => {
     setSubmissionType('text');
