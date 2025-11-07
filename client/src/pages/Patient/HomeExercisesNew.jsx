@@ -406,8 +406,8 @@ const HomeExercisesNew = () => {
                         <h3 className="text-base sm:text-xl font-bold text-gray-900 truncate tracking-wide">
                           {exercise.title}
                         </h3>
-                        <span className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium self-start ${getStatusColor(exercise.status)}`}>
-                          {exercise.status.replace('_', ' ')}
+                        <span className={`inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium self-start ${getStatusColor(exercise.status || 'assigned')}`}>
+                          {(exercise.status || 'assigned').replace('_', ' ')}
                         </span>
                       </div>
                       <button
