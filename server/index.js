@@ -238,8 +238,42 @@ const corsStaticMiddleware = (req, res, next) => {
   next();
 };
 
-// Serve uploaded files with CORS headers
-app.use('/uploads', corsStaticMiddleware, express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded files with CORS headers and proper MIME types
+app.use('/uploads', corsStaticMiddleware, express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    // Set proper Content-Type based on file extension to prevent CORB issues
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.bmp': 'image/bmp',
+      '.svg': 'image/svg+xml',
+      '.mp4': 'video/mp4',
+      '.mov': 'video/quicktime',
+      '.avi': 'video/x-msvideo',
+      '.webm': 'video/webm',
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.txt': 'text/plain'
+    };
+    
+    if (mimeTypes[ext]) {
+      res.setHeader('Content-Type', mimeTypes[ext]);
+    }
+    
+    // Set cache control for images
+    if (ext.match(/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
+    }
+    
+    // Set X-Content-Type-Options to prevent MIME type sniffing (helps with CORB)
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  }
+}));
 
 // Serve root-level assets
 app.use(express.static(path.join(__dirname, 'public')));
