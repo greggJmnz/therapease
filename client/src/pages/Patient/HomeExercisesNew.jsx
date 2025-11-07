@@ -649,19 +649,21 @@ const HomeExercisesNew = () => {
                                 </div>
                               )}
                               
-                              {/* Display video */}
-                              {proof.submissionType === 'video' && proof.fileUrl && (
+                              {/* Display video - check for video submission type or video file extension */}
+                              {((proof.submissionType === 'video' || (proof.fileName && /\.(mp4|mov|avi|webm|mkv|flv|wmv)$/i.test(proof.fileName))) && (proof.fileUrl || proof.filePath)) && (
                                 <div className="mt-2">
                                   <video 
                                     controls 
                                     className="max-w-full h-auto max-h-64 rounded-lg border"
                                     onError={(e) => {
+                                      console.error('Video load error for:', e.target.src);
                                       e.target.style.display = 'none';
-                                      e.target.nextSibling.style.display = 'block';
+                                      const errorDiv = e.target.nextSibling;
+                                      if (errorDiv) errorDiv.style.display = 'block';
                                     }}
                                   >
                                     <source 
-                                      src={getProofImageUrl(proof.fileUrl)}
+                                      src={getProofImageUrl(proof.fileUrl || proof.filePath)}
                                       type={proof.mimeType || 'video/mp4'}
                                     />
                                     Your browser does not support the video tag.
@@ -673,10 +675,10 @@ const HomeExercisesNew = () => {
                               )}
                               
                               {/* Display file download link for other file types */}
-                              {proof.submissionType === 'file' && proof.fileUrl && (
+                              {proof.submissionType === 'file' && (proof.fileUrl || proof.filePath) && (
                                 <div className="mt-2">
                                   <a 
-                                    href={getProofImageUrl(proof.fileUrl)}
+                                    href={getProofImageUrl(proof.fileUrl || proof.filePath)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm"
