@@ -86,17 +86,16 @@ const getProofImageUrl = (fileUrl) => {
     ? `${serverBaseUrl}${fileUrl}` 
     : `${serverBaseUrl}/${fileUrl}`;
   
-  // Only log in development
-  if (import.meta.env.DEV) {
-    console.log('📸 Proof image URL:', { 
-      originalFileUrl: fileUrl, 
-      serverBaseUrl, 
-      fullUrl,
-      apiBaseUrl,
-      isProduction: import.meta.env.PROD,
-      hostname: window.location.hostname
-    });
-  }
+  // Always log in production to help debug image loading issues
+  console.log('📸 Proof image URL:', { 
+    originalFileUrl: fileUrl, 
+    serverBaseUrl, 
+    fullUrl,
+    apiBaseUrl,
+    isProduction: import.meta.env.PROD,
+    hostname: window.location.hostname,
+    protocol: window.location.protocol
+  });
   
   return fullUrl;
 };
@@ -634,12 +633,18 @@ const HomeExercisesNew = () => {
                                       fileName: proof.fileName || 'Exercise Proof'
                                     })}
                                     onError={(e) => {
-                                      console.error('Image load error for:', e.target.src);
-                                      console.error('Proof data:', { fileUrl: proof.fileUrl, filePath: proof.filePath, submissionType: proof.submissionType });
+                                      console.error('❌ Image load error for:', e.target.src);
+                                      console.error('Proof data:', { 
+                                        fileUrl: proof.fileUrl, 
+                                        filePath: proof.filePath, 
+                                        submissionType: proof.submissionType,
+                                        fileName: proof.fileName,
+                                        constructedUrl: getProofImageUrl(proof.fileUrl || proof.filePath)
+                                      });
                                       // Don't hide the image, show error message instead
                                       const errorDiv = document.createElement('div');
                                       errorDiv.className = 'text-sm text-red-500 mt-2';
-                                      errorDiv.textContent = 'Failed to load image. Please check the file URL.';
+                                      errorDiv.textContent = `Failed to load image. URL: ${e.target.src}`;
                                       e.target.parentElement.appendChild(errorDiv);
                                     }}
                                     onLoad={(e) => {
