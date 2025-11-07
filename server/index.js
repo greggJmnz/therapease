@@ -241,6 +241,11 @@ const corsStaticMiddleware = (req, res, next) => {
 // Serve uploaded files with CORS headers and proper MIME types
 app.use('/uploads', corsStaticMiddleware, express.static(path.join(__dirname, 'uploads'), {
   setHeaders: (res, filePath) => {
+    // Log file serving for debugging (only in development or when DEBUG is enabled)
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
+      console.log(`[Static File] Serving: ${filePath}`);
+    }
+    
     // Set proper Content-Type based on file extension to prevent CORB issues
     const ext = path.extname(filePath).toLowerCase();
     const mimeTypes = {
@@ -263,6 +268,9 @@ app.use('/uploads', corsStaticMiddleware, express.static(path.join(__dirname, 'u
     
     if (mimeTypes[ext]) {
       res.setHeader('Content-Type', mimeTypes[ext]);
+      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
+        console.log(`[Static File] Set Content-Type: ${mimeTypes[ext]} for ${filePath}`);
+      }
     }
     
     // Set cache control for images
@@ -272,7 +280,8 @@ app.use('/uploads', corsStaticMiddleware, express.static(path.join(__dirname, 'u
     
     // Set X-Content-Type-Options to prevent MIME type sniffing (helps with CORB)
     res.setHeader('X-Content-Type-Options', 'nosniff');
-  }
+  },
+  fallthrough: false // Don't fall through to next middleware if file not found
 }));
 
 // Serve root-level assets
