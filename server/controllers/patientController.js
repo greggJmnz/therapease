@@ -1553,15 +1553,20 @@ const getHomeExercises = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Patient not found' });
     }
 
-    // Get home exercises
+    // Get home exercises with therapist info and proof count
     const exercises = await getAll(`
       SELECT 
-        id, title, description, category, instructions, duration, frequency, 
-        difficulty, equipment, progressScore, lastCompleted, streak, isCompleted, 
-        assignedDate, dueDate
-      FROM home_exercises
-      WHERE patientId = ?
-      ORDER BY assignedDate DESC
+        he.id, he.title, he.description, he.category, he.instructions, he.duration, he.frequency, 
+        he.difficulty, he.equipment, he.progressScore, he.lastCompleted, he.streak, he.isCompleted, 
+        he.assignedDate, he.dueDate, he.status, he.therapistId,
+        u.firstName as therapistFirstName, u.lastName as therapistLastName,
+        COUNT(hep.id) as proofCount
+      FROM home_exercises he
+      LEFT JOIN users u ON he.therapistId = u.id
+      LEFT JOIN home_exercise_proofs hep ON he.id = hep.exerciseId
+      WHERE he.patientId = ?
+      GROUP BY he.id
+      ORDER BY he.assignedDate DESC
     `, [patient.id]);
 
     // Parse JSON fields for equipment and instructions
