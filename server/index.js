@@ -307,6 +307,54 @@ app.use('/uploads', corsStaticMiddleware, (req, res, next) => {
   });
 });
 
+// Diagnostic endpoint to check if a file exists (for debugging)
+app.get('/uploads/check/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, 'uploads', 'exercise-proofs', filename);
+  const fs = require('fs');
+  
+  if (fs.existsSync(filePath)) {
+    res.json({
+      exists: true,
+      path: filePath,
+      size: fs.statSync(filePath).size,
+      url: `/uploads/exercise-proofs/${filename}`
+    });
+  } else {
+    // Check if file exists in any subdirectory
+    const uploadsDir = path.join(__dirname, 'uploads');
+    let foundPath = null;
+    
+    function findFile(dir, targetFile) {
+      try {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          const filePath = path.join(dir, file);
+          const stat = fs.statSync(filePath);
+          if (stat.isDirectory()) {
+            const found = findFile(filePath, targetFile);
+            if (found) return found;
+          } else if (file === targetFile) {
+            return filePath;
+          }
+        }
+      } catch (err) {
+        // Ignore errors
+      }
+      return null;
+    }
+    
+    foundPath = findFile(uploadsDir, filename);
+    
+    res.json({
+      exists: false,
+      requestedPath: filePath,
+      foundPath: foundPath,
+      message: foundPath ? `File found at: ${foundPath}` : 'File not found in uploads directory'
+    });
+  }
+});
+
 // Serve root-level assets
 app.use(express.static(path.join(__dirname, 'public')));
 
