@@ -621,23 +621,29 @@ const HomeExercisesNew = () => {
                                 </span>
                               </div>
                               
-                              {/* Display image */}
-                              {proof.submissionType === 'image' && proof.fileUrl && (
+                              {/* Display image - check for image submission type or image file extension */}
+                              {((proof.submissionType === 'image' || (proof.fileName && /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(proof.fileName))) && (proof.fileUrl || proof.filePath)) && (
                                 <div className="mt-2">
                                   <img 
-                                    src={getProofImageUrl(proof.fileUrl)}
+                                    src={getProofImageUrl(proof.fileUrl || proof.filePath)}
                                     alt="Submitted proof"
                                     className="max-w-full h-auto max-h-64 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                                     onClick={() => setFullScreenImage({
                                       isOpen: true,
-                                      url: getProofImageUrl(proof.fileUrl),
+                                      url: getProofImageUrl(proof.fileUrl || proof.filePath),
                                       fileName: proof.fileName || 'Exercise Proof'
                                     })}
                                     onError={(e) => {
                                       console.error('Image load error for:', e.target.src);
-                                      e.target.style.display = 'none';
+                                      console.error('Proof data:', { fileUrl: proof.fileUrl, filePath: proof.filePath, submissionType: proof.submissionType });
+                                      // Don't hide the image, show error message instead
+                                      const errorDiv = document.createElement('div');
+                                      errorDiv.className = 'text-sm text-red-500 mt-2';
+                                      errorDiv.textContent = 'Failed to load image. Please check the file URL.';
+                                      e.target.parentElement.appendChild(errorDiv);
                                     }}
                                     onLoad={(e) => {
+                                      console.log('Image loaded successfully:', e.target.src);
                                     }}
                                   />
                                 </div>
