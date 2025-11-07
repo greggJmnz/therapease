@@ -216,6 +216,18 @@ const corsStaticMiddleware = (req, res, next) => {
   const origin = req.headers.origin;
   const allowedOrigins = getCorsOrigins();
   
+  // Handle OPTIONS preflight request
+  if (req.method === 'OPTIONS') {
+    // Check if origin is allowed
+    if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
+      res.header('Access-Control-Allow-Origin', origin || '*');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    }
+    return res.status(200).end();
+  }
+  
   // Check if origin is allowed
   if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
     res.header('Access-Control-Allow-Origin', origin || '*');
