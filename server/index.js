@@ -286,27 +286,38 @@ const staticMiddleware = express.static(path.join(__dirname, 'uploads'), {
 
 // Apply CORS middleware and static file serving
 app.use('/uploads', corsStaticMiddleware, (req, res, next) => {
-  // Log the request for debugging
-  if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
-    console.log(`[Static File Request] ${req.method} ${req.path}`);
-  }
+  // Log the request for debugging (always log in production for now to diagnose)
+  console.log(`[Static File Request] ${req.method} ${req.path}`);
+  console.log(`[Static File Request] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
   
   // Call the static middleware
   staticMiddleware(req, res, (err) => {
     // Handle 404 errors
     if (err && err.status === 404) {
-      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
-        console.error(`[Static File] File not found: ${req.path}`);
-        const fs = require('fs');
-        const fullPath = path.join(__dirname, 'uploads', req.path);
-        console.error(`[Static File] Full path would be: ${fullPath}`);
-        console.error(`[Static File] File exists: ${fs.existsSync(fullPath)}`);
+      console.error(`[Static File] File not found: ${req.path}`);
+      const fs = require('fs');
+      const fullPath = path.join(__dirname, 'uploads', req.path);
+      console.error(`[Static File] Full path would be: ${fullPath}`);
+      console.error(`[Static File] File exists: ${fs.existsSync(fullPath)}`);
+      
+      // List files in the directory to help debug
+      const dirPath = path.dirname(fullPath);
+      if (fs.existsSync(dirPath)) {
+        try {
+          const files = fs.readdirSync(dirPath);
+          console.error(`[Static File] Files in directory: ${files.join(', ')}`);
+        } catch (dirErr) {
+          console.error(`[Static File] Error reading directory: ${dirErr.message}`);
+        }
       }
+      
       res.status(404).json({ error: 'File not found', path: req.path });
     } else if (err) {
       console.error(`[Static File] Error serving file: ${err.message}`);
       res.status(500).json({ error: 'Error serving file' });
     } else {
+      // File was served successfully
+      console.log(`[Static File] File served successfully: ${req.path}`);
       next();
     }
   });
