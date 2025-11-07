@@ -111,18 +111,31 @@ const getPatientExercises = async (req, res) => {
     // If it's a user ID, look up the corresponding patient ID
     let actualPatientId = parseInt(patientId);
     
+    console.log(`[getPatientExercises] Received patientId: ${patientId} (parsed as: ${actualPatientId})`);
+    
     // Check if the ID exists in the patients table (as patient ID)
-    const patientCheck = await getRow('SELECT id FROM patients WHERE id = ?', [actualPatientId]);
+    const patientCheck = await getRow('SELECT id, userId FROM patients WHERE id = ?', [actualPatientId]);
     
     if (!patientCheck) {
       // If not found in patients table, try to find by userId
-      const userPatientCheck = await getRow('SELECT id FROM patients WHERE userId = ?', [actualPatientId]);
+      console.log(`[getPatientExercises] ID ${actualPatientId} not found as patient ID, checking as user ID...`);
+      const userPatientCheck = await getRow('SELECT id, userId FROM patients WHERE userId = ?', [actualPatientId]);
       if (userPatientCheck) {
+        console.log(`[getPatientExercises] Found patient record: id=${userPatientCheck.id}, userId=${userPatientCheck.userId}`);
         actualPatientId = userPatientCheck.id;
       } else {
-        console.error(`Patient not found for ID: ${patientId} (parsed as: ${actualPatientId})`);
+        console.error(`[getPatientExercises] Patient not found for ID: ${patientId} (parsed as: ${actualPatientId})`);
         return res.status(404).json({ error: 'Patient not found' });
       }
+    } else {
+      console.log(`[getPatientExercises] Found patient record: id=${patientCheck.id}, userId=${patientCheck.userId}`);
+    }
+
+    // Debug: Check all exercises in the database for this patient
+    const allExercisesForPatient = await runQuery('SELECT id, title, patientId FROM home_exercises WHERE patientId = ?', [actualPatientId]);
+    console.log(`[getPatientExercises] Total exercises in database for patient ID ${actualPatientId}: ${allExercisesForPatient.length}`);
+    if (allExercisesForPatient.length > 0) {
+      console.log(`[getPatientExercises] Exercise IDs: ${allExercisesForPatient.map(e => `${e.id} (${e.title})`).join(', ')}`);
     }
 
     const query = `
@@ -142,7 +155,7 @@ const getPatientExercises = async (req, res) => {
 
     const exercises = await runQuery(query, [actualPatientId]);
 
-    console.log(`Found ${exercises.length} exercises for patient ID: ${actualPatientId}`);
+    console.log(`[getPatientExercises] Found ${exercises.length} exercises for patient ID: ${actualPatientId}`);
 
     // Parse JSON fields for equipment and instructions
     const parsedExercises = exercises.map(exercise => ({
