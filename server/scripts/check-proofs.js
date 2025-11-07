@@ -11,14 +11,18 @@ if (fs.existsSync(envPath)) {
   console.log(`✅ Loaded environment from: ${path.join(__dirname, '../.env')}\n`);
 }
 
-const { getPool } = require('../config/database');
+const { pool } = require('../config/database');
 
 async function checkProofs() {
   console.log('🔍 Checking Home Exercise Proofs in Database\n');
   console.log('='.repeat(60));
   
   try {
-    const pool = getPool();
+    if (!pool) {
+      console.error('❌ Database pool is not initialized!');
+      console.error('   Make sure the database connection is established.');
+      process.exit(1);
+    }
     
     // Get all proofs from database
     const query = `
