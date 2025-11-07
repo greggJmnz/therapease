@@ -239,63 +239,68 @@ const corsStaticMiddleware = (req, res, next) => {
 };
 
 // Serve uploaded files with CORS headers and proper MIME types
-// Use a custom middleware to handle file serving with better error handling
+const staticMiddleware = express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    // Log file serving for debugging (only in development or when DEBUG is enabled)
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
+      console.log(`[Static File] Serving: ${filePath}`);
+    }
+    
+    // Set proper Content-Type based on file extension to prevent CORB issues
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.bmp': 'image/bmp',
+      '.svg': 'image/svg+xml',
+      '.mp4': 'video/mp4',
+      '.mov': 'video/quicktime',
+      '.avi': 'video/x-msvideo',
+      '.webm': 'video/webm',
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.txt': 'text/plain'
+    };
+    
+    if (mimeTypes[ext]) {
+      res.setHeader('Content-Type', mimeTypes[ext]);
+      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
+        console.log(`[Static File] Set Content-Type: ${mimeTypes[ext]} for ${filePath}`);
+      }
+    }
+    
+    // Set cache control for images
+    if (ext.match(/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
+    }
+    
+    // Set X-Content-Type-Options to prevent MIME type sniffing (helps with CORB)
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  },
+  fallthrough: false // Don't fall through to next middleware if file not found
+});
+
+// Apply CORS middleware and static file serving
 app.use('/uploads', corsStaticMiddleware, (req, res, next) => {
   // Log the request for debugging
   if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
     console.log(`[Static File Request] ${req.method} ${req.path}`);
   }
   
-  // Use express.static to serve files
-  express.static(path.join(__dirname, 'uploads'), {
-    setHeaders: (res, filePath) => {
-      // Log file serving for debugging (only in development or when DEBUG is enabled)
-      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
-        console.log(`[Static File] Serving: ${filePath}`);
-      }
-      
-      // Set proper Content-Type based on file extension to prevent CORB issues
-      const ext = path.extname(filePath).toLowerCase();
-      const mimeTypes = {
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.webp': 'image/webp',
-        '.bmp': 'image/bmp',
-        '.svg': 'image/svg+xml',
-        '.mp4': 'video/mp4',
-        '.mov': 'video/quicktime',
-        '.avi': 'video/x-msvideo',
-        '.webm': 'video/webm',
-        '.pdf': 'application/pdf',
-        '.doc': 'application/msword',
-        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        '.txt': 'text/plain'
-      };
-      
-      if (mimeTypes[ext]) {
-        res.setHeader('Content-Type', mimeTypes[ext]);
-        if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
-          console.log(`[Static File] Set Content-Type: ${mimeTypes[ext]} for ${filePath}`);
-        }
-      }
-      
-      // Set cache control for images
-      if (ext.match(/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i)) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
-      }
-      
-      // Set X-Content-Type-Options to prevent MIME type sniffing (helps with CORB)
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-    },
-    fallthrough: false // Don't fall through to next middleware if file not found
-  })(req, res, (err) => {
+  // Call the static middleware
+  staticMiddleware(req, res, (err) => {
     // Handle 404 errors
     if (err && err.status === 404) {
       if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
         console.error(`[Static File] File not found: ${req.path}`);
-        console.error(`[Static File] Full path would be: ${path.join(__dirname, 'uploads', req.path)}`);
+        const fs = require('fs');
+        const fullPath = path.join(__dirname, 'uploads', req.path);
+        console.error(`[Static File] Full path would be: ${fullPath}`);
+        console.error(`[Static File] File exists: ${fs.existsSync(fullPath)}`);
       }
       res.status(404).json({ error: 'File not found', path: req.path });
     } else if (err) {
