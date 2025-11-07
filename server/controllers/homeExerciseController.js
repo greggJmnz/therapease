@@ -503,29 +503,20 @@ const deleteExercise = async (req, res) => {
 // Submit proof for an exercise
 const submitProof = async (req, res) => {
   try {
-    const { exerciseId, patientId, therapistId, submissionType, content } = req.body;
+    const { exerciseId, therapistId, submissionType, content } = req.body;
     const file = req.file;
+    const userId = req.user.id; // Get user ID from authenticated user
 
-    if (!exerciseId || !patientId || !therapistId || !submissionType) {
+    if (!exerciseId || !therapistId || !submissionType) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Check if the provided patientId is a user ID or patient ID
-    // If it's a user ID, look up the corresponding patient ID
-    let actualPatientId = patientId;
-    
-    // Check if the ID exists in the patients table
-    const patientCheck = await getRow('SELECT id FROM patients WHERE id = ?', [patientId]);
-    
-    if (!patientCheck) {
-      // If not found in patients table, try to find by userId
-      const userPatientCheck = await getRow('SELECT id FROM patients WHERE userId = ?', [patientId]);
-      if (userPatientCheck) {
-        actualPatientId = userPatientCheck.id;
-      } else {
-        return res.status(404).json({ error: 'Patient not found' });
-      }
+    // Get patient ID from authenticated user
+    const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
+    if (!patient) {
+      return res.status(404).json({ error: 'Patient not found' });
     }
+    const actualPatientId = patient.id;
 
     let filePath = null;
     let fileName = null;

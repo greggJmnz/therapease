@@ -115,15 +115,12 @@ const HomeExercisesNew = () => {
   const [expandedExercises, setExpandedExercises] = useState(new Set());
   const [fullScreenImage, setFullScreenImage] = useState({ isOpen: false, url: '', fileName: '' });
 
-  // Get patient ID from user data
-  const patientId = user?.id;
-
-  // Fetch exercises
+  // Fetch exercises (patient ID is automatically determined from authenticated user)
   const { data: exercisesData, isLoading, error, refetch } = useQuery(
     'patientHomeExercisesNew',
-    () => patientAPI.getHomeExercisesNew(patientId),
+    () => patientAPI.getHomeExercises(),
     {
-      enabled: !!patientId,
+      enabled: !!user?.id,
       onError: (error) => {
         console.error('Error fetching exercises:', error);
         toast.error('Failed to load exercises');
@@ -131,12 +128,12 @@ const HomeExercisesNew = () => {
     }
   );
 
-  // Fetch proofs
+  // Fetch proofs (patient ID is automatically determined from authenticated user)
   const { data: proofsData, refetch: refetchProofs } = useQuery(
     'patientHomeExerciseProofs',
-    () => patientAPI.getHomeExerciseProofs(patientId),
+    () => patientAPI.getHomeExerciseProofs(user?.id),
     {
-      enabled: !!patientId,
+      enabled: !!user?.id,
       onError: (error) => {
         console.error('Error fetching proofs:', error);
       }
@@ -203,7 +200,7 @@ const HomeExercisesNew = () => {
 
     const formData = new FormData();
     formData.append('exerciseId', selectedExercise.id);
-    formData.append('patientId', patientId);
+    // patientId will be determined from authenticated user on backend
     formData.append('therapistId', selectedExercise.therapistId);
     formData.append('submissionType', submissionType);
     
