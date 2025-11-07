@@ -211,8 +211,23 @@ app.get('/ws', (req, res) => {
 // Serve static files from public-website directory
 app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
 
-// Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Middleware to add CORS headers for static file serving
+const corsStaticMiddleware = (req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = getCorsOrigins();
+  
+  // Check if origin is allowed
+  if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  next();
+};
+
+// Serve uploaded files with CORS headers
+app.use('/uploads', corsStaticMiddleware, express.static(path.join(__dirname, 'uploads')));
 
 // Serve root-level assets
 app.use(express.static(path.join(__dirname, 'public')));
