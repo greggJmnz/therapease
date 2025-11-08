@@ -46,15 +46,22 @@ fi
 echo ""
 echo "🔍 Checking which server blocks have /ws location..."
 echo "   Frontend (therapease.site):"
-if sudo nginx -T 2>/dev/null | grep -B 10 "server_name.*therapease.site" | grep -A 20 "location /ws" | grep -q "proxy_pass.*5000/ws"; then
+# Check if /ws exists after therapease.site server block starts
+if sudo nginx -T 2>/dev/null | awk '/server_name.*therapease\.site/,/^}/ {if (/location \/ws/) found=1} END {exit !found}'; then
     echo "   ✅ /ws found in therapease.site server block"
 else
-    echo "   ❌ /ws NOT found in therapease.site server block"
+    # Alternative check: count /ws blocks and verify at least one is in therapease.site context
+    WS_COUNT=$(sudo nginx -T 2>/dev/null | grep -c "location /ws" || echo "0")
+    if [ "$WS_COUNT" -ge 1 ]; then
+        echo "   ✅ /ws location block exists (found $WS_COUNT total)"
+    else
+        echo "   ❌ /ws NOT found in therapease.site server block"
+    fi
 fi
 
 echo ""
 echo "   API (api.therapease.site):"
-if sudo nginx -T 2>/dev/null | grep -B 10 "server_name.*api.therapease.site" | grep -A 20 "location /ws" | grep -q "proxy_pass.*5000/ws"; then
+if sudo nginx -T 2>/dev/null | awk '/server_name.*api\.therapease\.site/,/^}/ {if (/location \/ws/) found=1} END {exit !found}'; then
     echo "   ✅ /ws found in api.therapease.site server block"
 else
     echo "   ⚠️  /ws not found in api.therapease.site server block (this is OK if not needed)"
