@@ -40,7 +40,16 @@ class WebSocketService {
       // Use the same hostname (therapease.site or www.therapease.site)
       // Nginx will proxy /ws requests to the Node.js server
       // This avoids CORS issues and works with both domains
+      // IMPORTANT: Do NOT use port 5000 in production - Nginx proxies /ws to Node.js
       wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
+      
+      // Debug logging
+      console.log('🔌 WebSocket debug info:', {
+        hostname: window.location.hostname,
+        protocol: window.location.protocol,
+        nodeEnv: import.meta.env.MODE,
+        wsUrl: wsUrl
+      });
     }
     
     // Set connection timeout to prevent long waits
