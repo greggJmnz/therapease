@@ -7,7 +7,36 @@ echo ""
 # Check if symlink already exists
 if [ -L /etc/nginx/sites-enabled/therapease ]; then
     echo "✅ Symlink already exists"
-    echo "   Points to: $(readlink -f /etc/nginx/sites-enabled/therapease)"
+    TARGET=$(readlink -f /etc/nginx/sites-enabled/therapease)
+    echo "   Points to: $TARGET"
+    
+    # Check if it points to the correct file
+    if [ "$TARGET" != "/etc/nginx/sites-available/therapease" ]; then
+        echo "   ⚠️  Symlink points to wrong location!"
+        echo "   Removing old symlink..."
+        sudo rm /etc/nginx/sites-enabled/therapease
+        echo "   Creating new symlink..."
+        sudo ln -s /etc/nginx/sites-available/therapease /etc/nginx/sites-enabled/therapease
+        if [ $? -eq 0 ]; then
+            echo "   ✅ Symlink recreated successfully"
+        else
+            echo "   ❌ Failed to create symlink"
+            exit 1
+        fi
+    fi
+elif [ -e /etc/nginx/sites-enabled/therapease ]; then
+    # File exists but is not a symlink (could be a regular file)
+    echo "⚠️  /etc/nginx/sites-enabled/therapease exists but is not a symlink"
+    echo "   Removing it..."
+    sudo rm /etc/nginx/sites-enabled/therapease
+    echo "   Creating symlink..."
+    sudo ln -s /etc/nginx/sites-available/therapease /etc/nginx/sites-enabled/therapease
+    if [ $? -eq 0 ]; then
+        echo "   ✅ Symlink created successfully"
+    else
+        echo "   ❌ Failed to create symlink"
+        exit 1
+    fi
 else
     echo "📋 Creating symlink..."
     sudo ln -s /etc/nginx/sites-available/therapease /etc/nginx/sites-enabled/therapease
