@@ -30,36 +30,63 @@ class WebSocketService {
     // Dynamic WebSocket URL construction
     let wsUrl;
     
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      // Development environment
+    // Determine if we're in development or production
+    const isDevelopment = window.location.hostname === 'localhost' || 
+                          window.location.hostname === '127.0.0.1' ||
+                          window.location.hostname.startsWith('192.168.') ||
+                          window.location.hostname.startsWith('10.') ||
+                          window.location.hostname.startsWith('172.');
+    
+    if (isDevelopment) {
+      // Development environment - connect directly to Node.js on port 5000
       wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
+      console.log('🔌 Development WebSocket URL:', wsUrl);
     } else {
       // Production environment - Use same domain (Nginx will proxy to Node.js)
+      // CRITICAL: Do NOT use port 5000 in production - Nginx proxies /ws to Node.js
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       
       // Use the same hostname (therapease.site or www.therapease.site)
       // Nginx will proxy /ws requests to the Node.js server
       // This avoids CORS issues and works with both domains
-      // IMPORTANT: Do NOT use port 5000 in production - Nginx proxies /ws to Node.js
-      wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
+      // IMPORTANT: Never use port 5000 in production - it won't work through Nginx
+      const hostname = window.location.hostname;
+      
+      // Ensure we never add port 5000 in production
+      if (hostname.includes(':5000')) {
+        console.error('❌ ERROR: Hostname contains port 5000! This should never happen in production.');
+        // Remove port 5000 if somehow present
+        wsUrl = `${protocol}//${hostname.replace(':5000', '')}/ws?token=${token}`;
+      } else {
+        wsUrl = `${protocol}//${hostname}/ws?token=${token}`;
+      }
       
       // Debug logging
-      console.log('🔌 WebSocket debug info:', {
-        hostname: window.location.hostname,
+      console.log('🔌 Production WebSocket debug info:', {
+        hostname: hostname,
         protocol: window.location.protocol,
         nodeEnv: import.meta.env.MODE,
-        wsUrl: wsUrl
+        wsUrl: wsUrl,
+        isDevelopment: false
       });
     }
     
     // IMPORTANT: Log the final WebSocket URL to verify it's correct
     console.log('🔌 WebSocket connecting to:', wsUrl);
     
-    // Verify URL doesn't contain port 5000 in production
-    if (wsUrl.includes(':5000') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      console.error('❌ ERROR: WebSocket URL contains port 5000 in production! This should not happen.');
-      console.error('   Expected URL format: wss://therapease.site/ws');
+    // CRITICAL: Verify URL doesn't contain port 5000 in production
+    // This is a safety check to prevent connection failures
+    const isProduction = !isDevelopment;
+    if (isProduction && wsUrl.includes(':5000')) {
+      console.error('❌ CRITICAL ERROR: WebSocket URL contains port 5000 in production!');
+      console.error('   This will cause connection failures because Nginx proxies /ws, not :5000/ws');
+      console.error('   Expected URL format: wss://therapease.site/ws?token=...');
       console.error('   Actual URL:', wsUrl);
+      console.error('   Fix: Rebuild the client with the latest code');
+      
+      // Prevent connection with wrong URL
+      this.isConnecting = false;
+      return;
     }
     
     // Set connection timeout to prevent long waits
