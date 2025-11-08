@@ -61,6 +61,8 @@ router.put('/therapist/proofs/:proofId/review', authenticateToken, reviewProof);
 // Patient routes
 router.get('/patient/exercises', authenticateToken, getPatientExercises);
 router.post('/patient/exercises/:exerciseId/proof', authenticateToken, upload.single('file'), submitProof);
+// Support both /proof and /proofs for backward compatibility
+router.get('/patient/exercises/:exerciseId/proof', authenticateToken, getExerciseProofs);
 router.get('/patient/exercises/:exerciseId/proofs', authenticateToken, getExerciseProofs);
 router.get('/patient/proofs', authenticateToken, getPatientProofs);
 
