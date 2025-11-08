@@ -34,26 +34,13 @@ class WebSocketService {
       // Development environment
       wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
     } else {
-      // Production environment - Use API subdomain for WebSocket
+      // Production environment - Use same domain (Nginx will proxy to Node.js)
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       
-      // Check if we're on therapease.site domain - use api subdomain
-      if (window.location.hostname.includes('therapease.site')) {
-        // Fix: Always use api.therapease.site (remove www. prefix if present)
-        // Handle both www.therapease.site and therapease.site correctly
-        let apiHost = 'api.therapease.site';
-        if (window.location.hostname.startsWith('www.')) {
-          // If hostname is www.therapease.site, remove www. first
-          apiHost = window.location.hostname.replace(/^www\./, 'api.');
-        } else {
-          // If hostname is therapease.site, replace with api.therapease.site
-          apiHost = window.location.hostname.replace('therapease.site', 'api.therapease.site');
-        }
-        wsUrl = `${protocol}//${apiHost}/ws?token=${token}`;
-      } else {
-        // For other production domains, try standard ports first
-        wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
-      }
+      // Use the same hostname (therapease.site or www.therapease.site)
+      // Nginx will proxy /ws requests to the Node.js server
+      // This avoids CORS issues and works with both domains
+      wsUrl = `${protocol}//${window.location.hostname}/ws?token=${token}`;
     }
     
     // Set connection timeout to prevent long waits
