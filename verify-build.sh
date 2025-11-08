@@ -52,10 +52,21 @@ fi
 # Check for the correct WebSocket code (should exist)
 echo ""
 echo "🔍 Checking for correct WebSocket code..."
-if grep -q "Production WebSocket debug info" "$MAIN_JS" 2>/dev/null; then
-    echo "✅ Correct WebSocket code found"
+# Check for WebSocket connection logic (minified code might not have console.logs)
+if grep -q "wss:" "$MAIN_JS" 2>/dev/null || grep -q "ws:" "$MAIN_JS" 2>/dev/null; then
+    echo "✅ WebSocket connection code found"
+    
+    # Check if it's using the correct pattern (no port 5000)
+    if grep -q "therapease.site/ws" "$MAIN_JS" 2>/dev/null; then
+        echo "✅ Correct WebSocket URL pattern found (therapease.site/ws)"
+    elif grep -q "therapease.site:5000" "$MAIN_JS" 2>/dev/null; then
+        echo "❌ ERROR: Found port 5000 in WebSocket URL!"
+        exit 1
+    else
+        echo "⚠️  Note: WebSocket code found but URL pattern not clearly visible (likely minified)"
+    fi
 else
-    echo "⚠️  Warning: Expected WebSocket code not found"
+    echo "⚠️  Warning: WebSocket code not clearly found (might be minified)"
 fi
 
 # Check for port 5000 in production (should NOT exist in production code)
