@@ -35,15 +35,37 @@ echo "✅ Config file copied"
 # Test configuration
 echo ""
 echo "🧪 Testing Nginx configuration..."
-if sudo nginx -t 2>&1 | grep -q "successful"; then
+NGINX_TEST=$(sudo nginx -t 2>&1)
+if echo "$NGINX_TEST" | grep -q "successful"; then
     echo "✅ Nginx configuration syntax is valid"
 else
     echo "❌ Nginx configuration still has errors:"
-    sudo nginx -t 2>&1 | grep -A 5 "error"
+    echo "$NGINX_TEST"
+    echo ""
+    echo "🔍 Checking for duplicate location blocks..."
+    DUPLICATES=$(grep -n "location.*uploads" /etc/nginx/sites-available/therapease | wc -l)
+    echo "   Found $DUPLICATES location blocks with 'uploads'"
+    if [ "$DUPLICATES" -gt 4 ]; then
+        echo "   ⚠️  Warning: More than 4 location blocks found (expected 4 - 2 per server block)"
+        echo ""
+        echo "   📋 All location blocks with 'uploads':"
+        grep -n "location.*uploads" /etc/nginx/sites-available/therapease
+    fi
     echo ""
     echo "⚠️  Restoring backup..."
-    sudo cp /etc/nginx/sites-available/therapease.backup.* /etc/nginx/sites-available/therapease
-    echo "❌ Config restore failed. Please check manually."
+    LATEST_BACKUP=$(ls -t /etc/nginx/sites-available/therapease.backup.* 2>/dev/null | head -1)
+    if [ -n "$LATEST_BACKUP" ]; then
+        sudo cp "$LATEST_BACKUP" /etc/nginx/sites-available/therapease
+        echo "✅ Backup restored"
+    else
+        echo "❌ No backup found to restore"
+    fi
+    echo ""
+    echo "💡 To fix manually:"
+    echo "   1. Check the error message above"
+    echo "   2. Edit the config: sudo nano /etc/nginx/sites-available/therapease"
+    echo "   3. Remove duplicate location blocks"
+    echo "   4. Test: sudo nginx -t"
     exit 1
 fi
 
