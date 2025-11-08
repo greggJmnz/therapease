@@ -52,9 +52,20 @@ class WebSocketService {
       });
     }
     
+    // IMPORTANT: Log the final WebSocket URL to verify it's correct
+    console.log('🔌 WebSocket connecting to:', wsUrl);
+    
+    // Verify URL doesn't contain port 5000 in production
+    if (wsUrl.includes(':5000') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      console.error('❌ ERROR: WebSocket URL contains port 5000 in production! This should not happen.');
+      console.error('   Expected URL format: wss://therapease.site/ws');
+      console.error('   Actual URL:', wsUrl);
+    }
+    
     // Set connection timeout to prevent long waits
     this.connectionTimeout = setTimeout(() => {
       if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+        console.log('🔌 WebSocket connection timeout, closing...');
         this.ws.close();
         this.isConnecting = false;
       }
