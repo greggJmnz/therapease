@@ -1484,10 +1484,9 @@ EMAIL_FROM=noreply@therapease.com
 
 # SMS Configuration
 SMS_ENABLED=false
-VONAGE_API_KEY=
-VONAGE_API_SECRET=
-VONAGE_BASE_URL=https://api.nexmo.com
-VONAGE_FROM_NUMBER=TherapEase
+PHILSMS_API_TOKEN=
+PHILSMS_BASE_URL=https://app.philsms.com/api/v3
+PHILSMS_SENDER_ID=TherapEase
 
 # Push Notifications
 VAPID_PUBLIC_KEY=

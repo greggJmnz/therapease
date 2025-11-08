@@ -18,7 +18,7 @@ class EnvironmentSecurity {
       'OPENAI_API_KEY',
       'EMAIL_PASSWORD',
       'VAPID_PRIVATE_KEY',
-      'VONAGE_API_SECRET'
+      'PHILSMS_API_TOKEN'
     ];
     
     this.frontendVars = [
@@ -81,7 +81,7 @@ class EnvironmentSecurity {
       'OPENAI_API_KEY': ['your_openai_api_key_here', 'sk-'],
       'EMAIL_PASSWORD': ['your_app_specific_password_here', ''],
       'VAPID_PRIVATE_KEY': ['your_vapid_private_key_here', ''],
-      'VONAGE_API_SECRET': ['your_vonage_api_secret_here', '']
+      'PHILSMS_API_TOKEN': ['your_philsms_api_token_here', '']
     };
 
     return defaults[varName]?.includes(value) || false;

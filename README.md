@@ -21,7 +21,7 @@ A comprehensive, scalable platform designed specifically for **Pediatric Occupat
 
 ### 📱 Advanced Communication
 - **Push Notifications**: Real-time browser notifications with VAPID integration
-- **SMS Integration**: Automated appointment reminder SMS via Vonage API (Philippine number support)
+- **SMS Integration**: Automated appointment reminder SMS via PhilSMS API (Philippine number support)
 - **WebSocket Support**: Live updates and real-time communication
 - **Email Notifications**: Comprehensive email notification system
 
@@ -77,7 +77,7 @@ therapease/
 - **Helmet.js** - Security headers
 
 ### Communication & Notifications
-- **Vonage SMS API** - Appointment reminder SMS with Philippine number support
+- **PhilSMS API** - Appointment reminder SMS with Philippine number support
 - **Web Push API** - Browser push notifications
 - **WebSocket** - Real-time updates
 - **VAPID** - Push notification authentication
@@ -94,7 +94,7 @@ therapease/
 - **Node.js 18+** - JavaScript runtime
 - **MySQL 8.0+** - Database server
 - **OpenAI API Key** - For AI-powered features
-- **Vonage Account** - For SMS notifications (optional)
+- **PhilSMS Account** - For SMS notifications (optional)
 - **Git** - Version control
 - **Modern Browser** - For push notifications support
 
@@ -169,10 +169,9 @@ REACT_APP_VAPID_PUBLIC_KEY=your_vapid_public_key
 
 # SMS Integration (Optional)
 SMS_ENABLED=true
-VONAGE_API_KEY=your_vonage_api_key
-VONAGE_API_SECRET=your_vonage_api_secret
-VONAGE_BASE_URL=https://api.nexmo.com
-VONAGE_FROM_NUMBER=TherapEase
+PHILSMS_API_TOKEN=your_philsms_api_token
+PHILSMS_BASE_URL=https://app.philsms.com/api/v3
+PHILSMS_SENDER_ID=TherapEase
 API_BASE_URL=http://localhost:3000
 ```
 

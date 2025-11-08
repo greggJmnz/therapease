@@ -60,7 +60,7 @@ function sanitizeObject(obj) {
     const sensitiveKeys = [
       'password', 'token', 'secret', 'key', 'apiKey', 'api_key',
       'openai_api_key', 'jwt_secret', 'encryption_key', 'vapid_private_key',
-      'email_password', 'vonage_api_secret', 'db_password'
+      'email_password', 'philsms_api_token', 'db_password'
     ];
     
     for (const [key, value] of Object.entries(obj)) {

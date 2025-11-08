@@ -35,7 +35,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB limit (matches Nginx client_max_body_size)
+    fileSize: 50 * 1024 * 1024 // 50MB limit
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|pdf|doc|docx|txt/;
@@ -61,8 +61,6 @@ router.put('/therapist/proofs/:proofId/review', authenticateToken, reviewProof);
 // Patient routes
 router.get('/patient/exercises', authenticateToken, getPatientExercises);
 router.post('/patient/exercises/:exerciseId/proof', authenticateToken, upload.single('file'), submitProof);
-// Support both /proof and /proofs for backward compatibility
-router.get('/patient/exercises/:exerciseId/proof', authenticateToken, getExerciseProofs);
 router.get('/patient/exercises/:exerciseId/proofs', authenticateToken, getExerciseProofs);
 router.get('/patient/proofs', authenticateToken, getPatientProofs);
 

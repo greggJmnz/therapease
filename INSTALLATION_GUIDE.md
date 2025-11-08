@@ -210,8 +210,9 @@ EMAIL_PASS=your-app-password
 Update .env file to enable SMS notifications:
 ```env
 SMS_ENABLED=true
-VONAGE_API_KEY=your-vonage-key
-VONAGE_API_SECRET=your-vonage-secret
+PHILSMS_API_TOKEN=your-philsms-api-token
+PHILSMS_BASE_URL=https://app.philsms.com/api/v3
+PHILSMS_SENDER_ID=TherapEase
 ```
 
 ### OpenAI Integration

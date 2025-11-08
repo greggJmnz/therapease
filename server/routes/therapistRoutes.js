@@ -40,6 +40,7 @@ router.get('/schedule', appointmentController.getSchedule);
 router.post('/schedule', appointmentController.createAppointment);
 router.put('/schedule/:id', appointmentController.updateAppointment);
 router.delete('/schedule/:id', appointmentController.deleteAppointment);
+router.post('/schedule/:id/approve', appointmentController.approveAppointment);
 router.get('/schedule/stats', appointmentController.getAppointmentStats);
 
 // Session management

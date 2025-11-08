@@ -17,7 +17,6 @@
     "ssl:generate": "node scripts/generate-ssl.js",
     "sms:setup": "node scripts/setup-sms.js",
     "vapid:generate": "node scripts/generate-vapid-keys.js",
-    "env:secure": "node scripts/generate-secure-env.js",
     "test": "echo \"No tests specified\" && exit 0",
     "lint": "echo \"No linting configured\" && exit 0"
   },
