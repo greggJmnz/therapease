@@ -62,11 +62,12 @@ mysql.createConnection(rootConfig)
   .then(conn => {
     console.log('✅ Connected to MySQL as root');
     
-    // Update password using parameterized query to ensure exact encoding
-    return conn.query(\`ALTER USER ?@'localhost' IDENTIFIED BY ?\`, [DB_USER, DB_PASSWORD])
+    // Update password - use parameterized query for password to ensure exact encoding
+    // Note: MySQL doesn't allow username as parameter, so we use string interpolation for user
+    return conn.query(\`ALTER USER '\${DB_USER}'@'localhost' IDENTIFIED BY ?\`, [DB_PASSWORD])
       .then(() => {
         console.log('✅ Updated password for localhost');
-        return conn.query(\`ALTER USER ?@'127.0.0.1' IDENTIFIED BY ?\`, [DB_USER, DB_PASSWORD]);
+        return conn.query(\`ALTER USER '\${DB_USER}'@'127.0.0.1' IDENTIFIED BY ?\`, [DB_PASSWORD]);
       })
       .then(() => {
         console.log('✅ Updated password for 127.0.0.1');
