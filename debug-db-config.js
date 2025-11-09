@@ -8,9 +8,12 @@ const path = require('path');
 const fs = require('fs');
 
 // Load environment variables the same way the application does
+// Check both production and development paths
+const productionEnvFile = path.join(__dirname, 'server/.env.production');
+const devEnvFile = path.join(__dirname, '.env');
 const envFile = process.env.NODE_ENV === 'production' 
-  ? path.join(__dirname, 'server/.env.production')
-  : path.join(__dirname, '.env');
+  ? productionEnvFile
+  : (fs.existsSync(productionEnvFile) ? productionEnvFile : devEnvFile);
 
 console.log('🔍 Debugging Database Configuration');
 console.log('====================================');
