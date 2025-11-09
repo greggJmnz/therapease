@@ -2,18 +2,41 @@
 
 /**
  * Debug script to check what database configuration the application is reading
+ * Run this from the server directory: cd server && node ../debug-db-config.js
  */
 
 const path = require('path');
 const fs = require('fs');
 
+// Determine if we're running from server directory or root
+const isServerDir = fs.existsSync(path.join(__dirname, 'node_modules', 'dotenv'));
+const isRootDir = fs.existsSync(path.join(__dirname, 'server', 'node_modules', 'dotenv'));
+
 // Load environment variables the same way the application does
-// Check both production and development paths
-const productionEnvFile = path.join(__dirname, 'server/.env.production');
-const devEnvFile = path.join(__dirname, '.env');
-const envFile = process.env.NODE_ENV === 'production' 
-  ? productionEnvFile
-  : (fs.existsSync(productionEnvFile) ? productionEnvFile : devEnvFile);
+// The application looks for server/.env.production when NODE_ENV=production
+let envFile;
+if (isServerDir) {
+  // Running from server directory
+  envFile = process.env.NODE_ENV === 'production' 
+    ? path.join(__dirname, '.env.production')
+    : path.join(__dirname, '../.env');
+} else if (isRootDir) {
+  // Running from root directory
+  envFile = process.env.NODE_ENV === 'production' 
+    ? path.join(__dirname, 'server/.env.production')
+    : path.join(__dirname, '.env');
+} else {
+  // Try to find it
+  const productionEnvFile = path.join(__dirname, 'server/.env.production');
+  const serverProductionEnvFile = path.join(__dirname, '.env.production');
+  if (fs.existsSync(serverProductionEnvFile)) {
+    envFile = serverProductionEnvFile;
+  } else if (fs.existsSync(productionEnvFile)) {
+    envFile = productionEnvFile;
+  } else {
+    envFile = path.join(__dirname, '.env');
+  }
+}
 
 console.log('🔍 Debugging Database Configuration');
 console.log('====================================');
