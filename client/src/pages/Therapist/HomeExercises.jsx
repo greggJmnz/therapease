@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { 
   Plus, 
@@ -122,6 +123,9 @@ const HomeExercises = () => {
   const [fullScreenImage, setFullScreenImage] = useState({ isOpen: false, url: '', fileName: '' });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [exerciseToDelete, setExerciseToDelete] = useState(null);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
+  const [revisionProofId, setRevisionProofId] = useState(null);
+  const [revisionFeedback, setRevisionFeedback] = useState('');
   const [formData, setFormData] = useState({
     patientId: '',
     title: '',
@@ -363,6 +367,21 @@ const HomeExercises = () => {
       proofId,
       reviewData: { status, therapistFeedback: feedback }
     });
+  };
+
+  const handleRequestRevision = (proofId) => {
+    setRevisionProofId(proofId);
+    setRevisionFeedback('');
+    setShowRevisionModal(true);
+  };
+
+  const confirmRequestRevision = () => {
+    if (revisionProofId && revisionFeedback.trim()) {
+      handleReviewProof(revisionProofId, 'needs_revision', revisionFeedback.trim());
+      setShowRevisionModal(false);
+      setRevisionProofId(null);
+      setRevisionFeedback('');
+    }
   };
 
   const getStatusColor = (status) => {
@@ -980,27 +999,22 @@ const HomeExercises = () => {
                           )}
                         </div>
                         
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 w-full sm:w-auto">
                           {proof.status === 'submitted' && (
                             <>
                               <button
                                 onClick={() => handleReviewProof(proof.id, 'approved', '')}
-                                className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-green-700 bg-green-100 hover:bg-green-200 touch-target"
+                                className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-lg text-green-700 bg-green-100 hover:bg-green-200 touch-target w-full sm:w-auto"
                               >
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Approve
+                                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="truncate">Approve</span>
                               </button>
                               <button
-                                onClick={() => {
-                                  const feedback = prompt('Please provide feedback for revision:');
-                                  if (feedback) {
-                                    handleReviewProof(proof.id, 'needs_revision', feedback);
-                                  }
-                                }}
-                                className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-yellow-700 bg-yellow-100 hover:bg-yellow-200 touch-target"
+                                onClick={() => handleRequestRevision(proof.id)}
+                                className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-lg text-yellow-700 bg-yellow-100 hover:bg-yellow-200 touch-target w-full sm:w-auto"
                               >
-                                <MessageSquare className="h-4 w-4 mr-2" />
-                                Request Revision
+                                <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="truncate">Request Revision</span>
                               </button>
                             </>
                           )}
@@ -1044,6 +1058,70 @@ const HomeExercises = () => {
         cancelText="Cancel"
         type="danger"
       />
+
+      {/* Request Revision Modal */}
+      {showRevisionModal && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ zIndex: 9999 }}>
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-full bg-yellow-50">
+                    <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Request Revision</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowRevisionModal(false);
+                    setRevisionProofId(null);
+                    setRevisionFeedback('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="mb-4 sm:mb-6">
+                <label htmlFor="revision-feedback" className="block text-sm font-medium text-gray-700 mb-2">
+                  Please provide feedback for revision:
+                </label>
+                <textarea
+                  id="revision-feedback"
+                  value={revisionFeedback}
+                  onChange={(e) => setRevisionFeedback(e.target.value)}
+                  placeholder="Enter your feedback here..."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-sm sm:text-base resize-none"
+                  autoFocus
+                />
+              </div>
+              
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+                <button
+                  onClick={() => {
+                    setShowRevisionModal(false);
+                    setRevisionProofId(null);
+                    setRevisionFeedback('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors w-full sm:w-auto"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmRequestRevision}
+                  disabled={!revisionFeedback.trim()}
+                  className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
+                >
+                  Submit Revision Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
