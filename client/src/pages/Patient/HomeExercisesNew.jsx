@@ -661,10 +661,36 @@ const HomeExercisesNew = () => {
                                     controls 
                                     className="max-w-full h-auto max-h-64 rounded-lg border"
                                     onError={(e) => {
-                                      console.error('Video load error for:', e.target.src);
-                                      e.target.style.display = 'none';
-                                      const errorDiv = e.target.nextSibling;
-                                      if (errorDiv) errorDiv.style.display = 'block';
+                                      console.error('❌ Video load error for:', e.target.src);
+                                      console.error('Video proof data:', { 
+                                        fileUrl: proof.fileUrl, 
+                                        filePath: proof.filePath, 
+                                        submissionType: proof.submissionType,
+                                        fileName: proof.fileName,
+                                        mimeType: proof.mimeType,
+                                        constructedUrl: getProofImageUrl(proof.fileUrl || proof.filePath)
+                                      });
+                                      // Hide the video element
+                                      if (e.target) {
+                                        e.target.style.display = 'none';
+                                      }
+                                      // Find the error div (it's the next sibling of the video element)
+                                      const videoElement = e.target;
+                                      const parentDiv = videoElement?.parentElement;
+                                      if (parentDiv) {
+                                        // Find the error message div
+                                        const errorDiv = parentDiv.querySelector('.video-error-message');
+                                        if (errorDiv) {
+                                          errorDiv.style.display = 'block';
+                                          errorDiv.classList.remove('hidden');
+                                        } else {
+                                          // Create error message if it doesn't exist
+                                          const errorMsg = document.createElement('div');
+                                          errorMsg.className = 'text-sm text-red-500 mt-2 video-error-message';
+                                          errorMsg.textContent = `Failed to load video. URL: ${e.target.src}`;
+                                          parentDiv.appendChild(errorMsg);
+                                        }
+                                      }
                                     }}
                                   >
                                     <source 
@@ -673,7 +699,7 @@ const HomeExercisesNew = () => {
                                     />
                                     Your browser does not support the video tag.
                                   </video>
-                                  <div className="hidden text-sm text-red-500">
+                                  <div className="hidden text-sm text-red-500 video-error-message">
                                     Failed to load video
                                   </div>
                                 </div>
