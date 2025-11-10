@@ -198,40 +198,10 @@ const AdminPatients = () => {
           <div className="text-red-500 text-xl mb-4">Authentication Required</div>
           <p className="text-gray-600 mb-4">You need to be logged in as an admin to access this page.</p>
           <button 
-            onClick={() => {
-              // Auto-login as admin for testing
-              const loginData = {
-                email: 'admin@therapease.com',
-                password: 'SecureAdmin2024!@#$'
-              };
-              
-              fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(loginData)
-              })
-              .then(response => response.json())
-              .then(data => {
-                if (data.success) {
-                  localStorage.setItem('token', data.data.token);
-                  localStorage.setItem('user', JSON.stringify(data.data.user));
-                  localStorage.setItem('userRole', data.data.user.role);
-                  localStorage.setItem('userId', data.data.user.id);
-                  window.location.reload();
-                } else {
-                  alert('Login failed: ' + data.error);
-                }
-              })
-              .catch(error => {
-                console.error('Login error:', error);
-                alert('Login failed: ' + error.message);
-              });
-            }}
+            onClick={() => window.location.href = '/auth/login'}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Login as Admin (Test)
+            Go to Login Page
           </button>
         </div>
       </div>

@@ -1,7 +1,7 @@
 // TherapEase Service Worker for Push Notifications
 // This service worker handles push notifications, background sync, and offline functionality
 
-const CACHE_NAME = 'therapease-v2';
+const CACHE_NAME = 'therapease-v3';
 const NOTIFICATION_ICON = '/favicon.ico';
 const NOTIFICATION_BADGE = '/favicon.ico';
 
