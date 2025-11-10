@@ -323,6 +323,21 @@ app.use('/uploads', (req, res, next) => {
   // but we need to handle it manually to prevent path duplication)
   let filePath = req.path;
   
+  // If path is already a full absolute path, extract just the relative part
+  if (filePath.startsWith('/home/') || filePath.startsWith(path.join(__dirname, 'uploads'))) {
+    // Extract relative path from full path
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (filePath.startsWith(uploadsDir)) {
+      filePath = filePath.substring(uploadsDir.length);
+    } else {
+      // Try to extract from /uploads/ in the path
+      const uploadsIndex = filePath.indexOf('/uploads/');
+      if (uploadsIndex !== -1) {
+        filePath = filePath.substring(uploadsIndex + 8); // Skip '/uploads/'
+      }
+    }
+  }
+  
   // Remove /uploads prefix if present
   if (filePath.startsWith('/uploads/')) {
     filePath = filePath.substring(8); // Remove '/uploads'
@@ -334,6 +349,9 @@ app.use('/uploads', (req, res, next) => {
   if (!filePath.startsWith('/')) {
     filePath = '/' + filePath;
   }
+  
+  // Log the normalized path for debugging
+  console.log(`[Static File] Normalized path: ${filePath} (original: ${req.path})`);
   
   // Create a modified request object with the corrected path
   const modifiedReq = Object.create(req);
