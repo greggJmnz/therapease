@@ -51,16 +51,6 @@ const TherapistSettings = () => {
     }
   );
 
-  // Update 2FA state when data changes
-  useEffect(() => {
-    // Handle nested data structure: data.data.data.enabled
-    const enabledValue = twoFactorStatus?.data?.data?.enabled ?? twoFactorStatus?.data?.enabled;
-    if (enabledValue !== undefined) {
-      const enabled = Boolean(enabledValue);
-      setTwoFactorEnabled(enabled);
-    }
-  }, [twoFactorStatus]);
-
   const [notificationSettings, setNotificationSettings] = useState({
     appointmentReminders: true,
     patientUpdates: true,
@@ -195,28 +185,42 @@ const TherapistSettings = () => {
   );
 
   const handleNotificationChange = (setting, value) => {
-    const newNotificationSettings = {
-      ...notificationSettings,
-      [setting]: value
-    };
-    
-    setNotificationSettings(newNotificationSettings);
-    
-    // Automatically save notification changes
-    updateSettingsMutation.mutate({
-      notifications: newNotificationSettings,
-      workingHours: workingHours
+    // Use functional setState to ensure we're working with the latest state
+    setNotificationSettings(prev => {
+      const newNotificationSettings = {
+        ...prev,
+        [setting]: value
+      };
+      
+      // Automatically save notification changes
+      updateSettingsMutation.mutate({
+        notifications: newNotificationSettings,
+        workingHours: workingHours // Use current workingHours state
+      });
+      
+      return newNotificationSettings;
     });
   };
 
   const handleWorkingHoursChange = (day, field, value) => {
-    setWorkingHours(prev => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        [field]: value
-      }
-    }));
+    // Update state using functional setState
+    setWorkingHours(prev => {
+      const updated = {
+        ...prev,
+        [day]: {
+          ...prev[day],
+          [field]: value
+        }
+      };
+      
+      // Automatically save working hours changes
+      updateSettingsMutation.mutate({
+        notifications: notificationSettings,
+        workingHours: updated
+      });
+      
+      return updated;
+    });
   };
 
 
