@@ -59,14 +59,22 @@ const getCorsOrigins = () => {
 };
 
 // CORS MUST be before security headers to work properly
-app.use(cors({
-  origin: getCorsOrigins(),
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Data-Protection', 'X-Content-Encryption'],
-  exposedHeaders: ['X-Data-Protection', 'X-Content-Encryption'],
-  optionsSuccessStatus: 200
-}));
+// Exclude /uploads from global CORS since we have a specific middleware for it
+app.use((req, res, next) => {
+  // Skip CORS for /uploads routes (handled by corsStaticMiddleware)
+  if (req.path.startsWith('/uploads/')) {
+    return next();
+  }
+  // Apply CORS for all other routes
+  return cors({
+    origin: getCorsOrigins(),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Data-Protection', 'X-Content-Encryption'],
+    exposedHeaders: ['X-Data-Protection', 'X-Content-Encryption'],
+    optionsSuccessStatus: 200
+  })(req, res, next);
+});
 
 // Compression Middleware (Enable gzip compression with optimization)
 app.use(compression({
@@ -216,24 +224,30 @@ const corsStaticMiddleware = (req, res, next) => {
   const origin = req.headers.origin;
   const allowedOrigins = getCorsOrigins();
   
+  // Check if CORS headers are already set (to avoid duplicates)
+  if (res.getHeader('Access-Control-Allow-Origin')) {
+    // Headers already set, skip
+    return next();
+  }
+  
   // Handle OPTIONS preflight request
   if (req.method === 'OPTIONS') {
     // Check if origin is allowed
     if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
-      res.header('Access-Control-Allow-Origin', origin || '*');
-      res.header('Access-Control-Allow-Credentials', 'true');
-      res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     }
     return res.status(200).end();
   }
   
   // Check if origin is allowed
   if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
-    res.header('Access-Control-Allow-Origin', origin || '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   }
   next();
 };
