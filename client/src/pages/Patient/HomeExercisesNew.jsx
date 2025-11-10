@@ -659,35 +659,67 @@ const HomeExercisesNew = () => {
                                 <div className="mt-2">
                                   <video 
                                     controls 
+                                    preload="metadata"
                                     className="max-w-full h-auto max-h-64 rounded-lg border"
-                                    onError={(e) => {
-                                      console.error('❌ Video load error for:', e.target.src);
-                                      console.error('Video proof data:', { 
-                                        fileUrl: proof.fileUrl, 
-                                        filePath: proof.filePath, 
-                                        submissionType: proof.submissionType,
-                                        fileName: proof.fileName,
+                                    onLoadStart={() => {
+                                      const videoUrl = getProofImageUrl(proof.fileUrl || proof.filePath);
+                                      console.log('🎬 Video load started:', {
+                                        url: videoUrl,
+                                        fileUrl: proof.fileUrl,
+                                        filePath: proof.filePath,
                                         mimeType: proof.mimeType,
+                                        fileName: proof.fileName
+                                      });
+                                    }}
+                                    onLoadedMetadata={(e) => {
+                                      console.log('✅ Video metadata loaded:', {
+                                        duration: e.target.duration,
+                                        videoWidth: e.target.videoWidth,
+                                        videoHeight: e.target.videoHeight,
+                                        readyState: e.target.readyState
+                                      });
+                                    }}
+                                    onCanPlay={() => {
+                                      console.log('✅ Video can play');
+                                    }}
+                                    onError={(e) => {
+                                      const video = e.target;
+                                      const error = video.error;
+                                      console.error('❌ Video load error:', {
+                                        code: error?.code,
+                                        message: error?.message,
+                                        src: video.src,
+                                        currentSrc: video.currentSrc,
+                                        networkState: video.networkState,
+                                        readyState: video.readyState,
+                                        fileUrl: proof.fileUrl,
+                                        filePath: proof.filePath,
+                                        mimeType: proof.mimeType,
+                                        fileName: proof.fileName,
                                         constructedUrl: getProofImageUrl(proof.fileUrl || proof.filePath)
                                       });
+                                      
                                       // Hide the video element
-                                      if (e.target) {
-                                        e.target.style.display = 'none';
+                                      if (video) {
+                                        video.style.display = 'none';
                                       }
-                                      // Find the error div (it's the next sibling of the video element)
-                                      const videoElement = e.target;
-                                      const parentDiv = videoElement?.parentElement;
+                                      
+                                      // Find the error div
+                                      const parentDiv = video?.parentElement;
                                       if (parentDiv) {
-                                        // Find the error message div
                                         const errorDiv = parentDiv.querySelector('.video-error-message');
                                         if (errorDiv) {
                                           errorDiv.style.display = 'block';
                                           errorDiv.classList.remove('hidden');
+                                          // Update error message with more details
+                                          const errorMsg = error?.message || 'Unknown error';
+                                          errorDiv.textContent = `Failed to load video (${errorMsg}). URL: ${video.currentSrc || video.src}`;
                                         } else {
                                           // Create error message if it doesn't exist
                                           const errorMsg = document.createElement('div');
                                           errorMsg.className = 'text-sm text-red-500 mt-2 video-error-message';
-                                          errorMsg.textContent = `Failed to load video. URL: ${e.target.src}`;
+                                          const errorText = error?.message || 'Unknown error';
+                                          errorMsg.textContent = `Failed to load video (${errorText}). URL: ${video.currentSrc || video.src}`;
                                           parentDiv.appendChild(errorMsg);
                                         }
                                       }

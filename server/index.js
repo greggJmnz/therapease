@@ -260,6 +260,9 @@ const staticMiddleware = express.static(path.join(__dirname, 'uploads'), {
       '.mov': 'video/quicktime',
       '.avi': 'video/x-msvideo',
       '.webm': 'video/webm',
+      '.mkv': 'video/x-matroska',
+      '.flv': 'video/x-flv',
+      '.wmv': 'video/x-ms-wmv',
       '.pdf': 'application/pdf',
       '.doc': 'application/msword',
       '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -278,8 +281,15 @@ const staticMiddleware = express.static(path.join(__dirname, 'uploads'), {
       res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
     }
     
-    // Set X-Content-Type-Options to prevent MIME type sniffing (helps with CORB)
-    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Set headers for videos to support Range requests and streaming
+    if (ext.match(/\.(mp4|mov|avi|webm|mkv|flv|wmv)$/i)) {
+      res.setHeader('Accept-Ranges', 'bytes'); // Enable Range requests for video seeking
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour for videos
+      // Don't set X-Content-Type-Options for videos as it can interfere with playback
+    } else {
+      // Set X-Content-Type-Options to prevent MIME type sniffing (helps with CORB)
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    }
   },
   fallthrough: false // Don't fall through to next middleware if file not found
 });
