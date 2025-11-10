@@ -255,7 +255,7 @@ const corsStaticMiddleware = (req, res, next) => {
 // Serve uploaded files with CORS headers and proper MIME types
 // Mount at root path since we'll handle /uploads prefix manually
 const staticMiddleware = express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: (res, filePath) => {
+  setHeaders: (res, filePath, stat) => {
     // Log file serving for debugging (only in development or when DEBUG is enabled)
     if (process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true') {
       console.log(`[Static File] Serving: ${filePath}`);
@@ -305,6 +305,9 @@ const staticMiddleware = express.static(path.join(__dirname, 'uploads'), {
       // Set X-Content-Type-Options to prevent MIME type sniffing (helps with CORB)
       res.setHeader('X-Content-Type-Options', 'nosniff');
     }
+    
+    // Note: CORS headers are set by corsStaticMiddleware before this function is called
+    // This ensures CORS headers are present for both images and videos
   },
   fallthrough: false // Don't fall through to next middleware if file not found
 });
@@ -314,6 +317,19 @@ app.use('/uploads', corsStaticMiddleware, (req, res, next) => {
   // Log the request for debugging (always log in production for now to diagnose)
   console.log(`[Static File Request] ${req.method} ${req.path}`);
   console.log(`[Static File Request] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  
+  // Ensure CORS headers are set (corsStaticMiddleware should have done this, but ensure they're present)
+  const origin = req.headers.origin;
+  const allowedOrigins = getCorsOrigins();
+  if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
+    // Set CORS headers if not already set (double-check to ensure they're present)
+    if (!res.getHeader('Access-Control-Allow-Origin')) {
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    }
+  }
   
   // Strip /uploads prefix from path (express.static mounted at /uploads should do this automatically,
   // but we need to handle it manually to prevent path duplication)
