@@ -314,16 +314,55 @@ const downloadProgressReport = async (req, res) => {
     res.setHeader('Content-Type', report.mimeType);
     res.setHeader('Content-Length', report.fileSize);
     
-    // Stream the file
+    // Stream the file with proper error handling
     const fileStream = fs.createReadStream(report.filePath);
+    
+    // Handle stream errors
+    fileStream.on('error', (streamError) => {
+      // Only log if response hasn't been sent
+      if (!res.headersSent) {
+        console.error('File stream error:', streamError);
+        res.status(500).json({ 
+          success: false, 
+          error: 'Failed to read file' 
+        });
+      } else {
+        // Response already sent, just log the error
+        console.error('File stream error after response sent:', streamError.message);
+      }
+      // Clean up the stream
+      if (!fileStream.destroyed) {
+        fileStream.destroy();
+      }
+    });
+    
+    // Handle client disconnection
+    req.on('close', () => {
+      if (!fileStream.destroyed) {
+        fileStream.destroy();
+      }
+    });
+    
+    // Handle response errors
+    res.on('error', (resError) => {
+      console.error('Response error during file download:', resError);
+      if (!fileStream.destroyed) {
+        fileStream.destroy();
+      }
+    });
+    
+    // Pipe the stream to response
     fileStream.pipe(res);
     
   } catch (error) {
     console.error('Download progress report error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to download progress report' 
-    });
+    // Only send error if response hasn't been sent
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to download progress report' 
+      });
+    }
   }
 };
 
