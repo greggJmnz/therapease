@@ -25,6 +25,31 @@ const AdminSettings = () => {
     }
   );
 
+  // Initialize state first (before useQuery hooks that reference them)
+  const [systemSettings, setSystemSettings] = useState({
+    systemName: 'TherapEase',
+    maintenanceMode: false,
+    maintenanceDuration: '2 hours',
+    sessionTimeout: 30,
+    allowRegistration: true,
+    requireEmailVerification: true,
+    passwordComplexity: 'medium',
+    maxLoginAttempts: 5,
+    notificationFrequency: 'immediate'
+  });
+  
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  const [notificationSettings, setNotificationSettings] = useState({
+    systemAlerts: true,
+    userActivity: true,
+    securityEvents: true,
+    maintenanceNotifications: true,
+    emailNotifications: true,
+    smsNotifications: false,
+    pushNotifications: true
+  });
+
   // Fetch system settings data
   const { isLoading: systemSettingsLoading } = useQuery(
     'systemSettings',
@@ -32,19 +57,18 @@ const AdminSettings = () => {
     {
       onSuccess: (response) => {
         if (response?.data?.data) {
-          const newSystemSettings = {
-            ...systemSettings,
+          // Use functional setState to ensure we're working with the latest state
+          setSystemSettings(prev => ({
+            ...prev,
             ...response.data.data.general,
             ...response.data.data.registration,
             ...response.data.data.security
-          };
-          setSystemSettings(newSystemSettings);
+          }));
           
-          const newNotificationSettings = {
-            ...notificationSettings,
+          setNotificationSettings(prev => ({
+            ...prev,
             ...response.data.data.notifications
-          };
-          setNotificationSettings(newNotificationSettings);
+          }));
           
           setDataLoaded(true);
         }
@@ -78,30 +102,6 @@ const AdminSettings = () => {
       setTwoFactorEnabled(enabled);
     }
   }, [twoFactorStatus]);
-
-  const [systemSettings, setSystemSettings] = useState({
-    systemName: 'TherapEase',
-    maintenanceMode: false,
-    maintenanceDuration: '2 hours',
-    sessionTimeout: 30,
-    allowRegistration: true,
-    requireEmailVerification: true,
-    passwordComplexity: 'medium',
-    maxLoginAttempts: 5,
-    notificationFrequency: 'immediate'
-  });
-  
-  const [dataLoaded, setDataLoaded] = useState(false);
-
-  const [notificationSettings, setNotificationSettings] = useState({
-    systemAlerts: true,
-    userActivity: true,
-    securityEvents: true,
-    maintenanceNotifications: true,
-    emailNotifications: true,
-    smsNotifications: false,
-    pushNotifications: true
-  });
 
 
   const [passwordData, setPasswordData] = useState({
@@ -173,13 +173,13 @@ const AdminSettings = () => {
       onSuccess: async (response) => {
         // Update the local systemSettings state with all settings from the API response
         if (response?.data?.data) {
-          const newSettings = {
-            ...systemSettings,
+          // Use functional setState to ensure we're working with the latest state
+          setSystemSettings(prev => ({
+            ...prev,
             ...response.data.data.general,
             ...response.data.data.registration,
             ...response.data.data.security
-          };
-          setSystemSettings(newSettings);
+          }));
         }
         
         // Update the context with the new settings from the API response
