@@ -253,6 +253,7 @@ const corsStaticMiddleware = (req, res, next) => {
 };
 
 // Serve uploaded files with CORS headers and proper MIME types
+// Mount at root path since we'll handle /uploads prefix manually
 const staticMiddleware = express.static(path.join(__dirname, 'uploads'), {
   setHeaders: (res, filePath) => {
     // Log file serving for debugging (only in development or when DEBUG is enabled)
@@ -314,13 +315,36 @@ app.use('/uploads', corsStaticMiddleware, (req, res, next) => {
   console.log(`[Static File Request] ${req.method} ${req.path}`);
   console.log(`[Static File Request] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
   
-  // Call the static middleware
-  staticMiddleware(req, res, (err) => {
+  // Strip /uploads prefix from path (express.static mounted at /uploads should do this automatically,
+  // but we need to handle it manually to prevent path duplication)
+  let filePath = req.path;
+  
+  // Remove /uploads prefix if present
+  if (filePath.startsWith('/uploads/')) {
+    filePath = filePath.substring(8); // Remove '/uploads'
+  } else if (filePath.startsWith('/uploads')) {
+    filePath = filePath.substring(8); // Remove '/uploads'
+  }
+  
+  // Ensure path starts with / for express.static
+  if (!filePath.startsWith('/')) {
+    filePath = '/' + filePath;
+  }
+  
+  // Create a modified request object with the corrected path
+  const modifiedReq = Object.create(req);
+  Object.setPrototypeOf(modifiedReq, req);
+  modifiedReq.url = filePath;
+  modifiedReq.path = filePath;
+  modifiedReq.originalUrl = filePath;
+  
+  // Call the static middleware with modified request
+  staticMiddleware(modifiedReq, res, (err) => {
     // Handle 404 errors
     if (err && err.status === 404) {
-      console.error(`[Static File] File not found: ${req.path}`);
+      console.error(`[Static File] File not found: ${filePath}`);
       const fs = require('fs');
-      const fullPath = path.join(__dirname, 'uploads', req.path);
+      const fullPath = path.join(__dirname, 'uploads', filePath);
       console.error(`[Static File] Full path would be: ${fullPath}`);
       console.error(`[Static File] File exists: ${fs.existsSync(fullPath)}`);
       
@@ -335,13 +359,13 @@ app.use('/uploads', corsStaticMiddleware, (req, res, next) => {
         }
       }
       
-      res.status(404).json({ error: 'File not found', path: req.path });
+      res.status(404).json({ error: 'File not found', path: filePath });
     } else if (err) {
       console.error(`[Static File] Error serving file: ${err.message}`);
       res.status(500).json({ error: 'Error serving file' });
     } else {
       // File was served successfully
-      console.log(`[Static File] File served successfully: ${req.path}`);
+      console.log(`[Static File] File served successfully: ${filePath}`);
       next();
     }
   });
