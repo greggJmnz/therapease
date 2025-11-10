@@ -40,14 +40,41 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024 // 50MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|pdf|doc|docx|txt/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    // Allowed file extensions
+    const allowedExtensions = /\.(jpeg|jpg|png|gif|webp|bmp|mp4|mov|avi|webm|mkv|pdf|doc|docx|txt)$/i;
+    
+    // Allowed MIME types
+    const allowedMimeTypes = [
+      // Images
+      /^image\/(jpeg|jpg|png|gif|webp|bmp)$/i,
+      // Videos
+      /^video\/(mp4|quicktime|x-msvideo|webm|x-matroska)$/i,
+      // Documents
+      /^application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/i,
+      /^text\/(plain)$/i
+    ];
+    
+    const ext = path.extname(file.originalname).toLowerCase();
+    const extname = allowedExtensions.test(ext);
+    
+    // Check if MIME type matches any allowed pattern
+    const mimetype = allowedMimeTypes.some(pattern => pattern.test(file.mimetype));
+    
+    // Log for debugging
+    if (!extname || !mimetype) {
+      console.log('❌ File rejected:', {
+        filename: file.originalname,
+        extension: ext,
+        mimetype: file.mimetype,
+        extnameMatch: extname,
+        mimetypeMatch: mimetype
+      });
+    }
     
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images, videos, and documents are allowed.'));
+      cb(new Error(`Invalid file type. Only images, videos, and documents are allowed. Received: ${file.mimetype} (${ext})`));
     }
   }
 });
