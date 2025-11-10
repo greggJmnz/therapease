@@ -851,166 +851,165 @@ const HomeExercises = () => {
       {/* Proof Review Modal */}
       {showProofModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Proof Submissions - {selectedExercise?.title}
-                </h3>
-                <button
-                  onClick={() => setShowProofModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
+          <div className="relative top-10 sm:top-20 mx-auto p-4 sm:p-5 border w-11/12 md:w-4/5 lg:w-3/4 max-w-4xl shadow-lg rounded-md bg-white mb-10">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">
+                Proof Submissions - {selectedExercise?.title}
+              </h3>
+              <button
+                onClick={() => setShowProofModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5 sm:h-6 sm:w-6" />
+              </button>
+            </div>
 
-              <div className="space-y-4">
-                {selectedProofs.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No proof submissions yet.</p>
-                ) : (
-                  selectedProofs.map((proof) => (
-                    <div key={proof.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            {getProofIcon(proof.submissionType)}
-                            <span className="text-sm font-medium text-gray-900">
-                              {proof.patientFirstName} {proof.patientLastName}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(proof.submittedAt).toLocaleDateString()}
-                            </span>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(proof.status)}`}>
-                              {proof.status.replace('_', ' ')}
-                            </span>
-                          </div>
-                          
-                          {proof.content && (
-                            <p className="text-sm text-gray-700 mb-2">{proof.content}</p>
-                          )}
-                          
-                          {proof.fileName && (
-                            <div className="mt-2">
-                              <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
-                                {getProofIcon(proof.submissionType)}
-                                <span>{proof.fileName}</span>
-                                <span className="text-xs text-gray-500">
-                                  ({proof.fileSize ? Math.round(proof.fileSize / 1024) : 0} KB)
-                                </span>
-                              </div>
-                              
-                              {/* Display image */}
-                              {proof.submissionType === 'image' && proof.fileUrl && (
-                                <div className="mt-2">
-                                  <img 
-                                    src={getProofImageUrl(proof.fileUrl)}
-                                    alt="Submitted proof"
-                                    className="max-w-full h-auto max-h-64 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
-                                    onClick={() => setFullScreenImage({
-                                      isOpen: true,
-                                      url: getProofImageUrl(proof.fileUrl),
-                                      fileName: proof.fileName || 'Exercise Proof'
-                                    })}
-                                    onError={(e) => {
-                                      console.error('Image load error for:', e.target.src);
-                                      e.target.style.display = 'none';
-                                    }}
-                                    onLoad={(e) => {
-                                    }}
-                                  />
-                                </div>
-                              )}
-                              
-                              {/* Display video */}
-                              {proof.submissionType === 'video' && proof.fileUrl && (
-                                <div className="mt-2">
-                                  <video 
-                                    controls 
-                                    className="max-w-full h-auto max-h-64 rounded-lg border"
-                                    onError={(e) => {
-                                      console.error('❌ Video load error for:', e.target.src);
-                                      console.error('Video proof data:', { 
-                                        fileUrl: proof.fileUrl, 
-                                        filePath: proof.filePath, 
-                                        submissionType: proof.submissionType,
-                                        fileName: proof.fileName,
-                                        mimeType: proof.mimeType,
-                                        constructedUrl: getProofImageUrl(proof.fileUrl)
-                                      });
-                                      // Hide the video element
-                                      if (e.target) {
-                                        e.target.style.display = 'none';
-                                      }
-                                      // Find the error div using querySelector
-                                      const videoElement = e.target;
-                                      const parentDiv = videoElement?.parentElement;
-                                      if (parentDiv) {
-                                        // Find the error message div
-                                        const errorDiv = parentDiv.querySelector('.video-error-message');
-                                        if (errorDiv) {
-                                          errorDiv.style.display = 'block';
-                                          errorDiv.classList.remove('hidden');
-                                        } else {
-                                          // Create error message if it doesn't exist
-                                          const errorMsg = document.createElement('div');
-                                          errorMsg.className = 'text-sm text-red-500 mt-2 video-error-message';
-                                          errorMsg.textContent = `Failed to load video. URL: ${e.target.src}`;
-                                          parentDiv.appendChild(errorMsg);
-                                        }
-                                      }
-                                    }}
-                                  >
-                                    <source 
-                                      src={getProofImageUrl(proof.fileUrl)}
-                                      type={proof.mimeType || 'video/mp4'}
-                                    />
-                                    Your browser does not support the video tag.
-                                  </video>
-                                  <div className="hidden text-sm text-red-500 video-error-message">
-                                    Failed to load video
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Display file download link for other file types */}
-                              {proof.submissionType === 'file' && proof.fileUrl && (
-                                <div className="mt-2">
-                                  <a 
-                                    href={getProofImageUrl(proof.fileUrl)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm"
-                                  >
-                                    <File className="h-4 w-4" />
-                                    <span>Download file</span>
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
-                          {proof.therapistFeedback && (
-                            <div className="mt-2 p-2 bg-gray-50 rounded">
-                              <p className="text-sm text-gray-700">
-                                <strong>Your feedback:</strong> {proof.therapistFeedback}
-                              </p>
-                            </div>
-                          )}
+            <div className="space-y-3 sm:space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+              {selectedProofs.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No proof submissions yet.</p>
+              ) : (
+                selectedProofs.map((proof) => (
+                  <div key={proof.id} className="border rounded-lg p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          {getProofIcon(proof.submissionType)}
+                          <span className="text-sm font-medium text-gray-900">
+                            {proof.patientFirstName} {proof.patientLastName}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(proof.submittedAt).toLocaleDateString()}
+                          </span>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(proof.status)}`}>
+                            {proof.status.replace('_', ' ')}
+                          </span>
                         </div>
                         
+                        {proof.content && (
+                          <p className="text-sm text-gray-700 mb-2">{proof.content}</p>
+                        )}
+                        
+                        {proof.fileName && (
+                          <div className="mt-2">
+                            <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+                              {getProofIcon(proof.submissionType)}
+                              <span>{proof.fileName}</span>
+                              <span className="text-xs text-gray-500">
+                                ({proof.fileSize ? Math.round(proof.fileSize / 1024) : 0} KB)
+                              </span>
+                            </div>
+                            
+                            {/* Display image */}
+                            {proof.submissionType === 'image' && proof.fileUrl && (
+                              <div className="mt-2">
+                                <img 
+                                  src={getProofImageUrl(proof.fileUrl)}
+                                  alt="Submitted proof"
+                                  className="max-w-full h-auto max-h-48 sm:max-h-64 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => setFullScreenImage({
+                                    isOpen: true,
+                                    url: getProofImageUrl(proof.fileUrl),
+                                    fileName: proof.fileName || 'Exercise Proof'
+                                  })}
+                                  onError={(e) => {
+                                    console.error('Image load error for:', e.target.src);
+                                    e.target.style.display = 'none';
+                                  }}
+                                  onLoad={(e) => {
+                                  }}
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Display video */}
+                            {proof.submissionType === 'video' && proof.fileUrl && (
+                              <div className="mt-2">
+                                <video 
+                                  controls 
+                                  className="max-w-full h-auto max-h-48 sm:max-h-64 rounded-lg border"
+                                  onError={(e) => {
+                                    console.error('❌ Video load error for:', e.target.src);
+                                    console.error('Video proof data:', { 
+                                      fileUrl: proof.fileUrl, 
+                                      filePath: proof.filePath, 
+                                      submissionType: proof.submissionType,
+                                      fileName: proof.fileName,
+                                      mimeType: proof.mimeType,
+                                      constructedUrl: getProofImageUrl(proof.fileUrl)
+                                    });
+                                    // Hide the video element
+                                    if (e.target) {
+                                      e.target.style.display = 'none';
+                                    }
+                                    // Find the error div using querySelector
+                                    const videoElement = e.target;
+                                    const parentDiv = videoElement?.parentElement;
+                                    if (parentDiv) {
+                                      // Find the error message div
+                                      const errorDiv = parentDiv.querySelector('.video-error-message');
+                                      if (errorDiv) {
+                                        errorDiv.style.display = 'block';
+                                        errorDiv.classList.remove('hidden');
+                                      } else {
+                                        // Create error message if it doesn't exist
+                                        const errorMsg = document.createElement('div');
+                                        errorMsg.className = 'text-sm text-red-500 mt-2 video-error-message';
+                                        errorMsg.textContent = `Failed to load video. URL: ${e.target.src}`;
+                                        parentDiv.appendChild(errorMsg);
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <source 
+                                    src={getProofImageUrl(proof.fileUrl)}
+                                    type={proof.mimeType || 'video/mp4'}
+                                  />
+                                  Your browser does not support the video tag.
+                                </video>
+                                <div className="hidden text-sm text-red-500 video-error-message">
+                                  Failed to load video
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Display file download link for other file types */}
+                            {proof.submissionType === 'file' && proof.fileUrl && (
+                              <div className="mt-2">
+                                <a 
+                                  href={getProofImageUrl(proof.fileUrl)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  <File className="h-4 w-4" />
+                                  <span>Download file</span>
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {proof.therapistFeedback && (
+                          <div className="mt-2 p-2 bg-gray-50 rounded">
+                            <p className="text-sm text-gray-700">
+                              <strong>Your feedback:</strong> {proof.therapistFeedback}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                        
                         {proof.status === 'submitted' && (
-                          <div className="flex flex-col items-center gap-2 mt-3 w-full">
+                          <div className="flex flex-col gap-2 sm:mt-0 flex-shrink-0 sm:w-40">
                             <button
                               onClick={() => handleReviewProof(proof.id, 'approved', '')}
-                              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-green-700 bg-green-100 hover:bg-green-200 touch-target w-full sm:w-auto min-w-[160px]"
+                              className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-green-700 bg-green-100 hover:bg-green-200 touch-target w-full"
                             >
                               <CheckCircle className="h-4 w-4 mr-2" />
                               <span>Approve</span>
                             </button>
                             <button
                               onClick={() => handleRequestRevision(proof.id)}
-                              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-yellow-700 bg-yellow-100 hover:bg-yellow-200 touch-target w-full sm:w-auto min-w-[160px]"
+                              className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-yellow-700 bg-yellow-100 hover:bg-yellow-200 touch-target w-full"
                             >
                               <MessageSquare className="h-4 w-4 mr-2" />
                               <span>Request Revision</span>
