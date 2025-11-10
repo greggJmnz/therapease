@@ -82,12 +82,20 @@ const getProofImageUrl = (fileUrl) => {
   }
   
   // Construct full URL
-  const fullUrl = fileUrl.startsWith('/') 
-    ? `${serverBaseUrl}${fileUrl}` 
-    : `${serverBaseUrl}/${fileUrl}`;
+  let fullUrl;
+  if (fileUrl.startsWith('/')) {
+    // Already has leading slash, use as-is
+    fullUrl = `${serverBaseUrl}${fileUrl}`;
+  } else if (fileUrl.startsWith('uploads/')) {
+    // Has uploads/ prefix but no leading slash
+    fullUrl = `${serverBaseUrl}/${fileUrl}`;
+  } else {
+    // Relative path, add /uploads/ prefix
+    fullUrl = `${serverBaseUrl}/uploads/${fileUrl}`;
+  }
   
   // Always log in production to help debug image loading issues
-  console.log('📸 Proof image URL:', { 
+  console.log('📸 Proof file URL:', { 
     originalFileUrl: fileUrl, 
     serverBaseUrl, 
     fullUrl,
@@ -658,8 +666,10 @@ const HomeExercisesNew = () => {
                               {((proof.submissionType === 'video' || (proof.fileName && /\.(mp4|mov|avi|webm|mkv|flv|wmv)$/i.test(proof.fileName))) && (proof.fileUrl || proof.filePath)) && (
                                 <div className="mt-2">
                                   <video 
+                                    src={getProofImageUrl(proof.fileUrl || proof.filePath)}
                                     controls 
                                     preload="metadata"
+                                    crossOrigin="anonymous"
                                     className="max-w-full h-auto max-h-64 rounded-lg border"
                                     onLoadStart={() => {
                                       const videoUrl = getProofImageUrl(proof.fileUrl || proof.filePath);
@@ -676,7 +686,9 @@ const HomeExercisesNew = () => {
                                         duration: e.target.duration,
                                         videoWidth: e.target.videoWidth,
                                         videoHeight: e.target.videoHeight,
-                                        readyState: e.target.readyState
+                                        readyState: e.target.readyState,
+                                        src: e.target.src,
+                                        currentSrc: e.target.currentSrc
                                       });
                                     }}
                                     onCanPlay={() => {
@@ -725,10 +737,6 @@ const HomeExercisesNew = () => {
                                       }
                                     }}
                                   >
-                                    <source 
-                                      src={getProofImageUrl(proof.fileUrl || proof.filePath)}
-                                      type={proof.mimeType || 'video/mp4'}
-                                    />
                                     Your browser does not support the video tag.
                                   </video>
                                   <div className="hidden text-sm text-red-500 video-error-message">

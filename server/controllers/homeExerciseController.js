@@ -762,14 +762,16 @@ const getExerciseProofs = async (req, res) => {
           } else if (proof.filePath.startsWith('uploads/')) {
             proof.fileUrl = `/${proof.filePath}`;
           } else {
-            // Extract filename from path (handles both Windows and Unix paths)
+            // Handle relative paths (e.g., "exercise-proofs/proof-123.mp4")
+            // If path contains subdirectories, preserve them
             const pathParts = proof.filePath.split(/[/\\]/);
-            const fileName = pathParts[pathParts.length - 1];
-            
-            // Ensure we have the correct path structure
-            // Files are stored in server/uploads/exercise-proofs/
-            // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
-            proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+            if (pathParts.length > 1) {
+              // Path has subdirectories, construct full path
+              proof.fileUrl = `/uploads/${proof.filePath}`;
+            } else {
+              // Just a filename, assume it's in exercise-proofs
+              proof.fileUrl = `/uploads/exercise-proofs/${proof.filePath}`;
+            }
           }
         }
       }
@@ -890,14 +892,16 @@ const getTherapistProofs = async (req, res) => {
           } else if (proof.filePath.startsWith('uploads/')) {
             proof.fileUrl = `/${proof.filePath}`;
           } else {
-            // Extract filename from path (handles both Windows and Unix paths)
+            // Handle relative paths (e.g., "exercise-proofs/proof-123.mp4")
+            // If path contains subdirectories, preserve them
             const pathParts = proof.filePath.split(/[/\\]/);
-            const fileName = pathParts[pathParts.length - 1];
-            
-            // Ensure we have the correct path structure
-            // Files are stored in server/uploads/exercise-proofs/
-            // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
-            proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+            if (pathParts.length > 1) {
+              // Path has subdirectories, construct full path
+              proof.fileUrl = `/uploads/${proof.filePath}`;
+            } else {
+              // Just a filename, assume it's in exercise-proofs
+              proof.fileUrl = `/uploads/exercise-proofs/${proof.filePath}`;
+            }
           }
         }
       }
@@ -950,14 +954,16 @@ const getPatientProofs = async (req, res) => {
           } else if (proof.filePath.startsWith('uploads/')) {
             proof.fileUrl = `/${proof.filePath}`;
           } else {
-            // Extract filename from path (handles both Windows and Unix paths)
+            // Handle relative paths (e.g., "exercise-proofs/proof-123.mp4")
+            // If path contains subdirectories, preserve them
             const pathParts = proof.filePath.split(/[/\\]/);
-            const fileName = pathParts[pathParts.length - 1];
-            
-            // Ensure we have the correct path structure
-            // Files are stored in server/uploads/exercise-proofs/
-            // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
-            proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+            if (pathParts.length > 1) {
+              // Path has subdirectories, construct full path
+              proof.fileUrl = `/uploads/${proof.filePath}`;
+            } else {
+              // Just a filename, assume it's in exercise-proofs
+              proof.fileUrl = `/uploads/exercise-proofs/${proof.filePath}`;
+            }
           }
         }
       }
