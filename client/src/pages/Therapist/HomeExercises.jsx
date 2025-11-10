@@ -1023,7 +1023,6 @@ const HomeExercises = () => {
               </div>
             </div>
           </div>
-        </div>
       )}
 
       {/* Full Screen Image Viewer */}
