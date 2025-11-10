@@ -999,26 +999,24 @@ const HomeExercises = () => {
                           )}
                         </div>
                         
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 w-full sm:w-auto">
-                          {proof.status === 'submitted' && (
-                            <>
-                              <button
-                                onClick={() => handleReviewProof(proof.id, 'approved', '')}
-                                className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-lg text-green-700 bg-green-100 hover:bg-green-200 touch-target w-full sm:w-auto"
-                              >
-                                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                <span className="truncate">Approve</span>
-                              </button>
-                              <button
-                                onClick={() => handleRequestRevision(proof.id)}
-                                className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-lg text-yellow-700 bg-yellow-100 hover:bg-yellow-200 touch-target w-full sm:w-auto"
-                              >
-                                <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                <span className="truncate">Request Revision</span>
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        {proof.status === 'submitted' && (
+                          <div className="flex flex-col items-center gap-2 mt-3 w-full">
+                            <button
+                              onClick={() => handleReviewProof(proof.id, 'approved', '')}
+                              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-green-700 bg-green-100 hover:bg-green-200 touch-target w-full sm:w-auto min-w-[160px]"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              <span>Approve</span>
+                            </button>
+                            <button
+                              onClick={() => handleRequestRevision(proof.id)}
+                              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-yellow-700 bg-yellow-100 hover:bg-yellow-200 touch-target w-full sm:w-auto min-w-[160px]"
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              <span>Request Revision</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
