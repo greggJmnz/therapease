@@ -39,14 +39,14 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     // Allowed file extensions
-    const allowedExtensions = /\.(jpeg|jpg|png|gif|webp|bmp|mp4|mov|avi|webm|mkv|pdf|doc|docx|txt)$/i;
+    const allowedExtensions = /\.(jpeg|jpg|png|gif|webp|bmp|mp4|mov|avi|webm|mkv|m4v|flv|wmv|pdf|doc|docx|txt)$/i;
     
-    // Allowed MIME types
+    // Allowed MIME types (more lenient - check base type first, then specific)
     const allowedMimeTypes = [
       // Images
-      /^image\/(jpeg|jpg|png|gif|webp|bmp)$/i,
-      // Videos
-      /^video\/(mp4|quicktime|x-msvideo|webm|x-matroska)$/i,
+      /^image\/(jpeg|jpg|png|gif|webp|bmp)/i,
+      // Videos - be more lenient, accept any video/* type for common extensions
+      /^video\//i,
       // Documents
       /^application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/i,
       /^text\/(plain)$/i
@@ -55,8 +55,22 @@ const upload = multer({
     const ext = path.extname(file.originalname).toLowerCase();
     const extname = allowedExtensions.test(ext);
     
-    // Check if MIME type matches any allowed pattern
-    const mimetype = allowedMimeTypes.some(pattern => pattern.test(file.mimetype));
+    // For video files, be more lenient with MIME type checking
+    const isVideoExt = /\.(mp4|mov|avi|webm|mkv|m4v|flv|wmv)$/i.test(ext);
+    const isImageExt = /\.(jpeg|jpg|png|gif|webp|bmp)$/i.test(ext);
+    
+    let mimetype = false;
+    
+    if (isVideoExt) {
+      // For video files, accept any video/* MIME type
+      mimetype = /^video\//i.test(file.mimetype);
+    } else if (isImageExt) {
+      // For image files, check image/* MIME type
+      mimetype = /^image\//i.test(file.mimetype);
+    } else {
+      // For other files, check against specific patterns
+      mimetype = allowedMimeTypes.some(pattern => pattern.test(file.mimetype));
+    }
     
     // Log for debugging
     if (!extname || !mimetype) {
@@ -65,7 +79,15 @@ const upload = multer({
         extension: ext,
         mimetype: file.mimetype,
         extnameMatch: extname,
-        mimetypeMatch: mimetype
+        mimetypeMatch: mimetype,
+        isVideoExt,
+        isImageExt
+      });
+    } else {
+      console.log('✅ File accepted:', {
+        filename: file.originalname,
+        extension: ext,
+        mimetype: file.mimetype
       });
     }
     
