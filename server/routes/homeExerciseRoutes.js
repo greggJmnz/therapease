@@ -60,7 +60,30 @@ router.put('/therapist/proofs/:proofId/review', authenticateToken, reviewProof);
 
 // Patient routes
 router.get('/patient/exercises', authenticateToken, getPatientExercises);
-router.post('/patient/exercises/:exerciseId/proof', authenticateToken, upload.single('file'), submitProof);
+router.post('/patient/exercises/:exerciseId/proof', authenticateToken, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      console.error('Multer upload error:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ 
+          success: false,
+          error: 'File too large. Maximum file size is 50MB.' 
+        });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Unexpected file field. Please use "file" as the field name.' 
+        });
+      }
+      return res.status(400).json({ 
+        success: false,
+        error: err.message || 'File upload error' 
+      });
+    }
+    next();
+  });
+}, submitProof);
 router.get('/patient/exercises/:exerciseId/proofs', authenticateToken, getExerciseProofs);
 router.get('/patient/proofs', authenticateToken, getPatientProofs);
 

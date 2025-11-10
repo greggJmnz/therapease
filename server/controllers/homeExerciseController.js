@@ -520,14 +520,33 @@ const submitProof = async (req, res) => {
     const file = req.file;
     const userId = req.user.id; // Get user ID from authenticated user
 
+    console.log('📤 Submit proof request:', {
+      exerciseId,
+      therapistId,
+      submissionType,
+      hasFile: !!file,
+      fileSize: file?.size,
+      fileName: file?.originalname,
+      mimeType: file?.mimetype,
+      userId
+    });
+
     if (!exerciseId || !therapistId || !submissionType) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      console.error('❌ Missing required fields:', { exerciseId, therapistId, submissionType });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Missing required fields: exerciseId, therapistId, and submissionType are required' 
+      });
     }
 
     // Get patient ID from authenticated user
     const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
     if (!patient) {
-      return res.status(404).json({ error: 'Patient not found' });
+      console.error('❌ Patient not found for userId:', userId);
+      return res.status(404).json({ 
+        success: false,
+        error: 'Patient not found' 
+      });
     }
     const actualPatientId = patient.id;
 
@@ -537,10 +556,28 @@ const submitProof = async (req, res) => {
     let mimeType = null;
 
     if (file) {
-      filePath = file.path;
+      // Use relative path from uploads directory for database storage
+      // Extract just the filename and subdirectory
+      const pathParts = file.path.split(/[/\\]/);
+      const uploadsIndex = pathParts.findIndex(part => part === 'uploads');
+      if (uploadsIndex !== -1) {
+        // Get path relative to uploads directory
+        filePath = pathParts.slice(uploadsIndex + 1).join('/');
+      } else {
+        // Fallback: use full path but truncate if too long
+        filePath = file.path.length > 500 ? file.path.substring(file.path.length - 500) : file.path;
+      }
       fileName = file.originalname;
       fileSize = file.size;
       mimeType = file.mimetype;
+      
+      console.log('📁 File info:', {
+        originalPath: file.path,
+        storedPath: filePath,
+        fileName,
+        fileSize,
+        mimeType
+      });
     }
 
     const query = `
@@ -586,8 +623,27 @@ const submitProof = async (req, res) => {
 
     const proof = await getRow(getProofQuery, [proofId]);
 
-    // Broadcast proof change
-    websocketService.broadcastProofChange(proof, 'submitted');
+    if (!proof) {
+      console.error('❌ Proof not found after insert, proofId:', proofId);
+      return res.status(500).json({ 
+        success: false,
+        error: 'Proof was created but could not be retrieved' 
+      });
+    }
+
+    // Broadcast proof change (don't fail if websocket fails)
+    try {
+      websocketService.broadcastProofChange(proof, 'submitted');
+    } catch (wsError) {
+      console.warn('⚠️ WebSocket broadcast failed (non-critical):', wsError.message);
+    }
+
+    console.log('✅ Proof submitted successfully:', {
+      proofId,
+      exerciseId,
+      patientId: actualPatientId,
+      submissionType
+    });
 
     res.status(201).json({
       success: true,
@@ -595,8 +651,32 @@ const submitProof = async (req, res) => {
       message: 'Proof submitted successfully'
     });
   } catch (error) {
-    console.error('Error submitting proof:', error);
-    res.status(500).json({ error: 'Failed to submit proof' });
+    console.error('❌ Error submitting proof:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
+    
+    // If file was uploaded but error occurred, try to clean it up
+    if (req.file && req.file.path) {
+      try {
+        const fs = require('fs');
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+          console.log('🧹 Cleaned up uploaded file due to error:', req.file.path);
+        }
+      } catch (cleanupError) {
+        console.error('⚠️ Failed to cleanup file:', cleanupError.message);
+      }
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      error: error.message || 'Failed to submit proof',
+      ...(process.env.NODE_ENV === 'development' && { details: error.stack })
+    });
   }
 };
 
@@ -626,15 +706,22 @@ const getExerciseProofs = async (req, res) => {
         if (proof.filePath.startsWith('data:')) {
           proof.fileUrl = proof.filePath;
         } else {
-          // Convert local file path to HTTP URL
-          // Extract filename from path (handles both Windows and Unix paths)
-          const pathParts = proof.filePath.split(/[/\\]/);
-          const fileName = pathParts[pathParts.length - 1];
-          
-          // Ensure we have the correct path structure
-          // Files are stored in server/uploads/exercise-proofs/
-          // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
-          proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+          // Handle both absolute and relative paths
+          // If path already starts with /uploads, use it as-is
+          if (proof.filePath.startsWith('/uploads/')) {
+            proof.fileUrl = proof.filePath;
+          } else if (proof.filePath.startsWith('uploads/')) {
+            proof.fileUrl = `/${proof.filePath}`;
+          } else {
+            // Extract filename from path (handles both Windows and Unix paths)
+            const pathParts = proof.filePath.split(/[/\\]/);
+            const fileName = pathParts[pathParts.length - 1];
+            
+            // Ensure we have the correct path structure
+            // Files are stored in server/uploads/exercise-proofs/
+            // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
+            proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+          }
         }
       }
       return proof;
@@ -747,15 +834,22 @@ const getTherapistProofs = async (req, res) => {
         if (proof.filePath.startsWith('data:')) {
           proof.fileUrl = proof.filePath;
         } else {
-          // Convert local file path to HTTP URL
-          // Extract filename from path (handles both Windows and Unix paths)
-          const pathParts = proof.filePath.split(/[/\\]/);
-          const fileName = pathParts[pathParts.length - 1];
-          
-          // Ensure we have the correct path structure
-          // Files are stored in server/uploads/exercise-proofs/
-          // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
-          proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+          // Handle both absolute and relative paths
+          // If path already starts with /uploads, use it as-is
+          if (proof.filePath.startsWith('/uploads/')) {
+            proof.fileUrl = proof.filePath;
+          } else if (proof.filePath.startsWith('uploads/')) {
+            proof.fileUrl = `/${proof.filePath}`;
+          } else {
+            // Extract filename from path (handles both Windows and Unix paths)
+            const pathParts = proof.filePath.split(/[/\\]/);
+            const fileName = pathParts[pathParts.length - 1];
+            
+            // Ensure we have the correct path structure
+            // Files are stored in server/uploads/exercise-proofs/
+            // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
+            proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+          }
         }
       }
       return proof;
@@ -800,15 +894,22 @@ const getPatientProofs = async (req, res) => {
         if (proof.filePath.startsWith('data:')) {
           proof.fileUrl = proof.filePath;
         } else {
-          // Convert local file path to HTTP URL
-          // Extract filename from path (handles both Windows and Unix paths)
-          const pathParts = proof.filePath.split(/[/\\]/);
-          const fileName = pathParts[pathParts.length - 1];
-          
-          // Ensure we have the correct path structure
-          // Files are stored in server/uploads/exercise-proofs/
-          // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
-          proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+          // Handle both absolute and relative paths
+          // If path already starts with /uploads, use it as-is
+          if (proof.filePath.startsWith('/uploads/')) {
+            proof.fileUrl = proof.filePath;
+          } else if (proof.filePath.startsWith('uploads/')) {
+            proof.fileUrl = `/${proof.filePath}`;
+          } else {
+            // Extract filename from path (handles both Windows and Unix paths)
+            const pathParts = proof.filePath.split(/[/\\]/);
+            const fileName = pathParts[pathParts.length - 1];
+            
+            // Ensure we have the correct path structure
+            // Files are stored in server/uploads/exercise-proofs/
+            // Server serves from /uploads, so URL should be /uploads/exercise-proofs/filename
+            proof.fileUrl = `/uploads/exercise-proofs/${fileName}`;
+          }
         }
       }
       return proof;
