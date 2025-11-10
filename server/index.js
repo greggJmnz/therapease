@@ -312,24 +312,12 @@ const staticMiddleware = express.static(path.join(__dirname, 'uploads'), {
   fallthrough: false // Don't fall through to next middleware if file not found
 });
 
-// Apply CORS middleware and static file serving
-app.use('/uploads', corsStaticMiddleware, (req, res, next) => {
+// Apply static file serving (CORS headers are handled by Nginx)
+// Skip corsStaticMiddleware to prevent duplicate CORS headers since Nginx handles them
+app.use('/uploads', (req, res, next) => {
   // Log the request for debugging (always log in production for now to diagnose)
   console.log(`[Static File Request] ${req.method} ${req.path}`);
   console.log(`[Static File Request] Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
-  
-  // Ensure CORS headers are set (corsStaticMiddleware should have done this, but ensure they're present)
-  const origin = req.headers.origin;
-  const allowedOrigins = getCorsOrigins();
-  if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
-    // Set CORS headers if not already set (double-check to ensure they're present)
-    if (!res.getHeader('Access-Control-Allow-Origin')) {
-      res.setHeader('Access-Control-Allow-Origin', origin || '*');
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    }
-  }
   
   // Strip /uploads prefix from path (express.static mounted at /uploads should do this automatically,
   // but we need to handle it manually to prevent path duplication)
