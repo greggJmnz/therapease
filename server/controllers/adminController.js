@@ -1865,7 +1865,25 @@ const sendPasswordResetLink = async (req, res) => {
       // Return success immediately - email is sent in background
       // URL encode the token to ensure it's safely handled in the URL
       const encodedToken = encodeURIComponent(resetToken);
-      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${encodedToken}`;
+      
+      // Get frontend URL from environment or derive from CORS_ORIGIN
+      const getFrontendUrl = () => {
+        if (process.env.FRONTEND_URL) {
+          return process.env.FRONTEND_URL;
+        }
+        if (process.env.NODE_ENV === 'production') {
+          if (process.env.CORS_ORIGIN) {
+            // Get the first origin from CORS_ORIGIN (comma-separated list)
+            const firstOrigin = process.env.CORS_ORIGIN.split(',')[0].trim();
+            // Use the origin as-is (it should already be a full URL like https://therapease.site)
+            return firstOrigin;
+          }
+          return 'https://therapease.site';
+        }
+        return 'http://localhost:3000';
+      };
+      
+      const resetLink = `${getFrontendUrl()}/auth/reset-password?token=${encodedToken}`;
       res.json({
         success: true,
         message: 'Password reset token created successfully. Email will be sent if email service is configured.',

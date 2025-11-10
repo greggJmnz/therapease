@@ -2,6 +2,32 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const axios = require('axios');
 
+/**
+ * Get the frontend URL from environment variables
+ * Priority: FRONTEND_URL > CORS_ORIGIN (first origin) > Production default > Development default
+ */
+const getFrontendUrl = () => {
+  // If FRONTEND_URL is explicitly set, use it
+  if (process.env.FRONTEND_URL) {
+    return process.env.FRONTEND_URL;
+  }
+  
+  // In production, try to derive from CORS_ORIGIN
+  if (process.env.NODE_ENV === 'production') {
+    if (process.env.CORS_ORIGIN) {
+      // Get the first origin from CORS_ORIGIN (comma-separated list)
+      const firstOrigin = process.env.CORS_ORIGIN.split(',')[0].trim();
+      // Use the origin as-is (it should already be a full URL like https://therapease.site)
+      return firstOrigin;
+    }
+    // Production default
+    return 'https://therapease.site';
+  }
+  
+  // Development default
+  return 'http://localhost:3000';
+};
+
 class EmailService {
   constructor() {
     this.transporter = null;
@@ -176,7 +202,7 @@ class EmailService {
     try {
       // URL encode the token to ensure it's safely handled in the URL
       const encodedToken = encodeURIComponent(resetToken);
-      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/reset-password?token=${encodedToken}`;
+      const resetLink = `${getFrontendUrl()}/auth/reset-password?token=${encodedToken}`;
       const html = this.getPasswordResetEmailTemplate(userFirstName, resetLink);
       const text = this.getPasswordResetEmailText(userFirstName, resetLink);
       
@@ -427,7 +453,7 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
             <h3>${content.title}</h3>
             ${content.content}
             <p>Ready to get started? Log in to your account and explore all the features available to you.</p>
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/login" class="button">Log In to TherapEase</a>
+            <a href="${getFrontendUrl()}/login" class="button">Log In to TherapEase</a>
             <p>If you have any questions or need assistance, our support team is here to help!</p>
             <p>Best regards,<br>The TherapEase Team</p>
           </div>
@@ -461,7 +487,7 @@ ${content}
 
 Ready to get started? Log in to your account and explore all the features available to you.
 
-Log in here: ${process.env.FRONTEND_URL || 'http://localhost:3000'}/login
+Log in here: ${getFrontendUrl()}/login
 
 If you have any questions or need assistance, our support team is here to help!
 
