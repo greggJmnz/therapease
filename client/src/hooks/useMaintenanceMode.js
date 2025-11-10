@@ -6,19 +6,18 @@ export const useMaintenanceMode = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
 
-  // OPTIMIZED: Query to get maintenance status (public endpoint)
-  // Don't block login - assume no maintenance if query fails
+  // Query to get maintenance status (public endpoint)
   const { isLoading, error } = useQuery(
     'maintenanceStatus',
     adminAPI.getMaintenanceStatus,
     {
-      refetchInterval: 300000, // Refetch every 5 minutes (reduced frequency to reduce server load)
-      refetchOnWindowFocus: false, // Don't refetch on window focus to reduce requests
-      staleTime: 300000, // Consider data fresh for 5 minutes
-      cacheTime: 600000, // Keep in cache for 10 minutes
-      retry: false, // OPTIMIZED: Don't retry - if it fails, assume no maintenance (don't block login)
-      retryDelay: 0, // Don't wait for retry
-      refetchOnMount: false, // Don't refetch on mount - use cached data
+      refetchInterval: 30000, // Refetch every 30 seconds during maintenance
+      refetchOnWindowFocus: true, // Refetch on window focus to catch maintenance changes
+      staleTime: 10000, // Consider data fresh for 10 seconds
+      cacheTime: 60000, // Keep in cache for 1 minute
+      retry: 1, // Retry once if it fails
+      retryDelay: 1000, // Wait 1 second before retry
+      refetchOnMount: true, // Always check on mount
       onSuccess: (data) => {
         if (data?.data?.maintenanceMode) {
           setIsMaintenanceMode(true);
@@ -29,43 +28,61 @@ export const useMaintenanceMode = () => {
         }
       },
       onError: (error) => {
-        // OPTIMIZED: If we can't fetch maintenance status, assume maintenance mode is off
-        // This prevents blocking login if the API is slow or unavailable
-        setIsMaintenanceMode(false);
-        setMaintenanceMessage('');
+        // If we get a 503 error, it might be maintenance mode
+        if (error?.response?.status === 503 && error?.response?.data?.maintenanceMode) {
+          setIsMaintenanceMode(true);
+          setMaintenanceMessage(error.response.data.message || 'System is currently under maintenance. Please try again later.');
+        } else {
+          // If it's not a 503 maintenance error, assume no maintenance
+          setIsMaintenanceMode(false);
+          setMaintenanceMessage('');
+        }
       }
     }
   );
 
-  // Check for maintenance mode in API responses
+  // Check for maintenance mode in API responses and listen for maintenance events
   useEffect(() => {
-    const handleApiError = (error) => {
-      if (error?.response?.status === 503 && error?.response?.data?.maintenanceMode) {
+    // Listen for maintenance mode events from axios interceptor
+    const handleMaintenanceEvent = (event) => {
+      if (event.detail?.maintenanceMode) {
         setIsMaintenanceMode(true);
-        setMaintenanceMessage(error.response.data.message || 'System is currently under maintenance. Please try again later.');
+        setMaintenanceMessage(event.detail.message || 'System is currently under maintenance. Please try again later.');
       }
     };
 
-    // Add global error handler for maintenance mode
+    // Listen for maintenance:enabled events
+    window.addEventListener('maintenance:enabled', handleMaintenanceEvent);
+
+    // Also check for 503 errors in fetch responses (for non-axios requests)
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
       try {
         const response = await originalFetch(...args);
         if (response.status === 503) {
-          const data = await response.json();
-          if (data.maintenanceMode) {
-            setIsMaintenanceMode(true);
-            setMaintenanceMessage(data.message || 'System is currently under maintenance. Please try again later.');
+          try {
+            const data = await response.json();
+            if (data.maintenanceMode) {
+              setIsMaintenanceMode(true);
+              setMaintenanceMessage(data.message || 'System is currently under maintenance. Please try again later.');
+            }
+          } catch (e) {
+            // If response is not JSON, ignore
           }
         }
         return response;
       } catch (error) {
-        handleApiError(error);
+        // Handle fetch errors
+        if (error?.response?.status === 503 && error?.response?.data?.maintenanceMode) {
+          setIsMaintenanceMode(true);
+          setMaintenanceMessage(error.response.data.message || 'System is currently under maintenance. Please try again later.');
+        }
         throw error;
       }
     };
 
     return () => {
+      window.removeEventListener('maintenance:enabled', handleMaintenanceEvent);
       window.fetch = originalFetch;
     };
   }, []);

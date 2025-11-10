@@ -13,12 +13,12 @@ const checkMaintenanceMode = async (req, res, next) => {
       return next();
     }
 
-    // Skip maintenance check for maintenance status endpoint
-    if (req.path === '/api/admin/maintenance-status' && req.method === 'GET') {
+    // Skip maintenance check for maintenance status endpoint (both public and admin)
+    if ((req.path === '/api/maintenance-status' || req.path === '/api/admin/maintenance-status') && req.method === 'GET') {
       return next();
     }
 
-    // Skip maintenance check for admin login (to allow admins to access the system)
+    // Skip maintenance check for login endpoint (to allow users to login and see maintenance page)
     if (req.path === '/api/auth/login' && req.method === 'POST') {
       return next();
     }
@@ -68,8 +68,8 @@ const checkPublicMaintenanceMode = async (req, res, next) => {
       return next();
     }
 
-    // Skip maintenance check for maintenance status endpoint
-    if (req.path === '/api/admin/maintenance-status') {
+    // Skip maintenance check for maintenance status endpoint (both public and admin)
+    if (req.path === '/api/maintenance-status' || req.path === '/api/admin/maintenance-status') {
       return next();
     }
 

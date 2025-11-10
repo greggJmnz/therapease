@@ -111,6 +111,19 @@ api.interceptors.response.use(
       });
     }
     
+    // Handle 503 Service Unavailable (Maintenance Mode)
+    if (error.response?.status === 503 && error.response?.data?.maintenanceMode) {
+      // Dispatch event to trigger maintenance mode in useMaintenanceMode hook
+      window.dispatchEvent(new CustomEvent('maintenance:enabled', {
+        detail: {
+          message: error.response.data.message || 'System is currently under maintenance. Please try again later.',
+          maintenanceMode: true
+        }
+      }));
+      // Don't reject - let the maintenance page handle it
+      return Promise.reject(error);
+    }
+    
     if (error.response?.status === 401) {
       // Don't clear token on initial verify check (this happens during auth initialization)
       // Only clear token if we're not on the login page and it's not a verify request
