@@ -121,6 +121,7 @@ const HomeExercisesNew = () => {
   const [exerciseProofs, setExerciseProofs] = useState([]);
   const [expandedExercises, setExpandedExercises] = useState(new Set());
   const [fullScreenImage, setFullScreenImage] = useState({ isOpen: false, url: '', fileName: '' });
+  const [videoErrors, setVideoErrors] = useState({});
 
   // Fetch exercises (patient ID is automatically determined from authenticated user)
   const { data: exercisesData, isLoading, error, refetch } = useQuery(
@@ -697,6 +698,9 @@ const HomeExercisesNew = () => {
                                     onError={(e) => {
                                       const video = e.target;
                                       const error = video.error;
+                                      const isFormatError = error?.code === 4 || error?.message?.includes('Format error') || error?.message?.includes('MEDIA_ELEMENT_ERROR');
+                                      const isMovFile = proof.fileName?.toLowerCase().endsWith('.mov');
+                                      
                                       console.error('❌ Video load error:', {
                                         code: error?.code,
                                         message: error?.message,
@@ -708,40 +712,48 @@ const HomeExercisesNew = () => {
                                         filePath: proof.filePath,
                                         mimeType: proof.mimeType,
                                         fileName: proof.fileName,
-                                        constructedUrl: getProofImageUrl(proof.fileUrl || proof.filePath)
+                                        constructedUrl: getProofImageUrl(proof.fileUrl || proof.filePath),
+                                        isFormatError,
+                                        isMovFile
                                       });
+                                      
+                                      // Set error state for this video
+                                      setVideoErrors(prev => ({
+                                        ...prev,
+                                        [proof.id]: {
+                                          error: error?.message || 'Unknown error',
+                                          isFormatError,
+                                          isMovFile
+                                        }
+                                      }));
                                       
                                       // Hide the video element
                                       if (video) {
                                         video.style.display = 'none';
                                       }
-                                      
-                                      // Find the error div
-                                      const parentDiv = video?.parentElement;
-                                      if (parentDiv) {
-                                        const errorDiv = parentDiv.querySelector('.video-error-message');
-                                        if (errorDiv) {
-                                          errorDiv.style.display = 'block';
-                                          errorDiv.classList.remove('hidden');
-                                          // Update error message with more details
-                                          const errorMsg = error?.message || 'Unknown error';
-                                          errorDiv.textContent = `Failed to load video (${errorMsg}). URL: ${video.currentSrc || video.src}`;
-                                        } else {
-                                          // Create error message if it doesn't exist
-                                          const errorMsg = document.createElement('div');
-                                          errorMsg.className = 'text-sm text-red-500 mt-2 video-error-message';
-                                          const errorText = error?.message || 'Unknown error';
-                                          errorMsg.textContent = `Failed to load video (${errorText}). URL: ${video.currentSrc || video.src}`;
-                                          parentDiv.appendChild(errorMsg);
-                                        }
-                                      }
                                     }}
                                   >
                                     Your browser does not support the video tag.
                                   </video>
-                                  <div className="hidden text-sm text-red-500 video-error-message">
-                                    Failed to load video
-                                  </div>
+                                  {videoErrors[proof.id] && (
+                                    <div className="text-sm text-red-500 mt-2 video-error-message">
+                                      <div className="mb-2">
+                                        {videoErrors[proof.id].isMovFile 
+                                          ? 'QuickTime (.mov) format may not be supported by your browser.' 
+                                          : videoErrors[proof.id].isFormatError
+                                          ? 'Video format not supported by your browser.'
+                                          : `Failed to load video (${videoErrors[proof.id].error}).`}
+                                      </div>
+                                      <a 
+                                        href={getProofImageUrl(proof.fileUrl || proof.filePath)} 
+                                        download={proof.fileName || 'video.mov'} 
+                                        className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm underline"
+                                      >
+                                        <File className="h-4 w-4" />
+                                        <span>Download video to play in external player</span>
+                                      </a>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               
