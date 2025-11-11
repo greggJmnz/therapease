@@ -82,25 +82,60 @@ self.addEventListener('push', (event) => {
   // Parse push data if available
   if (event.data) {
     try {
-      const pushData = event.data.json();
-      notificationData = {
-        ...notificationData,
-        ...pushData,
-        data: {
-          ...notificationData.data,
-          ...pushData.data
+      // Check if data has content
+      const hasData = event.data.arrayBuffer && event.data.arrayBuffer().then ? true : false;
+      
+      if (hasData) {
+        // Try to parse as JSON first
+        try {
+          const pushData = event.data.json();
+          console.log('📦 Parsed push data:', pushData);
+          
+          if (pushData && typeof pushData === 'object') {
+            notificationData = {
+              ...notificationData,
+              ...pushData,
+              data: {
+                ...notificationData.data,
+                ...(pushData.data || {})
+              }
+            };
+            console.log('✅ Using parsed push data for notification');
+          }
+        } catch (jsonError) {
+          console.warn('⚠️ Failed to parse as JSON, trying text:', jsonError);
+          // Try as text
+          try {
+            const textData = event.data.text();
+            if (textData) {
+              notificationData.body = textData;
+              console.log('✅ Using text data as body');
+            }
+          } catch (textError) {
+            console.error('❌ Failed to parse push data as text:', textError);
+          }
         }
-      };
+      } else {
+        console.warn('⚠️ Push event data is empty');
+      }
     } catch (error) {
-      console.error('Error parsing push data:', error);
-      // Use text data as body if JSON parsing fails
-      notificationData.body = event.data.text();
+      console.error('❌ Error processing push data:', error);
     }
+  } else {
+    console.warn('⚠️ Push event has no data property');
   }
+
+  console.log('📤 Showing notification with data:', notificationData);
 
   // Show notification
   event.waitUntil(
     self.registration.showNotification(notificationData.title, notificationData)
+      .then(() => {
+        console.log('✅ Notification shown successfully');
+      })
+      .catch((error) => {
+        console.error('❌ Failed to show notification:', error);
+      })
   );
 });
 
