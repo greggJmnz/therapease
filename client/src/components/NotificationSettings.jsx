@@ -6,10 +6,11 @@ import {
   CheckCircle, 
   AlertCircle, 
   Loader2,
-  Smartphone,
-  Desktop,
-  Mail,
-  MessageSquare
+  MessageSquare,
+  Calendar,
+  FileText,
+  TrendingUp,
+  X
 } from 'lucide-react';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import ModernButton from './ModernButton';
