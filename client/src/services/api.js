@@ -365,6 +365,7 @@ export const patientAPI = {
   getSettings: () => api.get(`/patient/settings`),
   getHomeExercises: () => api.get(`/patient/exercises`),
   getHomeExercisesNew: (patientId) => api.get(`/home-exercises/patient/exercises?patientId=${patientId || localStorage.getItem('userId') || ''}`),
+  updateExerciseStatus: (exerciseId, status) => api.put(`/home-exercises/patient/exercises/${exerciseId}/status`, { status }),
   submitHomeExerciseProof: (exerciseId, formData) => api.post(`/home-exercises/patient/exercises/${exerciseId}/proof`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),

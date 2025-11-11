@@ -929,7 +929,7 @@ const AdminPatients = () => {
                      
                      <div className="grid grid-cols-2 gap-4">
                        <div>
-                         <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                         <label className="block text-sm font-medium text-gray-700 mb-2">First Name <span className="text-red-500">*</span></label>
                          <input
                            type="text"
                            value={editingPatient.firstName || ''}
@@ -939,7 +939,7 @@ const AdminPatients = () => {
                          />
                        </div>
                        <div>
-                         <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                         <label className="block text-sm font-medium text-gray-700 mb-2">Last Name <span className="text-red-500">*</span></label>
                          <input
                            type="text"
                            value={editingPatient.lastName || ''}
@@ -951,7 +951,7 @@ const AdminPatients = () => {
                      </div>
 
                      <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Email <span className="text-red-500">*</span></label>
                        <input
                          type="email"
                          value={editingPatient.email || ''}
@@ -1056,7 +1056,7 @@ const AdminPatients = () => {
                      </div>
 
                      <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis *</label>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">Diagnosis <span className="text-red-500">*</span></label>
                        <input
                          type="text"
                          value={editingPatient.patient?.diagnosis || ''}
@@ -2105,7 +2105,7 @@ const SessionSchedulingContent = ({ patient, onScheduleSuccess }) => {
         {/* Therapist Selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Assign Therapist *
+            Assign Therapist <span className="text-red-500">*</span>
           </label>
           <select
             value={selectedTherapist}
@@ -2128,7 +2128,7 @@ const SessionSchedulingContent = ({ patient, onScheduleSuccess }) => {
         {/* Date */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Appointment Date *
+            Appointment Date <span className="text-red-500">*</span>
           </label>
           <input
             type="date"
@@ -2143,7 +2143,7 @@ const SessionSchedulingContent = ({ patient, onScheduleSuccess }) => {
         {/* Time */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Start Time *
+            Start Time <span className="text-red-500">*</span>
           </label>
           <input
             type="time"
@@ -2453,7 +2453,7 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess, onUnassignme
       {/* Therapist Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Select Available Therapist *
+          Select Available Therapist <span className="text-red-500">*</span>
         </label>
         
         {therapists.length === 0 ? (
@@ -2694,7 +2694,7 @@ const AddTherapistContent = ({ patient, onAssignmentSuccess }) => {
       {/* Assignment Type Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Assignment Type *
+          Assignment Type <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
@@ -2731,7 +2731,7 @@ const AddTherapistContent = ({ patient, onAssignmentSuccess }) => {
       {/* Therapist Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Select Additional Therapist *
+          Select Additional Therapist <span className="text-red-500">*</span>
         </label>
         
         {therapists.length === 0 ? (

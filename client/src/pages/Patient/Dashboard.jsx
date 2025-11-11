@@ -226,8 +226,8 @@ const PatientDashboard = () => {
               <Calendar className="h-6 w-6" />
             </div>
             <div className="action-content">
-              <h4>Book Session</h4>
-              <p>Schedule session</p>
+              <h4>Book Appointment</h4>
+              <p>Schedule appointment</p>
             </div>
           </Link>
 

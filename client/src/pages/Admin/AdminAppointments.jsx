@@ -1274,7 +1274,7 @@ const AdminAppointments = () => {
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Stethoscope className="h-4 w-4 inline mr-2" />
-                    Select Therapist *
+                    Select Therapist <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={newAppointment.therapistId}
@@ -1308,7 +1308,7 @@ const AdminAppointments = () => {
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <User className="h-4 w-4 inline mr-2" />
-                    Select Patient *
+                    Select Patient <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={newAppointment.patientId}
@@ -1346,7 +1346,7 @@ const AdminAppointments = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Calendar className="h-4 w-4 inline mr-2" />
-                    Appointment Date *
+                    Appointment Date <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -1369,7 +1369,7 @@ const AdminAppointments = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Clock className="h-4 w-4 inline mr-2" />
-                    Appointment Time *
+                    Appointment Time <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="time"
@@ -1430,7 +1430,7 @@ const AdminAppointments = () => {
                 {/* Reason */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reason for Appointment *
+                    Reason for Appointment <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={newAppointment.reason}
@@ -1686,7 +1686,7 @@ const AdminAppointments = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date *
+                      Date <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="date"
@@ -1698,7 +1698,7 @@ const AdminAppointments = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Time *
+                      Time <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="time"
@@ -1718,7 +1718,7 @@ const AdminAppointments = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Duration (minutes) *
+                      Duration (minutes) <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={editingAppointment.duration}
@@ -1735,7 +1735,7 @@ const AdminAppointments = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Type *
+                      Type <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={editingAppointment.type}
@@ -1756,7 +1756,7 @@ const AdminAppointments = () => {
                 {/* Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status *
+                    Status <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={editingAppointment.status}

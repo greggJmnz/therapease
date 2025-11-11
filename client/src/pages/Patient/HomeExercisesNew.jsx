@@ -170,6 +170,25 @@ const HomeExercisesNew = () => {
     }
   );
 
+  // Update exercise status mutation
+  const updateStatusMutation = useMutation(
+    ({ exerciseId, status }) => patientAPI.updateExerciseStatus(exerciseId, status),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('patientHomeExercisesNew');
+        toast.success('Exercise status updated successfully!');
+      },
+      onError: (error) => {
+        console.error('Error updating exercise status:', error);
+        toast.error(`Failed to update status: ${error.response?.data?.error || error.message}`);
+      }
+    }
+  );
+
+  const handleUpdateStatus = (exerciseId, status) => {
+    updateStatusMutation.mutate({ exerciseId, status });
+  };
+
   // Extract exercises from API response - handle both response structures
   const exercises = Array.isArray(exercisesData?.data?.data) 
     ? exercisesData.data.data 
@@ -469,6 +488,19 @@ const HomeExercisesNew = () => {
                     <span className="sm:hidden">Proofs ({exercise.proofCount || 0})</span>
                   </button>
                   
+                  {/* Status Update Buttons */}
+                  {exercise.status !== 'in_progress' && exercise.status !== 'completed' && (
+                    <button
+                      onClick={() => handleUpdateStatus(exercise.id, 'in_progress')}
+                      disabled={updateStatusMutation.isLoading}
+                      className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200 transform hover:scale-105 touch-target w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Mark In Progress</span>
+                      <span className="sm:hidden">In Progress</span>
+                    </button>
+                  )}
+                  
                   {exercise.status !== 'completed' && (
                     <button
                       onClick={() => {
@@ -480,6 +512,18 @@ const HomeExercisesNew = () => {
                       <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                       <span className="hidden sm:inline">Submit Proof</span>
                       <span className="sm:hidden">Submit</span>
+                    </button>
+                  )}
+                  
+                  {exercise.status === 'in_progress' && exercise.status !== 'completed' && (
+                    <button
+                      onClick={() => handleUpdateStatus(exercise.id, 'completed')}
+                      disabled={updateStatusMutation.isLoading}
+                      className="inline-flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105 touch-target w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Mark Completed</span>
+                      <span className="sm:hidden">Complete</span>
                     </button>
                   )}
                 </div>
@@ -529,7 +573,7 @@ const HomeExercisesNew = () => {
                 {submissionType === 'text' ? (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description *
+                      Description <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       value={submissionContent}
@@ -543,7 +587,7 @@ const HomeExercisesNew = () => {
                 ) : (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Upload File *
+                      Upload File <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="file"

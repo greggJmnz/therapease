@@ -698,7 +698,7 @@ const HomeExercises = () => {
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
-                      Patient *
+                      Patient <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={formData.patientId}
@@ -717,7 +717,7 @@ const HomeExercises = () => {
 
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
-                      Exercise Title *
+                      Exercise Title <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -732,9 +732,9 @@ const HomeExercises = () => {
 
                 {/* Description */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Description *
-                  </label>
+                    <label className="block text-sm font-semibold text-gray-700">
+                    Description <span className="text-red-500">*</span>
+                    </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}

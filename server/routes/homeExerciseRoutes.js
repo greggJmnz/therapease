@@ -13,7 +13,8 @@ const {
   getExerciseProofs,
   reviewProof,
   getTherapistProofs,
-  getPatientProofs
+  getPatientProofs,
+  updateExerciseStatus
 } = require('../controllers/homeExerciseController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
@@ -109,6 +110,7 @@ router.put('/therapist/proofs/:proofId/review', authenticateToken, reviewProof);
 
 // Patient routes
 router.get('/patient/exercises', authenticateToken, getPatientExercises);
+router.put('/patient/exercises/:id/status', authenticateToken, updateExerciseStatus);
 router.post('/patient/exercises/:exerciseId/proof', authenticateToken, (req, res, next) => {
   upload.single('file')(req, res, (err) => {
     if (err) {

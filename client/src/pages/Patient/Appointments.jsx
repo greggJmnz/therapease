@@ -513,7 +513,7 @@ const Appointments = () => {
           className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all font-medium flex items-center gap-2 shadow-sm hover:shadow-md text-sm sm:text-base"
         >
           <Plus size={18} className="sm:w-5 sm:h-5" />
-          <span className="hidden sm:inline">Book Session</span>
+          <span className="hidden sm:inline">Book Appointment</span>
           <span className="sm:hidden">Book</span>
         </button>
             </div>

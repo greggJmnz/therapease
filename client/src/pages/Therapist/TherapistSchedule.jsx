@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
+import { useLocation } from 'react-router-dom';
 import { 
   Calendar, 
   Clock, 
@@ -25,6 +26,18 @@ import './TherapistSchedule.css';
 
 const TherapistSchedule = () => {
   const queryClient = useQueryClient();
+  const location = useLocation();
+  
+  // Check if navigated from patients page with selected patient
+  useEffect(() => {
+    if (location.state?.selectedPatient && location.state?.mode === 'schedule') {
+      // Set the selected patient and open the create appointment modal
+      setSelectedPatientForSchedule(location.state.selectedPatient);
+      setShowSessionModal(true);
+      // Clear the location state to prevent reopening on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
   
   // Utility function to convert 24-hour time to 12-hour format
   const formatTime12Hour = (time24) => {
@@ -57,6 +70,7 @@ const TherapistSchedule = () => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [selectedPatientForSchedule, setSelectedPatientForSchedule] = useState(null);
   
   // State for edit appointment modal
   const [showEditModal, setShowEditModal] = useState(false);
@@ -792,12 +806,18 @@ const TherapistSchedule = () => {
         {/* Create Session Modal */}
         {showSessionModal && (
           <SessionCreator
+            patientId={selectedPatientForSchedule?.id || null}
+            patientName={selectedPatientForSchedule ? `${selectedPatientForSchedule.firstName || ''} ${selectedPatientForSchedule.lastName || ''}`.trim() : null}
             onSessionCreated={(newSession) => {
               toast.success('Session created successfully');
               setShowSessionModal(false);
+              setSelectedPatientForSchedule(null);
               queryClient.invalidateQueries('therapistSchedule');
             }}
-            onClose={() => setShowSessionModal(false)}
+            onClose={() => {
+              setShowSessionModal(false);
+              setSelectedPatientForSchedule(null);
+            }}
           />
         )}
 

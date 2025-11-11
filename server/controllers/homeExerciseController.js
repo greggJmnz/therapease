@@ -980,6 +980,87 @@ const getPatientProofs = async (req, res) => {
   }
 };
 
+// Update exercise status (patient action)
+const updateExerciseStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = req.user.id;
+
+    // Validate status
+    const validStatuses = ['assigned', 'in_progress', 'completed', 'overdue'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid status. Valid statuses are: ${validStatuses.join(', ')}`
+      });
+    }
+
+    // Get patient ID from user ID
+    const patient = await getRow('SELECT id FROM patients WHERE userId = ?', [userId]);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient not found'
+      });
+    }
+
+    // Check if exercise exists and belongs to this patient
+    const exercise = await getRow(`
+      SELECT id, patientId, status FROM home_exercises WHERE id = ? AND patientId = ?
+    `, [id, patient.id]);
+
+    if (!exercise) {
+      return res.status(404).json({
+        success: false,
+        error: 'Exercise not found or does not belong to you'
+      });
+    }
+
+    // Update status
+    await runQuery(
+      'UPDATE home_exercises SET status = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+      [status, id]
+    );
+
+    // If marking as completed, also update isCompleted and lastCompleted
+    if (status === 'completed') {
+      await runQuery(
+        'UPDATE home_exercises SET isCompleted = TRUE, lastCompleted = CURDATE() WHERE id = ?',
+        [id]
+      );
+    }
+
+    // Get updated exercise for broadcasting
+    const updatedExercise = await getRow(`
+      SELECT 
+        he.*,
+        p.userId as patientUserId,
+        u.firstName as patientFirstName,
+        u.lastName as patientLastName
+      FROM home_exercises he
+      JOIN patients p ON he.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      WHERE he.id = ?
+    `, [id]);
+
+    // Broadcast home exercise change
+    websocketService.broadcastHomeExerciseChange(updatedExercise, 'updated');
+
+    res.json({
+      success: true,
+      data: updatedExercise,
+      message: 'Exercise status updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating exercise status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update exercise status'
+    });
+  }
+};
+
 module.exports = {
   getTherapistExercises,
   getPatientExercises,
@@ -990,5 +1071,6 @@ module.exports = {
   getExerciseProofs,
   reviewProof,
   getTherapistProofs,
-  getPatientProofs
+  getPatientProofs,
+  updateExerciseStatus
 };
