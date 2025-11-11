@@ -570,7 +570,8 @@ const runTests = async () => {
       const userId = userIdArg ? parseInt(userIdArg.split('=')[1]) : null;
       
       if (args.includes('--send-test') || args.includes('-t')) {
-        results.sendTest = await testSendNotification(userId);
+        const sendTestResult = await testSendNotification(userId);
+        results.sendTest = sendTestResult;
       } else {
         log.info('\nAvailable options:');
         log.info('  --send-test, -t     Send a test notification');
@@ -587,7 +588,11 @@ const runTests = async () => {
   console.log(`  VAPID Keys:        ${results.vapidKeys ? '✅ PASS' : '❌ FAIL'}`);
   console.log(`  Client Config:     ${results.clientConfig ? '✅ PASS' : '⚠️  WARN'}`);
   console.log(`  Database:          ${results.database ? '✅ PASS' : '❌ FAIL'}`);
-  console.log(`  Send Test:         ${results.sendTest ? '✅ PASS' : results.sendTest === false && results.database ? '⏭️  SKIPPED' : '❌ FAIL'}`);
+  if (results.sendTest !== undefined) {
+    console.log(`  Send Test:         ${results.sendTest ? '✅ PASS' : '❌ FAIL'}`);
+  } else {
+    console.log(`  Send Test:         ⏭️  SKIPPED`);
+  }
   if (results.cleanup !== false) {
     console.log(`  Cleanup:           ${results.cleanup ? '✅ COMPLETED' : '⏭️  SKIPPED'}`);
   }
