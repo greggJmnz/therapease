@@ -1230,6 +1230,18 @@ const sendPushNotification = async (userId, title, message, options = {}) => {
       ]
     });
 
+    // Validate subscription data before sending
+    if (!subscription.endpoint || !subscription.p256dh || !subscription.auth) {
+      console.error(`Invalid subscription data for user ${userId}:`, {
+        hasEndpoint: !!subscription.endpoint,
+        hasP256dh: !!subscription.p256dh,
+        hasAuth: !!subscription.auth,
+        p256dhLength: subscription.p256dh?.length,
+        authLength: subscription.auth?.length
+      });
+      return { success: false, message: 'Invalid subscription data - missing keys' };
+    }
+
     const pushSubscription = {
       endpoint: subscription.endpoint,
       keys: {
@@ -1237,6 +1249,11 @@ const sendPushNotification = async (userId, title, message, options = {}) => {
         auth: subscription.auth
       }
     };
+
+    console.log(`📤 Sending push notification to user ${userId}:`);
+    console.log(`   Endpoint: ${subscription.endpoint.substring(0, 50)}...`);
+    console.log(`   p256dh: ${subscription.p256dh.substring(0, 20)}... (length: ${subscription.p256dh.length})`);
+    console.log(`   auth: ${subscription.auth.substring(0, 20)}... (length: ${subscription.auth.length})`);
 
     await webpush.sendNotification(pushSubscription, payload);
     
