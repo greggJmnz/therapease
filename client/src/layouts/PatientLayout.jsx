@@ -8,6 +8,7 @@ import OnboardingStatus from '../components/OnboardingStatus';
 import { useQuery, useQueryClient } from 'react-query';
 import { patientAPI } from '../services/api';
 import { useNavigationState } from '../hooks/useNavigationState';
+import PushNotificationManager from '../components/PushNotificationManager';
 import {
   Calendar,
   FileText,
@@ -474,6 +475,7 @@ const PatientLayout = () => {
               <Globe size={16} />
               <span className="hidden sm:inline">Public Website</span>
             </a>
+            <PushNotificationManager />
             <button 
               onClick={() => navigate('/patient/notifications')}
               className="btn-secondary relative"

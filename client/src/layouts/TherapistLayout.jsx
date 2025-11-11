@@ -9,6 +9,7 @@ import OnboardingStatus from '../components/OnboardingStatus';
 import { useQuery, useQueryClient } from 'react-query';
 import { therapistAPI } from '../services/api';
 import { useNavigationState } from '../hooks/useNavigationState';
+import PushNotificationManager from '../components/PushNotificationManager';
 import {
   Users,
   Calendar,
@@ -503,6 +504,7 @@ const TherapistLayout = () => {
               <Globe size={16} />
               <span className="hidden sm:inline">Public Website</span>
             </a>
+            <PushNotificationManager />
             <button 
               onClick={() => navigate('/therapist/notifications')}
               className="btn-secondary relative touch-target"
