@@ -7,7 +7,22 @@
 
 const webpush = require('web-push');
 const mysql = require('mysql2/promise');
-require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+const path = require('path');
+const fs = require('fs');
+
+// Load environment variables - check both .env and .env.production
+const envPath = path.join(__dirname, '../../.env');
+const envProductionPath = path.join(__dirname, '../../.env.production');
+
+if (fs.existsSync(envProductionPath)) {
+  require('dotenv').config({ path: envProductionPath });
+  console.log('📁 Loaded .env.production file');
+} else if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+  console.log('📁 Loaded .env file');
+} else {
+  console.log('⚠️  No .env or .env.production file found');
+}
 
 // Colors for console output
 const colors = {
@@ -48,10 +63,18 @@ const testVAPIDKeys = () => {
 
   if (!publicKey || !privateKey) {
     log.error('VAPID keys are not configured');
-    log.info('Please set the following in your .env file:');
+    log.info('Please set the following in your .env or .env.production file:');
     log.info('VAPID_PUBLIC_KEY=your_public_key');
     log.info('VAPID_PRIVATE_KEY=your_private_key');
     log.info('VAPID_SUBJECT=mailto:admin@therapease.com');
+    
+    // Check which env file exists
+    if (fs.existsSync(envProductionPath)) {
+      log.info(`\nChecking: ${envProductionPath}`);
+    } else if (fs.existsSync(envPath)) {
+      log.info(`\nChecking: ${envPath}`);
+    }
+    
     return false;
   }
 
