@@ -459,26 +459,38 @@ const cleanupInvalidSubscriptions = async () => {
         }
       };
 
-      // Try to send a test notification to check if subscription is valid
+      // Try to send a minimal test notification to check if subscription is valid
+      // We use a very short TTL so it expires immediately and doesn't actually notify the user
       try {
         const testPayload = JSON.stringify({
-          title: 'Test',
-          body: 'Validation check'
+          title: 'Validation',
+          body: 'Check'
         });
         
+        // Send with TTL of 0 seconds - this validates the subscription without delivering
         await webpush.sendNotification(pushSubscription, testPayload, {
-          TTL: 0 // Don't actually deliver, just validate
+          TTL: 0,
+          urgency: 'very-low'
         });
         
-        // If we get here, subscription is valid (though TTL=0 means it won't be delivered)
-        // Actually, let's use a different approach - just try to validate the endpoint
-        // For now, we'll skip the actual send and just check endpoint format
+        // If we get here without error, subscription is valid
+        // (TTL=0 means it won't be delivered, but validates the endpoint)
       } catch (error) {
-        if (error.statusCode === 410 || error.statusCode === 404) {
-          // Subscription is invalid
+        // Check for specific error codes that indicate invalid subscription
+        if (error.statusCode === 410) {
+          // 410 Gone - subscription expired or user unsubscribed
           invalidIds.push(subscription.id);
-          log.warning(`Subscription ${subscription.id} (user ${subscription.userId}) is invalid (${error.statusCode})`);
+          log.warning(`Subscription ${subscription.id} (user ${subscription.userId}) is expired (410 Gone)`);
+        } else if (error.statusCode === 404) {
+          // 404 Not Found - endpoint doesn't exist
+          invalidIds.push(subscription.id);
+          log.warning(`Subscription ${subscription.id} (user ${subscription.userId}) endpoint not found (404)`);
+        } else if (error.statusCode === 400) {
+          // 400 Bad Request - might be invalid keys or malformed request
+          // Don't remove these automatically, might be a temporary issue
+          log.warning(`Subscription ${subscription.id} (user ${subscription.userId}) returned 400 - check manually`);
         }
+        // Other errors (network, etc.) are ignored - don't remove subscription
       }
     }
 
