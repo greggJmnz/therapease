@@ -65,10 +65,12 @@ const PushNotificationManager = () => {
       if (permission === 'default') {
         const hasPermission = await requestPermission();
         if (hasPermission) {
-          await subscribe();
+          // Use initialize to ensure service worker is registered before subscribing
+          await initialize();
         }
       } else if (permission === 'granted') {
-        await subscribe();
+        // Use initialize to ensure service worker is registered before subscribing
+        await initialize();
       }
     }
   };

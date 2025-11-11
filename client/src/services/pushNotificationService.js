@@ -72,8 +72,20 @@ class PushNotificationService {
 
   // Subscribe to push notifications
   async subscribe() {
+    // Ensure service worker is registered before subscribing
     if (!this.registration) {
-      throw new Error('Service Worker not registered');
+      try {
+        console.log('Service worker not registered, registering now...');
+        this.registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('✅ Service Worker registered successfully');
+        
+        // Wait for service worker to be ready
+        await navigator.serviceWorker.ready;
+        console.log('✅ Service Worker is ready');
+      } catch (error) {
+        console.error('Failed to register service worker:', error);
+        throw new Error('Service Worker registration failed: ' + error.message);
+      }
     }
 
     try {
