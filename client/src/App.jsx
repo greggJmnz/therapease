@@ -62,6 +62,7 @@ import ResetPassword from './pages/Auth/ResetPassword';
 // Components
 import RealtimeNotificationToast from './components/RealtimeNotificationToast';
 import MaintenancePage from './components/MaintenancePage';
+import AutoPushNotificationInitializer from './components/AutoPushNotificationInitializer';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 
 // Maintenance mode wrapper component
@@ -274,6 +275,9 @@ const AppContent = () => (
 
       {/* Real-time notifications */}
       <RealtimeNotificationToast />
+      
+      {/* Auto-initialize push notifications after login */}
+      <AutoPushNotificationInitializer />
     </div>
   </MaintenanceWrapper>
 );
