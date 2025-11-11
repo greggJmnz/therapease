@@ -459,6 +459,13 @@ const cleanupInvalidSubscriptions = async () => {
         }
       };
 
+      // Validate subscription format first
+      if (!subscription.endpoint || !subscription.p256dh || !subscription.auth) {
+        invalidIds.push(subscription.id);
+        log.warning(`Subscription ${subscription.id} (user ${subscription.userId}) has missing data (endpoint, p256dh, or auth)`);
+        continue;
+      }
+
       // Try to send a minimal test notification to check if subscription is valid
       // We use a very short TTL so it expires immediately and doesn't actually notify the user
       try {
@@ -486,11 +493,24 @@ const cleanupInvalidSubscriptions = async () => {
           invalidIds.push(subscription.id);
           log.warning(`Subscription ${subscription.id} (user ${subscription.userId}) endpoint not found (404)`);
         } else if (error.statusCode === 400) {
-          // 400 Bad Request - might be invalid keys or malformed request
-          // Don't remove these automatically, might be a temporary issue
-          log.warning(`Subscription ${subscription.id} (user ${subscription.userId}) returned 400 - check manually`);
+          // 400 Bad Request - usually means invalid keys or malformed subscription
+          // Check if it's a key format issue
+          const errorBody = error.body || '';
+          if (errorBody.includes('Invalid') || errorBody.includes('malformed') || errorBody.includes('key')) {
+            invalidIds.push(subscription.id);
+            log.warning(`Subscription ${subscription.id} (user ${subscription.userId}) has invalid keys/format (400 Bad Request)`);
+          } else {
+            // Might be temporary, but log it
+            log.warning(`Subscription ${subscription.id} (user ${subscription.userId}) returned 400 - ${error.message || 'Bad Request'}`);
+            // If all subscriptions return 400, it might be a VAPID key issue
+            // But we'll still mark it for removal if it's clearly invalid
+            invalidIds.push(subscription.id);
+            log.info('  Marking for removal - 400 errors typically indicate invalid subscription data');
+          }
+        } else {
+          // Other errors (network, etc.) - log but don't remove
+          log.info(`Subscription ${subscription.id} (user ${subscription.userId}) error: ${error.statusCode || 'Unknown'} - ${error.message || 'Network/Other error'}`);
         }
-        // Other errors (network, etc.) are ignored - don't remove subscription
       }
     }
 
