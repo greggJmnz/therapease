@@ -263,12 +263,45 @@ const testSendNotification = async (userId = null) => {
 const testClientConfig = () => {
   log.section('4. Testing Client Configuration');
   
-  const clientPublicKey = process.env.VITE_VAPID_PUBLIC_KEY || process.env.REACT_APP_VAPID_PUBLIC_KEY;
+  // Check client .env.production file
+  const clientEnvPath = path.join(__dirname, '../../client/.env.production');
+  const clientEnvPath2 = path.join(__dirname, '../../client/.env');
+  
+  let clientPublicKey = process.env.VITE_VAPID_PUBLIC_KEY || process.env.REACT_APP_VAPID_PUBLIC_KEY;
+  
+  // Try to read from client .env.production file directly
+  if (!clientPublicKey && fs.existsSync(clientEnvPath)) {
+    try {
+      const clientEnvContent = fs.readFileSync(clientEnvPath, 'utf8');
+      const match = clientEnvContent.match(/VITE_VAPID_PUBLIC_KEY=(.+)/);
+      if (match) {
+        clientPublicKey = match[1].trim();
+        log.info('Found client VAPID key in client/.env.production');
+      }
+    } catch (error) {
+      // Ignore read errors
+    }
+  }
+  
+  // Try to read from client .env file
+  if (!clientPublicKey && fs.existsSync(clientEnvPath2)) {
+    try {
+      const clientEnvContent = fs.readFileSync(clientEnvPath2, 'utf8');
+      const match = clientEnvContent.match(/VITE_VAPID_PUBLIC_KEY=(.+)/);
+      if (match) {
+        clientPublicKey = match[1].trim();
+        log.info('Found client VAPID key in client/.env');
+      }
+    } catch (error) {
+      // Ignore read errors
+    }
+  }
+  
   const serverPublicKey = process.env.VAPID_PUBLIC_KEY;
 
   if (!clientPublicKey) {
     log.warning('Client VAPID public key not found');
-    log.info('Set VITE_VAPID_PUBLIC_KEY in client/.env file');
+    log.info('Set VITE_VAPID_PUBLIC_KEY in client/.env or client/.env.production file');
   } else {
     log.success('Client VAPID public key is set');
   }
