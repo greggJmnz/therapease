@@ -14,14 +14,47 @@ const fs = require('fs');
 const envPath = path.join(__dirname, '../../.env');
 const envProductionPath = path.join(__dirname, '../../.env.production');
 
+// Try to load .env.production first, then .env
+let envLoaded = false;
 if (fs.existsSync(envProductionPath)) {
   require('dotenv').config({ path: envProductionPath });
   console.log('📁 Loaded .env.production file');
+  envLoaded = true;
 } else if (fs.existsSync(envPath)) {
   require('dotenv').config({ path: envPath });
   console.log('📁 Loaded .env file');
+  envLoaded = true;
 } else {
   console.log('⚠️  No .env or .env.production file found');
+}
+
+// Also manually read and parse .env.production if it exists (for better debugging)
+if (fs.existsSync(envProductionPath)) {
+  try {
+    const envContent = fs.readFileSync(envProductionPath, 'utf8');
+    const lines = envContent.split('\n');
+    let foundVAPID = false;
+    lines.forEach(line => {
+      if (line.trim().startsWith('VAPID_')) {
+        foundVAPID = true;
+        const [key, ...valueParts] = line.split('=');
+        const value = valueParts.join('=').trim();
+        // Set in process.env if not already set (dotenv might have missed it)
+        if (key.trim() === 'VAPID_PUBLIC_KEY' && !process.env.VAPID_PUBLIC_KEY) {
+          process.env.VAPID_PUBLIC_KEY = value.replace(/^["']|["']$/g, ''); // Remove quotes
+        } else if (key.trim() === 'VAPID_PRIVATE_KEY' && !process.env.VAPID_PRIVATE_KEY) {
+          process.env.VAPID_PRIVATE_KEY = value.replace(/^["']|["']$/g, ''); // Remove quotes
+        } else if (key.trim() === 'VAPID_SUBJECT' && !process.env.VAPID_SUBJECT) {
+          process.env.VAPID_SUBJECT = value.replace(/^["']|["']$/g, ''); // Remove quotes
+        }
+      }
+    });
+    if (foundVAPID) {
+      console.log('📋 Manually parsed VAPID keys from .env.production');
+    }
+  } catch (error) {
+    console.log(`⚠️  Could not manually parse .env.production: ${error.message}`);
+  }
 }
 
 // Colors for console output
@@ -57,9 +90,39 @@ const getDbConnection = async () => {
 const testVAPIDKeys = () => {
   log.section('1. Testing VAPID Keys Configuration');
   
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || 'mailto:admin@therapease.com';
+  // Try to read directly from .env.production if not in process.env
+  let publicKey = process.env.VAPID_PUBLIC_KEY;
+  let privateKey = process.env.VAPID_PRIVATE_KEY;
+  let subject = process.env.VAPID_SUBJECT || 'mailto:admin@therapease.com';
+
+  // If keys not found, try reading directly from .env.production
+  if ((!publicKey || !privateKey) && fs.existsSync(envProductionPath)) {
+    try {
+      const envContent = fs.readFileSync(envProductionPath, 'utf8');
+      const lines = envContent.split('\n');
+      
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('VAPID_PUBLIC_KEY=')) {
+          publicKey = trimmed.split('=').slice(1).join('=').trim();
+          // Remove quotes and trailing characters like >
+          publicKey = publicKey.replace(/^["']|["']$/g, '').replace(/>$/, '').trim();
+        } else if (trimmed.startsWith('VAPID_PRIVATE_KEY=')) {
+          privateKey = trimmed.split('=').slice(1).join('=').trim();
+          privateKey = privateKey.replace(/^["']|["']$/g, '').trim();
+        } else if (trimmed.startsWith('VAPID_SUBJECT=')) {
+          subject = trimmed.split('=').slice(1).join('=').trim();
+          subject = subject.replace(/^["']|["']$/g, '').trim();
+        }
+      });
+      
+      if (publicKey || privateKey) {
+        log.info('Read VAPID keys directly from .env.production file');
+      }
+    } catch (error) {
+      log.warning(`Could not read .env.production: ${error.message}`);
+    }
+  }
 
   if (!publicKey || !privateKey) {
     log.error('VAPID keys are not configured');
@@ -71,6 +134,16 @@ const testVAPIDKeys = () => {
     // Check which env file exists
     if (fs.existsSync(envProductionPath)) {
       log.info(`\nChecking: ${envProductionPath}`);
+      log.info('File exists. Checking contents...');
+      try {
+        const content = fs.readFileSync(envProductionPath, 'utf8');
+        const hasPublic = content.includes('VAPID_PUBLIC_KEY');
+        const hasPrivate = content.includes('VAPID_PRIVATE_KEY');
+        log.info(`Found VAPID_PUBLIC_KEY in file: ${hasPublic}`);
+        log.info(`Found VAPID_PRIVATE_KEY in file: ${hasPrivate}`);
+      } catch (e) {
+        log.error(`Could not read file: ${e.message}`);
+      }
     } else if (fs.existsSync(envPath)) {
       log.info(`\nChecking: ${envPath}`);
     }
