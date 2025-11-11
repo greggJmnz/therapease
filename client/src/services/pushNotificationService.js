@@ -73,13 +73,10 @@ class PushNotificationService {
     // Ensure service worker is registered before subscribing
     if (!this.registration) {
       try {
-        console.log('Service worker not registered, registering now...');
         this.registration = await navigator.serviceWorker.register('/sw.js');
-        console.log('✅ Service Worker registered successfully');
         
         // Wait for service worker to be ready
         await navigator.serviceWorker.ready;
-        console.log('✅ Service Worker is ready');
       } catch (error) {
         console.error('Failed to register service worker:', error);
         throw new Error('Service Worker registration failed: ' + error.message);
@@ -117,7 +114,6 @@ class PushNotificationService {
       // Notify server about unsubscription
       await this.sendUnsubscriptionToServer();
       
-      console.log('✅ Push unsubscription successful');
       return result;
     } catch (error) {
       console.error('Failed to unsubscribe from push notifications:', error);
@@ -172,13 +168,10 @@ class PushNotificationService {
     // Ensure service worker is registered and ready
     if (!this.registration) {
       try {
-        console.log('Service worker not registered, registering now...');
         this.registration = await navigator.serviceWorker.register('/sw.js');
-        console.log('✅ Service Worker registered successfully');
         
         // Wait for service worker to be ready
         await navigator.serviceWorker.ready;
-        console.log('✅ Service Worker is ready');
       } catch (error) {
         console.error('Failed to register service worker for notification:', error);
         throw new Error('Service Worker registration failed: ' + error.message);
@@ -281,7 +274,6 @@ class PushNotificationService {
     }
 
     this.registration.addEventListener('notificationclick', (event) => {
-      console.log('Notification clicked:', event);
       
       event.notification.close();
 

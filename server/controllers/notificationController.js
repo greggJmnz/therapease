@@ -32,9 +32,9 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
-  console.log('✅ VAPID keys configured for push notifications');
+  // VAPID keys configured
 } else {
-  console.log('⚠️ VAPID keys not configured - push notifications disabled');
+  // VAPID keys not configured - push notifications disabled
 }
 
 // Get notifications for a user
@@ -451,9 +451,9 @@ const sendMultiChannelNotification = async (userId, title, message, type = 'syst
       results.push.error = pushResult.message || pushResult.error;
       
       if (results.push.success) {
-        console.log(`✅ Push notification sent successfully to user ${userId}`);
+        // Push notification sent successfully
       } else {
-        console.log(`⚠️ Push notification failed: ${results.push.error}`);
+        // Push notification failed
       }
     } catch (pushError) {
       console.error('Push notification error:', pushError);
@@ -502,7 +502,6 @@ const createNotification = async (userId, title, message, type = 'system', optio
         );
       }
 
-      // Log channel results
     } else {
       // Legacy: Send SMS only if requested
       if (options.sendSMS && options.phoneNumber) {
@@ -1181,7 +1180,6 @@ const sendPushNotification = async (userId, title, message, options = {}) => {
   try {
     // Check if VAPID keys are configured
     if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      console.log('Push notifications disabled - VAPID keys not configured');
       return { success: false, message: 'Push notifications not configured' };
     }
 
