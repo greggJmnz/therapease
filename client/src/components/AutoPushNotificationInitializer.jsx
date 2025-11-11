@@ -14,7 +14,6 @@ const AutoPushNotificationInitializer = () => {
 
     // Check if push notifications are supported
     if (!pushNotificationService.isSupported) {
-      console.log('Push notifications not supported in this browser');
       return;
     }
 
@@ -26,25 +25,17 @@ const AutoPushNotificationInitializer = () => {
         
         if (currentPermission === 'default') {
           // Permission not set yet - request it automatically
-          console.log('Requesting push notification permission...');
           const hasPermission = await pushNotificationService.requestPermission();
           
           if (hasPermission) {
             // Permission granted - initialize push notifications
-            console.log('Permission granted, initializing push notifications...');
             await pushNotificationService.initialize();
-          } else {
-            console.log('Permission denied by user');
           }
         } else if (currentPermission === 'granted') {
           // Permission already granted - initialize if not already done
           if (!pushNotificationService.isEnabled()) {
-            console.log('Permission already granted, initializing push notifications...');
             await pushNotificationService.initialize();
           }
-        } else {
-          // Permission denied - don't try to initialize
-          console.log('Push notification permission denied');
         }
       } catch (error) {
         console.error('Failed to auto-initialize push notifications:', error);

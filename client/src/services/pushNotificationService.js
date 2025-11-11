@@ -28,11 +28,9 @@ class PushNotificationService {
     try {
       // Register service worker
       this.registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('✅ Service Worker registered successfully');
 
       // Wait for service worker to be ready
       await navigator.serviceWorker.ready;
-      console.log('✅ Service Worker is ready');
 
       // Request notification permission
       const hasPermission = await this.requestPermission();
@@ -99,7 +97,6 @@ class PushNotificationService {
       // Send subscription to server
       await this.sendSubscriptionToServer(subscription);
       
-      console.log('✅ Push subscription successful');
       return subscription;
     } catch (error) {
       console.error('Failed to subscribe to push notifications:', error);
@@ -148,7 +145,6 @@ class PushNotificationService {
         throw new Error('Failed to send subscription to server');
       }
 
-      console.log('✅ Subscription sent to server');
     } catch (error) {
       console.error('Failed to send subscription to server:', error);
       throw error;
@@ -166,7 +162,6 @@ class PushNotificationService {
         }
       });
 
-      console.log('✅ Unsubscription sent to server');
     } catch (error) {
       console.error('Failed to send unsubscription to server:', error);
     }
@@ -231,9 +226,7 @@ class PushNotificationService {
     const notificationOptions = { ...defaultOptions, ...options };
 
     try {
-      console.log('Attempting to show notification:', { title, options: notificationOptions });
       await this.registration.showNotification(title, notificationOptions);
-      console.log('✅ Local notification shown successfully');
     } catch (error) {
       console.error('Failed to show notification:', error);
       throw error;
@@ -329,7 +322,6 @@ class PushNotificationService {
 
     try {
       await this.registration.update();
-      console.log('✅ Service Worker updated');
     } catch (error) {
       console.error('Failed to update Service Worker:', error);
     }

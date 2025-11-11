@@ -503,7 +503,6 @@ const createNotification = async (userId, title, message, type = 'system', optio
       }
 
       // Log channel results
-      console.log(`📧 Multi-channel notification sent - SMS: ${smsStatus || 'not attempted'}, Email: ${emailStatus || 'not attempted'}, Push: ${pushStatus || 'not attempted'}`);
     } else {
       // Legacy: Send SMS only if requested
       if (options.sendSMS && options.phoneNumber) {
@@ -1162,7 +1161,6 @@ const unsubscribeFromPush = async (req, res) => {
       [userId]
     );
 
-    console.log(`✅ Push subscription removed for user ${userId}`);
 
     res.json({
       success: true,
@@ -1194,7 +1192,6 @@ const sendPushNotification = async (userId, title, message, options = {}) => {
     );
 
     if (!subscription) {
-      console.log(`No push subscription found for user ${userId}`);
       return { success: false, message: 'No push subscription found' };
     }
 
