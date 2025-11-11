@@ -50,6 +50,8 @@ export default defineConfig({
     cssCodeSplit: true,
     // Optimize asset handling
     assetsInlineLimit: 4096, // Inline small assets (< 4KB) as base64
+    // Ensure base path is root (default)
+    base: '/',
   },
 });
 
