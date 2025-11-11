@@ -348,7 +348,7 @@ const testSendNotification = async (userId = null) => {
       if (error.statusCode === 410) {
         log.warning('Subscription is no longer valid (410 Gone)');
         log.info('The user may have unsubscribed or the subscription expired');
-        log.info('Consider removing this subscription from the database');
+        log.info('Run with --cleanup to remove invalid subscriptions from the database');
       } else if (error.statusCode === 404) {
         log.warning('Subscription endpoint not found (404 Not Found)');
         log.info('The subscription may be invalid or expired');
