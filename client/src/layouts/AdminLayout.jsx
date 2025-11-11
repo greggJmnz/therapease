@@ -5,7 +5,6 @@ import { useSystemSettings } from '../context/SystemSettingsContext';
 import InitialsAvatar from '../components/InitialsAvatar';
 import { useQuery } from 'react-query';
 import { adminAPI } from '../services/api';
-import PushNotificationManager from '../components/PushNotificationManager';
 import {
   Users,
   Calendar,
@@ -481,7 +480,6 @@ const AdminLayout = () => {
               <Globe size={16} />
               <span className="hidden sm:inline">Public Website</span>
             </a>
-            <PushNotificationManager />
             <button 
               onClick={() => navigate('/admin/notifications')}
               className="btn-secondary relative touch-target"
