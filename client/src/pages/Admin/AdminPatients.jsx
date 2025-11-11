@@ -1679,7 +1679,7 @@ const PatientReportsContent = ({ patient }) => {
               score: 85,
               maxScore: 100,
               summary: 'Patient shows good progress in fine motor skills',
-              therapistName: 'Dr. Sarah Wilson'
+              therapistName: 'Sarah Wilson'
             },
             {
               id: 2,
@@ -1691,7 +1691,7 @@ const PatientReportsContent = ({ patient }) => {
               score: null,
               maxScore: 100,
               summary: 'Assessment in progress',
-              therapistName: 'Dr. Sarah Wilson'
+              therapistName: 'Sarah Wilson'
             }
           ],
           sessions: sessions.length > 0 ? sessions : [
@@ -1707,7 +1707,7 @@ const PatientReportsContent = ({ patient }) => {
               activities: 'Hand exercises, drawing activities',
               observations: 'Patient showed good engagement',
               progress: 'Steady improvement noted',
-              therapistName: 'Dr. Sarah Wilson'
+              therapistName: 'Sarah Wilson'
             },
             {
               id: 2,
@@ -1721,7 +1721,7 @@ const PatientReportsContent = ({ patient }) => {
               activities: 'Sensory play, coordination exercises',
               observations: 'Patient was very focused today',
               progress: 'Excellent progress in coordination',
-              therapistName: 'Dr. Sarah Wilson'
+              therapistName: 'Sarah Wilson'
             }
           ],
           progress: progress.length > 0 ? progress : [

@@ -450,7 +450,7 @@ const HomeExercisesNew = () => {
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                       <div className="flex items-center text-xs sm:text-sm text-gray-600">
                         <User className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 text-gray-400" />
-                        <span className="truncate">Dr. {exercise.therapistFirstName} {exercise.therapistLastName}</span>
+                        <span className="truncate">{exercise.therapistFirstName} {exercise.therapistLastName}</span>
                       </div>
                       <div className="flex items-center text-xs sm:text-sm text-gray-600">
                         <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5 text-gray-400" />

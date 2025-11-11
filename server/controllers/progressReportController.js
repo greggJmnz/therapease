@@ -93,7 +93,7 @@ const uploadProgressReport = async (req, res) => {
     try {
       if (patientInfo) {
         const notificationTitle = 'New Progress Report Available';
-        const notificationMessage = `Your therapist ${therapistInfo?.therapistName || 'Dr. Smith'} has uploaded a new progress report: "${title}". You can view and download it from your progress tracking section.`;
+        const notificationMessage = `Your therapist ${therapistInfo?.therapistName || 'Smith'} has uploaded a new progress report: "${title}". You can view and download it from your progress tracking section.`;
         
         // Create notification directly
         const notificationSql = `
