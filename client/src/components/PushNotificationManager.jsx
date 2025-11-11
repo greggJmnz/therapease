@@ -81,11 +81,22 @@ const PushNotificationManager = () => {
   };
 
   const handleTestNotification = async () => {
-    await showNotification('Test Notification', {
-      body: 'This is a test notification from TherapEase!',
-      icon: '/favicon.ico',
-      tag: 'test-notification'
-    });
+    try {
+      console.log('Testing notification...');
+      console.log('Service worker registration:', navigator.serviceWorker.getRegistration ? 'available' : 'not available');
+      console.log('Notification permission:', Notification.permission);
+      
+      await showNotification('Test Notification', {
+        body: 'This is a test notification from TherapEase!',
+        icon: '/favicon.ico',
+        tag: 'test-notification'
+      });
+      
+      console.log('Test notification triggered successfully');
+    } catch (error) {
+      console.error('Test notification failed:', error);
+      alert(`Failed to show test notification: ${error.message}\n\nPlease check:\n1. Service worker is registered\n2. Notification permission is granted\n3. Browser console for more details`);
+    }
   };
 
   const getStatusIcon = () => {
