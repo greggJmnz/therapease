@@ -1087,6 +1087,40 @@ const subscribeToPush = async (req, res) => {
       });
     }
 
+    // Validate subscription keys
+    const p256dh = subscription.keys?.p256dh;
+    const auth = subscription.keys?.auth;
+
+    if (!p256dh || !auth) {
+      console.error('Missing subscription keys:', { hasP256dh: !!p256dh, hasAuth: !!auth });
+      return res.status(400).json({
+        success: false,
+        message: 'Missing subscription keys (p256dh or auth)'
+      });
+    }
+
+    // Check key lengths (p256dh is typically ~88 chars, auth is typically ~24 chars)
+    if (p256dh.length > 255) {
+      console.error(`p256dh key too long: ${p256dh.length} characters`);
+      return res.status(400).json({
+        success: false,
+        message: 'p256dh key exceeds maximum length'
+      });
+    }
+
+    if (auth.length > 255) {
+      console.error(`auth key too long: ${auth.length} characters`);
+      return res.status(400).json({
+        success: false,
+        message: 'auth key exceeds maximum length'
+      });
+    }
+
+    console.log(`📝 Storing subscription for user ${userId}:`);
+    console.log(`   Endpoint: ${subscription.endpoint.substring(0, 50)}...`);
+    console.log(`   p256dh length: ${p256dh.length}`);
+    console.log(`   auth length: ${auth.length}`);
+
     // Store subscription in database
     const insertSql = `
       INSERT INTO push_subscriptions (userId, endpoint, p256dh, auth, userAgent, createdAt)
@@ -1101,8 +1135,8 @@ const subscribeToPush = async (req, res) => {
     await runQuery(insertSql, [
       userId,
       subscription.endpoint,
-      subscription.keys?.p256dh,
-      subscription.keys?.auth,
+      p256dh,
+      auth,
       userAgent
     ]);
 
