@@ -172,7 +172,7 @@ const TherapistDashboard = () => {
       <div className="welcome-section">
         <div className="welcome-content">
           <div className="welcome-text">
-            <h1>Welcome back, Dr. {user?.lastName || 'Therapist'}!</h1>
+            <h1>Welcome back, {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.lastName || 'Therapist'}!</h1>
             <p>Here's your practice overview and key metrics for today</p>
           </div>
           <div className="welcome-actions">
