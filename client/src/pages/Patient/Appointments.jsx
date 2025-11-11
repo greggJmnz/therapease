@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from 'react-query';
+import { useLocation } from 'react-router-dom';
 import { 
   Calendar, 
   Clock, 
@@ -26,6 +27,7 @@ import './PatientAppointments.css';
 
 const Appointments = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [assignedTherapist, setAssignedTherapist] = useState(null);
   const [availableTherapists, setAvailableTherapists] = useState([]);
   const [selectedTherapist, setSelectedTherapist] = useState('');
@@ -293,6 +295,15 @@ const Appointments = () => {
       }
     }
   }, [therapistsData]);
+
+  // Check if navigated from dashboard with openBooking flag
+  useEffect(() => {
+    if (location.state?.openBooking) {
+      setShowBookingForm(true);
+      // Clear the location state to prevent reopening on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
 
   const handleBooking = async (e) => {

@@ -159,9 +159,9 @@ const PatientDashboard = () => {
               <Target size={18} />
               <span>View Progress</span>
             </button>
-            <button className="btn-secondary" onClick={() => window.location.href = '/patient/appointments'}>
+            <button className="btn-secondary" onClick={() => navigate('/patient/appointments', { state: { openBooking: true } })}>
               <Calendar size={18} />
-              <span>Schedule Session</span>
+              <span>Schedule Appointment</span>
             </button>
           </div>
         </div>
