@@ -1133,8 +1133,6 @@ const subscribeToPush = async (req, res) => {
       userAgent
     ]);
 
-    console.log(`✅ Push subscription stored for user ${userId}`);
-
     res.json({
       success: true,
       message: 'Push subscription successful'
