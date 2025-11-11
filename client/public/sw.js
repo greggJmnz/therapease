@@ -7,11 +7,9 @@ const NOTIFICATION_BADGE = '/favicon.ico';
 
 // Install event - cache essential resources
 self.addEventListener('install', (event) => {
-  console.log('🔧 Service Worker installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('📦 Caching essential resources');
         return cache.addAll([
           '/',
           '/static/js/bundle.js',
@@ -21,7 +19,6 @@ self.addEventListener('install', (event) => {
         ]);
       })
       .then(() => {
-        console.log('✅ Service Worker installed successfully');
         return self.skipWaiting();
       })
   );
@@ -29,21 +26,18 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('🚀 Service Worker activating...');
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (cacheName !== CACHE_NAME) {
-              console.log('🗑️ Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       })
       .then(() => {
-        console.log('✅ Service Worker activated');
         return self.clients.claim();
       })
   );
@@ -51,8 +45,6 @@ self.addEventListener('activate', (event) => {
 
 // Push event - handle incoming push notifications
 self.addEventListener('push', (event) => {
-  console.log('📨 Push notification received:', event);
-  
   let notificationData = {
     title: 'TherapEase',
     body: 'You have a new notification',
@@ -82,31 +74,9 @@ self.addEventListener('push', (event) => {
   // Parse push data if available
   if (event.data) {
     try {
-      // Check if data has content by trying to get arrayBuffer length
-      let hasData = false;
-      try {
-        // Try to read the data to see if it's empty
-        const arrayBuffer = event.data.arrayBuffer();
-        if (arrayBuffer instanceof Promise) {
-          // If it's a promise, we need to handle it differently
-          arrayBuffer.then(buffer => {
-            hasData = buffer.byteLength > 0;
-            console.log(`📊 Push data size: ${buffer.byteLength} bytes`);
-          }).catch(() => {
-            hasData = false;
-          });
-        } else {
-          hasData = arrayBuffer.byteLength > 0;
-        }
-      } catch (e) {
-        // If arrayBuffer() fails, try other methods
-        hasData = true; // Assume it has data and try to parse
-      }
-      
       // Try to parse as JSON first
       try {
         const pushData = event.data.json();
-        console.log('📦 Parsed push data:', pushData);
         
         if (pushData && typeof pushData === 'object' && Object.keys(pushData).length > 0) {
           notificationData = {
@@ -117,50 +87,34 @@ self.addEventListener('push', (event) => {
               ...(pushData.data || {})
             }
           };
-          console.log('✅ Using parsed push data for notification');
-        } else {
-          console.warn('⚠️ Parsed push data is empty or invalid');
         }
       } catch (jsonError) {
-        console.warn('⚠️ Failed to parse as JSON, trying text:', jsonError);
-        // Try as text
+        // Try as text if JSON parsing fails
         try {
           const textData = event.data.text();
           if (textData && textData.trim().length > 0) {
             notificationData.body = textData;
-            console.log('✅ Using text data as body:', textData.substring(0, 50));
-          } else {
-            console.warn('⚠️ Text data is empty');
           }
         } catch (textError) {
-          console.error('❌ Failed to parse push data as text:', textError);
+          // Silently fail and use default notification
         }
       }
     } catch (error) {
-      console.error('❌ Error processing push data:', error);
+      // Silently fail and use default notification
     }
-  } else {
-    console.warn('⚠️ Push event has no data property - using default notification');
   }
-
-  console.log('📤 Showing notification with data:', notificationData);
 
   // Show notification
   event.waitUntil(
     self.registration.showNotification(notificationData.title, notificationData)
-      .then(() => {
-        console.log('✅ Notification shown successfully');
-      })
       .catch((error) => {
-        console.error('❌ Failed to show notification:', error);
+        console.error('Failed to show notification:', error);
       })
   );
 });
 
 // Notification click event - handle user interaction
 self.addEventListener('notificationclick', (event) => {
-  console.log('👆 Notification clicked:', event);
-  
   event.notification.close();
 
   const action = event.action;
@@ -194,8 +148,6 @@ self.addEventListener('notificationclick', (event) => {
 
 // Background sync event - handle offline actions
 self.addEventListener('sync', (event) => {
-  console.log('🔄 Background sync triggered:', event.tag);
-  
   if (event.tag === 'notification-sync') {
     event.waitUntil(syncNotifications());
   }
@@ -203,8 +155,6 @@ self.addEventListener('sync', (event) => {
 
 // Message event - handle messages from main thread
 self.addEventListener('message', (event) => {
-  console.log('💬 Message received in service worker:', event.data);
-  
   const { type, payload } = event.data;
   
   switch (type) {
@@ -217,8 +167,6 @@ self.addEventListener('message', (event) => {
     case 'CLEAR_CACHE':
       clearCache();
       break;
-    default:
-      console.log('Unknown message type:', type);
   }
 });
 
@@ -274,8 +222,6 @@ self.addEventListener('fetch', (event) => {
 // Helper functions
 async function syncNotifications() {
   try {
-    console.log('🔄 Syncing notifications...');
-    
     // Get stored notifications from IndexedDB
     const notifications = await getStoredNotifications();
     
@@ -296,10 +242,8 @@ async function syncNotifications() {
         console.error('Failed to sync notification:', error);
       }
     }
-    
-    console.log('✅ Notifications synced successfully');
   } catch (error) {
-    console.error('❌ Notification sync failed:', error);
+    console.error('Notification sync failed:', error);
   }
 }
 
@@ -307,9 +251,8 @@ async function cacheUrls(urls) {
   try {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(urls);
-    console.log('✅ URLs cached successfully');
   } catch (error) {
-    console.error('❌ Failed to cache URLs:', error);
+    console.error('Failed to cache URLs:', error);
   }
 }
 
@@ -319,9 +262,8 @@ async function clearCache() {
     await Promise.all(
       cacheNames.map(cacheName => caches.delete(cacheName))
     );
-    console.log('✅ Cache cleared successfully');
   } catch (error) {
-    console.error('❌ Failed to clear cache:', error);
+    console.error('Failed to clear cache:', error);
   }
 }
 
@@ -333,8 +275,7 @@ async function getStoredNotifications() {
 
 async function removeStoredNotification(id) {
   // This would typically use IndexedDB
-  // For now, just log
-  console.log('Removing notification:', id);
+  // For now, just a placeholder
 }
 
 // Notification permission helpers
@@ -363,4 +304,3 @@ function requestNotificationPermission() {
 // Export for use in main thread
 self.requestNotificationPermission = requestNotificationPermission;
 
-console.log('🔧 TherapEase Service Worker loaded successfully');

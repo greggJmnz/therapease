@@ -1116,11 +1116,6 @@ const subscribeToPush = async (req, res) => {
       });
     }
 
-    console.log(`📝 Storing subscription for user ${userId}:`);
-    console.log(`   Endpoint: ${subscription.endpoint.substring(0, 50)}...`);
-    console.log(`   p256dh length: ${p256dh.length}`);
-    console.log(`   auth length: ${auth.length}`);
-
     // Store subscription in database
     const insertSql = `
       INSERT INTO push_subscriptions (userId, endpoint, p256dh, auth, userAgent, createdAt)
@@ -1250,14 +1245,8 @@ const sendPushNotification = async (userId, title, message, options = {}) => {
       }
     };
 
-    console.log(`📤 Sending push notification to user ${userId}:`);
-    console.log(`   Endpoint: ${subscription.endpoint.substring(0, 50)}...`);
-    console.log(`   p256dh: ${subscription.p256dh.substring(0, 20)}... (length: ${subscription.p256dh.length})`);
-    console.log(`   auth: ${subscription.auth.substring(0, 20)}... (length: ${subscription.auth.length})`);
-
     await webpush.sendNotification(pushSubscription, payload);
     
-    console.log(`✅ Push notification sent to user ${userId}`);
     return { success: true, message: 'Push notification sent' };
 
   } catch (error) {
