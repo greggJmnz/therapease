@@ -58,7 +58,12 @@ const PushNotificationManager = () => {
       await unsubscribe();
     } else {
       if (permission === 'denied') {
-        alert('Notification permission is denied. Please enable it in your browser settings.');
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+          alert('Push notifications on mobile require browser permission. Please:\n\n1. Open your browser settings\n2. Find site permissions\n3. Enable notifications for this site\n\nNote: Some mobile browsers may have limited push notification support.');
+        } else {
+          alert('Notification permission is denied. Please enable it in your browser settings:\n\n1. Click the lock/info icon in your browser address bar\n2. Find "Notifications" in site settings\n3. Change to "Allow"');
+        }
         return;
       }
       

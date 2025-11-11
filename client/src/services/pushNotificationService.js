@@ -174,8 +174,33 @@ class PushNotificationService {
 
   // Show local notification
   async showNotification(title, options = {}) {
+    // Ensure service worker is registered and ready
     if (!this.registration) {
-      throw new Error('Service Worker not registered');
+      try {
+        console.log('Service worker not registered, registering now...');
+        this.registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('✅ Service Worker registered successfully');
+        
+        // Wait for service worker to be ready
+        await navigator.serviceWorker.ready;
+        console.log('✅ Service Worker is ready');
+      } catch (error) {
+        console.error('Failed to register service worker for notification:', error);
+        throw new Error('Service Worker registration failed: ' + error.message);
+      }
+    }
+
+    // Ensure service worker is ready
+    try {
+      await navigator.serviceWorker.ready;
+    } catch (error) {
+      console.error('Service worker not ready:', error);
+      throw new Error('Service Worker not ready');
+    }
+
+    // Check notification permission
+    if (Notification.permission !== 'granted') {
+      throw new Error('Notification permission not granted. Current permission: ' + Notification.permission);
     }
 
     const defaultOptions = {
@@ -206,8 +231,9 @@ class PushNotificationService {
     const notificationOptions = { ...defaultOptions, ...options };
 
     try {
+      console.log('Attempting to show notification:', { title, options: notificationOptions });
       await this.registration.showNotification(title, notificationOptions);
-      console.log('✅ Local notification shown');
+      console.log('✅ Local notification shown successfully');
     } catch (error) {
       console.error('Failed to show notification:', error);
       throw error;
