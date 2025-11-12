@@ -246,7 +246,8 @@ const AdminDashboard = () => {
     time: notification.time,
     timeAgo: notification.timeAgo,
     priority: notification.priority || 'medium',
-    read: notification.read
+    read: notification.read,
+    createdAt: notification.createdAt // Include createdAt for proper timezone handling
   }));
 
   // Generate real data for charts based on API data
@@ -541,7 +542,15 @@ const AdminDashboard = () => {
                 <p className="activity-title">{notification.title}</p>
                 <span className="activity-time">{notification.createdAt ? (() => {
                   try {
-                    const date = new Date(notification.createdAt);
+                    // Ensure createdAt is treated as UTC if it's an ISO string without 'Z'
+                    let dateStr = notification.createdAt;
+                    if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-', 10)) {
+                      // If it's a datetime string without timezone info, treat as UTC
+                      dateStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z';
+                    }
+                    const date = new Date(dateStr);
+                    
+                    // Format in user's local timezone (same as notifications)
                     const formattedDate = date.toLocaleDateString('en-US', {
                       weekday: 'short',
                       year: 'numeric',
@@ -874,7 +883,15 @@ const AdminDashboard = () => {
               <div className="notification-meta">
                 <span className="time">{notification.createdAt ? (() => {
                   try {
-                    const date = new Date(notification.createdAt);
+                    // Ensure createdAt is treated as UTC if it's an ISO string without 'Z'
+                    let dateStr = notification.createdAt;
+                    if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-', 10)) {
+                      // If it's a datetime string without timezone info, treat as UTC
+                      dateStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z';
+                    }
+                    const date = new Date(dateStr);
+                    
+                    // Format in user's local timezone (same as notifications)
                     const formattedDate = date.toLocaleDateString('en-US', {
                       weekday: 'short',
                       year: 'numeric',
