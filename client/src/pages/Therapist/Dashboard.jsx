@@ -209,8 +209,8 @@ const TherapistDashboard = () => {
             <Calendar size={20} />
           </div>
           <div className="stat-content">
-            <h3>Today's Sessions</h3>
-            <p className="stat-number">{stats.todayAppointments}</p>
+            <h3 style={{ whiteSpace: 'nowrap' }}>Today's Appointment</h3>
+            <p className="stat-number">{statsApiData?.overview?.todayAppointments || stats.todayAppointments || 0}</p>
             <span className="stat-change positive">
               <Clock size={12} />
               Scheduled

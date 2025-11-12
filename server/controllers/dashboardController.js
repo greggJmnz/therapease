@@ -28,6 +28,9 @@ const getDashboard = async (req, res) => {
         (SELECT COUNT(*) FROM appointments a 
          WHERE a.therapistId = ? AND a.appointmentDate >= CURDATE() AND a.status = 'scheduled') as upcomingAppointments,
         
+        (SELECT COUNT(*) FROM appointments a 
+         WHERE a.therapistId = ? AND a.appointmentDate = CURDATE()) as todayAppointments,
+        
         (SELECT COUNT(*) FROM daily_notes dn 
          WHERE dn.therapistId = ? AND dn.sessionDate = CURDATE()) as todayNotes,
         
@@ -52,6 +55,7 @@ const getDashboard = async (req, res) => {
       therapistId, // appointmentsCompleted
       therapistId, // appointmentsCancelled
       therapistId, // upcomingAppointments
+      therapistId, // todayAppointments
       therapistId, // todayNotes
       therapistId, therapistId // totalProgressEntries
     ]);
@@ -72,6 +76,7 @@ const getDashboard = async (req, res) => {
       cancelled: overview.appointmentsCancelled || 0
     };
     const upcomingAppointmentsCount = overview.upcomingAppointments || 0;
+    const todayAppointmentsCount = overview.todayAppointments || 0;
     const todayNotes = overview.todayNotes || 0;
     const totalProgressEntries = overview.totalProgressEntries || 0;
 
@@ -207,6 +212,7 @@ const getDashboard = async (req, res) => {
           totalAssessments: assessmentStats.total,
           totalAppointments: appointmentStats.total,
           upcomingAppointments: upcomingAppointmentsCount,
+          todayAppointments: todayAppointmentsCount,
           todayNotes,
           totalProgressEntries
         },
@@ -449,6 +455,9 @@ const getDashboardStats = async (req, res) => {
         (SELECT COUNT(*) FROM appointments a 
          WHERE a.therapistId = ? AND a.appointmentDate >= CURDATE() AND a.status = 'scheduled') as upcomingAppointments,
         
+        (SELECT COUNT(*) FROM appointments a 
+         WHERE a.therapistId = ? AND a.appointmentDate = CURDATE()) as todayAppointments,
+        
         (SELECT COUNT(*) FROM daily_notes dn 
          WHERE dn.therapistId = ? AND dn.sessionDate = CURDATE()) as todayNotes,
         
@@ -471,7 +480,7 @@ const getDashboardStats = async (req, res) => {
     const overviewResult = await getRow(overviewStatsSql, [
       therapistId, therapistId, therapistId, therapistId, therapistId,
       therapistId, therapistId, therapistId, therapistId, therapistId,
-      therapistId, therapistId, therapistId, therapistId,
+      therapistId, therapistId, therapistId, therapistId, therapistId,
       therapistId, therapistId
     ]);
 
@@ -485,6 +494,7 @@ const getDashboardStats = async (req, res) => {
           totalAssessments: overview.totalAssessments || 0,
           totalAppointments: overview.totalAppointments || 0,
           upcomingAppointments: overview.upcomingAppointments || 0,
+          todayAppointments: overview.todayAppointments || 0,
           todayNotes: overview.todayNotes || 0,
           totalProgressEntries: overview.totalProgressEntries || 0
         },
