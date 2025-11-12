@@ -63,13 +63,25 @@ import ResetPassword from './pages/Auth/ResetPassword';
 import RealtimeNotificationToast from './components/RealtimeNotificationToast';
 import MaintenancePage from './components/MaintenancePage';
 import AutoPushNotificationInitializer from './components/AutoPushNotificationInitializer';
+import ErrorBoundary from './components/ErrorBoundary';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 
 // Maintenance mode wrapper component
 // OPTIMIZED: Don't block rendering while checking maintenance status
 const MaintenanceWrapper = ({ children }) => {
   const { isMaintenanceMode, isLoading } = useMaintenanceMode();
-  const { user } = useAuth();
+  // Safely get user - useAuth() must be called unconditionally (React hook rules)
+  // But we handle errors gracefully if AuthContext fails
+  let user = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const auth = useAuth();
+    user = auth?.user || null;
+  } catch (error) {
+    // AuthContext not ready yet or failed - this is OK, continue without user
+    // This can happen on iOS Safari if localStorage access fails
+    console.warn('AuthContext not available in MaintenanceWrapper (iOS Safari may have restrictions):', error.message);
+  }
 
   // OPTIMIZED: Don't block UI while checking maintenance - render children immediately
   // If maintenance check fails or is slow, allow user to proceed (better UX)
@@ -177,9 +189,10 @@ const LazyRoute = ({ children }) => (
 
 // App content component
 const AppContent = () => (
-  <MaintenanceWrapper>
-    <div className="App">
-      <Routes>
+  <ErrorBoundary>
+    <MaintenanceWrapper>
+      <div className="App">
+        <Routes>
         {/* Auth routes */}
         <Route path="/auth" element={<AuthLayout />}>
           <Route index element={<Navigate to="/auth/login" replace />} />
@@ -284,8 +297,9 @@ const AppContent = () => (
       
       {/* Auto-initialize push notifications after login */}
       <AutoPushNotificationInitializer />
-    </div>
-  </MaintenanceWrapper>
+      </div>
+    </MaintenanceWrapper>
+  </ErrorBoundary>
 );
 
 // Inner app component that has access to auth context

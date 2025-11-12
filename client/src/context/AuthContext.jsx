@@ -18,7 +18,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  // Safely get token from localStorage (iOS Safari may have issues with localStorage)
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('token');
+    } catch (error) {
+      console.warn('Failed to access localStorage (iOS Safari may have restrictions):', error);
+      return null;
+    }
+  });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -31,10 +39,18 @@ export const AuthProvider = ({ children }) => {
     window.addEventListener('auth:logout', handleLogoutEvent);
     
     const initializeAuth = async () => {
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
-      const storedRole = localStorage.getItem('userRole');
-      const storedUserId = localStorage.getItem('userId');
+      // Safely access localStorage (iOS Safari may have restrictions)
+      let storedToken, storedUser, storedRole, storedUserId;
+      try {
+        storedToken = localStorage.getItem('token');
+        storedUser = localStorage.getItem('user');
+        storedRole = localStorage.getItem('userRole');
+        storedUserId = localStorage.getItem('userId');
+      } catch (error) {
+        console.warn('Failed to access localStorage during auth initialization (iOS Safari may have restrictions):', error);
+        setIsLoading(false);
+        return;
+      }
 
       if (storedToken && storedUser && storedRole && storedUserId) {
         // Set user immediately from cache for faster initial render
@@ -195,10 +211,15 @@ export const AuthProvider = ({ children }) => {
         queryClient.clear();
         
         // Store token FIRST before any state updates to ensure it's available for subsequent requests
-        localStorage.setItem('token', data.data.token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('userRole', data.data.user.role);
-        localStorage.setItem('userId', data.data.user.id);
+        try {
+          localStorage.setItem('token', data.data.token);
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('userRole', data.data.user.role);
+          localStorage.setItem('userId', data.data.user.id);
+        } catch (error) {
+          console.warn('Failed to save to localStorage (iOS Safari may have restrictions):', error);
+          // Continue anyway - session will work but won't persist
+        }
 
         // OPTIMIZED: Reduce delay - localStorage is synchronous, minimal delay needed
         // This prevents race conditions where components try to make API calls before token is available
@@ -250,17 +271,26 @@ export const AuthProvider = ({ children }) => {
         // Clear any cached data from previous users
         Object.keys(localStorage).forEach(key => {
           if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
-            localStorage.removeItem(key);
+            try {
+              localStorage.removeItem(key);
+            } catch (error) {
+              console.warn('Failed to remove from localStorage:', error);
+            }
           }
         });
         
         // Clear React Query cache
         queryClient.clear();
         
-        localStorage.setItem('token', data.data.token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('userRole', data.data.user.role);
-        localStorage.setItem('userId', data.data.user.id);
+        try {
+          localStorage.setItem('token', data.data.token);
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('userRole', data.data.user.role);
+          localStorage.setItem('userId', data.data.user.id);
+        } catch (error) {
+          console.warn('Failed to save to localStorage (iOS Safari may have restrictions):', error);
+          // Continue anyway - session will work but won't persist
+        }
 
         setUser(userData);
         setToken(data.data.token);
@@ -318,10 +348,15 @@ export const AuthProvider = ({ children }) => {
     // Disconnect WebSocket
     websocketService.disconnect();
     
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userId');
+    // Safely clear localStorage (iOS Safari may have restrictions)
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userId');
+    } catch (error) {
+      console.warn('Failed to clear localStorage (iOS Safari may have restrictions):', error);
+    }
     
     // Clear all localStorage items that might contain cached data
     Object.keys(localStorage).forEach(key => {
@@ -343,7 +378,11 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (updatedData) => {
     const updatedUser = { ...user, ...updatedData };
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    try {
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    } catch (error) {
+      console.warn('Failed to update user in localStorage (iOS Safari may have restrictions):', error);
+    }
   };
 
   const clearCache = () => {
