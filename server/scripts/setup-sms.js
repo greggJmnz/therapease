@@ -88,7 +88,7 @@ async function setupSMS() {
 
   console.log('\n📚 Documentation:');
   console.log('   - SMS Integration Guide: docs/SMS_INTEGRATION.md');
-  console.log('   - PhilSMS API Docs: https://app.philsms.com/developers/docs');
+  console.log('   - PhilSMS API Docs: https://dashboard.philsms.com/developers/docs');
 
   rl.close();
 }

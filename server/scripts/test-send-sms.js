@@ -60,7 +60,7 @@ async function testSendSMS() {
       if (balance.balance === 0 || balance.balance < 0) {
         console.log('\n⚠️  WARNING: Account balance is 0 or negative!');
         console.log('   You need to add credits to your PhilSMS account to send messages.');
-        console.log('   Visit: https://app.philsms.com to add credits.');
+        console.log('   Visit: https://dashboard.philsms.com to add credits.');
         console.log('\n   The SMS will still be attempted, but it may fail due to insufficient balance.');
       }
     } else {
