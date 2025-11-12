@@ -3,12 +3,29 @@ import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import pushNotificationService from '../services/pushNotificationService';
 
+// Detect iOS Safari
+const isIOSSafari = () => {
+  if (typeof window === 'undefined') return false;
+  const ua = window.navigator.userAgent;
+  const iOS = !!ua.match(/iPad|iPhone|iPod/);
+  const webkit = !!ua.match(/WebKit/);
+  const iOSSafari = iOS && webkit && !ua.match(/CriOS/);
+  return iOSSafari;
+};
+
 const AutoPushNotificationInitializer = () => {
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     // Only initialize if user is authenticated and push notifications are supported
     if (!isAuthenticated || !user) {
+      return;
+    }
+
+    // TEMPORARILY DISABLE on iOS Safari to prevent white page issues
+    // iOS Safari has limited service worker support and can cause blocking issues
+    if (isIOSSafari()) {
+      console.log('Skipping push notification initialization on iOS Safari to prevent white page issues');
       return;
     }
 
@@ -51,7 +68,7 @@ const AutoPushNotificationInitializer = () => {
         // Don't let push notification errors break the app
         console.error('Failed to auto-initialize push notifications (non-critical):', error);
       }
-    }, 3000); // Wait 3 seconds after login (increased from 2s for iOS stability)
+    }, 5000); // Wait 5 seconds after login for maximum stability
 
     return () => clearTimeout(timer);
   }, [isAuthenticated, user]);
