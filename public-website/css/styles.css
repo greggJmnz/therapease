@@ -88,15 +88,25 @@ body {
     display: flex;
     list-style: none;
     align-items: center;
-    gap: 2rem;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-item {
+    margin: 0;
+    padding: 0;
 }
 
 .nav-link {
     text-decoration: none;
     color: #64748b;
     font-weight: 500;
+    font-size: 0.95rem;
     transition: color 0.3s ease;
     position: relative;
+    padding: 0.5rem 0.75rem;
+    display: inline-block;
 }
 
 .nav-link:hover,
