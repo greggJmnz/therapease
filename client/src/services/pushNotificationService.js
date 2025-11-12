@@ -28,22 +28,31 @@ class PushNotificationService {
     try {
       // Register service worker with error handling for iOS Safari
       // iOS Safari has limited service worker support, so we handle errors gracefully
+      // IMPORTANT: Service worker registration must not block app initialization
       try {
+        // Check if service workers are supported before attempting registration
+        if (!('serviceWorker' in navigator)) {
+          console.warn('Service workers are not supported in this browser');
+          return false;
+        }
+
+        // Attempt to register service worker (non-blocking for iOS)
         this.registration = await navigator.serviceWorker.register('/sw.js');
         
         // Wait for service worker to be ready (with timeout for iOS)
+        // Use Promise.race to prevent hanging on iOS Safari
         await Promise.race([
           navigator.serviceWorker.ready,
           new Promise((_, reject) => setTimeout(() => reject(new Error('Service worker ready timeout')), 5000))
         ]);
       } catch (swError) {
-        // iOS Safari may have service worker limitations
+        // iOS Safari may have service worker limitations or CSP restrictions
         // Log but don't fail completely - app should still work without push notifications
-        console.warn('Service worker registration issue (may be iOS Safari limitation):', swError.message);
-        // Continue without service worker - app functionality should still work
-        if (!this.registration) {
-          return false;
-        }
+        console.warn('Service worker registration issue (may be iOS Safari limitation or CSP restriction):', swError.message);
+        // Clear registration to prevent retry attempts
+        this.registration = null;
+        // Return false but don't throw - app functionality should still work
+        return false;
       }
 
       // Request notification permission
