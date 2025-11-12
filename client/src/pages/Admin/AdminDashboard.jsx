@@ -236,7 +236,8 @@ const AdminDashboard = () => {
     }));
 
   // Extract notifications from API response and map to expected format
-  const notifications = (notificationsData?.data?.notifications || []).map(notification => ({
+  // Handle both data structures: data.data.notifications or data.notifications
+  const notifications = ((notificationsData?.data?.data?.notifications || notificationsData?.data?.notifications) || []).map(notification => ({
     id: notification.id,
     type: notification.type,
     title: notification.title,
@@ -427,7 +428,7 @@ const AdminDashboard = () => {
               <Users size={18} />
               <span>Manage Patients</span>
             </button>
-            <button className="btn-secondary" onClick={() => navigate('/admin/appointments')}>
+            <button className="btn-secondary" onClick={() => navigate('/admin/appointments', { state: { openBooking: true } })}>
               <Calendar size={18} />
               <span>Schedule Session</span>
             </button>
@@ -471,7 +472,7 @@ const AdminDashboard = () => {
             <Calendar size={24} />
           </div>
           <div className="stat-content">
-            <h3>Today's Appointment</h3>
+            <h3 style={{ whiteSpace: 'nowrap' }}>Today's Appointment</h3>
             <p className="stat-number">
               {(() => {
                 // Handle different data structures: data.data.appointments or data.appointments
@@ -583,6 +584,7 @@ const AdminDashboard = () => {
             <div className="chart-header">
               <h3>Patient Growth</h3>
               <TrendingUp size={16} className="text-green-500" />
+              <span className="text-xs text-gray-500 ml-2">This Year</span>
             </div>
             <div className="chart-content">
               <ResponsiveContainer width="100%" height={120}>

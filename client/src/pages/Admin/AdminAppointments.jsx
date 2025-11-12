@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from 'react-query';
+import { useLocation } from 'react-router-dom';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { 
   Plus, 
@@ -33,6 +34,8 @@ import toast from 'react-hot-toast';
 import './AdminAppointments.css';
 
 const AdminAppointments = () => {
+  const location = useLocation();
+  
   // Utility function to convert 24-hour time to 12-hour format
   const formatTime12Hour = (time24) => {
     if (!time24) return '';
@@ -48,6 +51,15 @@ const AdminAppointments = () => {
 
   // State for appointment scheduling modal
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  
+  // Check if we should open the booking modal from navigation state
+  useEffect(() => {
+    if (location.state?.openBooking) {
+      setShowScheduleModal(true);
+      // Clear the location state to prevent reopening on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
   const [newAppointment, setNewAppointment] = useState({
     therapistId: '',
     patientId: '',
