@@ -664,16 +664,6 @@ const Login = () => {
               {isLoading ? 'Signing in...' : isLocked ? 'Account Locked' : 'Sign in'}
             </ModernButton>
 
-            {/* Forgot Password Link */}
-            <div className="text-center">
-              <Link
-                to="/auth/forgot-password"
-                className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                Forgot your password?
-              </Link>
-            </div>
-
             {/* Sign Up Link */}
             <div className="text-center pt-4 border-t border-gray-100 mt-6">
               <p className="text-sm text-gray-600">
