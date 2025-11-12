@@ -453,8 +453,8 @@ const AdminSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 w-full max-w-full box-border overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full max-w-full box-border">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
@@ -469,13 +469,13 @@ const AdminSettings = () => {
         </div>
 
         {/* Navigation Toggle */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h2 className="text-xl font-semibold text-gray-900 break-words">Settings</h2>
+          <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
+            <div className="flex items-center space-x-2 flex-1 sm:flex-initial">
               <button
                 onClick={() => setNavigationType('top')}
-                className={`px-3 py-1 text-sm rounded-lg transition-all duration-200 ${
+                className={`px-3 py-1 text-xs sm:text-sm rounded-lg transition-all duration-200 flex-1 sm:flex-initial ${
                   navigationType === 'top' 
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-600 hover:bg-gray-100'
@@ -485,7 +485,7 @@ const AdminSettings = () => {
               </button>
               <button
                 onClick={() => setNavigationType('dropdown')}
-                className={`px-3 py-1 text-sm rounded-lg transition-all duration-200 ${
+                className={`px-3 py-1 text-xs sm:text-sm rounded-lg transition-all duration-200 flex-1 sm:flex-initial ${
                   navigationType === 'dropdown' 
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-600 hover:bg-gray-100'
@@ -503,14 +503,14 @@ const AdminSettings = () => {
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Settings Categories</h3>
             </div>
-            <nav className="flex flex-wrap gap-2 p-6">
+            <nav className="flex flex-wrap gap-2 p-4 sm:p-6 w-full max-w-full box-border">
               {navigationTabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-3 px-6 py-4 rounded-xl transition-all duration-200 ${
+                    className={`flex items-center space-x-3 px-4 sm:px-6 py-3 sm:py-4 rounded-xl transition-all duration-200 flex-1 sm:flex-initial min-w-[140px] ${
                       activeTab === tab.id
                         ? 'bg-blue-50 border-2 border-blue-200 text-blue-700'
                         : 'hover:bg-gray-50 text-gray-700 hover:text-gray-900 border-2 border-transparent'
@@ -524,8 +524,8 @@ const AdminSettings = () => {
                       }`} />
                     </div>
                     <div className="text-left">
-                      <div className="font-medium">{tab.name}</div>
-                      <div className="text-sm text-gray-500 hidden sm:block">{tab.description}</div>
+                      <div className="font-medium text-sm sm:text-base break-words">{tab.name}</div>
+                      <div className="text-xs sm:text-sm text-gray-500 hidden sm:block break-words">{tab.description}</div>
                     </div>
                   </button>
                 );
@@ -611,10 +611,10 @@ const AdminSettings = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               {/* Profile Tab */}
               {activeTab === 'profile' && (
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile Information</h2>
-                    <p className="text-gray-600">Update your personal information and account details</p>
+                <div className="p-4 sm:p-8 w-full max-w-full box-border overflow-x-hidden">
+                  <div className="mb-6 sm:mb-8">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words">Profile Information</h2>
+                    <p className="text-sm sm:text-base text-gray-600 break-words">Update your personal information and account details</p>
                   </div>
                   <ProfileForm userRole="admin" apiService={adminAPI} />
                 </div>
@@ -622,20 +622,20 @@ const AdminSettings = () => {
 
               {/* System Tab */}
               {activeTab === 'system' && (
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">System Configuration</h2>
-                    <p className="text-gray-600">Manage system-wide settings and preferences</p>
+                <div className="p-4 sm:p-8 w-full max-w-full box-border overflow-x-hidden">
+                  <div className="mb-6 sm:mb-8">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words">System Configuration</h2>
+                    <p className="text-sm sm:text-base text-gray-600 break-words">Manage system-wide settings and preferences</p>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="space-y-6 sm:space-y-8">
                     {/* General Settings */}
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Globe className="h-5 w-5 mr-2 text-blue-600" />
+                    <div className="bg-gray-50 rounded-xl p-4 sm:p-6 w-full max-w-full box-border overflow-x-hidden">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center break-words">
+                        <Globe className="h-5 w-5 mr-2 text-blue-600 flex-shrink-0" />
                         General Settings
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             System Name
@@ -767,10 +767,10 @@ const AdminSettings = () => {
 
               {/* Notifications Tab */}
               {activeTab === 'notifications' && (
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Notification Settings</h2>
-                    <p className="text-gray-600">Configure how you receive notifications and alerts</p>
+                <div className="p-4 sm:p-8 w-full max-w-full box-border overflow-x-hidden">
+                  <div className="mb-6 sm:mb-8">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words">Notification Settings</h2>
+                    <p className="text-sm sm:text-base text-gray-600 break-words">Configure how you receive notifications and alerts</p>
                   </div>
 
                   <div className="space-y-6">
@@ -849,10 +849,10 @@ const AdminSettings = () => {
 
               {/* Security Tab */}
               {activeTab === 'security' && (
-                <div className="p-8">
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Security Settings</h2>
-                    <p className="text-gray-600">Manage security policies and authentication settings</p>
+                <div className="p-4 sm:p-8 w-full max-w-full box-border overflow-x-hidden">
+                  <div className="mb-6 sm:mb-8">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 break-words">Security Settings</h2>
+                    <p className="text-sm sm:text-base text-gray-600 break-words">Manage security policies and authentication settings</p>
                   </div>
 
                   <div className="space-y-6">

@@ -532,14 +532,14 @@ const AdminReports = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="mb-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Reports & Analytics</h1>
-        <p className="text-gray-600">Comprehensive insights into your therapy practice performance</p>
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen w-full max-w-full box-border overflow-x-hidden">
+      <div className="mb-6 sm:mb-8 w-full max-w-full box-border">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 break-words">Reports & Analytics</h1>
+        <p className="text-sm sm:text-base text-gray-600 break-words">Comprehensive insights into your therapy practice performance</p>
       </div>
       
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8 w-full max-w-full box-border">
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -607,14 +607,14 @@ const AdminReports = () => {
       
       
       {/* Growth Trends Section */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4 sm:mb-0">Growth Trends</h3>
-          <div className="flex space-x-2">
+      <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm mb-6 sm:mb-8 w-full max-w-full box-border overflow-x-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 break-words">Growth Trends</h3>
+          <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 w-full sm:w-auto">
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto"
             >
               <option value="3months">Last 3 Months</option>
               <option value="6months">Last 6 Months</option>
@@ -623,7 +623,7 @@ const AdminReports = () => {
             <select
               value={selectedChart}
               onChange={(e) => setSelectedChart(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto"
             >
               <option value="patients">Patients</option>
               <option value="therapists">Therapists</option>
@@ -632,7 +632,7 @@ const AdminReports = () => {
           </div>
         </div>
         
-        <div className="h-80">
+        <div className="h-64 sm:h-80 w-full overflow-x-auto min-h-[200px]">
           {currentData && currentData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart 
@@ -685,11 +685,11 @@ const AdminReports = () => {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8 w-full max-w-full box-border">
         {/* Patient Demographics */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Patient Demographics</h3>
-          <div className="h-64">
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm w-full max-w-full box-border overflow-x-hidden">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6 break-words">Patient Demographics</h3>
+          <div className="h-64 w-full overflow-x-auto">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -724,10 +724,10 @@ const AdminReports = () => {
         </div>
 
         {/* Appointment Status Distribution */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Appointment Status Distribution</h3>
-            <div className="text-sm text-gray-500">
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm w-full max-w-full box-border overflow-x-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words">Appointment Status Distribution</h3>
+            <div className="text-xs sm:text-sm text-gray-500 break-words">
               Total: {finalAppointmentDistribution.reduce((sum, item) => sum + item.value, 0)} appointments
             </div>
           </div>
@@ -792,7 +792,7 @@ const AdminReports = () => {
           
           {/* Legend */}
           {finalAppointmentDistribution.length > 0 && finalAppointmentDistribution[0].name !== 'No Data Available' && (
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-full box-border">
               {finalAppointmentDistribution.map((item, index) => (
                 <div key={index} className="flex items-center space-x-2 text-sm">
                   <div 
@@ -809,11 +809,11 @@ const AdminReports = () => {
       </div>
 
       {/* System Health and Performance Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8 w-full max-w-full box-border">
         {/* User Role Distribution */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">User Role Distribution</h3>
-          <div className="h-80">
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm w-full max-w-full box-border overflow-x-hidden">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6 break-words">User Role Distribution</h3>
+          <div className="h-64 sm:h-80 w-full overflow-x-auto">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -848,87 +848,87 @@ const AdminReports = () => {
         </div>
 
         {/* System Health Overview */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">System Health Overview</h3>
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm w-full max-w-full box-border overflow-x-hidden">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6 break-words">System Health Overview</h3>
           <div className="space-y-6">
             {/* System Status */}
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-                <div>
-                  <p className="font-medium text-gray-900">System Status</p>
-                  <p className="text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-green-50 rounded-lg gap-2">
+              <div className="flex items-center flex-1 min-w-0">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-3 flex-shrink-0"></div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-900 break-words">System Status</p>
+                  <p className="text-xs sm:text-sm text-gray-600 break-words">
                     {systemHealth.newUsersThisWeek > 0 || systemHealth.newAssessmentsThisWeek > 0 || systemHealth.newAppointmentsThisWeek > 0 
                       ? 'Active system with recent activity' 
                       : 'System operational'}
                   </p>
                 </div>
               </div>
-              <span className="text-green-600 font-semibold">
+              <span className="text-green-600 font-semibold text-sm sm:text-base flex-shrink-0">
                 {systemHealth.newUsersThisWeek > 0 || systemHealth.newAssessmentsThisWeek > 0 || systemHealth.newAppointmentsThisWeek > 0 ? 'Active' : '100%'}
               </span>
             </div>
             
             {/* Database Performance */}
-            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
-                <div>
-                  <p className="font-medium text-gray-900">Database Performance</p>
-                  <p className="text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-blue-50 rounded-lg gap-2">
+              <div className="flex items-center flex-1 min-w-0">
+                <div className="w-3 h-3 bg-blue-500 rounded-full mr-3 flex-shrink-0"></div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-900 break-words">Database Performance</p>
+                  <p className="text-xs sm:text-sm text-gray-600 break-words">
                     {(stats.totalPatients + stats.totalTherapists + stats.totalAdmins) > 0 ? `${(stats.totalPatients + stats.totalTherapists + stats.totalAdmins)} total users` : 'No user data available'}
                   </p>
                 </div>
               </div>
-              <span className="text-blue-600 font-semibold">
+              <span className="text-blue-600 font-semibold text-sm sm:text-base flex-shrink-0">
                 {(stats.totalPatients + stats.totalTherapists + stats.totalAdmins) > 0 ? 'Good' : 'No Data'}
               </span>
             </div>
             
             {/* Active Sessions */}
-            <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-purple-500 rounded-full mr-3"></div>
-                <div>
-                  <p className="font-medium text-gray-900">Active Sessions</p>
-                  <p className="text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-purple-50 rounded-lg gap-2">
+              <div className="flex items-center flex-1 min-w-0">
+                <div className="w-3 h-3 bg-purple-500 rounded-full mr-3 flex-shrink-0"></div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-900 break-words">Active Sessions</p>
+                  <p className="text-xs sm:text-sm text-gray-600 break-words">
                     {stats.totalAppointments} total appointments
                   </p>
                 </div>
               </div>
-              <span className="text-purple-600 font-semibold">
+              <span className="text-purple-600 font-semibold text-sm sm:text-base flex-shrink-0">
                 {stats.totalAppointments > 0 ? 'Active' : 'No Sessions'}
               </span>
             </div>
 
             {/* Recent Activity */}
-            <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-orange-500 rounded-full mr-3"></div>
-                <div>
-                  <p className="font-medium text-gray-900">Recent Activity (7 days)</p>
-                  <p className="text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-orange-50 rounded-lg gap-2">
+              <div className="flex items-center flex-1 min-w-0">
+                <div className="w-3 h-3 bg-orange-500 rounded-full mr-3 flex-shrink-0"></div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-900 break-words">Recent Activity (7 days)</p>
+                  <p className="text-xs sm:text-sm text-gray-600 break-words">
                     {systemHealth.newUsersThisWeek || 0} new users, {systemHealth.newAssessmentsThisWeek || 0} assessments
                   </p>
                 </div>
               </div>
-              <span className="text-orange-600 font-semibold">
+              <span className="text-orange-600 font-semibold text-sm sm:text-base flex-shrink-0">
                 {(systemHealth.newUsersThisWeek || 0) + (systemHealth.newAssessmentsThisWeek || 0) > 0 ? 'Active' : 'Quiet'}
               </span>
             </div>
 
             {/* System Load */}
-            <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-lg">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-indigo-500 rounded-full mr-3"></div>
-                <div>
-                  <p className="font-medium text-gray-900">System Load</p>
-                  <p className="text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-indigo-50 rounded-lg gap-2">
+              <div className="flex items-center flex-1 min-w-0">
+                <div className="w-3 h-3 bg-indigo-500 rounded-full mr-3 flex-shrink-0"></div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-900 break-words">System Load</p>
+                  <p className="text-xs sm:text-sm text-gray-600 break-words">
                     {stats.totalDailyNotes || 0} daily notes, {stats.totalProgressEntries || 0} progress entries
                   </p>
                 </div>
               </div>
-              <span className="text-indigo-600 font-semibold">
+              <span className="text-indigo-600 font-semibold text-sm sm:text-base flex-shrink-0">
                 {stats.totalDailyNotes > 10 || stats.totalProgressEntries > 10 ? 'High' : 'Normal'}
               </span>
             </div>
