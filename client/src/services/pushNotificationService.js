@@ -89,8 +89,19 @@ class PushNotificationService {
       try {
         this.registration = await navigator.serviceWorker.register('/sw.js');
         
-        // Wait for service worker to be ready
-        await navigator.serviceWorker.ready;
+        // Wait for service worker to be ready (with timeout for iOS)
+        try {
+          await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Service worker ready timeout')), 5000))
+          ]);
+        } catch (readyError) {
+          console.warn('Service worker ready timeout (iOS Safari may have limitations):', readyError.message);
+          // Continue if registration exists
+          if (!this.registration) {
+            throw new Error('Service Worker registration failed');
+          }
+        }
       } catch (error) {
         console.error('Failed to register service worker:', error);
         throw new Error('Service Worker registration failed: ' + error.message);
@@ -184,8 +195,19 @@ class PushNotificationService {
       try {
         this.registration = await navigator.serviceWorker.register('/sw.js');
         
-        // Wait for service worker to be ready
-        await navigator.serviceWorker.ready;
+        // Wait for service worker to be ready (with timeout for iOS)
+        try {
+          await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Service worker ready timeout')), 5000))
+          ]);
+        } catch (readyError) {
+          console.warn('Service worker ready timeout for notification (iOS Safari may have limitations):', readyError.message);
+          // Continue if registration exists
+          if (!this.registration) {
+            return false;
+          }
+        }
       } catch (error) {
         console.error('Failed to register service worker for notification:', error);
         throw new Error('Service Worker registration failed: ' + error.message);
