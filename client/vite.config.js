@@ -41,10 +41,10 @@ export default defineConfig({
           query: ['react-query'],
         },
         // Optimize chunk naming for better caching
-        // Use content hash (8 chars) for better cache busting
-        chunkFileNames: 'assets/[name]-[hash:8].js',
-        entryFileNames: 'assets/[name]-[hash:8].js',
-        assetFileNames: 'assets/[name]-[hash:8].[ext]',
+        // Use full content hash for maximum cache busting when content changes
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
     // Enable CSS code splitting
