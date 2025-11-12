@@ -46,7 +46,7 @@ console.log('='.repeat(50));
 
 const smsEnabled = process.env.SMS_ENABLED;
 const apiToken = process.env.PHILSMS_API_TOKEN;
-const baseUrl = process.env.PHILSMS_BASE_URL || 'https://app.philsms.com/api/v3';
+const baseUrl = process.env.PHILSMS_BASE_URL || 'https://dashboard.philsms.com/api/v3';
 const senderId = process.env.PHILSMS_SENDER_ID;
 
 console.log(`SMS_ENABLED: ${smsEnabled || 'NOT SET'}`);
@@ -78,7 +78,7 @@ if (!apiToken || apiToken.trim() === '') {
 
 if (!baseUrl || baseUrl.trim() === '') {
   console.log('❌ PHILSMS_BASE_URL is not set');
-  console.log('   Fix: Set PHILSMS_BASE_URL=https://app.philsms.com/api/v3 in .env.production');
+  console.log('   Fix: Set PHILSMS_BASE_URL=https://dashboard.philsms.com/api/v3 in .env.production');
   isValid = false;
 } else {
   console.log('✅ PHILSMS_BASE_URL is set');
@@ -86,7 +86,9 @@ if (!baseUrl || baseUrl.trim() === '') {
 
 if (!senderId || senderId.trim() === '') {
   console.log('⚠️  PHILSMS_SENDER_ID is not set (optional but recommended)');
-  console.log('   Note: Sender ID must be registered and approved at https://app.philsms.com');
+  console.log('   Note: Sender ID must be registered and approved at dashboard.philsms.com');
+  console.log('   ⚠️  IMPORTANT: Default "PhilSMS" Sender ID only works for Globe, not Smart subscribers.');
+  console.log('   Register a custom Sender ID for cross-network delivery (Globe, Smart, DITO).');
 } else {
   console.log('✅ PHILSMS_SENDER_ID is set');
 }

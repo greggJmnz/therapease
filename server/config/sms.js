@@ -10,8 +10,11 @@ module.exports = {
   // PhilSMS API Configuration
   philsms: {
     apiToken: process.env.PHILSMS_API_TOKEN,
-    baseUrl: process.env.PHILSMS_BASE_URL || 'https://app.philsms.com/api/v3',
+    baseUrl: process.env.PHILSMS_BASE_URL || 'https://dashboard.philsms.com/api/v3',
     // Sender ID is optional - only set if registered and approved with PhilSMS
+    // IMPORTANT: Default SID "PhilSMS" only works for Globe subscribers, not Smart.
+    // To ensure delivery across all networks, register your own Sender ID.
+    // Contact support@philsms.com for Sender ID registration.
     senderId: process.env.PHILSMS_SENDER_ID || null
   },
 

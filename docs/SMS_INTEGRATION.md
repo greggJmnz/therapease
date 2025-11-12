@@ -36,7 +36,7 @@ Add the following variables to your `.env` file:
 # SMS Configuration
 SMS_ENABLED=true
 PHILSMS_API_TOKEN=your_philsms_api_token_here
-PHILSMS_BASE_URL=https://app.philsms.com/api/v3
+PHILSMS_BASE_URL=https://dashboard.philsms.com/api/v3
 # Sender ID is OPTIONAL - only set if you have registered and approved it with PhilSMS
 # Leave empty or remove this line if sender ID is not approved yet
 PHILSMS_SENDER_ID=TherapEase
@@ -51,19 +51,64 @@ For production deployments on VPS, ensure your `.env.production` file includes:
 # SMS Configuration
 SMS_ENABLED=true
 PHILSMS_API_TOKEN=3531|YOfAHwjNVINx3Ch3BFl7XR6oDoMUd7wNq3y59LnE
-PHILSMS_BASE_URL=https://app.philsms.com/api/v3
+PHILSMS_BASE_URL=https://dashboard.philsms.com/api/v3
 # Optional: Only set if sender ID is approved
 # PHILSMS_SENDER_ID=TherapEase
 ```
 
-**Note**: If `PHILSMS_SENDER_ID` is not set or not approved, the system will send SMS without a sender ID. The system handles this gracefully.
+**Note**: If `PHILSMS_SENDER_ID` is not set or not approved, the system will use the default "PhilSMS" Sender ID. **IMPORTANT: The default "PhilSMS" Sender ID only works for Globe subscribers, not Smart subscribers.**
+
+## ⚠️ Important Advisories
+
+### URL Shorteners
+**SMART TELCO does not allow messages with URL shortener links.** Sending such content will result in non-delivery to the recipient. If you wish to send SMS with links, use the full URL (e.g., `https://philsms.com/`).
+
+**Common URL shorteners to avoid:**
+- bit.ly
+- tinyurl.com
+- goo.gl
+- t.co
+- ow.ly
+- is.gd
+- short.link
+- rebrand.ly
+- shorturl.at
+- cutt.ly
+
+The system will warn you if a message contains URL shorteners, but will not block the message. Always use full URLs in SMS messages.
+
+### Spam Prevention
+Avoid repeatedly sending messages with nearly identical content to the same number for testing purposes, as telecommunication providers may classify this as spam. Consequently, that number may temporarily be unable to receive SMS messages for a brief period.
+
+**Best Practices:**
+- Vary message content when testing
+- Use different phone numbers for testing
+- Avoid sending the same message multiple times in quick succession
+- Wait between test messages
+
+### Default Sender ID Limitations
+**📢 Important Notice: DEFAULT SID PhilSMS LIMITATIONS**
+
+The default Sender ID "PhilSMS" will only work for Globe subscribers. It will not work for Smart subscribers. To ensure your messages are delivered across all networks (Globe, Smart, DITO), you need to register your own Sender ID. This will allow your messages to be sent successfully to both Globe and Smart users. 
+
+For assistance with Sender ID registration, please contact our support team at **support@philsms.com**.
+
+**Without a registered Sender ID:**
+- ✅ Messages to Globe subscribers: Will be delivered
+- ❌ Messages to Smart subscribers: Will NOT be delivered
+- ❌ Messages to DITO subscribers: May not be delivered
+
+**With a registered Sender ID:**
+- ✅ Messages to Globe subscribers: Will be delivered
+- ✅ Messages to Smart subscribers: Will be delivered
+- ✅ Messages to DITO subscribers: Will be delivered
 
 ### PhilSMS Account Setup
 
-1. **Create PhilSMS Account**: Sign up at [app.philsms.com](https://app.philsms.com)
+1. **Create PhilSMS Account**: Sign up at [dashboard.philsms.com](https://dashboard.philsms.com)
 2. **Get API Token**: Generate your API token from the PhilSMS dashboard
-3. **Register Sender ID** (Optional but Recommended):
-   - Log in to your PhilSMS dashboard
+3. **Register Sender ID** (Highly Recommended):
+   - Log in to your PhilSMS dashboard at dashboard.philsms.com
    - Navigate to Sender ID registration
    - Request approval for your desired Sender ID (e.g., "TherapEase")
    - **Approval Process**: Takes 2-3 days for telecom operator approval
@@ -71,7 +116,13 @@ PHILSMS_BASE_URL=https://app.philsms.com/api/v3
      - Alphanumeric, max 11 characters
      - Must comply with PhilSMS terms and conditions
      - Should not misrepresent your brand
+   - **Contact Support**: Email support@philsms.com for assistance
 4. **Add Webhook URL**: Configure delivery status webhook: `https://therapease.site/api/notifications/sms/delivery-status`
+
+### API Endpoints
+
+- **SMS Send Endpoint**: `https://dashboard.philsms.com/api/v3/sms/send`
+- **OAuth 2.0 API Endpoint**: `https://dashboard.philsms.com/api/v3/`
 
 ## 📊 Database Schema Updates
 
@@ -353,10 +404,10 @@ DEBUG_SMS=true
 
 ## 📚 Additional Resources
 
-- [PhilSMS API Documentation](https://app.philsms.com/developers/docs)
-- [PhilSMS Dashboard](https://app.philsms.com)
-- [Phone Number Formatting Guide](https://app.philsms.com/developers/docs)
-- [Webhook Configuration Guide](https://app.philsms.com/developers/docs)
+- [PhilSMS API Documentation](https://dashboard.philsms.com/developers/docs)
+- [PhilSMS Dashboard](https://dashboard.philsms.com)
+- [Phone Number Formatting Guide](https://dashboard.philsms.com/developers/docs)
+- [Webhook Configuration Guide](https://dashboard.philsms.com/developers/docs)
 
 ## 🔄 Migration Guide
 

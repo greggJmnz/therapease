@@ -16,9 +16,12 @@ class SMSService {
    */
   loadConfig() {
     this.apiToken = process.env.PHILSMS_API_TOKEN;
-    this.baseUrl = process.env.PHILSMS_BASE_URL || 'https://app.philsms.com/api/v3';
+    this.baseUrl = process.env.PHILSMS_BASE_URL || 'https://dashboard.philsms.com/api/v3';
     // Sender ID configuration
-    // If set to "TherapEase" and not approved, it will be ignored and "PhilSMS" will be used
+    // IMPORTANT: Default SID "PhilSMS" only works for Globe subscribers, not Smart.
+    // To ensure delivery across all networks (Globe, Smart, DITO), you must register
+    // your own Sender ID. Contact support@philsms.com for Sender ID registration.
+    // Without a registered Sender ID, messages to Smart subscribers will not be delivered.
     const envSenderId = process.env.PHILSMS_SENDER_ID || null;
     // Store the configured sender ID (will use "PhilSMS" as default in sendSMS if not approved)
     this.senderId = (envSenderId && envSenderId.trim() !== 'TherapEase') ? envSenderId.trim() : null;
@@ -29,9 +32,10 @@ class SMSService {
     } else {
       console.log('✅ SMS Service enabled and configured');
       if (this.senderId) {
-        console.log(`   Sender ID: ${this.senderId}`);
+        console.log(`   Sender ID: ${this.senderId} (registered - works for all networks)`);
       } else {
-        console.log('   Sender ID: PhilSMS (default - custom sender ID not set or not approved)');
+        console.log('   ⚠️  Sender ID: PhilSMS (default - Globe only, NOT Smart)');
+        console.log('   ⚠️  Register a custom Sender ID at dashboard.philsms.com for cross-network delivery');
       }
     }
   }
@@ -67,6 +71,27 @@ class SMSService {
     let formattedNumber = null;
 
     try {
+      // Check for URL shorteners (Smart Telco restriction)
+      const urlShortenerPatterns = [
+        /bit\.ly/i,
+        /tinyurl\.com/i,
+        /goo\.gl/i,
+        /t\.co/i,
+        /ow\.ly/i,
+        /is\.gd/i,
+        /short\.link/i,
+        /rebrand\.ly/i,
+        /shorturl\.at/i,
+        /cutt\.ly/i
+      ];
+      
+      const hasShortenedUrl = urlShortenerPatterns.some(pattern => pattern.test(message));
+      if (hasShortenedUrl) {
+        console.warn('⚠️  Message contains URL shortener - Smart Telco will not deliver this message');
+        console.warn('   Use full URLs instead (e.g., https://philsms.com/)');
+        // Note: We don't block it, but warn the user
+      }
+      
       // Validate phone number format (prioritize Philippine numbers)
       formattedNumber = this.formatPhoneNumberForPhilSMS(to);
       
@@ -87,16 +112,15 @@ class SMSService {
       const senderId = options.sender_id || this.senderId;
       
       // Always include sender_id - required by API
-      // If "TherapEase" is not approved, we need to use an approved sender ID
-      // Note: You may need to register and approve a sender ID at https://app.philsms.com
+      // IMPORTANT: Default SID "PhilSMS" only works for Globe subscribers, not Smart.
+      // To ensure delivery across all networks, register your own Sender ID at dashboard.philsms.com
       let finalSenderId;
       if (senderId && senderId.trim() && senderId.trim() !== 'TherapEase') {
-        // Use the approved sender ID
+        // Use the approved sender ID (works for all networks)
         finalSenderId = senderId.trim();
       } else {
-        // If no approved sender ID, you must use an approved one
-        // Common options: "PhilSMS" (if approved), or use a phone number format
-        // For now, we'll try "PhilSMS" - if this doesn't work, you need to register a sender ID
+        // Default to "PhilSMS" - NOTE: This only works for Globe, not Smart subscribers
+        // Messages to Smart numbers will not be delivered with this default Sender ID
         finalSenderId = 'PhilSMS';
       }
       
@@ -162,7 +186,9 @@ class SMSService {
       
       if (errorString.includes('sender') || errorString.includes('sender_id') || errorString.includes('sender id')) {
         console.warn('⚠️  Sender ID error detected. If PHILSMS_SENDER_ID is not approved,');
-        console.warn('   you may need to register it at https://app.philsms.com or remove it from .env.production');
+        console.warn('   you may need to register it at dashboard.philsms.com or remove it from .env.production');
+        console.warn('   Note: Default "PhilSMS" Sender ID only works for Globe, not Smart subscribers.');
+        console.warn('   Contact support@philsms.com for Sender ID registration assistance.');
       }
       
       return {
@@ -318,7 +344,7 @@ class SMSService {
 
     try {
       // PhilSMS API endpoint: GET /api/v3/sms/{uid}
-      // According to documentation: https://app.philsms.com/api/v3/sms/{uid}
+      // According to documentation: https://dashboard.philsms.com/api/v3/sms/{uid}
       const response = await axios.get(
         `${this.baseUrl}/sms/${messageId}`,
         {

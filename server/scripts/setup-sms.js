@@ -51,7 +51,7 @@ async function setupSMS() {
   const config = {
     SMS_ENABLED: smsEnabled.toLowerCase() === 'y' ? 'true' : 'false',
     PHILSMS_API_TOKEN: apiToken.trim(),
-    PHILSMS_BASE_URL: baseUrl.trim() || 'https://app.philsms.com/api/v3',
+    PHILSMS_BASE_URL: baseUrl.trim() || 'https://dashboard.philsms.com/api/v3',
     PHILSMS_SENDER_ID: senderId.trim() || 'TherapEase',
     API_BASE_URL: apiBaseUrl.trim() || 'http://localhost:3000'
   };
