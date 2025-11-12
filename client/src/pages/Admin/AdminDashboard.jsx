@@ -474,18 +474,33 @@ const AdminDashboard = () => {
             <h3>Today's Appointment</h3>
             <p className="stat-number">
               {(() => {
-                if (!appointmentsData?.data?.appointments) return 0;
+                // Handle different data structures: data.data.appointments or data.appointments
+                const appointments = appointmentsData?.data?.data?.appointments || appointmentsData?.data?.appointments || [];
+                if (!appointments || appointments.length === 0) return 0;
+                
                 const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return appointmentsData.data.appointments.filter(appointment => {
+                const todayStr = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+                
+                return appointments.filter(appointment => {
                   // Count ALL appointments for today regardless of type (session, consultation, assessment, follow-up, etc.)
-                  const appointmentDate = new Date(appointment.appointmentDate);
-                  appointmentDate.setHours(0, 0, 0, 0);
-                  return appointmentDate.getTime() === today.getTime();
+                  if (!appointment.appointmentDate) return false;
+                  
+                  // Handle both string and Date object formats
+                  let appointmentDateStr;
+                  if (typeof appointment.appointmentDate === 'string') {
+                    // If it's already a date string (YYYY-MM-DD), use it directly
+                    appointmentDateStr = appointment.appointmentDate.split('T')[0];
+                  } else {
+                    // If it's a Date object, convert to string
+                    const date = new Date(appointment.appointmentDate);
+                    appointmentDateStr = date.toISOString().split('T')[0];
+                  }
+                  
+                  return appointmentDateStr === todayStr;
                 }).length;
               })()}
             </p>
-            <span className="stat-change neutral">
+            <span className="stat-change positive">
               <Clock size={16} />
               Scheduled
             </span>
