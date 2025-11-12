@@ -205,7 +205,12 @@ export const AuthProvider = ({ children }) => {
         const keysToRemove = Object.keys(localStorage).filter(key => 
           key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')
         );
-        keysToRemove.forEach(key => localStorage.removeItem(key));
+        // Safely remove keys (iOS Safari may have restrictions)
+        try {
+          keysToRemove.forEach(key => localStorage.removeItem(key));
+        } catch (error) {
+          console.warn('Failed to clear cached data from localStorage:', error);
+        }
         
         // Clear React Query cache
         queryClient.clear();
