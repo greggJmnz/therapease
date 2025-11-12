@@ -14,8 +14,6 @@ const TermsAndConditions = ({ isOpen, onClose, onAccept, onDecline }) => {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900">Terms of Service</h3>
       <div className="space-y-3 text-sm text-gray-700">
-        <p><strong>Last Updated:</strong> January 2025</p>
-        
         <div>
           <h4 className="font-semibold text-gray-900 mb-2">1. Acceptance of Terms</h4>
           <p>By accessing and using TherapEase, you accept and agree to be bound by the terms and provision of this agreement.</p>
@@ -53,8 +51,6 @@ const TermsAndConditions = ({ isOpen, onClose, onAccept, onDecline }) => {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900">Privacy Policy</h3>
       <div className="space-y-3 text-sm text-gray-700">
-        <p><strong>Last Updated:</strong> January 2025</p>
-        
         <div>
           <h4 className="font-semibold text-gray-900 mb-2">Information We Collect</h4>
           <ul className="list-disc list-inside space-y-1 ml-4">

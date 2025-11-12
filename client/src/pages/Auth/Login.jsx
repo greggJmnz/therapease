@@ -17,7 +17,6 @@ const Login = () => {
   const [passwordValid, setPasswordValid] = useState(null);
   const [loginError, setLoginError] = useState('');
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [lockoutTime, setLockoutTime] = useState(null);
@@ -120,12 +119,6 @@ const Login = () => {
       return;
     }
 
-    // Check terms acceptance for first-time users
-    if (!termsAccepted) {
-      setShowTermsModal(true);
-      return;
-    }
-
     setIsLoading(true);
     setLoginError(''); // Clear any previous errors
     
@@ -213,15 +206,11 @@ const Login = () => {
   };
 
   const handleTermsAccept = () => {
-    setTermsAccepted(true);
     setShowTermsModal(false);
-    toast.success('Terms and conditions accepted');
   };
 
   const handleTermsDecline = () => {
-    setTermsAccepted(false);
     setShowTermsModal(false);
-    toast.error('You must accept the terms and conditions to continue');
   };
 
   const handle2FASubmit = async (e) => {
@@ -624,33 +613,6 @@ const Login = () => {
               </Link>
             </div>
 
-            {/* Terms and Conditions Checkbox */}
-            <div className="mt-6">
-              <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center h-5 mt-0.5">
-                  <input
-                    id="terms-checkbox"
-                    type="checkbox"
-                    checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                  />
-                </div>
-                <div className="text-sm leading-relaxed">
-                  <label htmlFor="terms-checkbox" className="text-gray-700 cursor-pointer block">
-                    <span className="text-gray-700">I have read and agree to the </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowTermsModal(true)}
-                      className="text-blue-600 hover:text-blue-700 font-medium underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded px-1"
-                    >
-                      Terms of Service, Privacy Policy, and Data Privacy Act 2012 compliance requirements
-                    </button>
-                  </label>
-                </div>
-              </div>
-            </div>
-
             {/* Submit Button */}
             <ModernButton
               type="submit"
@@ -659,7 +621,7 @@ const Login = () => {
               loading={isLoading}
               icon={LogIn}
               className="w-full mt-6"
-              disabled={isLocked || !termsAccepted}
+              disabled={isLocked}
             >
               {isLoading ? 'Signing in...' : isLocked ? 'Account Locked' : 'Sign in'}
             </ModernButton>
