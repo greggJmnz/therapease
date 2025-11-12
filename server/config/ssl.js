@@ -155,10 +155,12 @@ const securityHeaders = (req, res, next) => {
   // Security headers
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Changed from DENY for better iOS compatibility
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https: http://therapease.site:* https://api.therapease.site:* https://www.therapease.site:*; connect-src 'self'; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com");
+  // Updated CSP to allow cross-origin API connections for iOS Safari compatibility
+  // connect-src now includes both therapease.site and api.therapease.site domains
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https: http://therapease.site:* https://api.therapease.site:* https://www.therapease.site:*; connect-src 'self' https://therapease.site https://api.therapease.site https://www.therapease.site wss://therapease.site wss://api.therapease.site; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com");
   
   next();
 };
