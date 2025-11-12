@@ -328,7 +328,7 @@ function initForms() {
                     showSuccess('Registration successful! Please log in.');
                     setTimeout(() => {
                         closeModal('registerModal');
-                        openLoginModal();
+                        window.location.href = 'https://www.therapease.site/auth/login';
                     }, 1500);
                 } else {
                     showError(result.message || 'Registration failed. Please try again.');
@@ -585,8 +585,9 @@ function initFormValidation() {
         const subjectInput = contactForm.querySelector('#subject');
         const messageTextarea = contactForm.querySelector('#message');
 
-        // Auto-fill subject based on inquiry type
-        inquiryTypeSelect.addEventListener('change', () => {
+        // Auto-fill subject based on inquiry type (only if inquiry type select exists)
+        if (inquiryTypeSelect && subjectInput) {
+            inquiryTypeSelect.addEventListener('change', () => {
             const inquiryType = inquiryTypeSelect.value;
             if (subjectInput.value === '' || subjectInput.value === 'Subject Line') {
                 switch (inquiryType) {
@@ -676,7 +677,8 @@ function initDemoAccounts() {
             if (emailInput && passwordInput) {
                 emailInput.value = email;
                 passwordInput.value = password;
-                openLoginModal();
+                // Redirect to login page instead of opening modal
+                window.location.href = 'https://www.therapease.site/auth/login';
             }
         });
     });
@@ -790,12 +792,10 @@ if ('serviceWorker' in navigator) {
 
 // Export functions for global access
 window.TheraPease = {
-    openLoginModal,
-    openRegisterModal,
-    closeModal,
-    switchToLogin,
-    switchToRegister,
-    scrollToSection,
-    showSuccess,
-    showError
+    closeModal: window.closeModal,
+    switchToLogin: window.switchToLogin,
+    switchToRegister: window.switchToRegister,
+    scrollToSection: window.scrollToSection,
+    showSuccess: window.showSuccess,
+    showError: window.showError
 };
