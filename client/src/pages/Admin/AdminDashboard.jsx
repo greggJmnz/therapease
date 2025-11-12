@@ -471,13 +471,19 @@ const AdminDashboard = () => {
             <Calendar size={24} />
           </div>
           <div className="stat-content">
-            <h3>Today's Sessions</h3>
+            <h3>Today's Appointment</h3>
             <p className="stat-number">
-              {appointmentsData?.data?.appointments?.filter(appointment => {
-                const appointmentDate = new Date(appointment.appointmentDate);
+              {(() => {
+                if (!appointmentsData?.data?.appointments) return 0;
                 const today = new Date();
-                return appointmentDate.toDateString() === today.toDateString();
-              }).length || 0}
+                today.setHours(0, 0, 0, 0);
+                return appointmentsData.data.appointments.filter(appointment => {
+                  // Count ALL appointments for today regardless of type (session, consultation, assessment, follow-up, etc.)
+                  const appointmentDate = new Date(appointment.appointmentDate);
+                  appointmentDate.setHours(0, 0, 0, 0);
+                  return appointmentDate.getTime() === today.getTime();
+                }).length;
+              })()}
             </p>
             <span className="stat-change neutral">
               <Clock size={16} />
