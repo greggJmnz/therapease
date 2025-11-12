@@ -14,6 +14,12 @@ const portalItems = document.querySelectorAll('.dropdown-item[data-portal]');
 
 // Navigation functionality
 function initNavigation() {
+    // Check if elements exist before using them
+    if (!hamburger || !navMenu) {
+        console.warn('Navigation elements not found - hamburger menu may not work');
+        return;
+    }
+    
     // Mobile menu toggle
     hamburger.addEventListener('click', () => {
         navMenu.classList.toggle('active');
@@ -588,55 +594,58 @@ function initFormValidation() {
         // Auto-fill subject based on inquiry type (only if inquiry type select exists)
         if (inquiryTypeSelect && subjectInput) {
             inquiryTypeSelect.addEventListener('change', () => {
-            const inquiryType = inquiryTypeSelect.value;
-            if (subjectInput.value === '' || subjectInput.value === 'Subject Line') {
-                switch (inquiryType) {
-                    case 'demo':
-                        subjectInput.value = 'Schedule a Demo - TherapEase';
-                        break;
-                    case 'pricing':
-                        subjectInput.value = 'Pricing Information Request';
-                        break;
-                    case 'support':
-                        subjectInput.value = 'Technical Support Request';
-                        break;
-                    case 'partnership':
-                        subjectInput.value = 'Partnership Inquiry';
-                        break;
-                    case 'general':
-                        subjectInput.value = 'General Question';
-                        break;
-                    default:
-                        subjectInput.value = '';
+                const inquiryType = inquiryTypeSelect.value;
+                if (subjectInput.value === '' || subjectInput.value === 'Subject Line') {
+                    switch (inquiryType) {
+                        case 'demo':
+                            subjectInput.value = 'Schedule a Demo - TherapEase';
+                            break;
+                        case 'pricing':
+                            subjectInput.value = 'Pricing Information Request';
+                            break;
+                        case 'support':
+                            subjectInput.value = 'Technical Support Request';
+                            break;
+                        case 'partnership':
+                            subjectInput.value = 'Partnership Inquiry';
+                            break;
+                        case 'general':
+                            subjectInput.value = 'General Question';
+                            break;
+                        default:
+                            subjectInput.value = '';
+                    }
                 }
-            }
-        });
+            });
+        }
 
-        // Character count for message
-        messageTextarea.addEventListener('input', () => {
-            const maxLength = 1000;
-            const currentLength = messageTextarea.value.length;
-            const remaining = maxLength - currentLength;
-            
-            // Remove existing counter
-            const existingCounter = contactForm.querySelector('.char-counter');
-            if (existingCounter) {
-                existingCounter.remove();
-            }
-            
-            if (currentLength > maxLength * 0.8) {
-                const counter = document.createElement('div');
-                counter.className = 'char-counter';
-                counter.style.cssText = `
-                    font-size: 0.8rem;
-                    color: ${remaining < 0 ? '#ef4444' : remaining < 50 ? '#f59e0b' : '#6b7280'};
-                    text-align: right;
-                    margin-top: 0.25rem;
-                `;
-                counter.textContent = `${currentLength}/${maxLength} characters`;
-                messageTextarea.parentNode.appendChild(counter);
-            }
-        });
+        // Character count for message (only if messageTextarea exists)
+        if (messageTextarea) {
+            messageTextarea.addEventListener('input', () => {
+                const maxLength = 1000;
+                const currentLength = messageTextarea.value.length;
+                const remaining = maxLength - currentLength;
+                
+                // Remove existing counter
+                const existingCounter = contactForm.querySelector('.char-counter');
+                if (existingCounter) {
+                    existingCounter.remove();
+                }
+                
+                if (currentLength > maxLength * 0.8) {
+                    const counter = document.createElement('div');
+                    counter.className = 'char-counter';
+                    counter.style.cssText = `
+                        font-size: 0.8rem;
+                        color: ${remaining < 0 ? '#ef4444' : remaining < 50 ? '#f59e0b' : '#6b7280'};
+                        text-align: right;
+                        margin-top: 0.25rem;
+                    `;
+                    counter.textContent = `${currentLength}/${maxLength} characters`;
+                    messageTextarea.parentNode.appendChild(counter);
+                }
+            });
+        }
     }
 }
 
