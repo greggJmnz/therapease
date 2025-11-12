@@ -13,8 +13,13 @@ class PushNotificationService {
   constructor() {
     this.registration = null;
     this.subscription = null;
-    this.isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
-    this.permission = Notification.permission;
+    // Safely check if Notification API is available before accessing it
+    this.isSupported = typeof window !== 'undefined' && 
+                       'serviceWorker' in navigator && 
+                       'PushManager' in window && 
+                       'Notification' in window;
+    // Safely get notification permission - check if Notification API exists first
+    this.permission = typeof Notification !== 'undefined' ? Notification.permission : 'denied';
     this.baseURL = getApiBaseUrl();
   }
 
