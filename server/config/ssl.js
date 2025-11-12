@@ -162,7 +162,9 @@ const securityHeaders = (req, res, next) => {
   // connect-src now includes both therapease.site and api.therapease.site domains
   // worker-src is required for service workers on iOS Safari
   // blob: is needed for service workers that may use blob URLs
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https: http://therapease.site:* https://api.therapease.site:* https://www.therapease.site:*; connect-src 'self' https://therapease.site https://api.therapease.site https://www.therapease.site wss://therapease.site wss://api.therapease.site; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self'");
+  // Push notification services must be allowed in connect-src for service worker push subscriptions
+  // FCM (Firebase Cloud Messaging) for Chrome/Edge, Mozilla push service for Firefox, etc.
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: https: http://therapease.site:* https://api.therapease.site:* https://www.therapease.site:*; connect-src 'self' https://therapease.site https://api.therapease.site https://www.therapease.site wss://therapease.site wss://api.therapease.site https://fcm.googleapis.com https://*.fcm.googleapis.com https://updates.push.services.mozilla.com https://*.push.services.mozilla.com https://*.notify.windows.com https://*.push.apple.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self'");
   
   next();
 };
