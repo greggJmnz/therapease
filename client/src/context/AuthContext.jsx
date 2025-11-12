@@ -364,11 +364,19 @@ export const AuthProvider = ({ children }) => {
     }
     
     // Clear all localStorage items that might contain cached data
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
-        localStorage.removeItem(key);
-      }
-    });
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
+          try {
+            localStorage.removeItem(key);
+          } catch (error) {
+            console.warn('Failed to remove from localStorage:', error);
+          }
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to access localStorage for cleanup:', error);
+    }
     
     // Clear React Query cache
     queryClient.clear();
