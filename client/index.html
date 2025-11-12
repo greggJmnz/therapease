@@ -21,6 +21,31 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/index.jsx"></script>
+    
+    <!-- Eruda - Mobile Console for iOS Debugging -->
+    <!-- Load Eruda in production or when ?eruda=true is in URL -->
+    <script>
+      (function() {
+        // Check if we should load Eruda
+        const shouldLoadEruda = 
+          window.location.hostname !== 'localhost' && 
+          window.location.hostname !== '127.0.0.1' &&
+          (window.location.search.includes('eruda=true') || 
+           localStorage.getItem('eruda-enabled') === 'true');
+        
+        if (shouldLoadEruda) {
+          var script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/eruda@3.0.1/eruda.js';
+          script.onload = function() {
+            eruda.init();
+            console.log('🔧 Eruda mobile console loaded - you can now see errors on iOS!');
+            console.log('💡 To enable permanently, run: localStorage.setItem("eruda-enabled", "true")');
+            console.log('💡 To disable, run: localStorage.removeItem("eruda-enabled")');
+          };
+          document.head.appendChild(script);
+        }
+      })();
+    </script>
   </body>
 </html>
 
