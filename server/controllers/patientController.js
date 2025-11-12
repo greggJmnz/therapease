@@ -720,6 +720,13 @@ const getDashboard = async (req, res) => {
       WHERE patientId = ? AND therapistId = ?
     `, [patient.id, patient.therapistId]);
 
+    // Get pending home exercises count (assigned or in_progress, not completed)
+    const pendingExercisesCount = await getRow(`
+      SELECT COUNT(*) as total
+      FROM home_exercises
+      WHERE patientId = ? AND status IN ('assigned', 'in_progress')
+    `, [patient.id]);
+
     res.json({
       success: true,
       data: {
@@ -759,7 +766,8 @@ const getDashboard = async (req, res) => {
           };
         }),
         recentProgress: progress,
-        dailyNotesCount: dailyNotesCount?.total || 0
+        dailyNotesCount: dailyNotesCount?.total || 0,
+        pendingExercisesCount: pendingExercisesCount?.total || 0
       }
     });
 

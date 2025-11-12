@@ -20,7 +20,8 @@ import {
   Eye,
   Heart,
   Star,
-  ArrowRight
+  ArrowRight,
+  Dumbbell
 } from 'lucide-react';
 import { patientAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -79,6 +80,7 @@ const PatientDashboard = () => {
         totalAppointments: 0,
         progressEntries: 0,
         dailyNotesCount: 0,
+        pendingExercisesCount: 0,
         patientName: 'Patient',
         therapistName: 'Your Therapist',
         therapistSpecialization: 'Therapy Specialist',
@@ -99,6 +101,7 @@ const PatientDashboard = () => {
       totalAppointments: data.upcomingAppointments?.length || 0,
       progressEntries: data.recentProgress?.length || 0,
       dailyNotesCount: data.dailyNotesCount || 0,
+      pendingExercisesCount: data.pendingExercisesCount || 0,
       patientName: data.patient?.firstName || 'Patient',
       therapistName: data.therapist ? `${data.therapist.firstName || ''} ${data.therapist.lastName || ''}`.trim() || 'Your Therapist' : 'Your Therapist',
       therapistSpecialization: data.therapist?.specialization || 'Therapy Specialist',
@@ -209,6 +212,20 @@ const PatientDashboard = () => {
             <span className="stat-change positive">
               <BookOpen size={12} />
               Available
+            </span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon exercises">
+            <Dumbbell size={20} />
+          </div>
+          <div className="stat-content">
+            <h3>Home Exercises</h3>
+            <p className="stat-number">{dashboardStats.pendingExercisesCount}</p>
+            <span className="stat-change positive">
+              <Target size={12} />
+              Pending
             </span>
           </div>
         </div>
