@@ -202,9 +202,15 @@ export const AuthProvider = ({ children }) => {
         };
         
         // Clear any cached data from previous users (optimized)
-        const keysToRemove = Object.keys(localStorage).filter(key => 
+        // Safely access localStorage (iOS Safari may have restrictions)
+        let keysToRemove = [];
+        try {
+          keysToRemove = Object.keys(localStorage).filter(key => 
           key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')
-        );
+          );
+        } catch (error) {
+          console.warn('Failed to access localStorage for key filtering:', error);
+        }
         // Safely remove keys (iOS Safari may have restrictions)
         try {
           keysToRemove.forEach(key => localStorage.removeItem(key));
@@ -274,7 +280,8 @@ export const AuthProvider = ({ children }) => {
 
         
         // Clear any cached data from previous users
-        Object.keys(localStorage).forEach(key => {
+        try {
+          Object.keys(localStorage).forEach(key => {
           if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
             try {
               localStorage.removeItem(key);
@@ -402,12 +409,20 @@ export const AuthProvider = ({ children }) => {
     // Clear React Query cache
     queryClient.clear();
     
-    // Clear localStorage cache
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
-        localStorage.removeItem(key);
-      }
-    });
+    // Clear localStorage cache (safely handle iOS Safari restrictions)
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('react-query') || key.startsWith('patient') || key.startsWith('onboarding')) {
+          try {
+            localStorage.removeItem(key);
+          } catch (error) {
+            console.warn('Failed to remove from localStorage:', error);
+          }
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to access localStorage for cache cleanup:', error);
+    }
   };
 
   const changePassword = async (currentPassword, newPassword) => {
