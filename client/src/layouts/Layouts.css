@@ -751,8 +751,6 @@
   padding: 24px;
   margin-left: 260px;
   min-height: 100vh;
-  width: calc(100% - 260px);
-  box-sizing: border-box;
 }
 
 .main-content::before {
@@ -785,8 +783,6 @@
   box-sizing: border-box;
   gap: 12px;
   border-bottom: none;
-  flex-wrap: wrap;
-  overflow: visible;
 }
 
 /* Header Logo Section Styles */
@@ -1038,13 +1034,7 @@
   .main-content {
     margin-left: 0;
     width: 100%;
-    padding: 12px;
-    box-sizing: border-box;
-    overflow-x: hidden;
-  }
-  
-  .main-content::before {
-    left: 0;
+    padding: 8px;
   }
   
   .content-header {
@@ -1339,24 +1329,6 @@
 }
 
 @media (max-width: 768px) {
-  /* Header actions responsive fix */
-  .header-actions {
-    flex-wrap: wrap;
-    gap: 4px;
-    justify-content: flex-end;
-  }
-  
-  .header-actions .btn-secondary {
-    padding: 8px;
-    min-width: 36px;
-    width: auto;
-    height: 36px;
-  }
-  
-  .header-actions .btn-secondary span.hidden {
-    display: none !important;
-  }
-  
   /* Ensure notification count is visible on mobile */
   .btn-secondary.relative .notification-count {
     position: absolute !important;

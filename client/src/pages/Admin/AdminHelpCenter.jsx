@@ -106,20 +106,20 @@ const AdminHelpCenter = () => {
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 w-full max-w-full box-border overflow-x-hidden">
+    <div className="max-w-6xl mx-auto p-6">
         {/* Header */}
-      <div className="text-center mb-8 sm:mb-12">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-          <HelpCircle size={32} className="sm:w-10 sm:h-10 text-white" />
+      <div className="text-center mb-12">
+        <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <HelpCircle size={40} className="text-white" />
             </div>
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 break-words px-4">How can we help you?</h1>
-        <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto break-words px-4">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">How can we help you?</h1>
+        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
           Find answers to common questions, get support, and learn how to make the most of your TherapEase admin portal for pediatric occupational therapy management.
         </p>
         </div>
         
       {/* Search Bar */}
-      <div className="max-w-2xl mx-auto mb-8 sm:mb-12 px-4">
+      <div className="max-w-2xl mx-auto mb-12">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input
@@ -127,15 +127,15 @@ const AdminHelpCenter = () => {
             placeholder="Search for help topics..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 sm:py-4 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base sm:text-lg"
+            className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-lg"
           />
           </div>
         </div>
         
               {/* Quick Actions */}
-      <div className="mb-12 sm:mb-16 px-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 sm:mb-8 text-center break-words">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {quickActions.map((action, index) => (
                     <button
                       key={index}
@@ -153,9 +153,9 @@ const AdminHelpCenter = () => {
               </div>
 
       {/* Contact Information */}
-      <div className="mb-12 sm:mb-16 px-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 sm:mb-8 text-center break-words">Get in Touch</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Get in Touch</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {contactInfo.map((contact, index) => (
             <button
               key={index}
@@ -174,16 +174,16 @@ const AdminHelpCenter = () => {
               </div>
 
       {/* FAQs */}
-      <div className="mb-12 sm:mb-16 px-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 sm:mb-8 text-center break-words">Frequently Asked Questions</h2>
-        <div className="max-w-4xl mx-auto space-y-3 sm:space-y-4 w-full">
+      <div className="mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Frequently Asked Questions</h2>
+        <div className="max-w-4xl mx-auto space-y-4">
           {filteredFaqs.map((faq, index) => (
-            <div key={index} className="bg-white rounded-2xl shadow-lg overflow-hidden w-full">
+            <div key={index} className="bg-white rounded-2xl shadow-lg overflow-hidden">
                     <button
                 onClick={() => toggleFaq(index)}
-                      className="w-full p-4 sm:p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors gap-4"
+                      className="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
               >
-                <h3 className="font-semibold text-sm sm:text-base text-gray-900 flex-1 min-w-0 break-words">{faq.question}</h3>
+                <h3 className="font-semibold text-gray-900 pr-4">{faq.question}</h3>
                 {expandedFaqs[index] ? (
                   <ChevronDown size={20} className="text-gray-400 flex-shrink-0" />
                 ) : (
@@ -191,8 +191,8 @@ const AdminHelpCenter = () => {
                       )}
                     </button>
               {expandedFaqs[index] && (
-                      <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-                  <p className="text-sm sm:text-base text-gray-600 leading-relaxed break-words">{faq.answer}</p>
+                      <div className="px-6 pb-6">
+                  <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
                       </div>
                     )}
                   </div>
