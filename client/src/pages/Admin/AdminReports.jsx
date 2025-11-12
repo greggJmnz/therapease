@@ -343,10 +343,46 @@ const AdminReports = () => {
   // Use real data if available, otherwise use fallback
   const dataToUse = realGrowthData.length > 0 ? realGrowthData : realData;
   
+  // Filter data for current year (This Year)
+  const currentYear = new Date().getFullYear();
+  const thisYearData = dataToUse.filter(item => {
+    // Extract year from month string - handle multiple formats
+    const monthStr = item.month || '';
+    
+    // Handle "MMM YY" format (e.g., "Jan 25", "Oct 25")
+    const shortYearMatch = monthStr.match(/(\d{2})$/);
+    if (shortYearMatch) {
+      let year = parseInt(shortYearMatch[1]);
+      // Convert 2-digit year to 4-digit (assuming 2000s)
+      if (year < 100) {
+        year = 2000 + year;
+      }
+      return year === currentYear;
+    }
+    
+    // Handle "MMM YYYY" format (e.g., "Jan 2025")
+    const fullYearMatch = monthStr.match(/(\d{4})$/);
+    if (fullYearMatch) {
+      const year = parseInt(fullYearMatch[1]);
+      return year === currentYear;
+    }
+    
+    // Handle "YYYY-MM" format (e.g., "2025-01", "2025-10")
+    const isoYearMatch = monthStr.match(/^(\d{4})-/);
+    if (isoYearMatch) {
+      const year = parseInt(isoYearMatch[1]);
+      return year === currentYear;
+    }
+    
+    // If no year found, include it (fallback to show data)
+    return true;
+  });
+  
   const growthData = {
     '3months': generateLineChartData(dataToUse.slice(-3)), // Last 3 months
     '6months': generateLineChartData(dataToUse.slice(-6)), // Last 6 months
-    '1year': generateLineChartData(dataToUse) // All available data
+    '1year': generateLineChartData(dataToUse), // All available data
+    'thisyear': generateLineChartData(thisYearData.length > 0 ? thisYearData : dataToUse) // Current year data
   };
   
 
@@ -619,6 +655,7 @@ const AdminReports = () => {
               <option value="3months">Last 3 Months</option>
               <option value="6months">Last 6 Months</option>
               <option value="1year">Last Year</option>
+              <option value="thisyear">This Year</option>
             </select>
             <select
               value={selectedChart}
