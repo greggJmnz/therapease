@@ -43,8 +43,8 @@ const AutoPushNotificationInitializer = () => {
           return;
         }
 
-        // Check current permission status
-        const currentPermission = Notification.permission;
+        // Check current permission status - safely check if Notification API exists
+        const currentPermission = typeof Notification !== 'undefined' ? Notification.permission : 'denied';
         
         if (currentPermission === 'default') {
           // Permission not set yet - request it automatically

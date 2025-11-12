@@ -74,6 +74,12 @@ class PushNotificationService {
 
   // Request notification permission
   async requestPermission() {
+    // Check if Notification API is available
+    if (typeof Notification === 'undefined') {
+      console.warn('Notification API is not available');
+      return false;
+    }
+
     if (this.permission === 'granted') {
       return true;
     }
@@ -232,9 +238,10 @@ class PushNotificationService {
     }
 
     // Check notification permission
-    if (Notification.permission !== 'granted') {
-      throw new Error('Notification permission not granted. Current permission: ' + Notification.permission);
-    }
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+        const currentPermission = typeof Notification !== 'undefined' ? Notification.permission : 'unavailable';
+        throw new Error('Notification permission not granted. Current permission: ' + currentPermission);
+      }
 
     const defaultOptions = {
       body: '',

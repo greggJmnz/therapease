@@ -84,13 +84,13 @@ const PushNotificationManager = () => {
     try {
       console.log('Testing notification...');
       console.log('Service worker registration:', navigator.serviceWorker.getRegistration ? 'available' : 'not available');
-      console.log('Notification permission:', Notification.permission);
+      console.log('Notification permission:', typeof Notification !== 'undefined' ? Notification.permission : 'unavailable');
       
-      await showNotification('Test Notification', {
-        body: 'This is a test notification from TherapEase!',
-        icon: '/favicon.ico',
-        tag: 'test-notification'
-      });
+    await showNotification('Test Notification', {
+      body: 'This is a test notification from TherapEase!',
+      icon: '/favicon.ico',
+      tag: 'test-notification'
+    });
       
       console.log('Test notification triggered successfully');
     } catch (error) {
