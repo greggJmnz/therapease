@@ -410,9 +410,9 @@ const AdminDashboard = () => {
     return patients.filter(patient => {
       const matchesSearch = patient.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
                            patient.therapist.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
-      const matchesStatus = filterStatus === 'all' || patient.status === filterStatus;
-      return matchesSearch && matchesStatus;
-    });
+    const matchesStatus = filterStatus === 'all' || patient.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
   }, [patients, debouncedSearchTerm, filterStatus]);
 
   const renderDashboard = () => (
