@@ -125,11 +125,6 @@ const TermsAndConditions = ({ isOpen, onClose, onAccept, onDecline }) => {
           <p>We obtain your explicit consent before processing your personal data for therapy services, and you may withdraw this consent at any time.</p>
         </div>
 
-        <div>
-          <h4 className="font-semibold text-gray-900 mb-2">Data Protection Officer</h4>
-          <p>For questions about data privacy, contact our Data Protection Officer at privacy@therapease.com</p>
-        </div>
-
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-start">
             <UserCheck className="h-5 w-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
