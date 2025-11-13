@@ -366,3 +366,34 @@
 .therapist-schedule-table-container .hover\:bg-gray-50:hover {
   background: #f3f4f6 !important;
 }
+
+/* Ensure all appointment rows have border-left color */
+.therapist-schedule-table-container .divide-y > div.border-l-4 {
+  border-left-width: 4px !important;
+  border-left-style: solid !important;
+}
+
+/* Override any conflicting border styles - ensure color classes work with high specificity */
+.therapist-schedule-table-container .divide-y > div.border-l-pink-400 {
+  border-left: 4px solid #f472b6 !important;
+}
+
+.therapist-schedule-table-container .divide-y > div.border-l-orange-400 {
+  border-left: 4px solid #fb923c !important;
+}
+
+.therapist-schedule-table-container .divide-y > div.border-l-green-400 {
+  border-left: 4px solid #4ade80 !important;
+}
+
+.therapist-schedule-table-container .divide-y > div.border-l-yellow-400 {
+  border-left: 4px solid #facc15 !important;
+}
+
+.therapist-schedule-table-container .divide-y > div.border-l-red-400 {
+  border-left: 4px solid #f87171 !important;
+}
+
+.therapist-schedule-table-container .divide-y > div.border-l-gray-400 {
+  border-left: 4px solid #9ca3af !important;
+}

@@ -782,10 +782,27 @@ const Appointments = () => {
                   </p>
                 </div>
               ) : (
-                filteredAppointments.map((appointment) => (
+                filteredAppointments.map((appointment) => {
+                  // Determine border color based on appointment type
+                  const appointmentType = appointment.type || '';
+                  let borderColor = 'border-l-gray-400'; // Default fallback
+                  
+                  if (appointmentType.includes('session') || appointmentType.includes('therapy') || appointmentType === 'Regular Session') {
+                    borderColor = 'border-l-pink-400';
+                  } else if (appointmentType.includes('consultation')) {
+                    borderColor = 'border-l-orange-400';
+                  } else if (appointmentType.includes('assessment') || appointmentType.includes('evaluation')) {
+                    borderColor = 'border-l-green-400';
+                  } else if (appointmentType.includes('follow-up')) {
+                    borderColor = 'border-l-yellow-400';
+                  } else if (appointmentType.includes('emergency')) {
+                    borderColor = 'border-l-red-400';
+                  }
+                  
+                  return (
                   <div 
                     key={appointment.id} 
-                    className="px-3 py-3 sm:px-6 sm:py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                    className={`px-3 py-3 sm:px-6 sm:py-4 hover:bg-gray-50 transition-colors cursor-pointer border-l-4 ${borderColor}`}
                     onClick={() => handleViewAppointment(appointment)}
                   >
                     <div className="grid grid-cols-9 gap-2 sm:gap-4 items-center">
@@ -843,7 +860,8 @@ const Appointments = () => {
                       </div>
                 </div>
               </div>
-                ))
+                  );
+                })
               )}
               </div>
             </div>
