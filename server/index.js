@@ -40,6 +40,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const treatmentPlanRoutes = require('./routes/treatmentPlanRoutes');
 const homeExerciseRoutes = require('./routes/homeExerciseRoutes');
 const progressReportRoutes = require('./routes/progressReportRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 
 // Parse CORS origins from environment variable or use defaults
 const getCorsOrigins = () => {
@@ -603,6 +604,9 @@ app.get('/api/test-columns', async (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+
+// Contact form route (public - no authentication required)
+app.use('/api/contact', contactRoutes);
 
 // Admin routes (no maintenance mode check - admins can always access)
 app.use('/api/admin', adminRoutes);

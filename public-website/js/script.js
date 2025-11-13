@@ -365,14 +365,9 @@ function initForms() {
                 privacy: formData.get('privacy') === 'on'
             };
 
-            // Validate required fields
-            if (!contactData.name || !contactData.email || !contactData.inquiryType || !contactData.subject || !contactData.message) {
-                showError('Please fill in all required fields.');
-                return;
-            }
-
-            if (!contactData.privacy) {
-                showError('Please agree to the Privacy Policy and Terms of Service.');
+            // Validate required fields (inquiryType, phone, newsletter, privacy are optional)
+            if (!contactData.name || !contactData.email || !contactData.subject || !contactData.message) {
+                showError('Please fill in all required fields (name, email, subject, message).');
                 return;
             }
 
@@ -381,43 +376,68 @@ function initForms() {
                 
                 // Enhanced contact data with additional context
                 const enhancedContactData = {
-                    ...contactData,
-                    timestamp: new Date().toISOString(),
+                    name: contactData.name,
+                    email: contactData.email,
+                    phone: contactData.phone || null,
+                    inquiryType: contactData.inquiryType || null,
+                    subject: contactData.subject,
+                    message: contactData.message,
+                    newsletter: contactData.newsletter || false,
                     userAgent: navigator.userAgent,
                     referrer: document.referrer,
                     pageUrl: window.location.href
                 };
 
-                // You can implement a contact endpoint or use a service like EmailJS
-                // For now, we'll simulate a successful submission with enhanced feedback
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                // Show success message based on inquiry type
-                let successMessage = 'Thank you for your message! We\'ll get back to you soon.';
-                
-                switch (contactData.inquiryType) {
-                    case 'demo':
-                        successMessage = 'Thank you! We\'ll contact you within 24 hours to schedule your personalized demo.';
-                        break;
-                    case 'pricing':
-                        successMessage = 'Thank you! We\'ll send you detailed pricing information within 24 hours.';
-                        break;
-                    case 'support':
-                        successMessage = 'Thank you! Our technical support team will respond within 24 hours.';
-                        break;
-                    case 'partnership':
-                        successMessage = 'Thank you! We\'ll review your partnership inquiry and get back to you soon.';
-                        break;
-                    default:
-                        successMessage = 'Thank you for your message! We\'ll get back to you within 24 hours.';
-                }
+                // Determine API base URL
+                const apiBaseUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:5000/api'
+                    : 'https://api.therapease.site/api';
 
-                if (contactData.newsletter) {
-                    successMessage += ' You\'ll also receive our newsletter with the latest TherapEase updates.';
+                // Send contact form to API
+                const response = await fetch(`${apiBaseUrl}/contact/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(enhancedContactData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Show success message based on inquiry type
+                    let successMessage = 'Thank you for your message! We\'ll get back to you soon.';
+                    
+                    if (contactData.inquiryType) {
+                        switch (contactData.inquiryType) {
+                            case 'demo':
+                                successMessage = 'Thank you! We\'ll contact you within 24 hours to schedule your personalized demo.';
+                                break;
+                            case 'pricing':
+                                successMessage = 'Thank you! We\'ll send you detailed pricing information within 24 hours.';
+                                break;
+                            case 'support':
+                                successMessage = 'Thank you! Our technical support team will respond within 24 hours.';
+                                break;
+                            case 'partnership':
+                                successMessage = 'Thank you! We\'ll review your partnership inquiry and get back to you soon.';
+                                break;
+                            default:
+                                successMessage = result.message || 'Thank you for your message! We\'ll get back to you within 24 hours.';
+                        }
+                    } else {
+                        successMessage = result.message || 'Thank you for your message! We\'ll get back to you within 24 hours.';
+                    }
+
+                    if (contactData.newsletter) {
+                        successMessage += ' You\'ll also receive our newsletter with the latest TherapEase updates.';
+                    }
+                    
+                    showSuccess(successMessage);
+                    contactForm.reset();
+                } else {
+                    throw new Error(result.error || 'Failed to send message');
                 }
-                
-                showSuccess(successMessage);
-                contactForm.reset();
             } catch (error) {
                 console.error('Contact form error:', error);
                 showError('Failed to send message. Please try again or contact us directly at support@therapease.com.');
