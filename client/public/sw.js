@@ -1,19 +1,20 @@
 // TherapEase Service Worker for Push Notifications
 // This service worker handles push notifications, background sync, and offline functionality
 
-const CACHE_NAME = 'therapease-v3';
+// IMPORTANT: Increment version to force cache clear on deployment
+const CACHE_NAME = 'therapease-v4';
 const NOTIFICATION_ICON = '/favicon.ico';
 const NOTIFICATION_BADGE = '/favicon.ico';
 
-// Install event - cache essential resources
+// Install event - cache essential resources (BUT NOT index.html)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
+        // DO NOT cache index.html - it must always be fetched fresh
+        // Only cache static assets that have content hashes
+        // Note: JS/CSS assets with hashes are cached automatically via fetch handler
         return cache.addAll([
-          '/',
-          '/static/js/bundle.js',
-          '/static/css/main.css',
           '/favicon.ico',
           '/manifest.json'
         ]);
@@ -182,6 +183,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const url = new URL(event.request.url);
+  
+  // CRITICAL: Never cache index.html - always fetch fresh from network
+  // This ensures users always get the latest chunk references
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Return fresh index.html, don't cache it
+          return response;
+        })
+        .catch(() => {
+          // Only fallback to cache if network completely fails
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // For all other requests (assets with hashes), use cache-first strategy
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -201,7 +222,7 @@ self.addEventListener('fetch', (event) => {
             // Clone the response
             const responseToCache = response.clone();
 
-            // Cache the response
+            // Cache the response (assets with hashes are safe to cache)
             caches.open(CACHE_NAME)
               .then((cache) => {
                 cache.put(event.request, responseToCache);
@@ -210,7 +231,7 @@ self.addEventListener('fetch', (event) => {
             return response;
           })
           .catch(() => {
-            // Return offline page for navigation requests
+            // Return offline page for navigation requests (but not index.html)
             if (event.request.destination === 'document') {
               return caches.match('/');
             }
