@@ -2591,6 +2591,16 @@ textarea:focus {
   color: #9333ea;
 }
 
+.stat-icon.users {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #2563eb;
+}
+
+.stat-icon.admins {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+}
+
 .stat-content {
   flex: 1;
   display: flex;

@@ -1017,13 +1017,21 @@ const AdminAppointments = () => {
                 </div>
               ) : (
                 currentAppointments.map((appointment) => {
-                  const typeColor = getTypeColor(appointment.type);
-                  const borderColor = typeColor.includes('pink') ? 'border-l-pink-400' :
-                                    typeColor.includes('orange') ? 'border-l-orange-400' :
-                                    typeColor.includes('green') ? 'border-l-green-400' :
-                                    typeColor.includes('yellow') ? 'border-l-yellow-400' :
-                                    typeColor.includes('red') ? 'border-l-red-400' :
-                                    'border-l-gray-400';
+                  // Determine border color based on appointment type
+                  const appointmentType = appointment.type || '';
+                  let borderColor = 'border-l-gray-400'; // Default fallback
+                  
+                  if (appointmentType.includes('session') || appointmentType.includes('therapy') || appointmentType === 'Regular Session') {
+                    borderColor = 'border-l-pink-400';
+                  } else if (appointmentType.includes('consultation')) {
+                    borderColor = 'border-l-orange-400';
+                  } else if (appointmentType.includes('assessment') || appointmentType.includes('evaluation')) {
+                    borderColor = 'border-l-green-400';
+                  } else if (appointmentType.includes('follow-up')) {
+                    borderColor = 'border-l-yellow-400';
+                  } else if (appointmentType.includes('emergency')) {
+                    borderColor = 'border-l-red-400';
+                  }
                   
                   return (
                   <div 

@@ -211,29 +211,29 @@
 .users-table th:nth-child(2),
 .users-table td:nth-child(2) {
   text-align: center;
-  padding: 1rem 0.75rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .users-table th:nth-child(4),
 .users-table td:nth-child(4) {
   text-align: center;
-  padding: 1rem 0.75rem;
+  padding: 0.5rem 0.75rem;
 }
 
 /* Consistent padding for all columns */
 .users-table th:nth-child(1),
 .users-table td:nth-child(1) {
-  padding: 1rem 0.75rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .users-table th:nth-child(3),
 .users-table td:nth-child(3) {
-  padding: 1rem 0.75rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .users-table th:nth-child(5),
 .users-table td:nth-child(5) {
-  padding: 1rem 0.25rem 1rem 0.75rem;
+  padding: 0.5rem 0.25rem 0.5rem 0.75rem;
 }
 
 /* Classic Table Design for Admin User Management */
@@ -286,11 +286,11 @@
 
 .users-table th:nth-child(6),
 .users-table td:nth-child(6) {
-  padding: 1rem 0.75rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .users-table td {
-  padding: 0.75rem 0.5rem;
+  padding: 0.5rem 0.5rem;
   vertical-align: middle;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 0.875rem;
@@ -1009,40 +1009,40 @@
   
   .users-table th,
   .users-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.5rem;
   }
   
   /* Consistent padding for all columns on mobile */
   .users-table th:nth-child(1),
   .users-table td:nth-child(1) {
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.5rem;
   }
   
   .users-table th:nth-child(2),
   .users-table td:nth-child(2) {
     text-align: center;
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.5rem;
   }
   
   .users-table th:nth-child(3),
   .users-table td:nth-child(3) {
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.5rem;
   }
   
   .users-table th:nth-child(4),
   .users-table td:nth-child(4) {
     text-align: center;
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.5rem;
   }
   
   .users-table th:nth-child(5),
   .users-table td:nth-child(5) {
-    padding: 0.75rem 0.25rem 0.75rem 0.5rem;
+    padding: 0.5rem 0.25rem 0.5rem 0.5rem;
   }
   
   .users-table th:nth-child(6),
   .users-table td:nth-child(6) {
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.5rem;
   }
   
   .user-info {
