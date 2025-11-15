@@ -205,7 +205,7 @@ const SessionCreator = ({
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Information */}
-            <ModernCard className="p-6">
+            <ModernCard className="p-6" hover={false}>
               <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <Calendar className="h-5 w-5 mr-2 text-blue-600" />
                 Session Details

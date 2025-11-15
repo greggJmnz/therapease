@@ -1177,31 +1177,33 @@ const AdminTherapists = () => {
               <h3>Generate Therapist Account</h3>
               <button className="close-btn" onClick={closeGenerateModal}>×</button>
             </div>
-            <div className="modal-body">
+            <div className="modal-body" style={{ padding: '24px' }}>
               {!generatedCredentials ? (
-                <>
+                <div style={{ maxWidth: '500px', margin: '0 auto' }}>
                   <div className="form-group" style={{ marginBottom: '2.5rem' }}>
-                    <label>Name *</label>
+                    <label style={{ marginBottom: '0.75rem', display: 'block' }}>Name *</label>
                     <input
                       type="text"
                       value={newTherapist.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       className="form-input"
+                      style={{ width: '100%', boxSizing: 'border-box' }}
                       placeholder="Enter full name"
                     />
                   </div>
                   <div className="form-group" style={{ marginBottom: '2.5rem' }}>
-                    <label>Email *</label>
+                    <label style={{ marginBottom: '0.75rem', display: 'block' }}>Email *</label>
                     <input
                       type="email"
                       value={newTherapist.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       className="form-input"
+                      style={{ width: '100%', boxSizing: 'border-box' }}
                       placeholder="Enter email address"
                     />
                   </div>
                   
-                  <div className="info-note">
+                  <div className="info-note" style={{ marginBottom: '2rem' }}>
                     <p><strong>Note:</strong> Only name and email are required to generate an account. The therapist will complete their profile information after logging in.</p>
                   </div>
                   
@@ -1212,7 +1214,7 @@ const AdminTherapists = () => {
                       Generate Account
                     </button>
                   </div>
-                </>
+                </div>
               ) : (
                 <div className="credentials-display">
                   <div className="success-message">
