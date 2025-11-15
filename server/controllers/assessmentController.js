@@ -574,6 +574,7 @@ const saveAIAssessmentData = async (req, res) => {
 const getAIAssessmentData = async (req, res) => {
   try {
     const { patientId } = req.params;
+    const therapistId = req.user.id; // Get from JWT token
 
     if (!patientId) {
       return res.status(400).json({
@@ -593,11 +594,11 @@ const getAIAssessmentData = async (req, res) => {
         createdAt,
         updatedAt
       FROM ai_assessments 
-      WHERE patientId = ?
+      WHERE patientId = ? AND therapistId = ?
       ORDER BY updatedAt DESC
     `;
 
-    const assessments = await getAll(sql, [parseInt(patientId)]);
+    const assessments = await getAll(sql, [parseInt(patientId), therapistId]);
 
     // Parse JSON fields (handle both string and object formats)
     const parsedAssessments = assessments.map(assessment => ({

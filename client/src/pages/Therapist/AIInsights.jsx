@@ -104,42 +104,80 @@ const AIInsights = () => {
       const loadFromDatabase = async () => {
         try {
           const response = await aiAPI.getAssessmentData(selectedPatient);
-          if (response.data.success && response.data.data.length > 0) {
+          console.log('Assessment data response:', response.data);
+          
+          if (response.data.success && response.data.data && response.data.data.length > 0) {
             const latest = response.data.data[0]; // Get most recent
-            if (latest.interviewQuestions && latest.interviewQuestions.length > 0) {
-              setInterviewQuestions(latest.interviewQuestions);
+            console.log('Loaded assessment data from database:', latest);
+            
+            // Always set the data, even if arrays are empty
+            if (latest.interviewQuestions) {
+              setInterviewQuestions(latest.interviewQuestions.length > 0 
+                ? latest.interviewQuestions 
+                : [{ id: 1, question: '', answer: '' }]);
+            } else {
+              setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
             }
-            if (latest.observations) {
+            
+            if (latest.observations !== undefined && latest.observations !== null) {
               setObservations(latest.observations);
+            } else {
+              setObservations('');
             }
+            
             if (latest.insights && latest.insights.length > 0) {
               setInsights(latest.insights);
             }
           } else {
-            // Fallback to localStorage for migration
+            // No data in database, check localStorage for migration
+            console.log('No data in database, checking localStorage...');
             const savedData = localStorage.getItem(`assessment_${selectedPatient}`);
             if (savedData) {
               try {
                 const parsed = JSON.parse(savedData);
+                console.log('Found localStorage data, migrating...', parsed);
+                
                 if (parsed.interviewQuestions && parsed.interviewQuestions.length > 0) {
                   setInterviewQuestions(parsed.interviewQuestions);
+                } else {
+                  setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
                 }
+                
                 if (parsed.observations) {
                   setObservations(parsed.observations);
+                } else {
+                  setObservations('');
                 }
+                
                 // Migrate to database
-                await aiAPI.saveAssessmentData({
-                  patientId: parseInt(selectedPatient),
-                  interviewQuestions: parsed.interviewQuestions || [],
-                  observations: parsed.observations || '',
-                  insights: parsed.insights || []
-                });
-                localStorage.removeItem(`assessment_${selectedPatient}`);
+                try {
+                  const migrateResponse = await aiAPI.saveAssessmentData({
+                    patientId: parseInt(selectedPatient),
+                    interviewQuestions: parsed.interviewQuestions || [],
+                    observations: parsed.observations || '',
+                    insights: parsed.insights || []
+                  });
+                  
+                  if (migrateResponse.data.success) {
+                    console.log('Migration successful, clearing localStorage');
+                    localStorage.removeItem(`assessment_${selectedPatient}`);
+                    toast.success('Assessment data migrated to database successfully!');
+                  } else {
+                    console.error('Migration failed:', migrateResponse.data.error);
+                    toast.error('Failed to migrate assessment data: ' + (migrateResponse.data.error || 'Unknown error'));
+                  }
+                } catch (migrateError) {
+                  console.error('Error during migration:', migrateError);
+                  toast.error('Failed to migrate assessment data. Please try saving again.');
+                }
               } catch (error) {
-                console.error('Error loading/migrating saved assessment data:', error);
+                console.error('Error parsing localStorage data:', error);
+                setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
+                setObservations('');
               }
             } else {
-              // Reset to default state for new patient
+              // No data anywhere, reset to default state
+              console.log('No data found, resetting to default state');
               setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
               setObservations('');
             }
@@ -153,12 +191,18 @@ const AIInsights = () => {
               const parsed = JSON.parse(savedData);
               if (parsed.interviewQuestions && parsed.interviewQuestions.length > 0) {
                 setInterviewQuestions(parsed.interviewQuestions);
+              } else {
+                setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
               }
               if (parsed.observations) {
                 setObservations(parsed.observations);
+              } else {
+                setObservations('');
               }
             } catch (err) {
               console.error('Error parsing localStorage data:', err);
+              setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
+              setObservations('');
             }
           } else {
             // Reset to default state for new patient
@@ -169,6 +213,10 @@ const AIInsights = () => {
       };
       
       loadFromDatabase();
+    } else {
+      // No patient selected, reset to default
+      setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
+      setObservations('');
     }
   }, [selectedPatient]);
 
@@ -1980,19 +2028,50 @@ The therapist retains full responsibility for all clinical decisions and patient
         insights: insights || []
       };
       
+      console.log('Saving assessment data:', assessmentData);
+      
       const response = await aiAPI.saveAssessmentData(assessmentData);
+      console.log('Save response:', response.data);
       
       if (response.data.success) {
         toast.success('Assessment data saved successfully!');
         
         // Clear localStorage after successful save
         localStorage.removeItem(`assessment_${selectedPatient}`);
+        
+        // Reload the data to ensure UI is in sync
+        const reloadResponse = await aiAPI.getAssessmentData(selectedPatient);
+        if (reloadResponse.data.success && reloadResponse.data.data.length > 0) {
+          const latest = reloadResponse.data.data[0];
+          if (latest.interviewQuestions && latest.interviewQuestions.length > 0) {
+            setInterviewQuestions(latest.interviewQuestions);
+          }
+          if (latest.observations !== undefined && latest.observations !== null) {
+            setObservations(latest.observations);
+          }
+        }
       } else {
         throw new Error(response.data.error || 'Failed to save');
       }
     } catch (error) {
       console.error('Error saving assessment data:', error);
-      toast.error(error.response?.data?.error || 'Failed to save assessment data');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to save assessment data';
+      toast.error(errorMessage);
+      
+      // If save fails, keep data in localStorage as backup
+      try {
+        const backupData = {
+          patientId: parseInt(selectedPatient),
+          interviewQuestions: interviewQuestions.filter(q => q.question.trim() !== ''),
+          observations: observations.trim(),
+          insights: insights || [],
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(`assessment_${selectedPatient}`, JSON.stringify(backupData));
+        console.log('Saved backup to localStorage');
+      } catch (backupError) {
+        console.error('Failed to save backup to localStorage:', backupError);
+      }
     } finally {
       setIsSaving(false);
     }
