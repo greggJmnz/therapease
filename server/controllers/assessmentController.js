@@ -514,10 +514,38 @@ const saveAIAssessmentData = async (req, res) => {
       });
     }
 
+    if (!therapistId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Therapist ID is required. Please log in again.'
+      });
+    }
+
     const connection = await getConnection();
     await connection.beginTransaction();
 
     try {
+      // Verify therapist is assigned to this patient
+      const assignmentCheckSql = `
+        SELECT id, assignmentType, status
+        FROM patient_therapist_assignments
+        WHERE patientId = ? AND therapistId = ? AND status = 'active'
+        LIMIT 1
+      `;
+      
+      const [assignments] = await connection.execute(assignmentCheckSql, [
+        parseInt(patientId),
+        parseInt(therapistId)
+      ]);
+
+      if (assignments.length === 0) {
+        await connection.rollback();
+        return res.status(403).json({
+          success: false,
+          error: 'You are not assigned to this patient. Only assigned therapists can save assessment data.'
+        });
+      }
+
       // Save assessment data
       const assessmentData = {
         patientId: parseInt(patientId),
@@ -527,6 +555,8 @@ const saveAIAssessmentData = async (req, res) => {
         insights: JSON.stringify(insights || []),
         timestamp: new Date().toISOString()
       };
+
+      console.log(`[saveAIAssessmentData] Saving assessment for patientId: ${assessmentData.patientId}, therapistId: ${assessmentData.therapistId}`);
 
       const insertSql = `
         INSERT INTO ai_assessments (patientId, therapistId, interviewQuestions, observations, insights, createdAt, updatedAt)
@@ -547,6 +577,8 @@ const saveAIAssessmentData = async (req, res) => {
       ]);
 
       await connection.commit();
+
+      console.log(`[saveAIAssessmentData] Successfully saved assessment for patientId: ${assessmentData.patientId}, therapistId: ${assessmentData.therapistId}`);
 
       res.json({
         success: true,
@@ -583,6 +615,35 @@ const getAIAssessmentData = async (req, res) => {
       });
     }
 
+    if (!therapistId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Therapist ID is required. Please log in again.'
+      });
+    }
+
+    // Verify therapist is assigned to this patient
+    const assignmentCheckSql = `
+      SELECT id, assignmentType, status
+      FROM patient_therapist_assignments
+      WHERE patientId = ? AND therapistId = ? AND status = 'active'
+      LIMIT 1
+    `;
+    
+    const assignment = await getRow(assignmentCheckSql, [
+      parseInt(patientId),
+      parseInt(therapistId)
+    ]);
+
+    if (!assignment) {
+      return res.status(403).json({
+        success: false,
+        error: 'You are not assigned to this patient. Only assigned therapists can view assessment data.'
+      });
+    }
+
+    console.log(`[getAIAssessmentData] Fetching assessment for patientId: ${patientId}, therapistId: ${therapistId}`);
+
     const sql = `
       SELECT 
         id,
@@ -598,7 +659,9 @@ const getAIAssessmentData = async (req, res) => {
       ORDER BY updatedAt DESC
     `;
 
-    const assessments = await getAll(sql, [parseInt(patientId), therapistId]);
+    const assessments = await getAll(sql, [parseInt(patientId), parseInt(therapistId)]);
+
+    console.log(`[getAIAssessmentData] Found ${assessments.length} assessment(s) for patientId: ${patientId}, therapistId: ${therapistId}`);
 
     // Parse JSON fields (handle both string and object formats)
     const parsedAssessments = assessments.map(assessment => ({
