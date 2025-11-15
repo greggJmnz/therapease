@@ -13,12 +13,14 @@ const ModernCard = ({
   ...props 
 }) => {
   const baseClasses = cn(
-    'rounded-[20px] transition-all duration-300 ease-out',
+    'rounded-[20px]',
+    hover ? 'transition-all duration-300 ease-out' : '',
     padding,
     shadow,
     border,
     background,
     hover && 'hover:shadow-[0_20px_40px_rgba(0,0,0,0.15)] hover:scale-[1.02] hover:-translate-y-2',
+    !hover && 'hover:shadow-none hover:scale-100 hover:translate-y-0',
     className
   );
 
