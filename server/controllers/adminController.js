@@ -2292,21 +2292,21 @@ const unassignTherapistFromPatient = async (req, res) => {
       });
     }
 
-    // Check if patient has any active therapist assignments
-    const assignmentSql = `
+    // Check if patient has a primary therapist assignment
+    const primaryAssignmentSql = `
       SELECT pta.id, pta.therapistId, pta.assignmentType,
              CONCAT(u.firstName, ' ', u.lastName) as therapistName
       FROM patient_therapist_assignments pta
       JOIN users u ON pta.therapistId = u.id
-      WHERE pta.patientId = ? AND pta.status = 'active'
+      WHERE pta.patientId = ? AND pta.assignmentType = 'primary' AND pta.status = 'active'
     `;
     
-    const assignments = await getAll(assignmentSql, [patient.id]);
+    const primaryAssignment = await getRow(primaryAssignmentSql, [patient.id]);
     
-    if (assignments.length === 0) {
+    if (!primaryAssignment) {
       return res.status(400).json({
         success: false,
-        error: 'Patient does not have any therapists assigned'
+        error: 'Patient does not have a primary therapist assigned'
       });
     }
 
@@ -2315,9 +2315,9 @@ const unassignTherapistFromPatient = async (req, res) => {
     await connection.beginTransaction();
 
     try {
-      // Remove all active assignments for this patient
+      // Remove only the PRIMARY therapist assignment (not secondary or collaborative)
       await connection.execute(
-        'DELETE FROM patient_therapist_assignments WHERE patientId = ? AND status = "active"',
+        'DELETE FROM patient_therapist_assignments WHERE patientId = ? AND assignmentType = "primary" AND status = "active"',
         [patient.id]
       );
 
@@ -2330,39 +2330,37 @@ const unassignTherapistFromPatient = async (req, res) => {
       // Create notifications
       const notificationController = require('./notificationController');
       
-      // Notify each therapist
-      for (const assignment of assignments) {
-        await notificationController.createNotification(
-          assignment.therapistId,
-          'Patient Unassigned',
-          `Patient ${patient.patientName} has been unassigned from you`,
-          'patient_unassignment',
-          { patientId: patient.id, therapistId: assignment.therapistId }
-        );
-      }
+      // Notify only the primary therapist
+      await notificationController.createNotification(
+        primaryAssignment.therapistId,
+        'Patient Unassigned',
+        `Patient ${patient.patientName} has been unassigned from you`,
+        'patient_unassignment',
+        { patientId: patient.id, therapistId: primaryAssignment.therapistId }
+      );
 
       // Notify patient
       await notificationController.createNotification(
-        parseInt(patientId),
-        'Therapist Unassigned',
-        `You have been unassigned from your therapist(s)`,
+        patient.userId,
+        'Primary Therapist Unassigned',
+        `Your primary therapist ${primaryAssignment.therapistName} has been unassigned from you`,
         'therapist_unassignment',
-        { patientId: patient.id }
+        { patientId: patient.id, therapistId: primaryAssignment.therapistId }
       );
 
       await connection.commit();
 
       res.json({
         success: true,
-        message: 'Therapist(s) unassigned from patient successfully',
+        message: 'Primary therapist unassigned from patient successfully',
         data: {
           patientId: patient.id,
           patientName: patient.patientName,
-          unassignedTherapists: assignments.map(a => ({
-            therapistId: a.therapistId,
-            therapistName: a.therapistName,
-            assignmentType: a.assignmentType
-          }))
+          unassignedTherapist: {
+            therapistId: primaryAssignment.therapistId,
+            therapistName: primaryAssignment.therapistName,
+            assignmentType: primaryAssignment.assignmentType
+          }
         }
       });
 

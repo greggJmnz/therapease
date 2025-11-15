@@ -1562,6 +1562,71 @@ const AdminPatients = () => {
                 </div>
               </div>
 
+              {/* Assigned Therapists Card */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 px-6 py-4 rounded-t-2xl border-b border-indigo-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center">
+                      <Users size={20} className="text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">Assigned Therapists</h3>
+                  </div>
+                </div>
+                <div className="p-6">
+                  {selectedPatient.therapistAssignments && selectedPatient.therapistAssignments.length > 0 ? (
+                    <div className="space-y-4">
+                      {selectedPatient.therapistAssignments
+                        .filter(assignment => assignment.assignmentStatus === 'active')
+                        .sort((a, b) => {
+                          // Sort: primary first, then secondary, then collaborative
+                          const order = { 'primary': 1, 'secondary': 2, 'collaborative': 3 };
+                          return (order[a.assignmentType] || 99) - (order[b.assignmentType] || 99);
+                        })
+                        .map((assignment, index) => (
+                          <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 hover:bg-gray-100 transition-colors">
+                            <div className="flex items-center gap-4 flex-1">
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                assignment.assignmentType === 'primary' ? 'bg-blue-100' :
+                                assignment.assignmentType === 'secondary' ? 'bg-green-100' :
+                                'bg-purple-100'
+                              }`}>
+                                <UserCheck size={20} className={
+                                  assignment.assignmentType === 'primary' ? 'text-blue-600' :
+                                  assignment.assignmentType === 'secondary' ? 'text-green-600' :
+                                  'text-purple-600'
+                                } />
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="font-semibold text-gray-900">{assignment.therapistName}</p>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    assignment.assignmentType === 'primary' ? 'bg-blue-100 text-blue-800' :
+                                    assignment.assignmentType === 'secondary' ? 'bg-green-100 text-green-800' :
+                                    'bg-purple-100 text-purple-800'
+                                  }`}>
+                                    {assignment.assignmentType.charAt(0).toUpperCase() + assignment.assignmentType.slice(1)}
+                                  </span>
+                                </div>
+                                {assignment.assignedAt && (
+                                  <p className="text-sm text-gray-500">
+                                    Assigned: {new Date(assignment.assignedAt).toLocaleDateString('en-US', { timeZone: 'UTC' })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Users size={48} className="mx-auto text-gray-300 mb-3" />
+                      <p className="text-gray-500 font-medium">No therapists assigned</p>
+                      <p className="text-sm text-gray-400 mt-1">Assign a therapist to get started</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Account Information Card */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <div className="bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-4 rounded-t-2xl border-b border-purple-200">
