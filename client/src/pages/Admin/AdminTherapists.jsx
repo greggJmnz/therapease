@@ -1180,7 +1180,7 @@ const AdminTherapists = () => {
             <div className="modal-body">
               {!generatedCredentials ? (
                 <>
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: '2.5rem' }}>
                     <label>Name *</label>
                     <input
                       type="text"
@@ -1190,7 +1190,7 @@ const AdminTherapists = () => {
                       placeholder="Enter full name"
                     />
                   </div>
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: '2.5rem' }}>
                     <label>Email *</label>
                     <input
                       type="email"

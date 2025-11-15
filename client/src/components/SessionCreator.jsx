@@ -197,7 +197,7 @@ const SessionCreator = ({
             </h3>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 transition-colors"
             >
               <X className="h-6 w-6" />
             </button>
@@ -404,7 +404,7 @@ const SessionCreator = ({
               <ModernButton
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white"
+                className="px-6 py-2 bg-green-600 text-white"
               >
                 {loading ? (
                   <div className="flex items-center">
