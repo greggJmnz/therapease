@@ -22,6 +22,7 @@ const NotificationModal = ({
   onDelete, 
   onMarkAsRead, 
   onViewAppointment,
+  onScheduleAssessment,
   isDeleting = false
 }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -223,6 +224,19 @@ const NotificationModal = ({
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-gray-200">
+              {(notification.type === 'patient_assignment' || notification.type === 'assessment_priority') && onScheduleAssessment && (
+                <button
+                  onClick={() => {
+                    if (onScheduleAssessment) {
+                      onScheduleAssessment(notification);
+                    }
+                  }}
+                  className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Schedule Assessment
+                </button>
+              )}
               {notification.type === 'appointment' && (
                 <button
                   onClick={() => {

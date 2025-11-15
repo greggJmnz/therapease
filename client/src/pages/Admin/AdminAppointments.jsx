@@ -26,7 +26,8 @@ import {
   ChevronDown,
   SortAsc,
   SortDesc,
-  MoreVertical
+  MoreVertical,
+  Check
 } from 'lucide-react';
 import { UltraModernCalendar } from '../../components';
 import { adminAPI } from '../../services/api';
@@ -169,7 +170,8 @@ const AdminAppointments = () => {
         time: appointmentTime,
         duration: appointment.duration || 60,
         type: appointment.type || 'session',
-    status: appointment.status || 'scheduled',
+    status: appointment.approvalStatus === 'pending' ? 'pending' : (appointment.status || 'scheduled'),
+        approvalStatus: appointment.approvalStatus || 'approved',
         reason: appointment.reason || 'No reason provided',
         notes: appointment.notes || '',
         createdAt: appointment.createdAt,
@@ -562,6 +564,21 @@ const AdminAppointments = () => {
     setEditingAppointment({ ...appointment });
     setShowEditModal(true);
     setShowAppointmentModal(false);
+  };
+
+  const handleApproveAppointment = async () => {
+    if (!selectedAppointment) return;
+
+    try {
+      await adminAPI.approveAppointment(selectedAppointment.id);
+      toast.success('Appointment approved successfully');
+      handleCloseAppointmentModal();
+      // Refetch appointments data
+      refetch();
+    } catch (error) {
+      console.error('Error approving appointment:', error);
+      toast.error(error.response?.data?.error || 'Failed to approve appointment');
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -1666,6 +1683,16 @@ const AdminAppointments = () => {
                 >
                   Close
                 </button>
+                {/* Show approve button if status is pending */}
+                {selectedAppointment.approvalStatus === 'pending' && (
+                  <button
+                    onClick={handleApproveAppointment}
+                    className="w-full sm:w-auto px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <Check className="h-4 w-4" />
+                    Approve Appointment
+                  </button>
+                )}
                 <button
                   onClick={() => handleEditAppointment(selectedAppointment)}
                   className="w-full sm:w-auto btn-primary"

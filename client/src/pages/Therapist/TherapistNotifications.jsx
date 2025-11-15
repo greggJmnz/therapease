@@ -218,6 +218,30 @@ const TherapistNotifications = () => {
     navigate('/therapist/schedule');
   };
 
+  const handleScheduleAssessment = async (notification) => {
+    setSelectedNotification(null);
+    
+    // Try to extract patient name from notification message
+    // Message format: "You have been assigned a new patient: [Patient Name]"
+    // or "Please schedule an initial assessment for your new patient: [Patient Name]"
+    let patientName = null;
+    const message = notification.message || '';
+    const match = message.match(/patient:\s*([^\.]+)/i) || message.match(/patient\s+([^:\.]+)/i);
+    if (match && match[1]) {
+      patientName = match[1].trim();
+    }
+    
+    // Navigate to schedule page with patient name in state
+    // The schedule page will handle opening the create appointment modal
+    navigate('/therapist/schedule', {
+      state: {
+        mode: 'schedule',
+        patientName: patientName,
+        appointmentType: 'assessment'
+      }
+    });
+  };
+
   return (
     <div className="space-y-6">
       <NotificationList
@@ -247,6 +271,7 @@ const TherapistNotifications = () => {
           onDelete={handleDelete}
           onMarkAsRead={handleMarkAsRead}
           onViewAppointment={handleViewAppointment}
+          onScheduleAssessment={handleScheduleAssessment}
           isDeleting={deleteNotificationMutation.isLoading}
         />
       )}

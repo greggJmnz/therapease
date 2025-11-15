@@ -18,7 +18,8 @@ const SessionCreator = ({
   onSessionCreated, 
   onClose,
   initialDate = null,
-  initialTime = null 
+  initialTime = null,
+  initialSessionType = null
 }) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -27,7 +28,7 @@ const SessionCreator = ({
     startTime: initialTime || '09:00',
     endTime: '10:00',
     duration: 60,
-    sessionType: 'session',
+    sessionType: initialSessionType || 'session',
     reason: '',
     notes: ''
   });

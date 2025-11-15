@@ -17,7 +17,8 @@ import {
   Info,
   SortAsc,
   SortDesc,
-  Edit
+  Edit,
+  Check
 } from 'lucide-react';
 import { UltraModernCalendar, SessionCreator } from '../../components';
 import { therapistAPI } from '../../services/api';
@@ -28,7 +29,7 @@ const TherapistSchedule = () => {
   const queryClient = useQueryClient();
   const location = useLocation();
   
-  // Check if navigated from patients page with selected patient
+  // Check if navigated from patients page with selected patient or from notification
   useEffect(() => {
     if (location.state?.selectedPatient && location.state?.mode === 'schedule') {
       // Set the selected patient and open the create appointment modal
@@ -36,6 +37,40 @@ const TherapistSchedule = () => {
       setShowSessionModal(true);
       // Clear the location state to prevent reopening on refresh
       window.history.replaceState({}, document.title);
+    } else if (location.state?.patientName && location.state?.mode === 'schedule') {
+      // Navigated from notification with patient name
+      // Fetch patients and find matching patient
+      const fetchAndSelectPatient = async () => {
+        try {
+          const response = await therapistAPI.getPatients();
+          const patients = response?.data?.data?.patients || [];
+          const matchingPatient = patients.find(p => {
+            const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim();
+            return fullName.toLowerCase() === location.state.patientName.toLowerCase();
+          });
+          
+          if (matchingPatient) {
+            setSelectedPatientForSchedule({
+              id: matchingPatient.id,
+              firstName: matchingPatient.firstName,
+              lastName: matchingPatient.lastName
+            });
+            setShowSessionModal(true);
+          } else {
+            // Patient not found, still open modal but without pre-selected patient
+            setShowSessionModal(true);
+          }
+          // Clear the location state to prevent reopening on refresh
+          window.history.replaceState({}, document.title);
+        } catch (error) {
+          console.error('Error fetching patients:', error);
+          // Still open modal even if fetch fails
+          setShowSessionModal(true);
+          window.history.replaceState({}, document.title);
+        }
+      };
+      
+      fetchAndSelectPatient();
     }
   }, [location.state]);
   
@@ -406,6 +441,21 @@ const TherapistSchedule = () => {
       toast.error(error.response?.data?.error || 'Failed to update appointment');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleApproveAppointment = async () => {
+    if (!selectedAppointment) return;
+
+    try {
+      await therapistAPI.approveAppointment(selectedAppointment.id);
+      toast.success('Appointment approved successfully');
+      handleCloseAppointmentModal();
+      // Refetch schedule data
+      await refetch();
+    } catch (error) {
+      console.error('Error approving appointment:', error);
+      toast.error(error.response?.data?.error || 'Failed to approve appointment');
     }
   };
 
@@ -826,6 +876,7 @@ const TherapistSchedule = () => {
           <SessionCreator
             patientId={selectedPatientForSchedule?.id || null}
             patientName={selectedPatientForSchedule ? `${selectedPatientForSchedule.firstName || ''} ${selectedPatientForSchedule.lastName || ''}`.trim() : null}
+            initialSessionType={location.state?.appointmentType === 'assessment' ? 'assessment' : null}
             onSessionCreated={(newSession) => {
               toast.success('Session created successfully');
               setShowSessionModal(false);
@@ -1002,6 +1053,16 @@ const TherapistSchedule = () => {
                 >
                   Close
                 </button>
+                  {/* Show approve button if status is pending */}
+                  {selectedAppointment.approvalStatus === 'pending' && (
+                    <button
+                      onClick={handleApproveAppointment}
+                      className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+                    >
+                      <Check className="h-4 w-4" />
+                      Approve Appointment
+                    </button>
+                  )}
                   {/* Only show edit button if appointment was not created by admin */}
                   {selectedAppointment.creatorRole !== 'admin' ? (
                     <button
