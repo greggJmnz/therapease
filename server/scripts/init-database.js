@@ -343,6 +343,20 @@ const createTables = async (connection) => {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
+  // Question Templates table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS question_templates (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      therapistId INT NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      questions JSON NOT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_therapist (therapistId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
   // AI PDF Records table
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS ai_pdf_records (

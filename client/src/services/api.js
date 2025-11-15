@@ -409,6 +409,17 @@ export const aiAPI = {
   // AI PDF Records Storage (regular timeout is fine)
   savePDFRecord: (data) => api.post('/ai/pdf-records', data),
   getPDFRecords: (patientId) => api.get(`/ai/pdf-records/${patientId}`),
+  
+  // Question Templates
+  getQuestionTemplates: () => api.get('/ai/question-templates'),
+  saveQuestionTemplate: (template) => {
+    if (template.id) {
+      return api.put(`/ai/question-templates/${template.id}`, template);
+    }
+    return api.post('/ai/question-templates', template);
+  },
+  deleteQuestionTemplate: (id) => api.delete(`/ai/question-templates/${id}`),
+  migrateTemplates: (templates) => api.post('/ai/question-templates/migrate', { templates }),
 };
 
 // Generic API methods

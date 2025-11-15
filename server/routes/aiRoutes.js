@@ -8,7 +8,11 @@ const {
   getAIAssessmentData, 
   saveAIPDFRecord, 
   getAIPDFRecords,
-  deleteAIPDFRecord
+  deleteAIPDFRecord,
+  getQuestionTemplates,
+  saveQuestionTemplate,
+  deleteQuestionTemplate,
+  migrateTemplatesFromLocalStorage
 } = require('../controllers/assessmentController');
 
 // Apply authentication to all AI routes
@@ -134,7 +138,6 @@ router.get('/health', async (req, res) => {
 // AI Assessment Data Storage Routes
 router.post('/assessment-data', [
   body('patientId').isInt().withMessage('Patient ID is required'),
-  body('therapistId').isInt().withMessage('Therapist ID is required'),
   body('interviewQuestions').optional().isArray().withMessage('Interview questions must be an array'),
   body('observations').optional().isString().withMessage('Observations must be a string'),
   body('insights').optional().isArray().withMessage('Insights must be an array'),
@@ -156,5 +159,20 @@ router.post('/pdf-records', [
 
 router.get('/pdf-records/:patientId', getAIPDFRecords);
 router.delete('/pdf-records/:recordId', deleteAIPDFRecord);
+
+// Question Templates Routes
+router.get('/question-templates', getQuestionTemplates);
+router.post('/question-templates', [
+  body('name').isString().withMessage('Template name is required'),
+  body('questions').isArray().withMessage('Questions must be an array'),
+], saveQuestionTemplate);
+router.put('/question-templates/:id', [
+  body('name').isString().withMessage('Template name is required'),
+  body('questions').isArray().withMessage('Questions must be an array'),
+], saveQuestionTemplate);
+router.delete('/question-templates/:id', deleteQuestionTemplate);
+router.post('/question-templates/migrate', [
+  body('templates').isArray().withMessage('Templates must be an array'),
+], migrateTemplatesFromLocalStorage);
 
 module.exports = router;

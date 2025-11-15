@@ -100,24 +100,75 @@ const AIInsights = () => {
   // Load saved assessment data when patient changes
   useEffect(() => {
     if (selectedPatient) {
-      const savedData = localStorage.getItem(`assessment_${selectedPatient}`);
-      if (savedData) {
+      // Try to load from database first
+      const loadFromDatabase = async () => {
         try {
-          const parsed = JSON.parse(savedData);
-          if (parsed.interviewQuestions && parsed.interviewQuestions.length > 0) {
-            setInterviewQuestions(parsed.interviewQuestions);
-          }
-          if (parsed.observations) {
-            setObservations(parsed.observations);
+          const response = await aiAPI.getAssessmentData(selectedPatient);
+          if (response.data.success && response.data.data.length > 0) {
+            const latest = response.data.data[0]; // Get most recent
+            if (latest.interviewQuestions && latest.interviewQuestions.length > 0) {
+              setInterviewQuestions(latest.interviewQuestions);
+            }
+            if (latest.observations) {
+              setObservations(latest.observations);
+            }
+            if (latest.insights && latest.insights.length > 0) {
+              setInsights(latest.insights);
+            }
+          } else {
+            // Fallback to localStorage for migration
+            const savedData = localStorage.getItem(`assessment_${selectedPatient}`);
+            if (savedData) {
+              try {
+                const parsed = JSON.parse(savedData);
+                if (parsed.interviewQuestions && parsed.interviewQuestions.length > 0) {
+                  setInterviewQuestions(parsed.interviewQuestions);
+                }
+                if (parsed.observations) {
+                  setObservations(parsed.observations);
+                }
+                // Migrate to database
+                await aiAPI.saveAssessmentData({
+                  patientId: parseInt(selectedPatient),
+                  interviewQuestions: parsed.interviewQuestions || [],
+                  observations: parsed.observations || '',
+                  insights: parsed.insights || []
+                });
+                localStorage.removeItem(`assessment_${selectedPatient}`);
+              } catch (error) {
+                console.error('Error loading/migrating saved assessment data:', error);
+              }
+            } else {
+              // Reset to default state for new patient
+              setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
+              setObservations('');
+            }
           }
         } catch (error) {
-          console.error('Error loading saved assessment data:', error);
+          console.error('Error loading assessment data:', error);
+          // Fallback to localStorage
+          const savedData = localStorage.getItem(`assessment_${selectedPatient}`);
+          if (savedData) {
+            try {
+              const parsed = JSON.parse(savedData);
+              if (parsed.interviewQuestions && parsed.interviewQuestions.length > 0) {
+                setInterviewQuestions(parsed.interviewQuestions);
+              }
+              if (parsed.observations) {
+                setObservations(parsed.observations);
+              }
+            } catch (err) {
+              console.error('Error parsing localStorage data:', err);
+            }
+          } else {
+            // Reset to default state for new patient
+            setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
+            setObservations('');
+          }
         }
-      } else {
-        // Reset to default state for new patient
-        setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
-        setObservations('');
-      }
+      };
+      
+      loadFromDatabase();
     }
   }, [selectedPatient]);
 
@@ -230,18 +281,51 @@ RECOMMENDATIONS FOR INTERVENTION:
   };
 
   // Template management functions
-  const loadTemplates = () => {
+  const loadTemplates = async () => {
     try {
-      const savedTemplates = localStorage.getItem(`question_templates_${getTherapistId()}`);
-      if (savedTemplates) {
-        setTemplates(JSON.parse(savedTemplates));
+      const response = await aiAPI.getQuestionTemplates();
+      if (response.data.success) {
+        setTemplates(response.data.data);
+        
+        // Migrate localStorage templates if any exist
+        const savedTemplates = localStorage.getItem(`question_templates_${getTherapistId()}`);
+        if (savedTemplates) {
+          try {
+            const parsedTemplates = JSON.parse(savedTemplates);
+            if (parsedTemplates.length > 0) {
+              // Migrate to database
+              const migrateResponse = await aiAPI.migrateTemplates(parsedTemplates);
+              if (migrateResponse.data.success) {
+                // Reload templates from database
+                const reloadResponse = await aiAPI.getQuestionTemplates();
+                if (reloadResponse.data.success) {
+                  setTemplates(reloadResponse.data.data);
+                }
+                // Clear localStorage
+                localStorage.removeItem(`question_templates_${getTherapistId()}`);
+                toast.success('Templates migrated to database successfully!');
+              }
+            }
+          } catch (error) {
+            console.error('Error migrating templates:', error);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading templates:', error);
+      // Fallback to localStorage
+      try {
+        const savedTemplates = localStorage.getItem(`question_templates_${getTherapistId()}`);
+        if (savedTemplates) {
+          setTemplates(JSON.parse(savedTemplates));
+        }
+      } catch (err) {
+        console.error('Error loading templates from localStorage:', err);
+      }
     }
   };
 
-  const saveTemplate = () => {
+  const saveTemplate = async () => {
     if (!templateName.trim()) {
       toast.error('Please enter a template name');
       return;
@@ -253,24 +337,29 @@ RECOMMENDATIONS FOR INTERVENTION:
       return;
     }
 
-    const newTemplate = {
-      id: Date.now(),
-      name: templateName.trim(),
-      questions: interviewQuestions.filter(q => q.question.trim() !== ''),
-      createdAt: new Date().toISOString()
-    };
+    try {
+      const templateData = {
+        id: editingTemplate?.id || null,
+        name: templateName.trim(),
+        questions: interviewQuestions.filter(q => q.question.trim() !== '')
+      };
 
-    const updatedTemplates = editingTemplate 
-      ? templates.map(t => t.id === editingTemplate.id ? newTemplate : t)
-      : [...templates, newTemplate];
-
-    setTemplates(updatedTemplates);
-    localStorage.setItem(`question_templates_${getTherapistId()}`, JSON.stringify(updatedTemplates));
-    
-    setTemplateName('');
-    setEditingTemplate(null);
-    setShowTemplateModal(false);
-    toast.success(editingTemplate ? 'Template updated successfully!' : 'Template saved successfully!');
+      const response = await aiAPI.saveQuestionTemplate(templateData);
+      
+      if (response.data.success) {
+        // Reload templates
+        await loadTemplates();
+        setTemplateName('');
+        setEditingTemplate(null);
+        setShowTemplateModal(false);
+        toast.success(editingTemplate ? 'Template updated successfully!' : 'Template saved successfully!');
+      } else {
+        throw new Error(response.data.error || 'Failed to save template');
+      }
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast.error(error.response?.data?.error || 'Failed to save template');
+    }
   };
 
   const loadTemplate = (template) => {
@@ -284,11 +373,19 @@ RECOMMENDATIONS FOR INTERVENTION:
     toast.success(`Template "${template.name}" loaded successfully!`);
   };
 
-  const deleteTemplate = (templateId) => {
-    const updatedTemplates = templates.filter(t => t.id !== templateId);
-    setTemplates(updatedTemplates);
-    localStorage.setItem(`question_templates_${getTherapistId()}`, JSON.stringify(updatedTemplates));
-    toast.success('Template deleted successfully!');
+  const deleteTemplate = async (templateId) => {
+    try {
+      const response = await aiAPI.deleteQuestionTemplate(templateId);
+      if (response.data.success) {
+        await loadTemplates();
+        toast.success('Template deleted successfully!');
+      } else {
+        throw new Error(response.data.error || 'Failed to delete template');
+      }
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast.error(error.response?.data?.error || 'Failed to delete template');
+    }
   };
 
   const editTemplate = (template) => {
@@ -1876,20 +1973,26 @@ The therapist retains full responsibility for all clinical decisions and patient
     setIsSaving(true);
     
     try {
-      // Save to API
       const assessmentData = {
-        patientId: selectedPatient,
+        patientId: parseInt(selectedPatient),
         interviewQuestions: interviewQuestions.filter(q => q.question.trim() !== ''),
         observations: observations.trim(),
-        timestamp: new Date().toISOString()
+        insights: insights || []
       };
       
-      // For now, save to localStorage (replace with API call when backend is ready)
-      localStorage.setItem(`assessment_${selectedPatient}`, JSON.stringify(assessmentData));
+      const response = await aiAPI.saveAssessmentData(assessmentData);
       
-      toast.success('Assessment data saved successfully!');
+      if (response.data.success) {
+        toast.success('Assessment data saved successfully!');
+        
+        // Clear localStorage after successful save
+        localStorage.removeItem(`assessment_${selectedPatient}`);
+      } else {
+        throw new Error(response.data.error || 'Failed to save');
+      }
     } catch (error) {
-      toast.error('Failed to save assessment data');
+      console.error('Error saving assessment data:', error);
+      toast.error(error.response?.data?.error || 'Failed to save assessment data');
     } finally {
       setIsSaving(false);
     }

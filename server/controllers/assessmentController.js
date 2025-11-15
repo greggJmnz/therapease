@@ -504,12 +504,13 @@ const getAvailableFilters = async () => {
 // Save AI assessment data (interview questions, observations, insights)
 const saveAIAssessmentData = async (req, res) => {
   try {
-    const { patientId, interviewQuestions, observations, insights, therapistId } = req.body;
+    const { patientId, interviewQuestions, observations, insights } = req.body;
+    const therapistId = req.user.id; // Get from JWT token
 
-    if (!patientId || !therapistId) {
+    if (!patientId) {
       return res.status(400).json({
         success: false,
-        error: 'Patient ID and Therapist ID are required'
+        error: 'Patient ID is required'
       });
     }
 
@@ -812,6 +813,235 @@ const deleteAIPDFRecord = async (req, res) => {
   }
 };
 
+// Question Templates CRUD operations
+
+// Get all templates for a therapist
+const getQuestionTemplates = async (req, res) => {
+  try {
+    const therapistId = req.user.id;
+
+    const sql = `
+      SELECT 
+        id,
+        name,
+        questions,
+        createdAt,
+        updatedAt
+      FROM question_templates 
+      WHERE therapistId = ?
+      ORDER BY updatedAt DESC
+    `;
+
+    const templates = await getAll(sql, [therapistId]);
+
+    // Parse JSON fields
+    const parsedTemplates = templates.map(template => ({
+      ...template,
+      questions: typeof template.questions === 'string' 
+        ? JSON.parse(template.questions || '[]') 
+        : template.questions || []
+    }));
+
+    res.json({
+      success: true,
+      data: parsedTemplates
+    });
+
+  } catch (error) {
+    console.error('Error getting question templates:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get question templates'
+    });
+  }
+};
+
+// Create or update a template
+const saveQuestionTemplate = async (req, res) => {
+  try {
+    const therapistId = req.user.id;
+    const { id, name, questions } = req.body;
+
+    if (!name || !questions || !Array.isArray(questions)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Template name and questions array are required'
+      });
+    }
+
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      if (id) {
+        // Update existing template
+        const updateSql = `
+          UPDATE question_templates 
+          SET name = ?, questions = ?, updatedAt = NOW()
+          WHERE id = ? AND therapistId = ?
+        `;
+
+        await connection.execute(updateSql, [
+          name,
+          JSON.stringify(questions),
+          id,
+          therapistId
+        ]);
+
+        await connection.commit();
+
+        res.json({
+          success: true,
+          message: 'Template updated successfully',
+          data: { id, name, questions }
+        });
+      } else {
+        // Create new template
+        const insertSql = `
+          INSERT INTO question_templates (therapistId, name, questions, createdAt, updatedAt)
+          VALUES (?, ?, ?, NOW(), NOW())
+        `;
+
+        const [result] = await connection.execute(insertSql, [
+          therapistId,
+          name,
+          JSON.stringify(questions)
+        ]);
+
+        await connection.commit();
+
+        res.json({
+          success: true,
+          message: 'Template saved successfully',
+          data: { 
+            id: result.insertId, 
+            name, 
+            questions 
+          }
+        });
+      }
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Error saving question template:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save question template'
+    });
+  }
+};
+
+// Delete a template
+const deleteQuestionTemplate = async (req, res) => {
+  try {
+    const therapistId = req.user.id;
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Template ID is required'
+      });
+    }
+
+    const sql = `
+      DELETE FROM question_templates 
+      WHERE id = ? AND therapistId = ?
+    `;
+
+    await runQuery(sql, [id, therapistId]);
+
+    res.json({
+      success: true,
+      message: 'Template deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting question template:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete question template'
+    });
+  }
+};
+
+// Migrate localStorage templates to database
+const migrateTemplatesFromLocalStorage = async (req, res) => {
+  try {
+    const therapistId = req.user.id;
+    const { templates } = req.body; // Array of templates from localStorage
+
+    if (!templates || !Array.isArray(templates)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Templates array is required'
+      });
+    }
+
+    const connection = await getConnection();
+    await connection.beginTransaction();
+
+    try {
+      const migratedTemplates = [];
+
+      for (const template of templates) {
+        // Skip if template already exists (check by name)
+        const checkSql = `
+          SELECT id FROM question_templates 
+          WHERE therapistId = ? AND name = ?
+        `;
+        const existing = await getRow(checkSql, [therapistId, template.name]);
+
+        if (!existing) {
+          const insertSql = `
+            INSERT INTO question_templates (therapistId, name, questions, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, NOW())
+          `;
+
+          const [result] = await connection.execute(insertSql, [
+            therapistId,
+            template.name,
+            JSON.stringify(template.questions),
+            template.createdAt || new Date().toISOString()
+          ]);
+
+          migratedTemplates.push({
+            id: result.insertId,
+            name: template.name,
+            questions: template.questions
+          });
+        }
+      }
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: `Migrated ${migratedTemplates.length} templates successfully`,
+        data: migratedTemplates
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Error migrating templates:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to migrate templates'
+    });
+  }
+};
+
 module.exports = {
   getAssessmentHistory,
   getPatientAssessments,
@@ -822,6 +1052,10 @@ module.exports = {
   getAIAssessmentData,
   saveAIPDFRecord,
   getAIPDFRecords,
-  deleteAIPDFRecord
+  deleteAIPDFRecord,
+  getQuestionTemplates,
+  saveQuestionTemplate,
+  deleteQuestionTemplate,
+  migrateTemplatesFromLocalStorage
 };
 
