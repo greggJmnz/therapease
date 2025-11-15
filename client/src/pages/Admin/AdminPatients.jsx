@@ -2391,7 +2391,19 @@ const TherapistAssignmentContent = ({ patient, onAssignmentSuccess, onUnassignme
 
     try {
       setLoading(true);
-      const response = await adminAPI.unassignTherapistFromPatient(patient.id);
+      
+      // Find the therapist assignment to determine if it's primary
+      const therapistAssignment = assignedTherapists.find(t => t.therapistId === therapistToUnassign.id);
+      const isPrimary = therapistAssignment?.assignmentType === 'primary';
+      
+      let response;
+      if (isPrimary) {
+        // Use unassignTherapistFromPatient for primary therapist (removes primary only)
+        response = await adminAPI.unassignTherapistFromPatient(patient.id);
+      } else {
+        // Use removeTherapistFromPatient for secondary/collaborative therapists (removes specific therapist)
+        response = await adminAPI.removeTherapistFromPatient(patient.id, therapistToUnassign.id, 'Therapist removed by admin');
+      }
 
       if (response.data.success) {
         toast.success(`${therapistToUnassign?.name} has been unassigned successfully`);
