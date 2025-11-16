@@ -199,12 +199,26 @@ const AdminReports = () => {
   const reportsUserGrowth = reportsData?.data?.userGrowth || [];
   const dailyNotesTrends = reportsData?.data?.dailyNotesTrends || [];
 
+  // Helper function to format month from YYYY-MM to MMM YY
+  const formatMonth = (monthStr) => {
+    if (!monthStr) return '';
+    
+    // Handle YYYY-MM format (e.g., "2025-01", "2025-10")
+    if (monthStr.match(/^\d{4}-\d{2}$/)) {
+      const [year, month] = monthStr.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    }
+    
+    // Already formatted, return as is
+    return monthStr;
+  };
+
   // Process real growth data from API with enhanced accuracy
   const processGrowthData = (userGrowthData, appointmentTrendsData) => {
-    // Combine data from dashboard and reports APIs, prioritizing dashboard data
-    const combinedUserGrowth = [...userGrowthData, ...reportsUserTrends];
-    const combinedAppointmentTrends = [...appointmentTrendsData, ...reportsMonthlyTrends];
-    
+    // Combine data from dashboard and reports APIs, prioritizing reports data (more reliable)
+    const combinedUserGrowth = [...reportsUserTrends, ...userGrowthData];
+    const combinedAppointmentTrends = [...reportsMonthlyTrends, ...appointmentTrendsData];
     
     // If we have real data, use it; otherwise generate fallback
     if (combinedUserGrowth.length > 0 || combinedAppointmentTrends.length > 0) {
@@ -213,34 +227,64 @@ const AdminReports = () => {
       
       // Process user growth data with role-specific accuracy
       combinedUserGrowth.forEach(item => {
-        const month = item.month || item.period;
-        if (!monthlyData[month]) {
-          monthlyData[month] = { month: month, patients: 0, therapists: 0, appointments: 0 };
+        const monthKey = item.month || item.period;
+        if (!monthKey) return;
+        
+        const formattedMonth = formatMonth(monthKey);
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = { 
+            month: formattedMonth, 
+            monthKey: monthKey, // Keep original for sorting
+            patients: 0, 
+            therapists: 0, 
+            appointments: 0 
+          };
         }
         
-        if (item.role === 'patient') {
-          monthlyData[month].patients = item.count;
-        } else if (item.role === 'therapist') {
-          monthlyData[month].therapists = item.count;
+        const role = (item.role || '').toLowerCase();
+        const count = parseInt(item.count || 0);
+        
+        if (role === 'patient') {
+          monthlyData[monthKey].patients += count; // Use += to accumulate if multiple entries
+        } else if (role === 'therapist') {
+          monthlyData[monthKey].therapists += count;
+        } else if (role === 'admin') {
+          // Admins are not shown in the chart, but we track them
         } else {
-          // If no role specified, distribute based on actual system ratios
-          const patientRatio = stats.totalPatients / (stats.totalPatients + stats.totalTherapists) || 0.8;
-          const therapistRatio = 1 - patientRatio;
-          monthlyData[month].patients += Math.floor(item.count * patientRatio);
-          monthlyData[month].therapists += Math.floor(item.count * therapistRatio);
+          // If no role specified, skip or distribute based on actual system ratios
+          // Don't add to avoid incorrect data
         }
       });
 
       // Add appointment trends with accurate counts
       combinedAppointmentTrends.forEach(item => {
-        const month = item.month || item.period;
-        if (!monthlyData[month]) {
-          monthlyData[month] = { month: month, patients: 0, therapists: 0, appointments: 0 };
+        const monthKey = item.month || item.period;
+        if (!monthKey) return;
+        
+        const formattedMonth = formatMonth(monthKey);
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = { 
+            month: formattedMonth, 
+            monthKey: monthKey,
+            patients: 0, 
+            therapists: 0, 
+            appointments: 0 
+          };
         }
-        monthlyData[month].appointments = item.count;
+        monthlyData[monthKey].appointments += parseInt(item.count || 0); // Use += to accumulate
       });
 
-      return Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+      // Convert to array and sort by monthKey (YYYY-MM format for proper chronological order)
+      const sortedData = Object.values(monthlyData)
+        .sort((a, b) => (a.monthKey || '').localeCompare(b.monthKey || ''))
+        .map(item => ({
+          month: item.month,
+          patients: item.patients,
+          therapists: item.therapists,
+          appointments: item.appointments
+        }));
+
+      return sortedData;
     } else {
       // Generate realistic fallback data based on current system statistics
       const currentDate = new Date();
@@ -670,7 +714,7 @@ const AdminReports = () => {
         </div>
         
         <div className="h-80">
-          {currentData && currentData.length > 0 ? (
+          {currentData && currentData.length > 0 && currentData.some(item => item[selectedChart] !== undefined && item[selectedChart] !== null) ? (
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart 
                   key={`linechart-${selectedChart}-${selectedPeriod}`}
@@ -684,12 +728,16 @@ const AdminReports = () => {
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
                   />
                   <YAxis 
                     stroke="#6b7280"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
+                    allowDecimals={false}
                   />
                   <Tooltip 
                     contentStyle={{
@@ -699,6 +747,7 @@ const AdminReports = () => {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
                     labelStyle={{ color: '#374151', fontWeight: '600' }}
+                    formatter={(value) => [value || 0, selectedChart.charAt(0).toUpperCase() + selectedChart.slice(1)]}
                   />
                   <Line 
                     type="monotone" 
@@ -707,6 +756,7 @@ const AdminReports = () => {
                     strokeWidth={3}
                     dot={{ fill: colors[selectedChart], strokeWidth: 2, r: 4 }}
                     activeDot={{ r: 6, stroke: colors[selectedChart], strokeWidth: 2 }}
+                    connectNulls={false}
                   />
                 </LineChart>
             </ResponsiveContainer>
@@ -714,7 +764,11 @@ const AdminReports = () => {
             <div className="flex items-center justify-center h-full text-gray-500">
               <div className="text-center">
                 <p className="text-lg font-medium">No data available</p>
-                <p className="text-sm">Growth data is being processed...</p>
+                <p className="text-sm">
+                  {currentData && currentData.length > 0 
+                    ? `No ${selectedChart} data found for the selected period` 
+                    : 'Growth data is being processed or no data exists for this period'}
+                </p>
               </div>
             </div>
           )}
