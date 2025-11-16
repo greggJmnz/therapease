@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from 'react-query';
 import { 
   BarChart3, 
@@ -321,55 +321,40 @@ const AdminReports = () => {
   
   
   // If we have insufficient data for line chart, generate additional data points
+  // This function now respects the data passed to it, so it works correctly with sliced data
   const generateLineChartData = (data) => {
-    if (data.length >= 2) {
-      return data; // Enough data for line chart
+    // If we have data, use it directly (even if it's just 1 item, it's real data)
+    if (data.length > 0) {
+      return data;
     }
     
-    // Generate additional data points for line chart visualization
+    // Only generate fallback data if we have NO data at all
     const currentDate = new Date();
     const additionalData = [];
     
-    // Generate 6 months of data for better line chart visualization
+    // Generate 6 months of data as fallback (only if no data exists)
     for (let i = 5; i >= 0; i--) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
       const monthName = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       
-      // Use existing data if available, otherwise generate realistic data
-      const existingData = data.find(item => item.month === monthName);
-      if (existingData) {
-        additionalData.push(existingData);
-      } else {
-        // For October 2025, use real data if available
-        if (monthName === 'Oct 25') {
-          const realOctData = {
-            month: 'Oct 25',
-            patients: stats.totalPatients || 2,
-            therapists: stats.totalTherapists || 1,
-            appointments: stats.totalAppointments || 5
-          };
-          additionalData.push(realOctData);
-        } else {
-          // Generate realistic data based on current stats with better distribution
-          const seasonalVariation = 0.8 + Math.sin((i / 6) * Math.PI * 2) * 0.2;
-          const randomVariation = 0.9 + Math.random() * 0.2;
-          const totalVariation = seasonalVariation * randomVariation;
-          
-          // Use actual stats for better data generation
-          const basePatients = Math.max(1, Math.floor((stats.totalPatients || 2) * totalVariation));
-          const baseTherapists = Math.max(1, Math.floor((stats.totalTherapists || 1) * totalVariation));
-          const baseAppointments = Math.max(1, Math.floor((stats.totalAppointments || 5) * totalVariation));
-          
-          const generatedData = {
-            month: monthName,
-            patients: basePatients,
-            therapists: baseTherapists,
-            appointments: baseAppointments
-          };
-          
-          additionalData.push(generatedData);
-        }
-      }
+      // Generate realistic data based on current stats with better distribution
+      const seasonalVariation = 0.8 + Math.sin((i / 6) * Math.PI * 2) * 0.2;
+      const randomVariation = 0.9 + Math.random() * 0.2;
+      const totalVariation = seasonalVariation * randomVariation;
+      
+      // Use actual stats for better data generation
+      const basePatients = Math.max(1, Math.floor((stats.totalPatients || 2) * totalVariation));
+      const baseTherapists = Math.max(1, Math.floor((stats.totalTherapists || 1) * totalVariation));
+      const baseAppointments = Math.max(1, Math.floor((stats.totalAppointments || 5) * totalVariation));
+      
+      const generatedData = {
+        month: monthName,
+        patients: basePatients,
+        therapists: baseTherapists,
+        appointments: baseAppointments
+      };
+      
+      additionalData.push(generatedData);
     }
     
     return additionalData;
@@ -422,13 +407,21 @@ const AdminReports = () => {
     return true;
   });
   
-  const growthData = {
-    '3months': generateLineChartData(dataToUse.slice(-3)), // Last 3 months
-    '6months': generateLineChartData(dataToUse.slice(-6)), // Last 6 months
-    '1year': generateLineChartData(dataToUse), // All available data
-    'thisyear': generateLineChartData(thisYearData.length > 0 ? thisYearData : dataToUse) // Current year data
-  };
-  
+  // Calculate growth data based on selected period - use useMemo to recalculate when dependencies change
+  const growthData = useMemo(() => {
+    // Calculate slices based on available data
+    const last3Months = dataToUse.slice(-3);
+    const last6Months = dataToUse.slice(-6);
+    const allData = dataToUse;
+    const thisYear = thisYearData.length > 0 ? thisYearData : dataToUse;
+    
+    return {
+      '3months': generateLineChartData(last3Months), // Last 3 months
+      '6months': generateLineChartData(last6Months), // Last 6 months
+      '1year': generateLineChartData(allData), // All available data
+      'thisyear': generateLineChartData(thisYear) // Current year data
+    };
+  }, [dataToUse, thisYearData, stats.totalPatients, stats.totalTherapists, stats.totalAppointments]);
 
   // Chart colors
   const colors = {
@@ -437,7 +430,8 @@ const AdminReports = () => {
     appointments: '#8B5CF6'
   };
 
-  const currentData = growthData[selectedPeriod];
+  // Get current data based on selected period - this will update when selectedPeriod changes
+  const currentData = growthData[selectedPeriod] || [];
   
   
 
@@ -717,7 +711,7 @@ const AdminReports = () => {
           {currentData && currentData.length > 0 && currentData.some(item => item[selectedChart] !== undefined && item[selectedChart] !== null) ? (
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart 
-                  key={`linechart-${selectedChart}-${selectedPeriod}`}
+                  key={`linechart-${selectedChart}-${selectedPeriod}-${currentData.length}`}
                   data={currentData}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
