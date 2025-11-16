@@ -214,6 +214,61 @@ const AdminReports = () => {
     return monthStr;
   };
 
+  // Helper function to fill in missing months with zero values
+  const fillMissingMonths = (data, startDate, endDate) => {
+    const filledData = [];
+    const dataMap = new Map();
+    
+    // Create a map of existing data by monthKey
+    data.forEach(item => {
+      // Extract monthKey from formatted month or use original
+      const monthKey = item.monthKey;
+      if (monthKey && monthKey.match(/^\d{4}-\d{2}$/)) {
+        dataMap.set(monthKey, item);
+      }
+    });
+    
+    // Generate all months in the range
+    const current = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Set to first day of month for accurate comparison
+    current.setDate(1);
+    end.setDate(1);
+    
+    while (current <= end) {
+      const year = current.getFullYear();
+      const month = current.getMonth();
+      const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+      const formattedMonth = formatMonth(monthKey);
+      
+      // Use existing data or create zero entry
+      if (dataMap.has(monthKey)) {
+        const existingItem = dataMap.get(monthKey);
+        filledData.push({
+          month: formattedMonth,
+          monthKey: monthKey,
+          patients: existingItem.patients || 0,
+          therapists: existingItem.therapists || 0,
+          appointments: existingItem.appointments || 0
+        });
+      } else {
+        filledData.push({
+          month: formattedMonth,
+          monthKey: monthKey,
+          patients: 0,
+          therapists: 0,
+          appointments: 0
+        });
+      }
+      
+      // Move to next month
+      current.setMonth(current.getMonth() + 1);
+    }
+    
+    return filledData;
+  };
+
   // Process real growth data from API with enhanced accuracy
   const processGrowthData = (userGrowthData, appointmentTrendsData) => {
     // Combine data from dashboard and reports APIs, prioritizing reports data (more reliable)
@@ -279,10 +334,25 @@ const AdminReports = () => {
         .sort((a, b) => (a.monthKey || '').localeCompare(b.monthKey || ''))
         .map(item => ({
           month: item.month,
+          monthKey: item.monthKey,
           patients: item.patients,
           therapists: item.therapists,
           appointments: item.appointments
         }));
+
+      // Fill in missing months to avoid linear interpolation between distant points
+      if (sortedData.length > 0) {
+        const firstMonth = sortedData[0].monthKey;
+        const lastMonth = sortedData[sortedData.length - 1].monthKey;
+        
+        // Parse first and last months
+        const [firstYear, firstMonthNum] = firstMonth.split('-').map(Number);
+        const [lastYear, lastMonthNum] = lastMonth.split('-').map(Number);
+        const startDate = new Date(firstYear, firstMonthNum - 1, 1);
+        const endDate = new Date(lastYear, lastMonthNum - 1, 1);
+        
+        return fillMissingMonths(sortedData, startDate, endDate);
+      }
 
       return sortedData;
     } else {
@@ -409,17 +479,56 @@ const AdminReports = () => {
   
   // Calculate growth data based on selected period - use useMemo to recalculate when dependencies change
   const growthData = useMemo(() => {
-    // Calculate slices based on available data
-    const last3Months = dataToUse.slice(-3);
-    const last6Months = dataToUse.slice(-6);
+    const currentDate = new Date();
+    
+    // Calculate date ranges for each period
+    const getDateRange = (monthsBack) => {
+      const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - monthsBack, 1);
+      const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      return { startDate, endDate };
+    };
+    
+    // Filter data based on monthKey (YYYY-MM format) for accurate date comparison
+    const filterByDateRange = (data, startDate, endDate) => {
+      return data.filter(item => {
+        const monthKey = item.monthKey || item.month;
+        if (!monthKey) return false;
+        
+        // Handle YYYY-MM format
+        if (monthKey.match(/^\d{4}-\d{2}$/)) {
+          const [year, month] = monthKey.split('-').map(Number);
+          const itemDate = new Date(year, month - 1, 1);
+          return itemDate >= startDate && itemDate <= endDate;
+        }
+        
+        return false;
+      });
+    };
+    
+    // Get current year range
+    const currentYearStart = new Date(currentDate.getFullYear(), 0, 1);
+    const currentYearEnd = new Date(currentDate.getFullYear(), 11, 31);
+    
+    // Calculate slices based on date ranges
+    const last3MonthsRange = getDateRange(2); // Last 3 months (including current)
+    const last6MonthsRange = getDateRange(5); // Last 6 months (including current)
+    
+    const last3Months = filterByDateRange(dataToUse, last3MonthsRange.startDate, last3MonthsRange.endDate);
+    const last6Months = filterByDateRange(dataToUse, last6MonthsRange.startDate, last6MonthsRange.endDate);
     const allData = dataToUse;
-    const thisYear = thisYearData.length > 0 ? thisYearData : dataToUse;
+    const thisYear = filterByDateRange(dataToUse, currentYearStart, currentYearEnd);
+    
+    // Fill missing months for each period
+    const fillPeriod = (data, startDate, endDate) => {
+      if (data.length === 0) return generateLineChartData([]);
+      return fillMissingMonths(data, startDate, endDate);
+    };
     
     return {
-      '3months': generateLineChartData(last3Months), // Last 3 months
-      '6months': generateLineChartData(last6Months), // Last 6 months
-      '1year': generateLineChartData(allData), // All available data
-      'thisyear': generateLineChartData(thisYear) // Current year data
+      '3months': fillPeriod(last3Months, last3MonthsRange.startDate, last3MonthsRange.endDate),
+      '6months': fillPeriod(last6Months, last6MonthsRange.startDate, last6MonthsRange.endDate),
+      '1year': generateLineChartData(allData), // All available data (already has missing months filled)
+      'thisyear': fillPeriod(thisYear.length > 0 ? thisYear : dataToUse, currentYearStart, currentYearEnd)
     };
   }, [dataToUse, thisYearData, stats.totalPatients, stats.totalTherapists, stats.totalAppointments]);
 
