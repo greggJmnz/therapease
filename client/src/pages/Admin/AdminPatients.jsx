@@ -152,8 +152,8 @@ const AdminPatients = () => {
     adminAPI.getPatientsWithAssignments,
     {
       refetchOnWindowFocus: false, // OPTIMIZED: Disabled to reduce unnecessary refetches
-      refetchOnMount: true,
-      staleTime: 30000, // OPTIMIZED: Consider data fresh for 30 seconds
+      refetchOnMount: true, // Refetch when component mounts
+      staleTime: 0, // Always consider data stale to ensure fresh data on navigation
       cacheTime: 5 * 60 * 1000, // 5 minutes
       retry: 1, // OPTIMIZED: Reduce retries for faster failure
       retryDelay: 500,
@@ -164,8 +164,14 @@ const AdminPatients = () => {
     }
   );
 
-  // OPTIMIZED: Removed unnecessary force refetch on mount
-  // React Query will handle initial fetch automatically
+  // Explicitly refetch data when component mounts to ensure data loads on navigation
+  // This is a safety measure to ensure data always loads, even if React Query cache has issues
+  useEffect(() => {
+    // Refetch data when component mounts to ensure fresh data on navigation
+    // This handles cases where React Query might use stale cached data
+    refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount - refetch is stable from React Query
 
   // Close all dropdowns
   const closeAllDropdowns = () => {
