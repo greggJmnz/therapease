@@ -13,45 +13,66 @@ import TherapistLayout from './layouts/TherapistLayout';
 import PatientLayout from './layouts/PatientLayout';
 import AuthLayout from './layouts/AuthLayout';
 
+// Helper function to handle lazy loading with retry and error handling
+const lazyWithRetry = (componentImport) => {
+  return lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      // If chunk loading fails, try to reload the page once
+      if (error.message && error.message.includes('Failed to fetch dynamically imported module')) {
+        console.error('Chunk loading failed, attempting page reload...', error);
+        // Only reload once to avoid infinite loop
+        if (!sessionStorage.getItem('chunkErrorReloaded')) {
+          sessionStorage.setItem('chunkErrorReloaded', 'true');
+          window.location.reload();
+          return { default: () => null }; // Return empty component while reloading
+        }
+      }
+      throw error;
+    }
+  });
+};
+
 // Lazy load pages for route-based code splitting
 // Admin pages
-const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
-const AdminPatients = lazy(() => import('./pages/Admin/AdminPatients'));
-const AdminTherapists = lazy(() => import('./pages/Admin/AdminTherapists'));
-const AdminAppointments = lazy(() => import('./pages/Admin/AdminAppointments'));
-const AdminNotifications = lazy(() => import('./pages/Admin/AdminNotifications'));
-const AdminReports = lazy(() => import('./pages/Admin/AdminReports'));
-const AdminSettings = lazy(() => import('./pages/Admin/AdminSettings'));
-const AdminHelpCenter = lazy(() => import('./pages/Admin/AdminHelpCenter'));
-const AdminProfile = lazy(() => import('./pages/Admin/AdminProfile'));
-const AdminUserManagement = lazy(() => import('./pages/Admin/AdminUserManagement'));
+const AdminDashboard = lazyWithRetry(() => import('./pages/Admin/AdminDashboard'));
+const AdminPatients = lazyWithRetry(() => import('./pages/Admin/AdminPatients'));
+const AdminTherapists = lazyWithRetry(() => import('./pages/Admin/AdminTherapists'));
+const AdminAppointments = lazyWithRetry(() => import('./pages/Admin/AdminAppointments'));
+const AdminNotifications = lazyWithRetry(() => import('./pages/Admin/AdminNotifications'));
+const AdminReports = lazyWithRetry(() => import('./pages/Admin/AdminReports'));
+const AdminSettings = lazyWithRetry(() => import('./pages/Admin/AdminSettings'));
+const AdminHelpCenter = lazyWithRetry(() => import('./pages/Admin/AdminHelpCenter'));
+const AdminProfile = lazyWithRetry(() => import('./pages/Admin/AdminProfile'));
+const AdminUserManagement = lazyWithRetry(() => import('./pages/Admin/AdminUserManagement'));
 
 // Therapist pages
-const TherapistDashboard = lazy(() => import('./pages/Therapist/Dashboard'));
-const TherapistOnboarding = lazy(() => import('./pages/Therapist/TherapistOnboarding'));
-const TherapistDailyNotes = lazy(() => import('./pages/Therapist/DailyNotes'));
-const TherapistHomeExercises = lazy(() => import('./pages/Therapist/HomeExercises'));
-const TherapistAIInsights = lazy(() => import('./pages/Therapist/AIInsights'));
-const TherapistProgressTracking = lazy(() => import('./pages/Therapist/ProgressTracking'));
-const TherapistPatients = lazy(() => import('./pages/Therapist/TherapistPatients'));
-const TherapistSchedule = lazy(() => import('./pages/Therapist/TherapistSchedule'));
-const TherapistNotifications = lazy(() => import('./pages/Therapist/TherapistNotifications'));
-const TherapistSettings = lazy(() => import('./pages/Therapist/TherapistSettings'));
-const TherapistHelpCenter = lazy(() => import('./pages/Therapist/TherapistHelpCenter'));
-const TherapistProfile = lazy(() => import('./pages/Therapist/Profile'));
+const TherapistDashboard = lazyWithRetry(() => import('./pages/Therapist/Dashboard'));
+const TherapistOnboarding = lazyWithRetry(() => import('./pages/Therapist/TherapistOnboarding'));
+const TherapistDailyNotes = lazyWithRetry(() => import('./pages/Therapist/DailyNotes'));
+const TherapistHomeExercises = lazyWithRetry(() => import('./pages/Therapist/HomeExercises'));
+const TherapistAIInsights = lazyWithRetry(() => import('./pages/Therapist/AIInsights'));
+const TherapistProgressTracking = lazyWithRetry(() => import('./pages/Therapist/ProgressTracking'));
+const TherapistPatients = lazyWithRetry(() => import('./pages/Therapist/TherapistPatients'));
+const TherapistSchedule = lazyWithRetry(() => import('./pages/Therapist/TherapistSchedule'));
+const TherapistNotifications = lazyWithRetry(() => import('./pages/Therapist/TherapistNotifications'));
+const TherapistSettings = lazyWithRetry(() => import('./pages/Therapist/TherapistSettings'));
+const TherapistHelpCenter = lazyWithRetry(() => import('./pages/Therapist/TherapistHelpCenter'));
+const TherapistProfile = lazyWithRetry(() => import('./pages/Therapist/Profile'));
 
 // Patient pages
-const PatientDashboard = lazy(() => import('./pages/Patient/Dashboard'));
-const PatientOnboarding = lazy(() => import('./pages/Patient/PatientOnboarding'));
-const PatientProgressView = lazy(() => import('./pages/Patient/ProgressView'));
-const PatientAppointments = lazy(() => import('./pages/Patient/Appointments'));
-const PatientDailyNotes = lazy(() => import('./pages/Patient/DailyNotes'));
-const PatientNotifications = lazy(() => import('./pages/Patient/Notifications'));
-const PatientSettings = lazy(() => import('./pages/Patient/Settings'));
-const PatientHomeExercises = lazy(() => import('./pages/Patient/HomeExercises'));
-const PatientHomeExercisesNew = lazy(() => import('./pages/Patient/HomeExercisesNew'));
-const PatientProfile = lazy(() => import('./pages/Patient/Profile'));
-const PatientHelp = lazy(() => import('./pages/Patient/Help'));
+const PatientDashboard = lazyWithRetry(() => import('./pages/Patient/Dashboard'));
+const PatientOnboarding = lazyWithRetry(() => import('./pages/Patient/PatientOnboarding'));
+const PatientProgressView = lazyWithRetry(() => import('./pages/Patient/ProgressView'));
+const PatientAppointments = lazyWithRetry(() => import('./pages/Patient/Appointments'));
+const PatientDailyNotes = lazyWithRetry(() => import('./pages/Patient/DailyNotes'));
+const PatientNotifications = lazyWithRetry(() => import('./pages/Patient/Notifications'));
+const PatientSettings = lazyWithRetry(() => import('./pages/Patient/Settings'));
+const PatientHomeExercises = lazyWithRetry(() => import('./pages/Patient/HomeExercises'));
+const PatientHomeExercisesNew = lazyWithRetry(() => import('./pages/Patient/HomeExercisesNew'));
+const PatientProfile = lazyWithRetry(() => import('./pages/Patient/Profile'));
+const PatientHelp = lazyWithRetry(() => import('./pages/Patient/Help'));
 
 // Auth pages (eager load - needed immediately for login)
 import Login from './pages/Auth/Login';
