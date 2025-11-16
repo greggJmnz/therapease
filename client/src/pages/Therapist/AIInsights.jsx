@@ -125,8 +125,11 @@ const AIInsights = () => {
               setObservations('');
             }
             
-            if (latest.insights && latest.insights.length > 0) {
-              setInsights(latest.insights);
+            // Load insights if they exist (even if empty array)
+            if (latest.insights !== undefined && latest.insights !== null) {
+              setInsights(Array.isArray(latest.insights) ? latest.insights : []);
+            } else {
+              setInsights([]);
             }
           } else {
             // No data in database, check localStorage for migration
@@ -2045,9 +2048,17 @@ The therapist retains full responsibility for all clinical decisions and patient
           const latest = reloadResponse.data.data[0];
           if (latest.interviewQuestions && latest.interviewQuestions.length > 0) {
             setInterviewQuestions(latest.interviewQuestions);
+          } else {
+            setInterviewQuestions([{ id: 1, question: '', answer: '' }]);
           }
           if (latest.observations !== undefined && latest.observations !== null) {
             setObservations(latest.observations);
+          } else {
+            setObservations('');
+          }
+          // Reload insights if they exist
+          if (latest.insights !== undefined && latest.insights !== null) {
+            setInsights(Array.isArray(latest.insights) ? latest.insights : []);
           }
         }
       } else {
