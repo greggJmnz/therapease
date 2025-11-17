@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { adminAPI } from '../../services/api';
 import NotificationList from '../../components/NotificationList';
 import NotificationModal from '../../components/NotificationModal';
@@ -40,6 +41,7 @@ const AdminNotifications = () => {
       priority: notification.priority || 'medium',
       isRead: notification.read === true || notification.isRead === 1 || notification.isRead === true,
       user: notification.user,
+      relatedId: notification.relatedId || null, // Include relatedId for appointment approvals
       createdAt: notification.createdAt,
       updatedAt: notification.updatedAt,
       date: notification.date,
@@ -195,6 +197,27 @@ const AdminNotifications = () => {
     navigate('/admin/appointments');
   };
 
+  // Approve appointment from notification
+  const handleApproveAppointment = async (notification) => {
+    if (!notification.relatedId) {
+      toast.error('Appointment ID not found');
+      return;
+    }
+
+    try {
+      await adminAPI.approveAppointment(notification.relatedId);
+      toast.success('Appointment approved successfully');
+      setSelectedNotification(null);
+      // Refetch notifications to update the list
+      refetch();
+      // Invalidate appointments cache so the appointments list updates
+      queryClient.invalidateQueries('adminAppointments');
+    } catch (error) {
+      console.error('Error approving appointment:', error);
+      toast.error(error.response?.data?.error || 'Failed to approve appointment');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <NotificationList
@@ -224,6 +247,7 @@ const AdminNotifications = () => {
           onDelete={deleteNotification}
           onMarkAsRead={markAsRead}
           onViewAppointment={handleViewAppointment}
+          onApproveAppointment={handleApproveAppointment}
           isDeleting={deleteNotificationMutation.isLoading}
         />
       )}

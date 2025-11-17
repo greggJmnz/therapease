@@ -12,7 +12,8 @@ import {
   Clock,
   MessageSquare,
   ExternalLink,
-  Trash2
+  Trash2,
+  Check
 } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -23,6 +24,7 @@ const NotificationModal = ({
   onMarkAsRead, 
   onViewAppointment,
   onScheduleAssessment,
+  onApproveAppointment,
   isDeleting = false
 }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -224,6 +226,23 @@ const NotificationModal = ({
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-gray-200">
+              {/* Approve Appointment button for admin notifications */}
+              {notification.type === 'admin_notification' && 
+               notification.title === 'New Appointment Request - Approval Required' && 
+               notification.relatedId && 
+               onApproveAppointment && (
+                <button
+                  onClick={() => {
+                    if (onApproveAppointment) {
+                      onApproveAppointment(notification);
+                    }
+                  }}
+                  className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Approve Appointment
+                </button>
+              )}
               {(notification.type === 'patient_assignment' || notification.type === 'assessment_priority') && onScheduleAssessment && (
                 <button
                   onClick={() => {

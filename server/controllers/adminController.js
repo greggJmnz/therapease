@@ -1226,6 +1226,7 @@ const getNotifications = async (req, res) => {
         n.title,
         n.message,
         n.isRead,
+        n.relatedId,
         CONVERT_TZ(n.createdAt, @@session.time_zone, '+00:00') as createdAt,
         u.firstName,
         u.lastName
@@ -1277,6 +1278,7 @@ const getNotifications = async (req, res) => {
         priority: 'medium', // Default priority since column doesn't exist
         read: notification.isRead === 1,
         user: notification.firstName ? `${notification.firstName} ${notification.lastName}` : null,
+        relatedId: notification.relatedId || null, // Include relatedId for appointment approvals
         createdAt: createdAt.toISOString(), // Ensure ISO string for frontend
         updatedAt: createdAt.toISOString(), // Use createdAt as updatedAt since updatedAt doesn't exist
         date: date,
