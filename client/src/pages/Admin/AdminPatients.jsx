@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from 'react-query';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useDebounce } from '../../hooks/useDebounce';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { 
@@ -119,6 +120,8 @@ const formatWorkingHours = (workingHours) => {
 };
 
 const AdminPatients = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search for better performance
   const [filterStatus, setFilterStatus] = useState('all');
@@ -172,6 +175,40 @@ const AdminPatients = () => {
     refetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount - refetch is stable from React Query
+
+  // Check for assignPatientId URL param to open assignment modal
+  useEffect(() => {
+    const assignPatientId = searchParams.get('assignPatientId');
+    if (assignPatientId && patientsData?.data?.data?.patients) {
+      const patients = patientsData.data.data.patients || patientsData.data.patients || [];
+      const patient = patients.find(p => 
+        p.id === parseInt(assignPatientId) || 
+        p.userId === parseInt(assignPatientId) ||
+        p.patient?.id === parseInt(assignPatientId)
+      );
+      
+      if (patient) {
+        // Format patient data to match expected structure
+        const formattedPatient = {
+          id: patient.id || patient.patient?.id,
+          userId: patient.userId,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          email: patient.email,
+          phone: patient.phone,
+          patient: patient.patient || patient
+        };
+        
+        setAssignmentPatient(formattedPatient);
+        setShowAssignmentModal(true);
+        
+        // Clear the URL param
+        searchParams.delete('assignPatientId');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientsData, searchParams]);
 
   // Close all dropdowns
   const closeAllDropdowns = () => {

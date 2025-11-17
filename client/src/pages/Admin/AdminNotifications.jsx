@@ -197,6 +197,18 @@ const AdminNotifications = () => {
     navigate('/admin/appointments');
   };
 
+  // Navigate to assign therapist modal in patient management
+  const handleAssignTherapist = (notification) => {
+    if (!notification.relatedId) {
+      toast.error('Patient ID not found');
+      return;
+    }
+    
+    setSelectedNotification(null);
+    // Navigate to patient management with assignPatientId param
+    navigate(`/admin/patients?assignPatientId=${notification.relatedId}`);
+  };
+
   // Approve appointment from notification
   const handleApproveAppointment = async (notification) => {
     if (!notification.relatedId) {
@@ -248,6 +260,7 @@ const AdminNotifications = () => {
           onMarkAsRead={markAsRead}
           onViewAppointment={handleViewAppointment}
           onApproveAppointment={handleApproveAppointment}
+          onAssignTherapist={handleAssignTherapist}
           isDeleting={deleteNotificationMutation.isLoading}
         />
       )}

@@ -3,7 +3,7 @@ import {
   X, 
   Bell, 
   Calendar, 
-  User, 
+  User,
   FileText, 
   Target, 
   AlertCircle, 
@@ -13,7 +13,8 @@ import {
   MessageSquare,
   ExternalLink,
   Trash2,
-  Check
+  Check,
+  UserCheck
 } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -25,6 +26,7 @@ const NotificationModal = ({
   onViewAppointment,
   onScheduleAssessment,
   onApproveAppointment,
+  onAssignTherapist,
   isDeleting = false
 }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -226,6 +228,23 @@ const NotificationModal = ({
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-gray-200">
+              {/* Assign Therapist button for onboarding complete notifications */}
+              {notification.type === 'admin_notification' && 
+               notification.title === 'New User Onboarding Complete' && 
+               notification.relatedId && 
+               onAssignTherapist && (
+                <button
+                  onClick={() => {
+                    if (onAssignTherapist) {
+                      onAssignTherapist(notification);
+                    }
+                  }}
+                  className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Assign Therapist
+                </button>
+              )}
               {/* Approve Appointment button for admin notifications */}
               {notification.type === 'admin_notification' && 
                notification.title === 'New Appointment Request - Approval Required' && 

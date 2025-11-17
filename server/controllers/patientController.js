@@ -2451,25 +2451,29 @@ const completeOnboarding = async (req, res) => {
 
       await runQuery(notificationSql, [userId]);
 
-      // Get user details for admin notification
+      // Get user details and patient ID for admin notification
       const userDetails = await getRow(`
-        SELECT firstName, lastName, email, role 
-        FROM users 
-        WHERE id = ?
+        SELECT u.firstName, u.lastName, u.email, u.role, p.id as patientId
+        FROM users u
+        LEFT JOIN patients p ON p.userId = u.id
+        WHERE u.id = ?
       `, [userId]);
 
       // Notify all admins about new user completion
       const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
+      const notificationController = require('./notificationController');
       
       for (const admin of adminUsers) {
-        const adminNotificationSql = `
-          INSERT INTO notifications (userId, type, title, message, createdAt)
-          VALUES (?, 'admin_notification', 'New User Onboarding Complete', ?, NOW())
-        `;
-        
         const adminMessage = `New ${userDetails.role} user ${userDetails.firstName} ${userDetails.lastName} (${userDetails.email}) has completed their onboarding process and is ready for therapist assignment.`;
         
-        await runQuery(adminNotificationSql, [admin.id, adminMessage]);
+        // Use notificationController to include relatedId (patientId or userId)
+        await notificationController.createNotification(
+          admin.id,
+          'New User Onboarding Complete',
+          adminMessage,
+          'admin_notification',
+          { relatedId: userDetails.patientId || userId } // Use patientId if available, otherwise userId
+        );
       }
 
       res.json({
