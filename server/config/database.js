@@ -368,32 +368,60 @@ const createTables = async () => {
 
     // Add video columns to daily_notes table if they don't exist
     try {
-      await pool.execute(`ALTER TABLE daily_notes ADD COLUMN IF NOT EXISTS videoPath VARCHAR(500)`);
-    } catch (error) {
-      if (!error.message.includes('Duplicate column name')) {
-        console.error('Error adding videoPath column:', error);
+      const [videoPathColumns] = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'daily_notes' 
+        AND COLUMN_NAME = 'videoPath'
+      `);
+      if (videoPathColumns.length === 0) {
+        await pool.execute(`ALTER TABLE daily_notes ADD COLUMN videoPath VARCHAR(500)`);
       }
+    } catch (error) {
+      console.error('Error adding videoPath column:', error);
     }
     try {
-      await pool.execute(`ALTER TABLE daily_notes ADD COLUMN IF NOT EXISTS videoFileName VARCHAR(255)`);
-    } catch (error) {
-      if (!error.message.includes('Duplicate column name')) {
-        console.error('Error adding videoFileName column:', error);
+      const [videoFileNameColumns] = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'daily_notes' 
+        AND COLUMN_NAME = 'videoFileName'
+      `);
+      if (videoFileNameColumns.length === 0) {
+        await pool.execute(`ALTER TABLE daily_notes ADD COLUMN videoFileName VARCHAR(255)`);
       }
+    } catch (error) {
+      console.error('Error adding videoFileName column:', error);
     }
     try {
-      await pool.execute(`ALTER TABLE daily_notes ADD COLUMN IF NOT EXISTS videoSize INT`);
-    } catch (error) {
-      if (!error.message.includes('Duplicate column name')) {
-        console.error('Error adding videoSize column:', error);
+      const [videoSizeColumns] = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'daily_notes' 
+        AND COLUMN_NAME = 'videoSize'
+      `);
+      if (videoSizeColumns.length === 0) {
+        await pool.execute(`ALTER TABLE daily_notes ADD COLUMN videoSize INT`);
       }
+    } catch (error) {
+      console.error('Error adding videoSize column:', error);
     }
     try {
-      await pool.execute(`ALTER TABLE daily_notes ADD COLUMN IF NOT EXISTS videoMimeType VARCHAR(100)`);
-    } catch (error) {
-      if (!error.message.includes('Duplicate column name')) {
-        console.error('Error adding videoMimeType column:', error);
+      const [videoMimeTypeColumns] = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'daily_notes' 
+        AND COLUMN_NAME = 'videoMimeType'
+      `);
+      if (videoMimeTypeColumns.length === 0) {
+        await pool.execute(`ALTER TABLE daily_notes ADD COLUMN videoMimeType VARCHAR(100)`);
       }
+    } catch (error) {
+      console.error('Error adding videoMimeType column:', error);
     }
 
     // Add missing columns to existing daily_notes table if they don't exist
