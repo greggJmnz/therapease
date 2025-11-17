@@ -1593,17 +1593,20 @@ const getTherapists = async (req, res) => {
 
     const therapists = await getAll(sql);
 
-    // Format therapist data
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Format therapist data and decrypt sensitive fields
     const formattedTherapists = therapists.map(therapist => ({
       id: therapist.id,
-      email: therapist.email,
+      email: decryptField(therapist.email),
       role: therapist.role,
       firstName: therapist.firstName,
       lastName: therapist.lastName,
-      phone: therapist.phone,
+      phone: decryptField(therapist.phone),
       dateOfBirth: therapist.dateOfBirth,
       gender: therapist.gender,
-      address: therapist.address,
+      address: decryptField(therapist.address),
       city: therapist.city,
       state: therapist.state,
       zipCode: therapist.zipCode,
@@ -3344,7 +3347,10 @@ const getPatientsWithAssignments = async (req, res) => {
 
     const patients = await getAll(sql);
 
-    // Format patient data
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Format patient data and decrypt sensitive fields
     const formattedPatients = patients.map(patient => {
       
       // The therapistAssignments column is a JSON string, parse it.
@@ -3358,6 +3364,14 @@ const getPatientsWithAssignments = async (req, res) => {
                   : patient.therapistAssignments;
               
               assignments = (parsed || []).filter(Boolean); // Filter out any [null] entries
+              
+              // Decrypt therapist emails in assignments
+              assignments = assignments.map(assignment => {
+                if (assignment.email) {
+                  assignment.email = decryptField(assignment.email);
+                }
+                return assignment;
+              });
           } catch (e) {
               console.error("Failed to parse therapistAssignments JSON:", e);
               assignments = [];
@@ -3382,11 +3396,11 @@ const getPatientsWithAssignments = async (req, res) => {
         userId: patient.userId,
         firstName: patient.firstName,
         lastName: patient.lastName,
-        email: patient.email,
-        phone: patient.phone,
+        email: decryptField(patient.email),
+        phone: decryptField(patient.phone),
         dateOfBirth: patient.dateOfBirth,
         gender: patient.gender,
-        address: patient.address,
+        address: decryptField(patient.address),
         city: patient.city,
         state: patient.state,
         zipCode: patient.zipCode,
