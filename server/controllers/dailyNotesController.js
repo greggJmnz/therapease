@@ -692,18 +692,6 @@ const deleteNoteComment = async (req, res) => {
   }
 };
 
-module.exports = {
-  getDailyNotes,
-  createDailyNote,
-  updateDailyNote,
-  deleteDailyNote,
-  getDailyNoteById,
-  addNoteComment,
-  editNoteComment,
-  deleteNoteComment,
-  getPastAppointmentsForPatient
-};
-
 // Get past appointments for a patient (excluding canceled) that don't have daily notes yet
 const getPastAppointmentsForPatient = async (req, res) => {
   try {
