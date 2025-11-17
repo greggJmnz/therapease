@@ -1,11 +1,92 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { Plus, FileText, Calendar, User, Edit, Eye, Trash2, MessageSquare, Send, MoreVertical, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Plus, FileText, Calendar, User, Edit, Eye, Trash2, MessageSquare, Send, MoreVertical, ChevronDown, ChevronUp, Clock, Video } from 'lucide-react';
 import { therapistAPI } from '../../services/api';
 import { useRealtimeData } from '../../hooks/useWebSocket';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import ConfirmationModal from '../../components/ConfirmationModal';
+
+// Helper function to get the correct video URL
+// Static files are served from the backend server, not the frontend
+const getVideoUrl = (videoPath) => {
+  if (!videoPath) return null;
+  
+  // If it's already a full URL (data URL or http/https), return as is
+  if (videoPath.startsWith('http://') || videoPath.startsWith('https://') || videoPath.startsWith('data:')) {
+    return videoPath;
+  }
+  
+  // Get the server URL from API base URL
+  // We need to use the API server URL, not the frontend URL
+  const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const isProduction = window.location.protocol === 'https:';
+  let serverBaseUrl;
+  
+  if (apiBaseUrl) {
+    // Extract server URL from API URL (remove /api suffix)
+    // Example: https://api.therapease.site/api -> https://api.therapease.site
+    serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
+    
+    // Ensure HTTPS in production (fix mixed content errors)
+    if (isProduction && serverBaseUrl.startsWith('http://')) {
+      serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
+      console.warn('⚠️ Upgraded HTTP to HTTPS for production:', serverBaseUrl);
+    }
+  } else {
+    // IMPORTANT: In production, VITE_API_URL MUST be set!
+    if (isDevelopment) {
+      // In development, API is typically on localhost:5000
+      serverBaseUrl = 'http://localhost:5000';
+      console.warn('⚠️ VITE_API_URL not set in development, using http://localhost:5000');
+    } else {
+      // In production without VITE_API_URL, infer from hostname
+      // For TherapEase, API is at api.therapease.site
+      const hostname = window.location.hostname;
+      if (hostname.includes('therapease.site')) {
+        // Always use HTTPS in production
+        serverBaseUrl = 'https://api.therapease.site';
+        console.warn('⚠️ VITE_API_URL not set, inferred from hostname:', serverBaseUrl);
+        console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
+      } else {
+        // Fallback: use current origin but ensure HTTPS
+        serverBaseUrl = window.location.origin;
+        if (isProduction && serverBaseUrl.startsWith('http://')) {
+          serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
+        }
+        console.error('❌ VITE_API_URL not set and cannot infer server URL. Using:', serverBaseUrl);
+        console.error('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
+      }
+    }
+  }
+  
+  // Construct full URL
+  let fullUrl;
+  if (videoPath.startsWith('/')) {
+    // Already has leading slash, use as-is
+    fullUrl = `${serverBaseUrl}${videoPath}`;
+  } else if (videoPath.startsWith('uploads/')) {
+    // Has uploads/ prefix but no leading slash
+    fullUrl = `${serverBaseUrl}/${videoPath}`;
+  } else {
+    // Relative path, add /uploads/ prefix
+    fullUrl = `${serverBaseUrl}/uploads/${videoPath}`;
+  }
+  
+  // Always log in production to help debug video loading issues
+  console.log('📹 Video file URL:', { 
+    originalVideoPath: videoPath, 
+    serverBaseUrl, 
+    fullUrl,
+    apiBaseUrl,
+    isProduction: import.meta.env.PROD,
+    hostname: window.location.hostname,
+    protocol: window.location.protocol
+  });
+  
+  return fullUrl;
+};
 
 const DailyNotes = () => {
   const { user, isAuthenticated } = useAuth();
@@ -860,6 +941,37 @@ const DailyNotes = () => {
                               </div>
                             </div>
                           )}
+                        </div>
+                      )}
+
+                      {/* Session Video */}
+                      {note.videoPath && (
+                        <div className="mt-6 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                          <h4 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                            <Video className="h-5 w-5 text-purple-600" />
+                            Session Video
+                          </h4>
+                          <div className="mt-4">
+                            <video 
+                              src={getVideoUrl(note.videoPath)}
+                              controls 
+                              preload="metadata"
+                              crossOrigin="anonymous"
+                              className="max-w-full h-auto max-h-96 rounded-lg border border-gray-300"
+                              onError={(e) => {
+                                console.error('Video load error:', e);
+                                toast.error('Failed to load video. Please try again later.');
+                              }}
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                            {note.videoFileName && (
+                              <p className="mt-2 text-sm text-gray-500">
+                                {note.videoFileName}
+                                {note.videoSize && ` (${(note.videoSize / 1024 / 1024).toFixed(2)} MB)`}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       )}
 
