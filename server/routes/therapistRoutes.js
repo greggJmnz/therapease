@@ -51,8 +51,32 @@ router.put('/sessions/:id', sessionController.updateSession);
 router.delete('/sessions/:id', sessionController.deleteSession);
 
 // Daily notes
+const dailyNotesUpload = require('../middleware/dailyNotesUploadMiddleware');
 router.get('/daily-notes', dailyNotesController.getDailyNotes);
-router.post('/daily-notes', dailyNotesController.createDailyNote);
+router.post('/daily-notes', (req, res, next) => {
+  dailyNotesUpload.single('video')(req, res, (err) => {
+    if (err) {
+      console.error('Daily notes video upload error:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Video file too large. Maximum file size is 50MB.' 
+        });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Unexpected file field. Please use "video" as the field name.' 
+        });
+      }
+      return res.status(400).json({ 
+        success: false,
+        error: err.message || 'Video upload error' 
+      });
+    }
+    next();
+  });
+}, dailyNotesController.createDailyNote);
 router.get('/daily-notes/:id', dailyNotesController.getDailyNoteById);
 router.put('/daily-notes/:id', dailyNotesController.updateDailyNote);
 router.delete('/daily-notes/:id', dailyNotesController.deleteDailyNote);

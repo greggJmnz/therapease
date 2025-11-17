@@ -77,6 +77,10 @@ const getDailyNotes = async (req, res) => {
         dn.mood,
         dn.engagement,
         dn.comments,
+        dn.videoPath,
+        dn.videoFileName,
+        dn.videoSize,
+        dn.videoMimeType,
         dn.createdAt,
         dn.updatedAt,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
@@ -187,12 +191,43 @@ const createDailyNote = async (req, res) => {
       });
     }
 
+    // Handle video file upload if present
+    let videoPath = null;
+    let videoFileName = null;
+    let videoSize = null;
+    let videoMimeType = null;
+
+    if (req.file) {
+      // Use relative path from uploads directory for database storage
+      const pathParts = req.file.path.split(/[/\\]/);
+      const uploadsIndex = pathParts.findIndex(part => part === 'uploads');
+      if (uploadsIndex !== -1) {
+        // Get path relative to uploads directory
+        videoPath = pathParts.slice(uploadsIndex + 1).join('/');
+      } else {
+        // Fallback: use full path but truncate if too long
+        videoPath = req.file.path.length > 500 ? req.file.path.substring(req.file.path.length - 500) : req.file.path;
+      }
+      videoFileName = req.file.originalname;
+      videoSize = req.file.size;
+      videoMimeType = req.file.mimetype;
+      
+      console.log('📹 Video file info:', {
+        originalPath: req.file.path,
+        storedPath: videoPath,
+        fileName: videoFileName,
+        fileSize: videoSize,
+        mimeType: videoMimeType
+      });
+    }
+
     // Insert daily note
     const insertSql = `
       INSERT INTO daily_notes (
         patientId, therapistId, sessionDate, sessionDuration, content, activities,
-        observations, progress, challenges, nextSteps, goals, mood, engagement
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        observations, progress, challenges, nextSteps, goals, mood, engagement,
+        videoPath, videoFileName, videoSize, videoMimeType
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     // Convert ISO date to YYYY-MM-DD format for database
@@ -211,7 +246,11 @@ const createDailyNote = async (req, res) => {
       nextSteps || null,
       goals || null,
       mood || null,
-      engagement || null
+      engagement || null,
+      videoPath,
+      videoFileName,
+      videoSize,
+      videoMimeType
     ];
 
     const result = await runQuery(insertSql, insertParams);

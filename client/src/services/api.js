@@ -294,7 +294,18 @@ export const therapistAPI = {
   getOnboardingProgress: () => api.get('/therapist/onboarding/progress'),
   
   // Create/Update operations
-  createDailyNote: (noteData) => api.post('/therapist/daily-notes', noteData),
+  createDailyNote: (noteData) => {
+    // If noteData is FormData, send as-is with proper headers
+    if (noteData instanceof FormData) {
+      return api.post('/therapist/daily-notes', noteData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    }
+    // Otherwise, send as JSON
+    return api.post('/therapist/daily-notes', noteData);
+  },
   updateDailyNote: (id, noteData) => api.put(`/therapist/daily-notes/${id}`, noteData),
   deleteDailyNote: (id) => api.delete(`/therapist/daily-notes/${id}`),
   

@@ -355,12 +355,46 @@ const createTables = async () => {
         mood VARCHAR(50),
         engagement VARCHAR(50),
         comments TEXT,
+        videoPath VARCHAR(500),
+        videoFileName VARCHAR(255),
+        videoSize INT,
+        videoMimeType VARCHAR(100),
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
         FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Add video columns to daily_notes table if they don't exist
+    try {
+      await pool.execute(`ALTER TABLE daily_notes ADD COLUMN IF NOT EXISTS videoPath VARCHAR(500)`);
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.error('Error adding videoPath column:', error);
+      }
+    }
+    try {
+      await pool.execute(`ALTER TABLE daily_notes ADD COLUMN IF NOT EXISTS videoFileName VARCHAR(255)`);
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.error('Error adding videoFileName column:', error);
+      }
+    }
+    try {
+      await pool.execute(`ALTER TABLE daily_notes ADD COLUMN IF NOT EXISTS videoSize INT`);
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.error('Error adding videoSize column:', error);
+      }
+    }
+    try {
+      await pool.execute(`ALTER TABLE daily_notes ADD COLUMN IF NOT EXISTS videoMimeType VARCHAR(100)`);
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.error('Error adding videoMimeType column:', error);
+      }
+    }
 
     // Add missing columns to existing daily_notes table if they don't exist
     try {

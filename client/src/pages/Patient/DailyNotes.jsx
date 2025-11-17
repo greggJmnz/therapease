@@ -7,6 +7,25 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import ConfirmationModal from '../../components/ConfirmationModal';
 
+// Helper function to get video URL (similar to home exercises)
+const getVideoUrl = (videoPath) => {
+  if (!videoPath) return null;
+  
+  const apiBaseUrl = import.meta.env.VITE_API_URL || '/api';
+  const serverBaseUrl = apiBaseUrl.replace('/api', '');
+  
+  let fullUrl;
+  if (videoPath.startsWith('/')) {
+    fullUrl = `${serverBaseUrl}${videoPath}`;
+  } else if (videoPath.startsWith('uploads/')) {
+    fullUrl = `${serverBaseUrl}/${videoPath}`;
+  } else {
+    fullUrl = `${serverBaseUrl}/uploads/${videoPath}`;
+  }
+  
+  return fullUrl;
+};
+
 const DailyNotes = () => {
   const { user, isAuthenticated } = useAuth();
   
@@ -432,6 +451,37 @@ const DailyNotes = () => {
                             </div>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Session Video */}
+                    {note.videoPath && (
+                      <div className="mt-6 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h4 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                          <Video className="h-5 w-5 text-purple-600" />
+                          Session Video
+                        </h4>
+                        <div className="mt-4">
+                          <video 
+                            src={getVideoUrl(note.videoPath)}
+                            controls 
+                            preload="metadata"
+                            crossOrigin="anonymous"
+                            className="max-w-full h-auto max-h-96 rounded-lg border border-gray-300"
+                            onError={(e) => {
+                              console.error('Video load error:', e);
+                              toast.error('Failed to load video. Please try again later.');
+                            }}
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                          {note.videoFileName && (
+                            <p className="mt-2 text-sm text-gray-500">
+                              {note.videoFileName}
+                              {note.videoSize && ` (${(note.videoSize / 1024 / 1024).toFixed(2)} MB)`}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
 

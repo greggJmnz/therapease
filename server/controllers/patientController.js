@@ -1183,6 +1183,10 @@ const getDailyNotes = async (req, res) => {
         dn.mood, 
         dn.engagement,
         dn.comments,
+        dn.videoPath,
+        dn.videoFileName,
+        dn.videoSize,
+        dn.videoMimeType,
         dn.createdAt,
         CONCAT(u.firstName, ' ', u.lastName) as therapistName
       FROM daily_notes dn

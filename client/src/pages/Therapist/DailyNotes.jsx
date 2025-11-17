@@ -41,6 +41,7 @@ const DailyNotes = () => {
     mood: '',
     engagement: ''
   });
+  const [videoFile, setVideoFile] = useState(null);
 
   // Fetch daily notes data from API
   const { data: notesData, isLoading: notesLoading, error: notesError, refetch: refetchNotes } = useQuery(
@@ -93,6 +94,7 @@ const DailyNotes = () => {
           mood: '',
           engagement: ''
         });
+        setVideoFile(null);
       },
       onError: (error) => {
         console.error('Error creating daily note:', error);
@@ -228,15 +230,29 @@ const DailyNotes = () => {
       return;
     }
 
-      if (editingNote) {
-        // Update existing note
+    if (editingNote) {
+      // Update existing note
       updateNoteMutation.mutate({ 
         id: editingNote.id, 
         noteData: formData 
       });
-      } else {
-        // Create new note
-      createNoteMutation.mutate(formData);
+    } else {
+      // Create new note with video upload
+      const submitData = new FormData();
+      
+      // Append all form fields
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
+          submitData.append(key, formData[key]);
+        }
+      });
+      
+      // Append video file if selected
+      if (videoFile) {
+        submitData.append('video', videoFile);
+      }
+      
+      createNoteMutation.mutate(submitData);
     }
   };
 
@@ -349,6 +365,7 @@ const DailyNotes = () => {
       mood: '',
       engagement: ''
     });
+    setVideoFile(null);
     setEditingNote(null);
   };
 
@@ -597,6 +614,26 @@ const DailyNotes = () => {
                     className="block w-full px-4 py-4 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200 bg-white hover:border-gray-400"
                     placeholder="What should be done next? Home exercises? Follow-up plans?"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Session Video (Optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => setVideoFile(e.target.files[0])}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Upload a video of the session (Maximum file size: 50MB)
+                  </p>
+                  {videoFile && (
+                    <p className="mt-2 text-sm text-green-600">
+                      Selected: {videoFile.name} ({(videoFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200">
