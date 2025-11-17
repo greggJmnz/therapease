@@ -152,7 +152,16 @@ const getProfile = async (req, res) => {
       });
     }
 
-    profileData = { ...user };
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Decrypt sensitive user fields
+    profileData = {
+      ...user,
+      email: decryptField(user.email),
+      phone: decryptField(user.phone),
+      address: decryptField(user.address)
+    };
 
     // Get role-specific information
     if (userRole === 'therapist') {

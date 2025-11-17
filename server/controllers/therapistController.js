@@ -45,9 +45,20 @@ const getProfile = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Profile not found' });
     }
 
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Decrypt sensitive user fields
+    const decryptedProfile = {
+      ...profile,
+      email: decryptField(profile.email),
+      phone: decryptField(profile.phone),
+      address: decryptField(profile.address)
+    };
+
     res.json({
       success: true,
-      data: profile
+      data: decryptedProfile
     });
 
   } catch (error) {
