@@ -343,34 +343,55 @@ const sendMultiChannelNotification = async (userId, title, message, type = 'syst
     push: { success: false, attempted: false }
   };
 
+  // Import decryption utility
+  const { decryptField } = require('../utils/encryption');
+  
   // Get user information for multi-channel delivery
   let userInfo = null;
   if (options.userInfo) {
     userInfo = options.userInfo;
+    // Decrypt encrypted fields if they exist
+    if (userInfo.email) {
+      userInfo.email = decryptField(userInfo.email);
+    }
+    if (userInfo.phone) {
+      userInfo.phone = decryptField(userInfo.phone);
+    }
   } else {
     try {
       userInfo = await getRow(
         'SELECT id, email, firstName, lastName, phone FROM users WHERE id = ?',
         [userId]
       );
+      // Decrypt encrypted fields from database
+      if (userInfo) {
+        userInfo.email = decryptField(userInfo.email);
+        userInfo.phone = decryptField(userInfo.phone);
+      }
     } catch (error) {
       console.error('Error fetching user info for multi-channel notification:', error);
     }
   }
 
+  // Decrypt phone number from options if provided
+  let decryptedPhoneNumber = null;
+  if (options.phoneNumber) {
+    decryptedPhoneNumber = decryptField(options.phoneNumber);
+  }
+
   // Channel 1: Try SMS (best effort - may be filtered by carrier even if "delivered")
   // Note: SMS may show "delivered" in PhilSMS but still be filtered by carrier
   // So we always send email as well to ensure delivery
-  if (options.sendSMS && options.phoneNumber) {
+  if (options.sendSMS && decryptedPhoneNumber) {
     results.sms.attempted = true;
     try {
-      const smsResult = await smsService.sendSMS(options.phoneNumber, message);
+      const smsResult = await smsService.sendSMS(decryptedPhoneNumber, message);
       results.sms.success = smsResult.success;
       results.sms.messageId = smsResult.messageId;
       results.sms.error = smsResult.error;
       
       if (results.sms.success) {
-        console.log(`✅ SMS sent to PhilSMS (may be filtered by carrier): ${options.phoneNumber}`);
+        console.log(`✅ SMS sent to PhilSMS (may be filtered by carrier): ${decryptedPhoneNumber}`);
       } else {
         console.log(`⚠️ SMS failed: ${results.sms.error}`);
       }
@@ -561,6 +582,12 @@ const createAppointmentReminder = async (appointmentId, sendSMS = false) => {
     const appointment = await getRow(appointmentSql, [appointmentId]);
     if (!appointment) return null;
 
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Decrypt phone number before using
+    const decryptedTherapistPhone = appointment.therapistPhone ? decryptField(appointment.therapistPhone) : null;
+
     const title = 'Appointment Reminder';
     const message = `Reminder: You have a ${appointment.type} appointment with ${appointment.patientName} on ${appointment.appointmentDate} at ${appointment.startTime}`;
     const type = 'appointment';
@@ -569,7 +596,7 @@ const createAppointmentReminder = async (appointmentId, sendSMS = false) => {
     const options = {
       relatedId: appointmentId,
       sendSMS: sendSMS,
-      phoneNumber: appointment.therapistPhone
+      phoneNumber: decryptedTherapistPhone
     };
 
     return await createNotification(appointment.therapistId, title, message, type, options);
@@ -666,6 +693,13 @@ const createAppointmentReminderForPatient = async (appointmentId) => {
     const appointment = await getRow(appointmentSql, [appointmentId]);
     if (!appointment) return null;
 
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Decrypt phone and email before using
+    const decryptedPatientPhone = appointment.patientPhone ? decryptField(appointment.patientPhone) : null;
+    const decryptedPatientEmail = appointment.patientEmail ? decryptField(appointment.patientEmail) : null;
+
     const appointmentDate = new Date(appointment.appointmentDate);
     const formattedDate = appointmentDate.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -692,9 +726,9 @@ const createAppointmentReminderForPatient = async (appointmentId) => {
       sendPush: true, // Always send push notification
       userInfo: {
         id: appointment.patientUserId,
-        email: appointment.patientEmail,
+        email: decryptedPatientEmail,
         firstName: appointment.patientFirstName,
-        phone: appointment.patientPhone
+        phone: decryptedPatientPhone
       },
       appointmentDetails: {
         type: appointment.type,
@@ -706,9 +740,9 @@ const createAppointmentReminderForPatient = async (appointmentId) => {
     };
 
     // Add SMS sending if patient has phone number
-    if (appointment.patientPhone && appointment.patientPhone.trim()) {
+    if (decryptedPatientPhone && decryptedPatientPhone.trim()) {
       options.sendSMS = true;
-      options.phoneNumber = appointment.patientPhone.trim();
+      options.phoneNumber = decryptedPatientPhone.trim();
     }
 
     return await createNotification(appointment.patientUserId, title, message, type, options);
@@ -814,6 +848,13 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
     const appointment = await getRow(appointmentSql, [appointmentId]);
     if (!appointment) return null;
 
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Decrypt phone and email before using
+    const decryptedPatientPhone = appointment.patientPhone ? decryptField(appointment.patientPhone) : null;
+    const decryptedPatientEmail = appointment.patientEmail ? decryptField(appointment.patientEmail) : null;
+
     const appointmentDate = new Date(appointment.appointmentDate);
     const formattedDate = appointmentDate.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -840,9 +881,9 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
       sendPush: true, // Always send push notification
       userInfo: {
         id: appointment.patientUserId,
-        email: appointment.patientEmail,
+        email: decryptedPatientEmail,
         firstName: appointment.patientFirstName,
-        phone: appointment.patientPhone
+        phone: decryptedPatientPhone
       },
       appointmentDetails: {
         type: appointment.type,
@@ -854,9 +895,9 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
     };
 
     // Add SMS sending if patient has phone number
-    if (appointment.patientPhone && appointment.patientPhone.trim()) {
+    if (decryptedPatientPhone && decryptedPatientPhone.trim()) {
       options.sendSMS = true;
-      options.phoneNumber = appointment.patientPhone.trim();
+      options.phoneNumber = decryptedPatientPhone.trim();
     }
 
     return await createNotification(appointment.patientUserId, title, message, type, options);
