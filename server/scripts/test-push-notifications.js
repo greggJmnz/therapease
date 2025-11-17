@@ -302,13 +302,23 @@ const testSendNotification = async (userId = null) => {
     const subscription = subscriptions[0];
     log.info(`Testing with subscription for user ID: ${subscription.userId}`);
 
-    // Get user info
+    // Get user info (decrypt email if encrypted)
     const [users] = await connection.execute(
       'SELECT email, firstName, lastName FROM users WHERE id = ?',
       [subscription.userId]
     );
     const user = users[0] || { email: 'Unknown', firstName: '', lastName: '' };
-    log.info(`User: ${user.email}`);
+    
+    // Decrypt email if it's encrypted (for logging purposes)
+    let decryptedEmail = user.email;
+    try {
+      const { decryptField } = require('../utils/encryption');
+      decryptedEmail = decryptField(user.email);
+    } catch (error) {
+      // If decryption fails, use original email (might be plain text)
+      decryptedEmail = user.email;
+    }
+    log.info(`User: ${decryptedEmail}`);
 
     // Prepare push subscription object
     const pushSubscription = {
