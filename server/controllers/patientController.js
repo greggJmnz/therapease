@@ -2083,15 +2083,18 @@ const getOnboardingStatus = async (req, res) => {
     const isOnboardingComplete = !!(user.onboardingCompleted === 1 || user.onboardingCompleted === true || hasExistingPatientData);
     const shouldShowPersonalInfo = isOnboardingComplete || personalInfoComplete;
     
+    // Import decryption utility
+    const { decryptField: decryptUserField } = require('../utils/encryption');
+    
     const sanitizedUser = {
       id: user.id,
-      email: user.email,
+      email: decryptUserField(user.email),
       firstName: shouldShowPersonalInfo ? user.firstName : null,
       lastName: shouldShowPersonalInfo ? user.lastName : null,
-      phone: shouldShowPersonalInfo ? user.phone : null,
+      phone: shouldShowPersonalInfo ? decryptUserField(user.phone) : null,
       dateOfBirth: shouldShowPersonalInfo ? user.dateOfBirth : null,
       gender: shouldShowPersonalInfo ? user.gender : null,
-      address: shouldShowPersonalInfo ? user.address : null,
+      address: shouldShowPersonalInfo ? decryptUserField(user.address) : null,
       city: shouldShowPersonalInfo ? user.city : null,
       state: shouldShowPersonalInfo ? user.state : null,
       zipCode: shouldShowPersonalInfo ? user.zipCode : null,
