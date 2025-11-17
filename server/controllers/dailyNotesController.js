@@ -700,6 +700,96 @@ module.exports = {
   getDailyNoteById,
   addNoteComment,
   editNoteComment,
-  deleteNoteComment
+  deleteNoteComment,
+  getPastAppointmentsForPatient
+};
+
+// Get past appointments for a patient (excluding canceled) that don't have daily notes yet
+const getPastAppointmentsForPatient = async (req, res) => {
+  try {
+    const therapistId = req.user.id;
+    const { patientId } = req.query;
+
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Patient ID is required'
+      });
+    }
+
+    // Validate that the patient is assigned to this therapist
+    const patientCheck = await getRow(`
+      SELECT p.id
+      FROM patients p
+      LEFT JOIN patient_therapist_assignments pta ON p.id = pta.patientId AND pta.status = 'active'
+      WHERE p.id = ? AND (p.therapistId = ? OR pta.therapistId = ?)
+    `, [parseInt(patientId), therapistId, therapistId]);
+
+    if (!patientCheck) {
+      return res.status(403).json({
+        success: false,
+        error: 'Patient not found or not assigned to you'
+      });
+    }
+
+    // Get past appointments (excluding canceled) that don't have daily notes
+    const sql = `
+      SELECT 
+        a.id,
+        a.appointmentDate as sessionDate,
+        a.startTime,
+        a.endTime,
+        a.duration,
+        a.type,
+        a.status,
+        a.approvalStatus,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      LEFT JOIN daily_notes dn ON a.patientId = dn.patientId 
+        AND a.appointmentDate = dn.sessionDate
+        AND dn.therapistId = ?
+      WHERE a.patientId = ?
+        AND a.therapistId = ?
+        AND a.status != 'cancelled'
+        AND a.appointmentDate <= CURDATE()
+        AND dn.id IS NULL
+      ORDER BY a.appointmentDate DESC, a.startTime DESC
+      LIMIT 50
+    `;
+
+    const appointments = await getAll(sql, [therapistId, parseInt(patientId), therapistId]);
+
+    res.json({
+      success: true,
+      data: {
+        appointments: appointments.map(apt => ({
+          id: apt.id,
+          sessionDate: apt.sessionDate,
+          startTime: apt.startTime,
+          endTime: apt.endTime,
+          duration: apt.duration,
+          type: apt.type,
+          status: apt.status,
+          approvalStatus: apt.approvalStatus,
+          patientName: apt.patientName,
+          // Format for display
+          displayText: `${new Date(apt.sessionDate).toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          })} - ${apt.startTime || 'N/A'} (${apt.duration || 'N/A'} min) - ${apt.type || 'Session'}`
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching past appointments:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch past appointments'
+    });
+  }
 };
 

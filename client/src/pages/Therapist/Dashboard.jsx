@@ -101,7 +101,7 @@ const TherapistDashboard = () => {
   const stats = {
     totalPatients: overview.totalPatients || 0,
     todayAppointments: appointments.scheduled || 0, // Using scheduled appointments as today's sessions
-    pendingNotes: overview.todayNotes || 0, // Using todayNotes from API
+    pendingNotes: overview.pendingNotes || 0, // Using pendingNotes from API (appointments without daily notes)
     upcomingAppointments: overview.upcomingAppointments || 0, // Upcoming appointments (not completed or past)
   };
 

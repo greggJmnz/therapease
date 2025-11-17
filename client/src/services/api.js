@@ -270,6 +270,7 @@ export const therapistAPI = {
   deleteSession: (id) => api.delete(`/therapist/sessions/${id}`),
   getSessionById: (id) => api.get(`/therapist/sessions/${id}`),
   getDailyNotes: (therapistId) => api.get(`/therapist/daily-notes?therapistId=${therapistId}`),
+  getPastAppointmentsForPatient: (patientId) => api.get(`/therapist/daily-notes/past-appointments?patientId=${patientId}`),
   getAIInsights: () => api.get(`/therapist/ai-insights`),
   getProgressTracking: (therapistId) => api.get(`/therapist/progress-tracking?therapistId=${therapistId}`),
   getPatientProgressSummary: (patientId) => api.get(`/therapist/progress-tracking/patient/${patientId}`),

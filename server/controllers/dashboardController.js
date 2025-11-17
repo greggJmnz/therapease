@@ -31,8 +31,15 @@ const getDashboard = async (req, res) => {
         (SELECT COUNT(*) FROM appointments a 
          WHERE a.therapistId = ? AND a.appointmentDate = CURDATE()) as todayAppointments,
         
-        (SELECT COUNT(*) FROM daily_notes dn 
-         WHERE dn.therapistId = ? AND dn.sessionDate = CURDATE()) as todayNotes,
+        (SELECT COUNT(DISTINCT a.id) 
+         FROM appointments a
+         LEFT JOIN daily_notes dn ON a.patientId = dn.patientId 
+           AND a.appointmentDate = dn.sessionDate
+           AND dn.therapistId = ?
+         WHERE a.therapistId = ?
+           AND a.status != 'cancelled'
+           AND a.appointmentDate <= CURDATE()
+           AND dn.id IS NULL) as pendingNotes,
         
         (SELECT COUNT(DISTINCT mo.id) 
          FROM main_objectives mo
@@ -56,7 +63,7 @@ const getDashboard = async (req, res) => {
       therapistId, // appointmentsCancelled
       therapistId, // upcomingAppointments
       therapistId, // todayAppointments
-      therapistId, // todayNotes
+      therapistId, therapistId, // pendingNotes (therapistId used twice for the LEFT JOIN)
       therapistId, therapistId // totalProgressEntries
     ]);
 
@@ -77,7 +84,7 @@ const getDashboard = async (req, res) => {
     };
     const upcomingAppointmentsCount = overview.upcomingAppointments || 0;
     const todayAppointmentsCount = overview.todayAppointments || 0;
-    const todayNotes = overview.todayNotes || 0;
+    const pendingNotes = overview.pendingNotes || 0;
     const totalProgressEntries = overview.totalProgressEntries || 0;
 
     // Get recent assessments
@@ -213,7 +220,7 @@ const getDashboard = async (req, res) => {
           totalAppointments: appointmentStats.total,
           upcomingAppointments: upcomingAppointmentsCount,
           todayAppointments: todayAppointmentsCount,
-          todayNotes,
+          pendingNotes,
           totalProgressEntries
         },
         assessments: {
@@ -458,8 +465,15 @@ const getDashboardStats = async (req, res) => {
         (SELECT COUNT(*) FROM appointments a 
          WHERE a.therapistId = ? AND a.appointmentDate = CURDATE()) as todayAppointments,
         
-        (SELECT COUNT(*) FROM daily_notes dn 
-         WHERE dn.therapistId = ? AND dn.sessionDate = CURDATE()) as todayNotes,
+        (SELECT COUNT(DISTINCT a.id) 
+         FROM appointments a
+         LEFT JOIN daily_notes dn ON a.patientId = dn.patientId 
+           AND a.appointmentDate = dn.sessionDate
+           AND dn.therapistId = ?
+         WHERE a.therapistId = ?
+           AND a.status != 'cancelled'
+           AND a.appointmentDate <= CURDATE()
+           AND dn.id IS NULL) as pendingNotes,
         
         (SELECT COUNT(DISTINCT mo.id) 
          FROM main_objectives mo
@@ -478,10 +492,22 @@ const getDashboardStats = async (req, res) => {
     `;
 
     const overviewResult = await getRow(overviewStatsSql, [
-      therapistId, therapistId, therapistId, therapistId, therapistId,
-      therapistId, therapistId, therapistId, therapistId, therapistId,
-      therapistId, therapistId, therapistId, therapistId, therapistId,
-      therapistId, therapistId
+      therapistId, // totalPatients
+      therapistId, // totalAssessments
+      therapistId, // assessmentsCompleted
+      therapistId, // assessmentsInProgress
+      therapistId, // assessmentsScheduled
+      therapistId, // totalAppointments
+      therapistId, // appointmentsScheduled
+      therapistId, // appointmentsConfirmed
+      therapistId, // appointmentsCompleted
+      therapistId, // appointmentsCancelled
+      therapistId, // upcomingAppointments
+      therapistId, // todayAppointments
+      therapistId, therapistId, // pendingNotes (therapistId used twice for the LEFT JOIN)
+      therapistId, therapistId, // totalProgressEntries
+      therapistId, // completionRate
+      therapistId // avgSessionDuration
     ]);
 
     const overview = overviewResult || {};
@@ -495,7 +521,7 @@ const getDashboardStats = async (req, res) => {
           totalAppointments: overview.totalAppointments || 0,
           upcomingAppointments: overview.upcomingAppointments || 0,
           todayAppointments: overview.todayAppointments || 0,
-          todayNotes: overview.todayNotes || 0,
+          pendingNotes: overview.pendingNotes || 0,
           totalProgressEntries: overview.totalProgressEntries || 0
         },
         assessments: {

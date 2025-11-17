@@ -53,6 +53,7 @@ router.delete('/sessions/:id', sessionController.deleteSession);
 // Daily notes
 const dailyNotesUpload = require('../middleware/dailyNotesUploadMiddleware');
 router.get('/daily-notes', dailyNotesController.getDailyNotes);
+router.get('/daily-notes/past-appointments', dailyNotesController.getPastAppointmentsForPatient);
 router.post('/daily-notes', (req, res, next) => {
   dailyNotesUpload.single('video')(req, res, (err) => {
     if (err) {

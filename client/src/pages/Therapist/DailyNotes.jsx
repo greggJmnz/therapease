@@ -123,6 +123,9 @@ const DailyNotes = () => {
     engagement: ''
   });
   const [videoFile, setVideoFile] = useState(null);
+  const [pastAppointments, setPastAppointments] = useState([]);
+  const [selectedSessionId, setSelectedSessionId] = useState('');
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
 
   // Fetch daily notes data from API
   const { data: notesData, isLoading: notesLoading, error: notesError, refetch: refetchNotes } = useQuery(
@@ -448,6 +451,7 @@ const DailyNotes = () => {
     });
     setVideoFile(null);
     setEditingNote(null);
+    setSelectedSessionId('');
   };
 
   const cancelForm = () => {
@@ -455,22 +459,56 @@ const DailyNotes = () => {
     resetForm();
   };
 
-  const handlePatientSelect = (patientId) => {
+  const handlePatientSelect = async (patientId) => {
     setSelectedPatientId(patientId);
     const patient = patients.find(p => p.id === parseInt(patientId));
     setSelectedPatient(patient);
     setShowForm(false);
     setEditingNote(null);
     resetForm();
+    
+    // Fetch past appointments for this patient
+    if (patientId) {
+      setIsLoadingSessions(true);
+      try {
+        const response = await therapistAPI.getPastAppointmentsForPatient(patientId);
+        if (response?.data?.success) {
+          setPastAppointments(response.data.data.appointments || []);
+        }
+      } catch (error) {
+        console.error('Error fetching past appointments:', error);
+        toast.error('Failed to load past sessions');
+        setPastAppointments([]);
+      } finally {
+        setIsLoadingSessions(false);
+      }
+    } else {
+      setPastAppointments([]);
+    }
   };
 
-  const handleCreateNote = () => {
+  const handleCreateNote = async () => {
     if (!selectedPatientId) {
       toast.error('Please select a patient first');
       return;
     }
     setFormData(prev => ({ ...prev, patientId: selectedPatientId }));
     setShowForm(true);
+    
+    // Fetch past appointments when opening the form
+    setIsLoadingSessions(true);
+    try {
+      const response = await therapistAPI.getPastAppointmentsForPatient(selectedPatientId);
+      if (response?.data?.success) {
+        setPastAppointments(response.data.data.appointments || []);
+      }
+    } catch (error) {
+      console.error('Error fetching past appointments:', error);
+      toast.error('Failed to load past sessions');
+      setPastAppointments([]);
+    } finally {
+      setIsLoadingSessions(false);
+    }
   };
 
   if (isLoading) {
@@ -614,32 +652,73 @@ const DailyNotes = () => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
-                      Session Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.sessionDate}
-                      onChange={(e) => setFormData({...formData, sessionDate: e.target.value})}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Select Session *
+                  </label>
+                  {isLoadingSessions ? (
+                    <div className="block w-full px-4 py-4 border border-gray-300 rounded-xl shadow-sm bg-gray-50 text-sm text-gray-500">
+                      Loading past sessions...
+                    </div>
+                  ) : pastAppointments.length > 0 ? (
+                    <select
+                      value={selectedSessionId}
+                      onChange={(e) => {
+                        const sessionId = e.target.value;
+                        setSelectedSessionId(sessionId);
+                        const selectedSession = pastAppointments.find(apt => apt.id.toString() === sessionId);
+                        if (selectedSession) {
+                          setFormData({
+                            ...formData,
+                            sessionDate: selectedSession.sessionDate,
+                            sessionDuration: selectedSession.duration || ''
+                          });
+                        }
+                      }}
                       className="block w-full px-4 py-4 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200 bg-white hover:border-gray-400"
                       required
-                    />
-                  </div>
+                    >
+                      <option value="">Choose a past session...</option>
+                      {pastAppointments.map((appointment) => (
+                        <option key={appointment.id} value={appointment.id}>
+                          {appointment.displayText}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="block w-full px-4 py-4 border border-gray-300 rounded-xl shadow-sm bg-gray-50 text-sm text-gray-500">
+                      No past sessions available. Please select a patient first or create a session manually.
+                    </div>
+                  )}
+                  {pastAppointments.length === 0 && selectedPatientId && !isLoadingSessions && (
+                    <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Session Date *
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.sessionDate}
+                          onChange={(e) => setFormData({...formData, sessionDate: e.target.value})}
+                          className="block w-full px-4 py-4 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200 bg-white hover:border-gray-400"
+                          required
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
-                      Session Duration (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.sessionDuration}
-                      onChange={(e) => setFormData({...formData, sessionDuration: e.target.value})}
-                      className="block w-full px-4 py-4 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200 bg-white hover:border-gray-400"
-                      placeholder="45"
-                    />
-                  </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Session Duration (minutes)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.sessionDuration}
+                          onChange={(e) => setFormData({...formData, sessionDuration: e.target.value})}
+                          className="block w-full px-4 py-4 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200 bg-white hover:border-gray-400"
+                          placeholder="45"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
