@@ -781,3 +781,15 @@ const getPastAppointmentsForPatient = async (req, res) => {
   }
 };
 
+module.exports = {
+  getDailyNotes,
+  createDailyNote,
+  updateDailyNote,
+  deleteDailyNote,
+  getDailyNoteById,
+  addNoteComment,
+  editNoteComment,
+  deleteNoteComment,
+  getPastAppointmentsForPatient
+};
+
