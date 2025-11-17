@@ -338,18 +338,21 @@ const getUsers = async (req, res) => {
 
     const users = await getAll(sql, params);
 
-    // Format user data
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Format user data and decrypt sensitive fields
     const formattedUsers = users.map(user => {
       const formattedUser = {
         id: user.id,
-        email: user.email,
+        email: decryptField(user.email),
         role: user.role,
         firstName: user.firstName,
         lastName: user.lastName,
-        phone: user.phone,
+        phone: decryptField(user.phone),
         dateOfBirth: user.dateOfBirth,
         gender: user.gender,
-        address: user.address,
+        address: decryptField(user.address),
         city: user.city,
         state: user.state,
         zipCode: user.zipCode,
@@ -449,17 +452,20 @@ const getUserById = async (req, res) => {
       });
     }
 
-    // Format user data
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Format user data and decrypt sensitive fields
     const formattedUser = {
       id: user.id,
-      email: user.email,
+      email: decryptField(user.email),
       role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
-      phone: user.phone,
+      phone: decryptField(user.phone),
       dateOfBirth: user.dateOfBirth,
       gender: user.gender,
-      address: user.address,
+      address: decryptField(user.address),
       city: user.city,
       state: user.state,
       zipCode: user.zipCode,

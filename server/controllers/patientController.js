@@ -111,16 +111,16 @@ const getPatients = async (req, res) => {
     // Import decryption utility
     const { decryptField } = require('../utils/encryption');
 
-    // Format patient data
+    // Format patient data and decrypt sensitive fields
     const formattedPatients = patientsWithAssignments.map(patient => ({
       id: patient.id,
       firstName: patient.firstName,
       lastName: patient.lastName,
-      email: patient.email,
-      phone: patient.phone,
+      email: decryptField(patient.email),
+      phone: decryptField(patient.phone),
       dateOfBirth: patient.dateOfBirth,
       gender: patient.gender,
-      address: patient.address,
+      address: decryptField(patient.address),
       city: patient.city,
       state: patient.state,
       zipCode: patient.zipCode,
