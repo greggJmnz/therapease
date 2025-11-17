@@ -1154,6 +1154,12 @@ const createAppointment = async (req, res) => {
     try {
       const notificationController = require('./notificationController');
       
+      // Import decryption utility
+      const { decryptField } = require('../utils/encryption');
+      
+      // Decrypt therapist phone before using
+      const decryptedTherapistPhone = therapist.therapistPhone ? decryptField(therapist.therapistPhone) : null;
+      
       // Create notification for therapist with SMS
       const therapistMessage = `Hi ${therapist.therapistName}! You have a new ${type} appointment with ${patient.patientName} on ${date} at ${formatTime12Hour(time)}. TherapEase Team`;
       await notificationController.createNotification(
@@ -1164,7 +1170,7 @@ const createAppointment = async (req, res) => {
         { 
           relatedId: appointmentId,
           sendSMS: true,
-          phoneNumber: therapist.therapistPhone
+          phoneNumber: decryptedTherapistPhone
         }
       );
 
@@ -3686,6 +3692,12 @@ const approveAppointment = async (req, res) => {
       FROM users WHERE id = ?
     `, [appointment.therapistId]);
     
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Decrypt therapist phone before using
+    const decryptedTherapistPhone = therapistInfo.therapistPhone ? decryptField(therapistInfo.therapistPhone) : null;
+    
     // Notify patient
     await notificationController.createNotification(
       appointment.patientUserId,
@@ -3705,7 +3717,7 @@ const approveAppointment = async (req, res) => {
       { 
         relatedId: appointmentId,
         sendSMS: true,
-        phoneNumber: therapistInfo.therapistPhone
+        phoneNumber: decryptedTherapistPhone
       }
     );
 
