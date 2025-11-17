@@ -1,6 +1,6 @@
 const { runQuery, getRow, getAll, getConnection } = require('../config/database');
 const { hashPassword, verifyPassword, validatePasswordComplexity } = require('../utils/password');
-const { encryptField, decryptField } = require('../utils/encryption');
+const { encryptField, decryptField, hashForSearch } = require('../utils/encryption');
 const jwt = require('jsonwebtoken');
 
 // JWT secret (in real app, this should be in environment variables)
@@ -20,7 +20,10 @@ const login = async (req, res) => {
     }
 
     // Get user by email
-    const userSql = `
+    // Since email is encrypted, we need to search by hashed email or decrypt all emails
+    // For efficiency, we'll fetch all users and decrypt emails to find the match
+    // TODO: Consider adding emailHash column for faster lookups
+    const allUsersSql = `
       SELECT 
         u.id,
         u.email,
@@ -41,10 +44,29 @@ const login = async (req, res) => {
         u.createdAt,
         u.updatedAt
       FROM users u
-      WHERE u.email = ?
     `;
 
-    const user = await getRow(userSql, [email]);
+    const allUsers = await getAll(allUsersSql);
+    
+    // Find user by decrypting emails and comparing
+    let user = null;
+    for (const u of allUsers) {
+      try {
+        const decryptedEmail = decryptField(u.email);
+        if (decryptedEmail && decryptedEmail.toLowerCase() === email.toLowerCase()) {
+          user = u;
+          // Decrypt email for use in response
+          user.email = decryptedEmail;
+          break;
+        }
+      } catch (error) {
+        // If decryption fails, try direct comparison (might be plain text still)
+        if (u.email && u.email.toLowerCase() === email.toLowerCase()) {
+          user = u;
+          break;
+        }
+      }
+    }
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -202,8 +224,16 @@ const register = async (req, res) => {
       });
     }
 
-    // Check if user with email already exists
-    const existingUser = await getRow('SELECT id FROM users WHERE email = ?', [email]);
+    // Check if user with email already exists (handle encrypted emails)
+    const allUsers = await getAll('SELECT id, email FROM users');
+    const existingUser = allUsers.find(u => {
+      try {
+        const decryptedEmail = decryptField(u.email);
+        return decryptedEmail && decryptedEmail.toLowerCase() === email.toLowerCase();
+      } catch (error) {
+        return u.email && u.email.toLowerCase() === email.toLowerCase();
+      }
+    });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -625,8 +655,23 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    // Check if user exists
-    const user = await getRow('SELECT id, firstName, lastName FROM users WHERE email = ?', [email]);
+    // Check if user exists (handle encrypted emails)
+    const allUsers = await getAll('SELECT id, email, firstName, lastName FROM users');
+    let user = null;
+    for (const u of allUsers) {
+      try {
+        const decryptedEmail = decryptField(u.email);
+        if (decryptedEmail && decryptedEmail.toLowerCase() === email.toLowerCase()) {
+          user = u;
+          break;
+        }
+      } catch (error) {
+        if (u.email && u.email.toLowerCase() === email.toLowerCase()) {
+          user = u;
+          break;
+        }
+      }
+    }
     if (!user) {
       return res.status(404).json({
         success: false,
