@@ -43,6 +43,38 @@ async function encryptExistingData() {
     console.log(`📊 Database: ${dbConfig.database}`);
     console.log(`🔐 Host: ${dbConfig.host}:${dbConfig.port}\n`);
     
+    // First, ensure columns are large enough for encrypted data
+    console.log('🔧 Checking and updating column sizes for encrypted data...\n');
+    
+    try {
+      // Check and update email column (should be fine at 255, but increase to TEXT for safety)
+      await connection.execute(`
+        ALTER TABLE users 
+        MODIFY COLUMN email TEXT
+      `);
+      console.log('   ✅ Updated email column to TEXT');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('   ⚠️  Email column update:', error.message);
+      }
+    }
+    
+    try {
+      // Update phone column from VARCHAR(20) to TEXT (encrypted data is much longer)
+      await connection.execute(`
+        ALTER TABLE users 
+        MODIFY COLUMN phone TEXT
+      `);
+      console.log('   ✅ Updated phone column to TEXT');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        console.log('   ⚠️  Phone column update:', error.message);
+      }
+    }
+    
+    // Address is already TEXT, so no need to modify
+    console.log('   ✅ Address column is already TEXT\n');
+    
     let totalEncrypted = 0;
     
     // 1. Encrypt users table (email, phone, address)
