@@ -914,8 +914,8 @@ const loginWith2FA = async (req, res) => {
       });
     }
 
-    // Get user data
-    const user = await getRow(`
+    // Get user data (handle encrypted emails)
+    const allUsers = await getAll(`
       SELECT 
         u.id,
         u.email,
@@ -934,8 +934,25 @@ const loginWith2FA = async (req, res) => {
         u.createdAt,
         u.updatedAt
       FROM users u
-      WHERE u.email = ?
-    `, [email]);
+    `);
+    
+    // Find user by decrypting emails and comparing
+    let user = null;
+    for (const u of allUsers) {
+      try {
+        const decryptedEmail = decryptField(u.email);
+        if (decryptedEmail && decryptedEmail.toLowerCase() === email.toLowerCase()) {
+          user = u;
+          user.email = decryptedEmail;
+          break;
+        }
+      } catch (error) {
+        if (u.email && u.email.toLowerCase() === email.toLowerCase()) {
+          user = u;
+          break;
+        }
+      }
+    }
 
     if (!user) {
       return res.status(401).json({
