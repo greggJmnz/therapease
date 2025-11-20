@@ -1,6 +1,7 @@
 const { runQuery, getRow, getConnection } = require('../config/database');
 const { verifyPassword } = require('../utils/password');
 const emailService = require('../services/emailService');
+const { decryptField } = require('../utils/encryption');
 
 // Enable 2FA - Send setup verification code
 const enable2FA = async (req, res) => {
@@ -24,6 +25,10 @@ const enable2FA = async (req, res) => {
         error: 'User not found'
       });
     }
+
+    // Decrypt email before using
+    const decryptedEmail = decryptField(user.email);
+    user.email = decryptedEmail;
 
     // Check if 2FA is already enabled
     if (user.twoFactorEnabled) {
@@ -67,20 +72,20 @@ const enable2FA = async (req, res) => {
 
       // Send setup verification email (non-blocking - fire and forget)
       // Don't wait for email to send to avoid API timeout
-      console.log(`📧 Attempting to send 2FA setup code to ${user.email}...`);
+      console.log(`📧 Attempting to send 2FA setup code to ${decryptedEmail}...`);
       console.log(`   Email service config: useSendGridAPI=${emailService.useSendGridAPI}, hasTransporter=${!!emailService.transporter}`);
       console.log(`   Generated code: ${code} (valid for 10 minutes)`);
       
       emailService.send2FASetupCodeEmail(
-        user.email,
+        decryptedEmail,
         code,
         user.firstName || 'User'
       ).then(emailResult => {
         if (emailResult.success) {
-          console.log(`✅ 2FA setup code email sent successfully to ${user.email}`);
+          console.log(`✅ 2FA setup code email sent successfully to ${decryptedEmail}`);
           console.log(`   Message ID: ${emailResult.messageId || 'N/A'}`);
         } else {
-          console.warn(`⚠️ Failed to send 2FA setup code email to ${user.email}`);
+          console.warn(`⚠️ Failed to send 2FA setup code email to ${decryptedEmail}`);
           console.warn(`   Error: ${emailResult.error}`);
           console.warn(`   Code was saved to database: ${code}`);
           console.warn(`   Code expires at: ${expiresAt.toISOString()}`);
@@ -88,7 +93,7 @@ const enable2FA = async (req, res) => {
           console.warn(`   💡 Check PM2 logs or email service configuration`);
         }
       }).catch(error => {
-        console.error(`❌ Error sending 2FA setup code email to ${user.email}:`);
+        console.error(`❌ Error sending 2FA setup code email to ${decryptedEmail}:`);
         console.error(`   Error message: ${error.message}`);
         console.error(`   Error stack: ${error.stack}`);
         console.error(`   Code was saved to database: ${code}`);
@@ -141,6 +146,9 @@ const verify2FASetup = async (req, res) => {
         error: 'User not found'
       });
     }
+
+    // Decrypt email (for logging/display purposes, though not used in this function)
+    user.email = decryptField(user.email);
 
     if (user.twoFactorEnabled) {
       return res.status(400).json({
@@ -232,6 +240,9 @@ const disable2FA = async (req, res) => {
         error: 'User not found'
       });
     }
+
+    // Decrypt email (for logging/display purposes, though not used in this function)
+    user.email = decryptField(user.email);
 
     if (!user.twoFactorEnabled) {
       return res.status(400).json({
@@ -342,11 +353,29 @@ const send2FALoginCode = async (req, res) => {
       });
     }
 
-    // Get user data
-    const user = await getRow(
-      'SELECT id, email, firstName, twoFactorEnabled, twoFactorMethod FROM users WHERE email = ?',
-      [emailToUse]
-    );
+    // Get user data (handle encrypted emails)
+    const allUsers = await getAll(`
+      SELECT id, email, firstName, twoFactorEnabled, twoFactorMethod FROM users
+    `);
+    
+    // Find user by decrypting emails and comparing
+    let user = null;
+    for (const u of allUsers) {
+      try {
+        const decryptedEmail = decryptField(u.email);
+        if (decryptedEmail && decryptedEmail.toLowerCase() === emailToUse.toLowerCase()) {
+          user = u;
+          user.email = decryptedEmail;
+          break;
+        }
+      } catch (error) {
+        // If decryption fails, try direct comparison (might be plain text still)
+        if (u.email && u.email.toLowerCase() === emailToUse.toLowerCase()) {
+          user = u;
+          break;
+        }
+      }
+    }
 
     if (!user) {
       return res.status(404).json({
@@ -458,11 +487,29 @@ const verify2FALoginCode = async (req, res) => {
       });
     }
 
-    // Get user data
-    const user = await getRow(
-      'SELECT id, email, firstName, twoFactorEnabled FROM users WHERE email = ?',
-      [email]
-    );
+    // Get user data (handle encrypted emails)
+    const allUsers = await getAll(`
+      SELECT id, email, firstName, twoFactorEnabled FROM users
+    `);
+    
+    // Find user by decrypting emails and comparing
+    let user = null;
+    for (const u of allUsers) {
+      try {
+        const decryptedEmail = decryptField(u.email);
+        if (decryptedEmail && decryptedEmail.toLowerCase() === email.toLowerCase()) {
+          user = u;
+          user.email = decryptedEmail;
+          break;
+        }
+      } catch (error) {
+        // If decryption fails, try direct comparison (might be plain text still)
+        if (u.email && u.email.toLowerCase() === email.toLowerCase()) {
+          user = u;
+          break;
+        }
+      }
+    }
 
     if (!user) {
       return res.status(404).json({
