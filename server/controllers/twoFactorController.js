@@ -1,4 +1,4 @@
-const { runQuery, getRow, getConnection } = require('../config/database');
+const { runQuery, getRow, getConnection, getAll } = require('../config/database');
 const { verifyPassword } = require('../utils/password');
 const emailService = require('../services/emailService');
 const { decryptField } = require('../utils/encryption');
