@@ -270,6 +270,76 @@ const createDailyNote = async (req, res) => {
 
     const newNote = await getRow(getNoteSql, [noteId]);
 
+    // Get patient user ID for notification
+    const patientUserInfo = await getRow(`
+      SELECT p.userId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      FROM patients p
+      JOIN users u ON p.userId = u.id
+      WHERE p.id = ?
+    `, [parseInt(patientId)]);
+
+    // Get therapist name for notification
+    const therapistName = await getRow(`
+      SELECT CONCAT(u.firstName, ' ', u.lastName) as therapistName
+      FROM users u
+      WHERE u.id = ?
+    `, [therapistId]);
+
+    // Create notification for patient
+    try {
+      if (patientUserInfo) {
+        const notificationController = require('./notificationController');
+        const { decryptField } = require('../utils/encryption');
+        
+        // Get patient email and phone for multi-channel notification
+        const patientUser = await getRow(`
+          SELECT email, phone, firstName
+          FROM users
+          WHERE id = ?
+        `, [patientUserInfo.userId]);
+        
+        // Decrypt email and phone
+        const decryptedEmail = patientUser ? decryptField(patientUser.email) : null;
+        const decryptedPhone = patientUser && patientUser.phone ? decryptField(patientUser.phone) : null;
+        
+        const notificationTitle = 'New Session Note Available';
+        const sessionDateFormatted = new Date(formattedSessionDate).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        const notificationMessage = `Your therapist ${therapistName?.therapistName || 'Therapist'} has created a new session note for your appointment on ${sessionDateFormatted}. You can view it in your daily notes section.`;
+        
+        await notificationController.createNotification(
+          patientUserInfo.userId,
+          notificationTitle,
+          notificationMessage,
+          'daily_note',
+          {
+            relatedId: noteId,
+            priority: 'medium',
+            useMultiChannel: true,
+            sendEmail: true,
+            sendPush: true,
+            userInfo: {
+              id: patientUserInfo.userId,
+              email: decryptedEmail,
+              firstName: patientUser?.firstName || 'Patient',
+              phone: decryptedPhone
+            },
+            sendSMS: decryptedPhone ? true : false,
+            phoneNumber: decryptedPhone
+          }
+        );
+        
+        console.log(`✅ Notification created for patient ${patientUserInfo.patientName} (User ID: ${patientUserInfo.userId})`);
+      }
+    } catch (notificationError) {
+      console.error('❌ Error creating notification for patient:', notificationError);
+      // Don't fail the note creation if notification fails
+    }
+
     // Broadcast daily note change
     websocketService.broadcastDailyNoteChange(newNote, 'created');
 
