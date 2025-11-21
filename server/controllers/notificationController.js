@@ -498,7 +498,7 @@ const createNotification = async (userId, title, message, type = 'system', optio
 
     // Use multi-channel notification if enabled (default for appointment notifications)
     const useMultiChannel = options.useMultiChannel !== false && 
-                           (type === 'appointment_created' || type === 'appointment_reminder' || options.useMultiChannel === true);
+                           (type === 'appointment_created' || type === 'appointment_reminder' || type === 'appointment' || options.useMultiChannel === true);
 
     if (useMultiChannel) {
       // Send via multiple channels with fallback

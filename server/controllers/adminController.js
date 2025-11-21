@@ -3688,12 +3688,39 @@ const approveAppointment = async (req, res) => {
     `, [appointment.therapistId]);
     
     // Notify patient
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Get patient email and phone for notification
+    const patientUser = await getRow(`
+      SELECT email, phone, firstName
+      FROM users
+      WHERE id = ?
+    `, [appointment.patientUserId]);
+    
+    // Decrypt email and phone
+    const decryptedPatientEmail = patientUser ? decryptField(patientUser.email) : null;
+    const decryptedPatientPhone = patientUser && patientUser.phone ? decryptField(patientUser.phone) : null;
+    
     await notificationController.createNotification(
       appointment.patientUserId,
       'Appointment Approved',
       `Your appointment on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved.`,
       'appointment',
-      { relatedId: appointmentId }
+      { 
+        relatedId: appointmentId,
+        useMultiChannel: true,
+        sendEmail: true,
+        sendSMS: decryptedPatientPhone ? true : false,
+        sendPush: true,
+        phoneNumber: decryptedPatientPhone,
+        userInfo: {
+          id: appointment.patientUserId,
+          email: decryptedPatientEmail,
+          firstName: patientUser?.firstName || 'Patient',
+          phone: decryptedPatientPhone
+        }
+      }
     );
 
     // Notify therapist with SMS

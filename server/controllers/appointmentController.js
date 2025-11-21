@@ -765,7 +765,20 @@ const approveAppointment = async (req, res) => {
     `, [therapistId]);
     
     // Notify patient
-    // Note: phoneNumber will be decrypted in sendMultiChannelNotification
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Get patient email and phone for notification
+    const patientUser = await getRow(`
+      SELECT email, phone, firstName
+      FROM users
+      WHERE id = ?
+    `, [appointment.patientUserId]);
+    
+    // Decrypt email and phone
+    const decryptedPatientEmail = patientUser ? decryptField(patientUser.email) : null;
+    const decryptedPatientPhone = patientUser && patientUser.phone ? decryptField(patientUser.phone) : null;
+    
     const patientMessage = `Hi ${appointment.patientName}! Your appointment with ${therapistInfo.therapistName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved. TherapEase Team`;
     await notificationController.createNotification(
       appointment.patientUserId,
@@ -774,8 +787,17 @@ const approveAppointment = async (req, res) => {
       'appointment',
       { 
         relatedId: parseInt(id),
-        sendSMS: true,
-        phoneNumber: appointment.patientPhone // Pass encrypted phone, will be decrypted in notificationController
+        useMultiChannel: true,
+        sendEmail: true,
+        sendSMS: decryptedPatientPhone ? true : false,
+        sendPush: true,
+        phoneNumber: decryptedPatientPhone,
+        userInfo: {
+          id: appointment.patientUserId,
+          email: decryptedPatientEmail,
+          firstName: patientUser?.firstName || 'Patient',
+          phone: decryptedPatientPhone
+        }
       }
     );
 
