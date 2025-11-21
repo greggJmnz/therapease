@@ -3473,8 +3473,17 @@ const createUser = async (req, res) => {
       });
     }
 
-    // Check if user with email already exists
-    const existingUser = await getRow('SELECT id FROM users WHERE email = ?', [email]);
+    // Check if user with email already exists (handle encrypted emails)
+    const { decryptField } = require('../utils/encryption');
+    const allUsers = await getAll('SELECT id, email FROM users');
+    const existingUser = allUsers.find(u => {
+      try {
+        const decryptedEmail = decryptField(u.email);
+        return decryptedEmail && decryptedEmail.toLowerCase() === email.toLowerCase();
+      } catch (error) {
+        return u.email && u.email.toLowerCase() === email.toLowerCase();
+      }
+    });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -3485,6 +3494,12 @@ const createUser = async (req, res) => {
     // Hash the password
     const { hashPassword } = require('../utils/password');
     const hashedPassword = await hashPassword(password);
+
+    // Encrypt sensitive fields before storing
+    const { encryptField } = require('../utils/encryption');
+    const encryptedEmail = encryptField(email);
+    const encryptedPhone = phone ? encryptField(phone) : null;
+    const encryptedAddress = address ? encryptField(address) : null;
 
     // Start transaction
     const connection = await getConnection();
@@ -3498,15 +3513,15 @@ const createUser = async (req, res) => {
       `;
 
       const userParams = [
-        email,
+        encryptedEmail,
         hashedPassword,
         role,
         firstName,
         lastName,
-        phone || null,
+        encryptedPhone,
         dateOfBirth || null,
         gender || null,
-        address || null,
+        encryptedAddress,
         city || null,
         state || null,
         zipCode || null
