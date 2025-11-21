@@ -285,22 +285,10 @@ const createDailyNote = async (req, res) => {
       WHERE u.id = ?
     `, [therapistId]);
 
-    // Create notification for patient
+    // Create in-app notification for patient (no SMS or email)
     try {
       if (patientUserInfo) {
         const notificationController = require('./notificationController');
-        const { decryptField } = require('../utils/encryption');
-        
-        // Get patient email and phone for multi-channel notification
-        const patientUser = await getRow(`
-          SELECT email, phone, firstName
-          FROM users
-          WHERE id = ?
-        `, [patientUserInfo.userId]);
-        
-        // Decrypt email and phone
-        const decryptedEmail = patientUser ? decryptField(patientUser.email) : null;
-        const decryptedPhone = patientUser && patientUser.phone ? decryptField(patientUser.phone) : null;
         
         const notificationTitle = 'New Session Note Available';
         const sessionDateFormatted = new Date(formattedSessionDate).toLocaleDateString('en-US', {
@@ -319,21 +307,14 @@ const createDailyNote = async (req, res) => {
           {
             relatedId: noteId,
             priority: 'medium',
-            useMultiChannel: true,
-            sendEmail: true,
-            sendPush: true,
-            userInfo: {
-              id: patientUserInfo.userId,
-              email: decryptedEmail,
-              firstName: patientUser?.firstName || 'Patient',
-              phone: decryptedPhone
-            },
-            sendSMS: decryptedPhone ? true : false,
-            phoneNumber: decryptedPhone
+            useMultiChannel: false, // Disable multi-channel (no SMS/email)
+            sendEmail: false, // No email notification
+            sendSMS: false, // No SMS notification
+            sendPush: true // Only push notification
           }
         );
         
-        console.log(`✅ Notification created for patient ${patientUserInfo.patientName} (User ID: ${patientUserInfo.userId})`);
+        console.log(`✅ In-app notification created for patient ${patientUserInfo.patientName} (User ID: ${patientUserInfo.userId})`);
       }
     } catch (notificationError) {
       console.error('❌ Error creating notification for patient:', notificationError);
