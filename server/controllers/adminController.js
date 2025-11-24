@@ -1,5 +1,5 @@
 const { getAll, getOne, getRow, runQuery, getConnection } = require('../config/database');
-const { decryptSensitiveFields } = require('../utils/encryption');
+const { decryptSensitiveFields, decryptField } = require('../utils/encryption');
 
 // Helper function to convert 24-hour time to 12-hour format
 const formatTime12Hour = (time24) => {
@@ -1862,19 +1862,22 @@ const sendPasswordResetLink = async (req, res) => {
 
       await connection.commit();
 
+      // Decrypt email before sending
+      const decryptedEmail = decryptField(user.email);
+
       // Send reset email (if email service is enabled) - non-blocking
       // Fire and forget - don't wait for email to send to avoid API timeout
       emailService.sendPasswordResetEmail(
-        user.email, 
+        decryptedEmail, 
         resetToken, 
         user.firstName || 'User'
       ).then(emailResult => {
         if (emailResult.success) {
         } else {
-          console.warn(`⚠️ Failed to send password reset email to ${user.email}: ${emailResult.error}`);
+          console.warn(`⚠️ Failed to send password reset email to ${decryptedEmail}: ${emailResult.error}`);
       }
       }).catch(error => {
-        console.error(`❌ Error sending password reset email to ${user.email}:`, error.message);
+        console.error(`❌ Error sending password reset email to ${decryptedEmail}:`, error.message);
       });
 
       // Return success immediately - email is sent in background
@@ -1904,7 +1907,7 @@ const sendPasswordResetLink = async (req, res) => {
         message: 'Password reset token created successfully. Email will be sent if email service is configured.',
         data: {
           userId: parseInt(userId),
-          email: user.email,
+          email: decryptedEmail,
           resetToken: resetToken,
           resetLink: resetLink
         }

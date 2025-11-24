@@ -882,11 +882,14 @@ const verifyResetToken = async (req, res) => {
       });
     }
 
+    // Decrypt email before returning
+    const decryptedEmail = decryptField(resetTokenRecord.email);
+
     res.json({
       success: true,
       message: 'Reset token is valid',
       data: {
-        email: resetTokenRecord.email,
+        email: decryptedEmail,
         firstName: resetTokenRecord.firstName,
         lastName: resetTokenRecord.lastName,
         expiresAt: resetTokenRecord.expiresAt
