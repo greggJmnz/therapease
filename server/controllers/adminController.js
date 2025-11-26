@@ -1119,7 +1119,7 @@ const createAppointment = async (req, res) => {
       INSERT INTO appointments (
         patientId, therapistId, appointmentDate, startTime, endTime, 
         duration, type, status, approvalStatus, approvedBy, approvedAt, createdBy, reason, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)
     `;
 
     const insertParams = [
@@ -1133,7 +1133,6 @@ const createAppointment = async (req, res) => {
       'scheduled',
       'pending', // Admin-created appointments need therapist approval
       null, // approvedBy - will be set when therapist approves
-      null, // approvedAt - will be set when therapist approves
       req.user.id, // Admin who created the appointment (createdBy)
       reason, // Include reason field
       notes || null
