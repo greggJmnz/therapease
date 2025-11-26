@@ -1693,6 +1693,8 @@ const getPendingTherapists = async (req, res) => {
     `;
 
     const therapists = await getAll(sql);
+    
+    console.log(`[getPendingTherapists] Found ${therapists.length} pending therapists`);
 
     // Import decryption utility
     const { decryptField } = require('../utils/encryption');
@@ -1755,6 +1757,11 @@ const getPendingTherapists = async (req, res) => {
         };
       }
     });
+
+    console.log(`[getPendingTherapists] Returning ${formattedTherapists.length} formatted therapists`);
+    if (formattedTherapists.length > 0) {
+      console.log(`[getPendingTherapists] Sample therapist:`, JSON.stringify(formattedTherapists[0], null, 2));
+    }
 
     res.json({
       success: true,
