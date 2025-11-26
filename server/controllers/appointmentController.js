@@ -818,79 +818,124 @@ const approveAppointment = async (req, res) => {
 
     await runQuery(updateSql, updateParams);
 
+    // Get updated appointment to check if it's fully approved
+    const updatedAppointment = await getRow(`
+      SELECT 
+        a.*,
+        p.userId as patientUserId,
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        creator.role as creatorRole
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      JOIN users u ON p.userId = u.id
+      LEFT JOIN users creator ON a.createdBy = creator.id
+      WHERE a.id = ?
+    `, [parseInt(id)]);
+
     // Create notifications
     const notificationController = require('./notificationController');
     
-    // Get therapist name and phone for notifications
-    const therapistInfo = await getRow(`
-      SELECT CONCAT(firstName, ' ', lastName) as therapistName, phone as therapistPhone
-      FROM users WHERE id = ?
-    `, [therapistId]);
-    
-    // Notify patient
     // Import decryption utility
     const { decryptField } = require('../utils/encryption');
     
-    // Get patient email and phone for notification
-    const patientUser = await getRow(`
-      SELECT email, phone, firstName
-      FROM users
-      WHERE id = ?
-    `, [appointment.patientUserId]);
+    // Only send SMS when appointment is fully approved (approvalStatus = 'approved')
+    const isFullyApproved = updatedAppointment.approvalStatus === 'approved';
     
-    // Decrypt email and phone
-    const decryptedPatientEmail = patientUser ? decryptField(patientUser.email) : null;
-    const decryptedPatientPhone = patientUser && patientUser.phone ? decryptField(patientUser.phone) : null;
-    
-    const patientMessage = `Hi ${appointment.patientName}! Your appointment with ${therapistInfo.therapistName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved. TherapEase Team`;
-    await notificationController.createNotification(
-      appointment.patientUserId,
-      'Appointment Approved',
-      patientMessage,
-      'appointment',
-      { 
-        relatedId: parseInt(id),
-        useMultiChannel: true,
-        sendEmail: true,
-        sendSMS: decryptedPatientPhone ? true : false,
-        sendPush: true,
-        phoneNumber: decryptedPatientPhone,
-        userInfo: {
-          id: appointment.patientUserId,
-          email: decryptedPatientEmail,
-          firstName: patientUser?.firstName || 'Patient',
-          phone: decryptedPatientPhone
+    if (isFullyApproved) {
+      // Appointment is fully approved - send "appointment scheduled" SMS
+      
+      // Get therapist info
+      const therapistInfo = await getRow(`
+        SELECT CONCAT(firstName, ' ', lastName) as therapistName, phone as therapistPhone
+        FROM users WHERE id = ?
+      `, [therapistId]);
+      
+      // Get patient info
+      const patientUser = await getRow(`
+        SELECT email, phone, firstName
+        FROM users
+        WHERE id = ?
+      `, [updatedAppointment.patientUserId]);
+      
+      const decryptedPatientPhone = patientUser && patientUser.phone ? decryptField(patientUser.phone) : null;
+      const decryptedTherapistPhone = therapistInfo && therapistInfo.therapistPhone ? decryptField(therapistInfo.therapistPhone) : null;
+      
+      const appointmentDate = new Date(updatedAppointment.appointmentDate);
+      const formattedDate = appointmentDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      const formattedTime = new Date(`2000-01-01T${updatedAppointment.startTime}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      
+      // Determine who should receive SMS based on who created the appointment
+      if (isAdminCreated) {
+        // Admin-created: Send SMS to both therapist and patient when therapist approves
+        // Patient SMS
+        if (decryptedPatientPhone) {
+          const patientMessage = `Your ${updatedAppointment.type} appointment with ${therapistInfo.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before. TherapEase Team`;
+          await notificationController.createNotification(
+            updatedAppointment.patientUserId,
+            'Appointment Scheduled',
+            patientMessage,
+            'appointment',
+            { 
+              relatedId: parseInt(id),
+              sendSMS: true,
+              phoneNumber: decryptedPatientPhone
+            }
+          );
+        }
+        
+        // Therapist SMS
+        if (decryptedTherapistPhone) {
+          const therapistMessage = `Your ${updatedAppointment.type} appointment with ${updatedAppointment.patientName} has been scheduled for ${formattedDate} at ${formattedTime}. TherapEase Team`;
+          await notificationController.createNotification(
+            therapistId,
+            'Appointment Scheduled',
+            therapistMessage,
+            'appointment',
+            { 
+              relatedId: parseInt(id),
+              sendSMS: true,
+              phoneNumber: decryptedTherapistPhone
+            }
+          );
+        }
+      } else if (isPatientCreated) {
+        // Patient-created: Only send SMS to patient when BOTH therapist and admin approve
+        // (This happens when therapist approves and admin already approved)
+        if (decryptedPatientPhone) {
+          const patientMessage = `Your ${updatedAppointment.type} appointment with ${therapistInfo.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before. TherapEase Team`;
+          await notificationController.createNotification(
+            updatedAppointment.patientUserId,
+            'Appointment Scheduled',
+            patientMessage,
+            'appointment',
+            { 
+              relatedId: parseInt(id),
+              sendSMS: true,
+              phoneNumber: decryptedPatientPhone
+            }
+          );
         }
       }
-    );
-
-    // Notify therapist with SMS only if admin created the appointment
-    // If therapist created it, they don't need SMS (they already know about it)
-    if (isAdminCreated) {
-      // Admin created appointment - therapist should receive SMS when they approve it
-      const therapistMessage = `Hi ${therapistInfo.therapistName}! The appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved. TherapEase Team`;
-      await notificationController.createNotification(
-        therapistId,
-        'Appointment Approved',
-        therapistMessage,
-        'appointment',
-        { 
-          relatedId: parseInt(id),
-          sendSMS: true,
-          phoneNumber: therapistInfo.therapistPhone // Pass encrypted phone, will be decrypted in notificationController
-        }
-      );
+      // Therapist-created appointments: SMS will be sent when admin approves (handled in adminController)
     } else {
-      // Therapist created appointment or patient created - therapist doesn't need SMS
-      // Just send in-app notification
+      // Appointment is still pending - send in-app notification only (no SMS)
       await notificationController.createNotification(
-        therapistId,
-        'Appointment Approved',
-        `Your appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved.`,
+        updatedAppointment.patientUserId,
+        'Appointment Approval Update',
+        `Your appointment on ${new Date(updatedAppointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(updatedAppointment.startTime)} is pending approval.`,
         'appointment',
         { 
           relatedId: parseInt(id),
-          sendSMS: false, // No SMS - therapist created it or it's patient-created
+          sendSMS: false,
           sendEmail: true,
           sendPush: true
         }
@@ -898,16 +943,22 @@ const approveAppointment = async (req, res) => {
     }
 
     // Notify admin (get all admin users) - no SMS, just in-app notification
+    // Get therapist name for admin notification
+    const therapistInfoForAdmin = await getRow(`
+      SELECT CONCAT(firstName, ' ', lastName) as therapistName
+      FROM users WHERE id = ?
+    `, [therapistId]);
+    
     const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
     for (const admin of adminUsers) {
       await notificationController.createNotification(
         admin.id,
         'Appointment Approved by Therapist',
-        `${therapistInfo.therapistName} has approved an appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)}`,
+        `${therapistInfoForAdmin.therapistName} has approved an appointment with ${updatedAppointment.patientName} on ${new Date(updatedAppointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(updatedAppointment.startTime)}`,
         'appointment',
         { 
           relatedId: parseInt(id),
-          sendSMS: false // Admin doesn't need SMS for approvals
+          sendSMS: false // Admin never receives SMS for appointments
         }
       );
     }
