@@ -143,6 +143,34 @@ const createTables = async () => {
           // Column already exists, skip it
         }
       }
+
+      // Update status ENUM to include 'pending' if column already exists
+      try {
+        // Check if status column exists and modify it to include 'pending'
+        const [statusColumnCheck] = await pool.execute(`
+          SELECT COLUMN_TYPE 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'users' 
+            AND COLUMN_NAME = 'status'
+        `);
+        
+        if (statusColumnCheck.length > 0) {
+          const currentEnum = statusColumnCheck[0].COLUMN_TYPE;
+          // Check if 'pending' is not in the current ENUM
+          if (!currentEnum.includes("'pending'")) {
+            // Modify the ENUM to include 'pending'
+            await pool.execute(`
+              ALTER TABLE users 
+              MODIFY COLUMN status ENUM('active', 'inactive', 'suspended', 'pending') DEFAULT 'active'
+            `);
+            console.log('✅ Updated users.status ENUM to include "pending"');
+          }
+        }
+      } catch (enumError) {
+        // Log but don't fail - this is a migration step
+        console.log('ℹ️ Status ENUM update:', enumError.message);
+      }
       
     } catch (error) {
       // Ignore error if columns already exist
