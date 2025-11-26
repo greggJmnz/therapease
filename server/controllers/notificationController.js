@@ -851,6 +851,8 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
         a.startTime,
         a.endTime,
         a.type,
+        a.approvalStatus,
+        a.status,
         a.patientId,
         p.userId as patientUserId,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
