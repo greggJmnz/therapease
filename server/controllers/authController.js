@@ -282,6 +282,11 @@ const register = async (req, res) => {
     // Hash the password
     const hashedPassword = await hashPassword(password);
 
+    // Encrypt sensitive fields before storing
+    const encryptedEmail = encryptField(email);
+    const encryptedPhone = phone ? encryptField(phone) : null;
+    const encryptedAddress = address ? encryptField(address) : null;
+
     // Start transaction
     const connection = await getConnection();
     await connection.beginTransaction();
@@ -296,15 +301,15 @@ const register = async (req, res) => {
       `;
 
       const userParams = [
-        email,
+        encryptedEmail,
         hashedPassword,
         role,
         firstName,
         lastName,
-        phone || null,
+        encryptedPhone,
         dateOfBirth || null,
         gender || null,
-        address || null,
+        encryptedAddress,
         city || null,
         state || null,
         zipCode || null,

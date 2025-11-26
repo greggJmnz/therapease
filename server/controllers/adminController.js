@@ -1698,31 +1698,63 @@ const getPendingTherapists = async (req, res) => {
     const { decryptField } = require('../utils/encryption');
     
     // Format therapist data and decrypt sensitive fields
-    const formattedTherapists = therapists.map(therapist => ({
-      id: therapist.id,
-      email: decryptField(therapist.email),
-      role: therapist.role,
-      firstName: therapist.firstName,
-      lastName: therapist.lastName,
-      phone: decryptField(therapist.phone),
-      dateOfBirth: therapist.dateOfBirth,
-      gender: therapist.gender,
-      address: decryptField(therapist.address),
-      city: therapist.city,
-      state: therapist.state,
-      zipCode: therapist.zipCode,
-      status: therapist.status,
-      createdAt: therapist.createdAt,
-      updatedAt: therapist.updatedAt,
-      therapist: {
-        licenseNumber: therapist.licenseNumber,
-        specialization: therapist.specialization,
-        yearsOfExperience: therapist.yearsOfExperience,
-        education: therapist.education,
-        certifications: therapist.certifications,
-        availability: therapist.availability
+    const formattedTherapists = therapists.map(therapist => {
+      try {
+        return {
+          id: therapist.id,
+          email: decryptField(therapist.email) || therapist.email, // Fallback to original if decryption fails
+          role: therapist.role,
+          firstName: therapist.firstName,
+          lastName: therapist.lastName,
+          phone: decryptField(therapist.phone) || therapist.phone, // Fallback to original if decryption fails
+          dateOfBirth: therapist.dateOfBirth,
+          gender: therapist.gender,
+          address: decryptField(therapist.address) || therapist.address, // Fallback to original if decryption fails
+          city: therapist.city,
+          state: therapist.state,
+          zipCode: therapist.zipCode,
+          status: therapist.status,
+          createdAt: therapist.createdAt,
+          updatedAt: therapist.updatedAt,
+          therapist: {
+            licenseNumber: therapist.licenseNumber,
+            specialization: therapist.specialization,
+            yearsOfExperience: therapist.yearsOfExperience,
+            education: therapist.education,
+            certifications: therapist.certifications,
+            availability: therapist.availability
+          }
+        };
+      } catch (error) {
+        console.error('Error formatting therapist data:', error);
+        // Return therapist data with original (possibly unencrypted) values
+        return {
+          id: therapist.id,
+          email: therapist.email,
+          role: therapist.role,
+          firstName: therapist.firstName,
+          lastName: therapist.lastName,
+          phone: therapist.phone,
+          dateOfBirth: therapist.dateOfBirth,
+          gender: therapist.gender,
+          address: therapist.address,
+          city: therapist.city,
+          state: therapist.state,
+          zipCode: therapist.zipCode,
+          status: therapist.status,
+          createdAt: therapist.createdAt,
+          updatedAt: therapist.updatedAt,
+          therapist: {
+            licenseNumber: therapist.licenseNumber,
+            specialization: therapist.specialization,
+            yearsOfExperience: therapist.yearsOfExperience,
+            education: therapist.education,
+            certifications: therapist.certifications,
+            availability: therapist.availability
+          }
+        };
       }
-    }));
+    });
 
     res.json({
       success: true,
