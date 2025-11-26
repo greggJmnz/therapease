@@ -888,8 +888,13 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
       hour12: true
     });
 
-    const title = 'Appointment Scheduled';
-    const message = `Your ${appointment.type} appointment with ${appointment.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before.`;
+    // Determine if appointment is approved (scheduled) or pending
+    const isApproved = appointment.approvalStatus === 'approved' || appointment.status === 'scheduled';
+    
+    const title = isApproved ? 'Appointment Scheduled' : 'Appointment Request Submitted';
+    const message = isApproved 
+      ? `Your ${appointment.type} appointment with ${appointment.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before.`
+      : `Your ${appointment.type} appointment request with ${appointment.therapistName} for ${formattedDate} at ${formattedTime} has been submitted and is pending approval.`;
     const type = 'appointment_created';
 
     // Multi-channel notification options
@@ -899,6 +904,7 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
       useMultiChannel: true, // Enable multi-channel for appointment notifications
       sendEmail: true, // Always send email as fallback
       sendPush: true, // Always send push notification
+      sendSMS: false, // SMS only for approved appointments
       userInfo: {
         id: appointment.patientUserId,
         email: decryptedPatientEmail,
@@ -914,8 +920,8 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
       }
     };
 
-    // Add SMS sending if patient has phone number
-    if (decryptedPatientPhone && decryptedPatientPhone.trim()) {
+    // Only send SMS if appointment is approved (scheduled) and patient has phone number
+    if (isApproved && decryptedPatientPhone && decryptedPatientPhone.trim()) {
       options.sendSMS = true;
       options.phoneNumber = decryptedPatientPhone.trim();
     }

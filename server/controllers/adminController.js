@@ -1166,18 +1166,19 @@ const createAppointment = async (req, res) => {
     try {
       const notificationController = require('./notificationController');
       
-      // Create notification for therapist with SMS
-      // Note: phoneNumber will be decrypted in sendMultiChannelNotification
-      const therapistMessage = `Hi ${therapist.therapistName}! You have a new ${type} appointment with ${patient.patientName} on ${date} at ${formatTime12Hour(time)}. TherapEase Team`;
+      // Create notification for therapist (no SMS - appointment is pending approval)
+      // SMS will be sent when appointment is approved
+      const therapistMessage = `Hi ${therapist.therapistName}! You have a new ${type} appointment request with ${patient.patientName} on ${date} at ${formatTime12Hour(time)}. This appointment is pending your approval. TherapEase Team`;
       await notificationController.createNotification(
         therapist.userId, // Use therapist user ID
-        'New Appointment Scheduled',
+        'New Appointment Request (Pending Approval)',
         therapistMessage,
         'appointment',
         { 
           relatedId: appointmentId,
-          sendSMS: true,
-          phoneNumber: therapist.therapistPhone // Pass encrypted phone, will be decrypted in notificationController
+          sendSMS: false, // No SMS - appointment is pending, SMS will be sent when approved
+          sendEmail: true, // Send email notification
+          sendPush: true // Send push notification
         }
       );
 
