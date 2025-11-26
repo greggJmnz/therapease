@@ -1694,7 +1694,17 @@ const getPendingTherapists = async (req, res) => {
 
     const therapists = await getAll(sql);
     
+    console.log(`[getPendingTherapists] SQL query executed`);
     console.log(`[getPendingTherapists] Found ${therapists.length} pending therapists`);
+    
+    // Debug: Check what statuses exist in the database
+    const statusCheck = await getAll(`
+      SELECT DISTINCT status, COUNT(*) as count 
+      FROM users 
+      WHERE role = 'therapist' 
+      GROUP BY status
+    `);
+    console.log(`[getPendingTherapists] Therapist statuses in DB:`, statusCheck);
 
     // Import decryption utility
     const { decryptField } = require('../utils/encryption');
