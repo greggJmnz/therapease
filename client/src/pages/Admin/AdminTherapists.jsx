@@ -71,6 +71,13 @@ const AdminTherapists = () => {
     adminAPI.getPendingTherapists,
     {
       enabled: showPendingTherapistsModal, // Only fetch when modal is open
+      staleTime: 0, // Always consider data stale to avoid 304 caching issues
+      cacheTime: 0, // Don't cache to ensure fresh data
+      refetchOnMount: true, // Always refetch when modal opens
+      onSuccess: (data) => {
+        console.log('[AdminTherapists] Pending therapists query success:', data);
+        console.log('[AdminTherapists] Full response structure:', JSON.stringify(data, null, 2));
+      },
       onError: (error) => {
         toast.error('Failed to load pending therapists');
         console.error('Error fetching pending therapists:', error);
@@ -1202,21 +1209,40 @@ const AdminTherapists = () => {
                   <p className="text-gray-600">Loading pending therapists...</p>
                 </div>
               ) : (() => {
-                // Debug logging
-                console.log('Pending therapists data:', pendingTherapistsData);
-<<<<<<< HEAD
-                console.log('Therapists array (data.data.therapists):', pendingTherapistsData?.data?.data?.therapists);
-                console.log('Therapists array (data.therapists):', pendingTherapistsData?.data?.therapists);
-                console.log('Therapists length:', pendingTherapistsData?.data?.data?.therapists?.length || pendingTherapistsData?.data?.therapists?.length);
+                // Debug logging - comprehensive structure inspection
+                console.log('[Modal] Full pendingTherapistsData:', pendingTherapistsData);
+                console.log('[Modal] pendingTherapistsData.data:', pendingTherapistsData?.data);
+                console.log('[Modal] pendingTherapistsData.data?.data:', pendingTherapistsData?.data?.data);
+                console.log('[Modal] pendingTherapistsData.data?.data?.therapists:', pendingTherapistsData?.data?.data?.therapists);
+                console.log('[Modal] pendingTherapistsData.data?.therapists:', pendingTherapistsData?.data?.therapists);
                 
-                // Handle both response structures (double nesting like getTherapists, or single nesting)
-                const therapists = pendingTherapistsData?.data?.data?.therapists || pendingTherapistsData?.data?.therapists || [];
-=======
-                console.log('Therapists array:', pendingTherapistsData?.data?.therapists);
-                console.log('Therapists length:', pendingTherapistsData?.data?.therapists?.length);
+                // Try multiple possible response structures
+                let therapists = [];
+                if (pendingTherapistsData) {
+                  // Structure 1: response.data.data.therapists (double nesting like getTherapists)
+                  if (pendingTherapistsData.data?.data?.therapists) {
+                    therapists = pendingTherapistsData.data.data.therapists;
+                    console.log('[Modal] Using structure: data.data.therapists');
+                  }
+                  // Structure 2: response.data.therapists (single nesting)
+                  else if (pendingTherapistsData.data?.therapists) {
+                    therapists = pendingTherapistsData.data.therapists;
+                    console.log('[Modal] Using structure: data.therapists');
+                  }
+                  // Structure 3: response.therapists (direct)
+                  else if (pendingTherapistsData.therapists) {
+                    therapists = pendingTherapistsData.therapists;
+                    console.log('[Modal] Using structure: therapists (direct)');
+                  }
+                  // Structure 4: response.data is the therapists array
+                  else if (Array.isArray(pendingTherapistsData.data)) {
+                    therapists = pendingTherapistsData.data;
+                    console.log('[Modal] Using structure: data (array)');
+                  }
+                }
                 
-                const therapists = pendingTherapistsData?.data?.therapists || [];
->>>>>>> 727c077289ec6dcd410b090a7803d7da59a2ff44
+                console.log('[Modal] Final therapists array:', therapists);
+                console.log('[Modal] Therapists length:', therapists.length);
                 return therapists.length > 0 ? (
                 <div className="space-y-4">
                   {therapists.map((therapist) => (
@@ -1310,7 +1336,8 @@ const AdminTherapists = () => {
                     </p>
                   )}
                 </div>
-              )})()}
+              );
+            })()}
             </div>
           </div>
         </div>
