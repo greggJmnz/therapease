@@ -704,10 +704,10 @@ const AdminReports = () => {
       <div className="p-6">
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <div className="text-red-500 text-xl mb-4">Failed to load reports data</div>
+            <div className="text-red-500 text-xl mb-4">Failed to load analytics data</div>
             <p className="text-gray-600">Please try refreshing the page</p>
             {dashboardError && <p className="text-sm text-gray-500 mt-2">Dashboard error: {dashboardError.message}</p>}
-            {reportsError && <p className="text-sm text-gray-500 mt-2">Reports error: {reportsError.message}</p>}
+            {reportsError && <p className="text-sm text-gray-500 mt-2">Analytics error: {reportsError.message}</p>}
           </div>
         </div>
       </div>
