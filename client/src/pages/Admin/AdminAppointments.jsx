@@ -31,11 +31,13 @@ import {
 } from 'lucide-react';
 import { UltraModernCalendar } from '../../components';
 import { adminAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import './AdminAppointments.css';
 
 const AdminAppointments = () => {
   const location = useLocation();
+  const { user } = useAuth();
   
   // Utility function to convert 24-hour time to 12-hour format
   const formatTime12Hour = (time24) => {
@@ -174,6 +176,8 @@ const AdminAppointments = () => {
         approvalStatus: appointment.approvalStatus || 'approved',
         therapistApproverName: appointment.therapistApproverName,
         adminApproverName: appointment.adminApproverName,
+        therapistApprovedBy: appointment.therapistApprovedBy,
+        adminApprovedBy: appointment.adminApprovedBy,
         creatorRole: appointment.creatorRole,
         createdBy: appointment.createdBy,
         reason: appointment.reason || 'No reason provided',
@@ -1639,7 +1643,8 @@ const AdminAppointments = () => {
                       </div>
                     </div>
 
-                    {selectedAppointment.approvalStatus === 'approved' && (
+                    {/* Show "Approved By" section if there are any approvals (even if pending) */}
+                    {(selectedAppointment.therapistApproverName || selectedAppointment.adminApproverName) && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Approved By</label>
                         <div className="space-y-2">
@@ -1654,9 +1659,6 @@ const AdminAppointments = () => {
                               <User className="h-4 w-4 text-gray-400" />
                               <span>Admin: <span className="font-medium">{selectedAppointment.adminApproverName}</span></span>
                             </div>
-                          )}
-                          {!selectedAppointment.therapistApproverName && !selectedAppointment.adminApproverName && (
-                            <div className="text-sm text-gray-500 italic">Approval information not available</div>
                           )}
                         </div>
                       </div>
@@ -1710,9 +1712,11 @@ const AdminAppointments = () => {
                 >
                   Close
                 </button>
-                {/* Show approve button if status is pending AND admin didn't create it */}
+                {/* Show approve button if status is pending AND admin didn't create it AND admin hasn't already approved */}
                 {/* Admin cannot approve their own appointments - they need therapist approval */}
-                {selectedAppointment.approvalStatus === 'pending' && selectedAppointment.creatorRole !== 'admin' && (
+                {selectedAppointment.approvalStatus === 'pending' && 
+                 selectedAppointment.creatorRole !== 'admin' && 
+                 selectedAppointment.adminApprovedBy !== user?.id && (
                   <button
                     onClick={handleApproveAppointment}
                     className="w-full sm:w-auto px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"

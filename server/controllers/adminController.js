@@ -3825,7 +3825,8 @@ const approveAppointment = async (req, res) => {
       
       // Determine who should receive SMS based on who created the appointment
       if (updatedAppointment.creatorRole === 'therapist') {
-        // Therapist-created: Send SMS to both therapist and patient when admin approves
+        // Therapist-created: Send SMS only to patient when admin approves
+        // Therapist who created the appointment should NOT receive SMS (they already know about it)
         // Patient SMS
         if (decryptedPatientPhone) {
           const patientMessage = `Your ${updatedAppointment.type} appointment with ${therapistInfo.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before. TherapEase Team`;
@@ -3842,21 +3843,19 @@ const approveAppointment = async (req, res) => {
           );
         }
         
-        // Therapist SMS
-        if (decryptedTherapistPhone) {
-          const therapistMessage = `Your ${updatedAppointment.type} appointment with ${updatedAppointment.patientName} has been scheduled for ${formattedDate} at ${formattedTime}. TherapEase Team`;
-          await notificationController.createNotification(
-            updatedAppointment.therapistId,
-            'Appointment Scheduled',
-            therapistMessage,
-            'appointment',
-            { 
-              relatedId: appointmentId,
-              sendSMS: true,
-              phoneNumber: decryptedTherapistPhone
-            }
-          );
-        }
+        // Therapist notification (in-app only, no SMS)
+        await notificationController.createNotification(
+          updatedAppointment.therapistId,
+          'Appointment Scheduled',
+          `Your ${updatedAppointment.type} appointment with ${updatedAppointment.patientName} has been scheduled for ${formattedDate} at ${formattedTime}.`,
+          'appointment',
+          { 
+            relatedId: appointmentId,
+            sendSMS: false, // No SMS - therapist created it
+            sendEmail: true,
+            sendPush: true
+          }
+        );
       } else if (updatedAppointment.creatorRole === 'patient' || !updatedAppointment.createdBy) {
         // Patient-created: Only send SMS to patient when BOTH therapist and admin approve
         // Explicitly verify both approvals are present before sending SMS

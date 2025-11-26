@@ -22,12 +22,14 @@ import {
 } from 'lucide-react';
 import { UltraModernCalendar, SessionCreator } from '../../components';
 import { therapistAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import './TherapistSchedule.css';
 
 const TherapistSchedule = () => {
   const queryClient = useQueryClient();
   const location = useLocation();
+  const { user } = useAuth();
   
   // Check if navigated from patients page with selected patient or from notification
   useEffect(() => {
@@ -191,6 +193,8 @@ const TherapistSchedule = () => {
         approvalStatus: appointment.approvalStatus || 'approved', // Include approval status
         therapistApproverName: appointment.therapistApproverName,
         adminApproverName: appointment.adminApproverName,
+        therapistApprovedBy: appointment.therapistApprovedBy,
+        adminApprovedBy: appointment.adminApprovedBy,
         reason: appointment.reason || '',
     notes: appointment.notes || '',
         createdAt: appointment.createdAt || appointment.appointmentDate || appointment.sessionDate || new Date().toISOString(),
@@ -994,7 +998,8 @@ const TherapistSchedule = () => {
                         </div>
                 </div>
 
-                {selectedAppointment.approvalStatus === 'approved' && (
+                {/* Show "Approved By" section if there are any approvals (even if pending) */}
+                {(selectedAppointment.therapistApproverName || selectedAppointment.adminApproverName) && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Approved By</label>
                     <div className="space-y-2">
@@ -1009,9 +1014,6 @@ const TherapistSchedule = () => {
                           <User className="h-4 w-4 text-gray-400" />
                           <span>Admin: <span className="font-medium">{selectedAppointment.adminApproverName}</span></span>
                         </div>
-                      )}
-                      {!selectedAppointment.therapistApproverName && !selectedAppointment.adminApproverName && (
-                        <div className="text-sm text-gray-500 italic">Approval information not available</div>
                       )}
                     </div>
                   </div>
@@ -1078,9 +1080,11 @@ const TherapistSchedule = () => {
                 >
                   Close
                 </button>
-                  {/* Show approve button if status is pending AND therapist didn't create it */}
+                  {/* Show approve button if status is pending AND therapist didn't create it AND therapist hasn't already approved */}
                   {/* Therapist cannot approve their own appointments - they need admin approval */}
-                  {selectedAppointment.approvalStatus === 'pending' && selectedAppointment.creatorRole !== 'therapist' && (
+                  {selectedAppointment.approvalStatus === 'pending' && 
+                   selectedAppointment.creatorRole !== 'therapist' && 
+                   selectedAppointment.therapistApprovedBy !== user?.id && (
                     <button
                       onClick={handleApproveAppointment}
                       className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
