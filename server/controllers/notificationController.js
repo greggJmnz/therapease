@@ -891,7 +891,8 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
     });
 
     // Determine if appointment is approved (scheduled) or pending
-    const isApproved = appointment.approvalStatus === 'approved' || appointment.status === 'scheduled';
+    // Only check approvalStatus - status can be 'scheduled' even when approvalStatus is 'pending'
+    const isApproved = appointment.approvalStatus === 'approved';
     
     const title = isApproved ? 'Appointment Scheduled' : 'Appointment Request Submitted';
     const message = isApproved 
