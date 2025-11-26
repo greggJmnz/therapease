@@ -934,6 +934,8 @@ const getAppointments = async (req, res) => {
         a.type,
         a.status,
         a.approvalStatus,
+        a.therapistApprovedBy,
+        a.adminApprovedBy,
         a.reason,
         a.notes,
         a.createdAt,
@@ -943,11 +945,15 @@ const getAppointments = async (req, res) => {
         t.firstName as therapistFirstName,
         t.lastName as therapistLastName,
         a.patientId,
-        a.therapistId
+        a.therapistId,
+        CONCAT(therapistApprover.firstName, ' ', therapistApprover.lastName) as therapistApproverName,
+        CONCAT(adminApprover.firstName, ' ', adminApprover.lastName) as adminApproverName
       FROM appointments a
       LEFT JOIN patients pt ON a.patientId = pt.id
       LEFT JOIN users p ON pt.userId = p.id
       LEFT JOIN users t ON a.therapistId = t.id
+      LEFT JOIN users therapistApprover ON a.therapistApprovedBy = therapistApprover.id
+      LEFT JOIN users adminApprover ON a.adminApprovedBy = adminApprover.id
       ORDER BY a.appointmentDate DESC, a.startTime DESC
     `;
 
@@ -973,6 +979,8 @@ const getAppointments = async (req, res) => {
       type: appointment.type,
       status: appointment.approvalStatus === 'pending' ? 'pending' : appointment.status,
       approvalStatus: appointment.approvalStatus,
+      therapistApproverName: appointment.therapistApproverName,
+      adminApproverName: appointment.adminApproverName,
       reason: appointment.reason || 'No reason provided',
       room: 'Room TBD', // Default room since it's not in the table
       notes: appointment.notes,
@@ -1123,8 +1131,9 @@ const createAppointment = async (req, res) => {
       parseInt(duration),
       type,
       'scheduled',
-      'approved', // Admin-created appointments are automatically approved
-      req.user.id, // Admin who created the appointment
+      'pending', // Admin-created appointments need therapist approval
+      null, // approvedBy - will be set when therapist approves
+      null, // approvedAt - will be set when therapist approves
       req.user.id, // Admin who created the appointment (createdBy)
       reason, // Include reason field
       notes || null
@@ -3670,12 +3679,17 @@ const approveAppointment = async (req, res) => {
     const { appointmentId } = req.params;
     const adminId = req.user.id;
 
-    // Get appointment details
+    // Get appointment details - also get creator role to determine approval requirements
     const appointment = await getRow(`
-      SELECT a.*, p.userId as patientUserId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+      SELECT 
+        a.*, 
+        p.userId as patientUserId, 
+        CONCAT(u.firstName, ' ', u.lastName) as patientName,
+        creator.role as creatorRole
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
       JOIN users u ON p.userId = u.id
+      LEFT JOIN users creator ON a.createdBy = creator.id
       WHERE a.id = ? AND a.approvalStatus = 'pending'
     `, [appointmentId]);
 
@@ -3686,15 +3700,61 @@ const approveAppointment = async (req, res) => {
       });
     }
 
-    // Update appointment status
-    await runQuery(`
-      UPDATE appointments 
-      SET status = 'scheduled', 
-          approvalStatus = 'approved', 
-          approvedBy = ?, 
-          approvedAt = NOW()
-      WHERE id = ?
-    `, [adminId, appointmentId]);
+    // Determine approval requirements based on who created the appointment
+    // Patient-created: needs both therapist AND admin approval
+    // Therapist-created: needs only admin approval
+    const isPatientCreated = appointment.creatorRole === 'patient' || !appointment.createdBy;
+    const isTherapistCreated = appointment.creatorRole === 'therapist';
+
+    // Set admin approval
+    let updateSql;
+    let updateParams;
+
+    if (isPatientCreated) {
+      // Patient-created: Set adminApprovedBy, check if therapist also approved
+      updateSql = `
+        UPDATE appointments 
+        SET status = 'scheduled',
+            adminApprovedBy = ?,
+            approvedBy = ?,
+            approvedAt = CASE 
+              WHEN therapistApprovedBy IS NOT NULL THEN NOW()
+              ELSE approvedAt
+            END,
+            approvalStatus = CASE 
+              WHEN therapistApprovedBy IS NOT NULL THEN 'approved'
+              ELSE 'pending'
+            END
+        WHERE id = ?
+      `;
+      updateParams = [adminId, adminId, appointmentId];
+    } else if (isTherapistCreated) {
+      // Therapist-created: Only needs admin approval, so approve immediately
+      updateSql = `
+        UPDATE appointments 
+        SET status = 'scheduled',
+            adminApprovedBy = ?,
+            approvalStatus = 'approved',
+            approvedBy = ?,
+            approvedAt = NOW()
+        WHERE id = ?
+      `;
+      updateParams = [adminId, adminId, appointmentId];
+    } else {
+      // Admin-created or unknown: Should not happen in this flow, but handle gracefully
+      updateSql = `
+        UPDATE appointments 
+        SET status = 'scheduled',
+            adminApprovedBy = ?,
+            approvalStatus = 'approved',
+            approvedBy = ?,
+            approvedAt = NOW()
+        WHERE id = ?
+      `;
+      updateParams = [adminId, adminId, appointmentId];
+    }
+
+    await runQuery(updateSql, updateParams);
 
     // Create notifications
     const notificationController = require('./notificationController');

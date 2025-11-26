@@ -996,6 +996,29 @@ const Appointments = () => {
                         </div>
                       </div>
 
+                      {selectedAppointment.approvalStatus === 'approved' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Approved By</label>
+                          <div className="space-y-2">
+                            {selectedAppointment.therapistApproverName && (
+                              <div className="flex items-center gap-2 text-sm text-gray-700">
+                                <User className="h-4 w-4 text-gray-400" />
+                                <span>Therapist: <span className="font-medium">{selectedAppointment.therapistApproverName}</span></span>
+                              </div>
+                            )}
+                            {selectedAppointment.adminApproverName && (
+                              <div className="flex items-center gap-2 text-sm text-gray-700">
+                                <User className="h-4 w-4 text-gray-400" />
+                                <span>Admin: <span className="font-medium">{selectedAppointment.adminApproverName}</span></span>
+                              </div>
+                            )}
+                            {!selectedAppointment.therapistApproverName && !selectedAppointment.adminApproverName && (
+                              <div className="text-sm text-gray-500 italic">Approval information not available</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {selectedAppointment.reason && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>

@@ -829,16 +829,22 @@ const getAppointments = async (req, res) => {
         a.type, 
         a.status, 
         a.approvalStatus,
+        a.therapistApprovedBy,
+        a.adminApprovedBy,
         a.reason,
         a.notes,
         a.createdAt,
         a.updatedAt,
         COALESCE(CONCAT(u.firstName, ' ', u.lastName), 'Your Therapist') as therapistName,
-        COALESCE(t.specialization, 'Occupational Therapy') as therapistSpecialization
+        COALESCE(t.specialization, 'Occupational Therapy') as therapistSpecialization,
+        CONCAT(therapistApprover.firstName, ' ', therapistApprover.lastName) as therapistApproverName,
+        CONCAT(adminApprover.firstName, ' ', adminApprover.lastName) as adminApproverName
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
       LEFT JOIN users u ON a.therapistId = u.id
       LEFT JOIN therapists t ON u.id = t.userId
+      LEFT JOIN users therapistApprover ON a.therapistApprovedBy = therapistApprover.id
+      LEFT JOIN users adminApprover ON a.adminApprovedBy = adminApprover.id
       WHERE a.patientId = ?
       ORDER BY a.appointmentDate DESC, a.startTime DESC
     `, [patient.id]);

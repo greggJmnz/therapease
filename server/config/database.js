@@ -602,6 +602,87 @@ const createTables = async () => {
       console.error('Error checking/adding createdBy column:', error.message);
     }
 
+    // Add therapistApprovedBy and adminApprovedBy columns if they don't exist
+    try {
+      // Check if therapistApprovedBy column exists
+      const therapistApprovedByCheck = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'appointments' 
+        AND COLUMN_NAME = 'therapistApprovedBy'
+      `);
+      
+      if (therapistApprovedByCheck[0].length === 0) {
+        await pool.execute(`
+          ALTER TABLE appointments 
+          ADD COLUMN therapistApprovedBy INT NULL
+        `);
+        // Add foreign key constraint
+        try {
+          const [fkConstraints] = await pool.execute(`
+            SELECT CONSTRAINT_NAME 
+            FROM information_schema.TABLE_CONSTRAINTS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'appointments' 
+            AND CONSTRAINT_NAME = 'fk_appointments_therapist_approved_by'
+          `);
+          
+          if (fkConstraints.length === 0) {
+            await pool.execute(`
+              ALTER TABLE appointments 
+              ADD CONSTRAINT fk_appointments_therapist_approved_by 
+              FOREIGN KEY (therapistApprovedBy) REFERENCES users(id) ON DELETE SET NULL
+            `);
+          }
+        } catch (fkError) {
+          if (fkError.code !== 'ER_DUP_KEYNAME' && fkError.code !== 'ER_DUP_FIELDNAME' && !fkError.message.includes('Duplicate')) {
+            console.error('Error adding therapistApprovedBy foreign key:', fkError.message);
+          }
+        }
+      }
+
+      // Check if adminApprovedBy column exists
+      const adminApprovedByCheck = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'appointments' 
+        AND COLUMN_NAME = 'adminApprovedBy'
+      `);
+      
+      if (adminApprovedByCheck[0].length === 0) {
+        await pool.execute(`
+          ALTER TABLE appointments 
+          ADD COLUMN adminApprovedBy INT NULL
+        `);
+        // Add foreign key constraint
+        try {
+          const [fkConstraints] = await pool.execute(`
+            SELECT CONSTRAINT_NAME 
+            FROM information_schema.TABLE_CONSTRAINTS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'appointments' 
+            AND CONSTRAINT_NAME = 'fk_appointments_admin_approved_by'
+          `);
+          
+          if (fkConstraints.length === 0) {
+            await pool.execute(`
+              ALTER TABLE appointments 
+              ADD CONSTRAINT fk_appointments_admin_approved_by 
+              FOREIGN KEY (adminApprovedBy) REFERENCES users(id) ON DELETE SET NULL
+            `);
+          }
+        } catch (fkError) {
+          if (fkError.code !== 'ER_DUP_KEYNAME' && fkError.code !== 'ER_DUP_FIELDNAME' && !fkError.message.includes('Duplicate')) {
+            console.error('Error adding adminApprovedBy foreign key:', fkError.message);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking/adding therapistApprovedBy/adminApprovedBy columns:', error.message);
+    }
+
     // Progress Tracking table (for outcome measurement and goal tracking)
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS progress_tracking (
