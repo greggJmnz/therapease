@@ -2565,9 +2565,10 @@ The therapist retains full responsibility for all clinical decisions and patient
         observations: observations.trim()
       };
 
+      // Privacy: Remove patient names from AI analysis - use "Patient" instead
       const patientData = {
-        firstName: patient.name.split(' ')[0],
-        lastName: patient.name.split(' ').slice(1).join(' '),
+        firstName: 'Patient', // Anonymized for privacy
+        lastName: '', // Removed for privacy
         age: patient.age,
         diagnosis: patient.diagnosis,
         therapyGoals: patient.therapyGoals || 'Not specified'

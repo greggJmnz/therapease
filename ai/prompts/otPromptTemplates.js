@@ -43,7 +43,6 @@ const getInterviewAnalysisPrompt = (patientData, interviewQuestions) => {
 ${getSystemPrompt()}
 
 CONTEXT: Caregiver Interview Analysis
-Child: ${patientData?.firstName || 'Unknown'} ${patientData?.lastName || ''}
 Age: ${patientData?.age || 'Not specified'}
 Current Diagnosis: ${patientData?.diagnosis || 'Not specified'}
 
@@ -84,7 +83,6 @@ const getObservationAnalysisPrompt = (patientData, observations) => {
 ${getSystemPrompt()}
 
 CONTEXT: Clinical Observation Analysis
-Child: ${patientData.firstName} ${patientData.lastName}
 Age: ${patientData.age || 'Not specified'}
 Current Diagnosis: ${patientData.diagnosis || 'Not specified'}
 
@@ -140,7 +138,6 @@ const getCombinedAssessmentPrompt = (patientData, interviewQuestions, observatio
 ${getSystemPrompt()}
 
 CONTEXT: Comprehensive OT Assessment
-Child: ${patientData?.firstName || 'Unknown'} ${patientData?.lastName || ''}
 Age: ${patientData?.age || 'Not specified'}
 Current Diagnosis: ${patientData?.diagnosis || 'Not specified'}
 Therapy Goals: ${patientData?.therapyGoals || 'Not specified'}
@@ -197,7 +194,6 @@ const getTherapistFriendlyPrompt = (patientData, assessmentData) => {
 ${getSystemPrompt()}
 
 CONTEXT: Therapist-Friendly Insight Generation
-Child: ${patientData?.firstName || 'Unknown'} ${patientData?.lastName || ''}
 Age: ${patientData?.age || 'Not specified'}
 Current Diagnosis: ${patientData?.diagnosis || 'Not specified'}
 
@@ -244,7 +240,6 @@ const getSensoryProcessingPrompt = (patientData, assessmentData) => {
 ${getSystemPrompt()}
 
 CONTEXT: Sensory Processing Assessment
-Child: ${patientData?.firstName || 'Unknown'} ${patientData?.lastName || ''}
 Age: ${patientData?.age || 'Not specified'}
 Current Diagnosis: ${patientData?.diagnosis || 'Not specified'}
 
@@ -293,7 +288,6 @@ const getMotorSkillsPrompt = (patientData, assessmentData) => {
 ${getSystemPrompt()}
 
 CONTEXT: Motor Skills Assessment
-Child: ${patientData?.firstName || 'Unknown'} ${patientData?.lastName || ''}
 Age: ${patientData?.age || 'Not specified'}
 Current Diagnosis: ${patientData?.diagnosis || 'Not specified'}
 

@@ -2,7 +2,6 @@ const assessmentPrompt = (patientData, sessionNotes) => `
 As an expert Pediatric Occupational Therapist AI assistant, analyze the following child's therapy session using OTPF-4 framework standards and provide professional insights focused on pediatric development and family-centered care.
 
 CHILD INFORMATION:
-- Name: ${patientData.firstName} ${patientData.lastName}
 - Age: ${patientData.age || 'Not specified'} (Pediatric focus: ages 0-21)
 - Diagnosis: ${patientData.diagnosis || 'Not specified'}
 - Therapy Goals: ${patientData.therapyGoals || 'Not specified'}

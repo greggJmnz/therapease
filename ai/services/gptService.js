@@ -147,15 +147,11 @@ class GPTService {
         throw new Error('Patient data is required');
       }
       
-      // Ensure patientData has at least firstName and lastName
-      if (!patientData.firstName && !patientData.lastName) {
-        throw new Error('Patient data must include at least firstName or lastName');
-      }
-      
-      // Normalize patient data to ensure all fields exist
+      // Privacy: Patient names are anonymized - no longer required
+      // Normalize patient data to ensure all fields exist (names are anonymized as "Patient")
       const normalizedPatientData = {
-        firstName: patientData.firstName || 'Unknown',
-        lastName: patientData.lastName || 'Unknown',
+        firstName: patientData.firstName || 'Patient', // Default to "Patient" for privacy
+        lastName: patientData.lastName || '', // Empty for privacy
         age: patientData.age || patientData.dateOfBirth ? (new Date().getFullYear() - new Date(patientData.dateOfBirth).getFullYear()) : 'Not specified',
         diagnosis: patientData.diagnosis || 'Not specified',
         ...patientData
