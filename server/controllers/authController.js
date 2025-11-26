@@ -321,8 +321,10 @@ const register = async (req, res) => {
         userStatus
       ];
 
+      console.log(`[register] Creating user with role: ${role}, status: ${userStatus}`);
       const userResult = await connection.execute(createUserSql, userParams);
       const userId = userResult[0].insertId;
+      console.log(`[register] User created with ID: ${userId}, status: ${userStatus}`);
 
       let roleData = {};
 
