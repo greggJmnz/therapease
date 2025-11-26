@@ -1799,9 +1799,9 @@ const approvePendingTherapist = async (req, res) => {
       });
     }
 
-    // Check if therapist exists and is pending
+    // Check if therapist exists and is pending, get email and name for notification
     const therapist = await getRow(
-      'SELECT id, status FROM users WHERE id = ? AND role = ?',
+      'SELECT id, status, email, firstName, lastName FROM users WHERE id = ? AND role = ?',
       [therapistId, 'therapist']
     );
 
@@ -1824,6 +1824,108 @@ const approvePendingTherapist = async (req, res) => {
       'UPDATE users SET status = ?, updatedAt = NOW() WHERE id = ?',
       ['active', therapistId]
     );
+
+    // Send email notification to the therapist
+    try {
+      const emailService = require('../services/emailService');
+      const { decryptField } = require('../utils/encryption');
+      
+      // Decrypt email
+      const therapistEmail = decryptField(therapist.email) || therapist.email;
+      const therapistName = therapist.firstName || 'Therapist';
+      
+      // Get frontend URL for login link
+      const frontendUrl = process.env.FRONTEND_URL || 
+                         (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',')[0].trim() : 'https://therapease.site');
+      const loginUrl = `${frontendUrl}/auth/login`;
+      
+      // Create email content
+      const emailSubject = 'Your TherapEase Account Has Been Approved';
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #2563eb; margin-bottom: 20px;">Account Approved - Welcome to TherapEase!</h2>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #333;">
+            Dear ${therapistName},
+          </p>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #333;">
+            Great news! Your therapist account has been approved by the administrator. You can now log in to the TherapEase portal and start using the platform.
+          </p>
+          
+          <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 14px; color: #1e40af;">
+              <strong>Next Steps:</strong>
+            </p>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #1e40af;">
+              <li>Visit the login page: <a href="${loginUrl}" style="color: #2563eb; text-decoration: none;">${loginUrl}</a></li>
+              <li>Log in with your registered email and password</li>
+              <li>Complete your profile setup if needed</li>
+            </ul>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #333;">
+            If you have any questions or need assistance, please don't hesitate to contact our support team.
+          </p>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #333; margin-top: 30px;">
+            Best regards,<br>
+            <strong>The TherapEase Team</strong>
+          </p>
+        </div>
+      `;
+      
+      const emailText = `
+Account Approved - Welcome to TherapEase!
+
+Dear ${therapistName},
+
+Great news! Your therapist account has been approved by the administrator. You can now log in to the TherapEase portal and start using the platform.
+
+Next Steps:
+- Visit the login page: ${loginUrl}
+- Log in with your registered email and password
+- Complete your profile setup if needed
+
+If you have any questions or need assistance, please don't hesitate to contact our support team.
+
+Best regards,
+The TherapEase Team
+      `;
+      
+      // Send email using SendGrid API or SMTP
+      const emailResult = await emailService.sendViaSendGridAPI(
+        therapistEmail,
+        emailSubject,
+        emailHtml,
+        emailText,
+        process.env.EMAIL_FROM || 'therapease16@gmail.com'
+      );
+      
+      if (emailResult.success) {
+        console.log(`✅ Approval email sent successfully to ${therapistEmail}`);
+      } else {
+        console.error(`⚠️ Failed to send approval email to ${therapistEmail}:`, emailResult.error);
+      }
+      
+      // Also create a notification record
+      const notificationController = require('./notificationController');
+      await notificationController.createNotification(
+        therapistId,
+        'Account Approved',
+        `Your therapist account has been approved. You can now log in to the TherapEase portal.`,
+        'system',
+        {
+          sendEmail: false, // Already sent email above
+          sendPush: true,
+          sendSMS: false
+        }
+      );
+      
+    } catch (notificationError) {
+      console.error('Error sending approval notification:', notificationError);
+      // Don't fail the approval if notification fails
+    }
 
     res.json({
       success: true,
