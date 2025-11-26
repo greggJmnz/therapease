@@ -177,7 +177,7 @@ async function clearPendingTherapists() {
     process.exit(1);
   } finally {
     if (connection) {
-      await connection.end();
+      await connection.release(); // Use release() for pooled connections instead of end()
     }
   }
 }
