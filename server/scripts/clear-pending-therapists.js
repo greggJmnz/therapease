@@ -12,6 +12,21 @@
  *   --dry-run   : Show what would be done without making changes (default: false)
  */
 
+const path = require('path');
+
+// Load environment variables - use .env.production in production, .env in development
+// Check if NODE_ENV is set, otherwise default to production for VPS
+const nodeEnv = process.env.NODE_ENV || 'production';
+const envFile = nodeEnv === 'production' 
+  ? path.join(__dirname, '../.env.production')
+  : path.join(__dirname, '../../.env');
+require('dotenv').config({ path: envFile });
+
+// Set NODE_ENV if not already set
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = nodeEnv;
+}
+
 const { getConnection, getAll, runQuery } = require('../config/database');
 const { decryptField } = require('../utils/encryption');
 
