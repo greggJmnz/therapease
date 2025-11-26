@@ -77,6 +77,7 @@ const PatientHelp = lazyWithRetry(() => import('./pages/Patient/Help'));
 // Auth pages (eager load - needed immediately for login)
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+const TherapistRegister = lazyWithRetry(() => import('./pages/Auth/TherapistRegister'));
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 
@@ -219,6 +220,7 @@ const AppContent = () => (
           <Route index element={<Navigate to="/auth/login" replace />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
+          <Route path="therapist-register" element={<LazyRoute><TherapistRegister /></LazyRoute>} />
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="reset-password" element={<ResetPassword />} />
         </Route>

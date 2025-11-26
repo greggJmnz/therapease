@@ -42,6 +42,9 @@ router.get('/patients/:patientId/therapists', adminController.getPatientTherapis
 
 // Therapist management
 router.get('/therapists', adminController.getTherapists);
+router.get('/therapists/pending', adminController.getPendingTherapists);
+router.post('/therapists/:therapistId/approve', adminController.approvePendingTherapist);
+router.post('/therapists/:therapistId/reject', adminController.rejectPendingTherapist);
 router.get('/therapists/available', adminController.getAvailableTherapists);
 router.get('/therapists/:therapistId/working-hours', adminController.getTherapistWorkingHours);
 router.put('/therapists/:therapistId/availability', adminController.updateTherapistAvailability);

@@ -34,6 +34,7 @@ const AdminTherapists = () => {
   const [selectedTherapist, setSelectedTherapist] = useState(null);
   const [editingTherapist, setEditingTherapist] = useState(null);
   const [showGenerateAccountModal, setShowGenerateAccountModal] = useState(false);
+  const [showPendingTherapistsModal, setShowPendingTherapistsModal] = useState(false);
   const [showCapacityModal, setShowCapacityModal] = useState(false);
   const [showWorkingHoursModal, setShowWorkingHoursModal] = useState(false);
   const [generatedCredentials, setGeneratedCredentials] = useState(null);
@@ -60,6 +61,19 @@ const AdminTherapists = () => {
       onError: (error) => {
         toast.error('Failed to load therapists data');
         console.error('Error fetching therapists:', error);
+      }
+    }
+  );
+
+  // Fetch pending therapists data
+  const { data: pendingTherapistsData, isLoading: pendingLoading, refetch: refetchPending } = useQuery(
+    'pendingTherapists',
+    adminAPI.getPendingTherapists,
+    {
+      enabled: showPendingTherapistsModal, // Only fetch when modal is open
+      onError: (error) => {
+        toast.error('Failed to load pending therapists');
+        console.error('Error fetching pending therapists:', error);
       }
     }
   );
@@ -428,6 +442,10 @@ const AdminTherapists = () => {
           </div>
           <div className="welcome-actions">
             <div className="flex items-center gap-3">
+              <button className="therapist-btn-secondary" onClick={() => setShowPendingTherapistsModal(true)}>
+                <Clock size={16} />
+                Pending Therapists
+              </button>
               <button className="therapist-btn-primary" onClick={() => setShowGenerateAccountModal(true)}>
                 <Key size={16} />
                 Generate Account
@@ -1164,6 +1182,114 @@ const AdminTherapists = () => {
                 <Save className="h-4 w-4 mr-2" />
                 Save Changes
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Therapists Modal */}
+      {showPendingTherapistsModal && (
+        <div className="modal-overlay" onClick={() => setShowPendingTherapistsModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modal-header">
+              <h3>Pending Therapists</h3>
+              <button className="close-btn" onClick={() => setShowPendingTherapistsModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ padding: '24px' }}>
+              {pendingLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading pending therapists...</p>
+                </div>
+              ) : pendingTherapistsData?.data?.therapists?.length > 0 ? (
+                <div className="space-y-4">
+                  {pendingTherapistsData.data.therapists.map((therapist) => (
+                    <div key={therapist.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <InitialsAvatar name={`${therapist.firstName} ${therapist.lastName}`} size={40} />
+                            <div>
+                              <h4 className="font-semibold text-gray-900">
+                                {therapist.firstName} {therapist.lastName}
+                              </h4>
+                              <p className="text-sm text-gray-600">{therapist.email}</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
+                            {therapist.phone && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Phone size={16} />
+                                <span>{therapist.phone}</span>
+                              </div>
+                            )}
+                            {therapist.therapist?.specialization && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Briefcase size={16} />
+                                <span>{therapist.therapist.specialization}</span>
+                              </div>
+                            )}
+                            {therapist.therapist?.licenseNumber && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Shield size={16} />
+                                <span>License: {therapist.therapist.licenseNumber}</span>
+                              </div>
+                            )}
+                            {therapist.therapist?.yearsOfExperience !== null && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Clock size={16} />
+                                <span>{therapist.therapist.yearsOfExperience} years experience</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-2 text-xs text-gray-500">
+                            Registered: {new Date(therapist.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <button
+                            className="therapist-btn-secondary text-sm px-3 py-2"
+                            onClick={async () => {
+                              try {
+                                await adminAPI.rejectPendingTherapist(therapist.id);
+                                toast.success('Therapist rejected');
+                                refetchPending();
+                                refetch(); // Refresh main list
+                              } catch (error) {
+                                toast.error('Failed to reject therapist');
+                                console.error('Error rejecting therapist:', error);
+                              }
+                            }}
+                          >
+                            Reject
+                          </button>
+                          <button
+                            className="therapist-btn-primary text-sm px-3 py-2"
+                            onClick={async () => {
+                              try {
+                                await adminAPI.approvePendingTherapist(therapist.id);
+                                toast.success('Therapist approved successfully');
+                                refetchPending();
+                                refetch(); // Refresh main list
+                              } catch (error) {
+                                toast.error('Failed to approve therapist');
+                                console.error('Error approving therapist:', error);
+                              }
+                            }}
+                          >
+                            Approve
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">No pending therapists</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

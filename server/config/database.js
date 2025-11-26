@@ -123,7 +123,7 @@ const createTables = async () => {
         { name: 'twoFactorEnabledAt', sql: 'ALTER TABLE users ADD COLUMN twoFactorEnabledAt TIMESTAMP NULL' },
         { name: 'emailVerified', sql: 'ALTER TABLE users ADD COLUMN emailVerified BOOLEAN DEFAULT FALSE' },
         { name: 'emailVerifiedAt', sql: 'ALTER TABLE users ADD COLUMN emailVerifiedAt TIMESTAMP NULL' },
-        { name: 'status', sql: "ALTER TABLE users ADD COLUMN status ENUM('active', 'inactive', 'suspended') DEFAULT 'active'" },
+        { name: 'status', sql: "ALTER TABLE users ADD COLUMN status ENUM('active', 'inactive', 'suspended', 'pending') DEFAULT 'active'" },
         { name: 'country', sql: 'ALTER TABLE users ADD COLUMN country VARCHAR(100)' },
         { name: 'profileImage', sql: 'ALTER TABLE users ADD COLUMN profileImage VARCHAR(500)' },
         { name: 'termsAccepted', sql: 'ALTER TABLE users ADD COLUMN termsAccepted BOOLEAN DEFAULT FALSE' },

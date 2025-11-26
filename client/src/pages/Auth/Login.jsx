@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Lock, Mail, LogIn, CheckCircle, AlertCircle, Clock, UserCheck, FileText, KeyRound, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, LogIn, CheckCircle, AlertCircle, Clock, UserCheck, FileText, KeyRound, ArrowLeft, User, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import ModernInput from '../../components/ModernInput';
@@ -626,17 +626,27 @@ const Login = () => {
               {isLoading ? 'Signing in...' : isLocked ? 'Account Locked' : 'Sign in'}
             </ModernButton>
 
-            {/* Sign Up Link */}
-            <div className="text-center pt-4 border-t border-gray-100 mt-6">
-              <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
+            {/* Sign Up Buttons */}
+            <div className="pt-4 border-t border-gray-100 mt-6 space-y-3">
+              <p className="text-sm text-gray-600 text-center mb-3">
+                Don't have an account?
+              </p>
+              <div className="grid grid-cols-2 gap-3">
                 <Link
                   to="/auth/register"
-                  className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  className="flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                 >
-                  Sign up here
+                  <User className="h-4 w-4 mr-2" />
+                  Sign up as Patient
                 </Link>
-              </p>
+                <Link
+                  to="/auth/therapist-register"
+                  className="flex items-center justify-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Sign up as Therapist
+                </Link>
+              </div>
             </div>
           </form>
           )}

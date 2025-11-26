@@ -83,6 +83,14 @@ const login = async (req, res) => {
       });
     }
 
+    // Check if user account is pending approval (for therapists)
+    if (user.status === 'pending') {
+      return res.status(403).json({
+        success: false,
+        error: 'Your account is pending approval. Please wait for administrator approval before logging in.'
+      });
+    }
+
     // Check if user account is active
     if (user.status !== 'active') {
       return res.status(403).json({
@@ -280,9 +288,11 @@ const register = async (req, res) => {
 
     try {
       // Create user
+      // Set status to 'pending' for therapists (requires admin approval), 'active' for others
+      const userStatus = role === 'therapist' ? 'pending' : 'active';
       const createUserSql = `
-        INSERT INTO users (email, password, role, firstName, lastName, phone, dateOfBirth, gender, address, city, state, zipCode, termsAccepted, hipaaAcknowledged, acceptedAt, emailVerified, emailVerifiedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO users (email, password, role, firstName, lastName, phone, dateOfBirth, gender, address, city, state, zipCode, termsAccepted, hipaaAcknowledged, acceptedAt, emailVerified, emailVerifiedAt, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const userParams = [
@@ -302,7 +312,8 @@ const register = async (req, res) => {
         hipaaAcknowledged || false,
         acceptedAt ? new Date(acceptedAt).toISOString().slice(0, 19).replace('T', ' ') : new Date().toISOString().slice(0, 19).replace('T', ' '),
         !requireEmailVerification, // If email verification is not required, mark as verified
-        !requireEmailVerification ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null
+        !requireEmailVerification ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null,
+        userStatus
       ];
 
       const userResult = await connection.execute(createUserSql, userParams);

@@ -1606,7 +1606,7 @@ const getTherapists = async (req, res) => {
         (SELECT COUNT(DISTINCT pta.patientId) FROM patient_therapist_assignments pta WHERE pta.therapistId = t.userId AND pta.status = 'active') as patientCount
       FROM users u
       LEFT JOIN therapists t ON u.id = t.userId
-      WHERE u.role = 'therapist'
+      WHERE u.role = 'therapist' AND u.status != 'pending'
       ORDER BY u.createdAt DESC
     `;
 
@@ -1657,6 +1657,196 @@ const getTherapists = async (req, res) => {
   } catch (error) {
     console.error('Get therapists error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch therapists' });
+  }
+};
+
+// Get pending therapists (therapists with status 'pending')
+const getPendingTherapists = async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        u.id,
+        u.email,
+        u.role,
+        u.firstName,
+        u.lastName,
+        u.phone,
+        u.dateOfBirth,
+        u.gender,
+        u.address,
+        u.city,
+        u.state,
+        u.zipCode,
+        u.status,
+        u.createdAt,
+        u.updatedAt,
+        t.licenseNumber,
+        t.specialization,
+        t.yearsOfExperience,
+        t.education,
+        t.certifications,
+        t.availability
+      FROM users u
+      LEFT JOIN therapists t ON u.id = t.userId
+      WHERE u.role = 'therapist' AND u.status = 'pending'
+      ORDER BY u.createdAt DESC
+    `;
+
+    const therapists = await getAll(sql);
+
+    // Import decryption utility
+    const { decryptField } = require('../utils/encryption');
+    
+    // Format therapist data and decrypt sensitive fields
+    const formattedTherapists = therapists.map(therapist => ({
+      id: therapist.id,
+      email: decryptField(therapist.email),
+      role: therapist.role,
+      firstName: therapist.firstName,
+      lastName: therapist.lastName,
+      phone: decryptField(therapist.phone),
+      dateOfBirth: therapist.dateOfBirth,
+      gender: therapist.gender,
+      address: decryptField(therapist.address),
+      city: therapist.city,
+      state: therapist.state,
+      zipCode: therapist.zipCode,
+      status: therapist.status,
+      createdAt: therapist.createdAt,
+      updatedAt: therapist.updatedAt,
+      therapist: {
+        licenseNumber: therapist.licenseNumber,
+        specialization: therapist.specialization,
+        yearsOfExperience: therapist.yearsOfExperience,
+        education: therapist.education,
+        certifications: therapist.certifications,
+        availability: therapist.availability
+      }
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        therapists: formattedTherapists,
+        total: formattedTherapists.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Get pending therapists error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch pending therapists' });
+  }
+};
+
+// Approve pending therapist
+const approvePendingTherapist = async (req, res) => {
+  try {
+    const { therapistId } = req.params;
+
+    if (!therapistId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Therapist ID is required'
+      });
+    }
+
+    // Check if therapist exists and is pending
+    const therapist = await getRow(
+      'SELECT id, status FROM users WHERE id = ? AND role = ?',
+      [therapistId, 'therapist']
+    );
+
+    if (!therapist) {
+      return res.status(404).json({
+        success: false,
+        error: 'Therapist not found'
+      });
+    }
+
+    if (therapist.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        error: 'Therapist is not pending approval'
+      });
+    }
+
+    // Update therapist status to active
+    await runQuery(
+      'UPDATE users SET status = ?, updatedAt = NOW() WHERE id = ?',
+      ['active', therapistId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Therapist approved successfully',
+      data: {
+        therapistId: therapistId,
+        status: 'active'
+      }
+    });
+
+  } catch (error) {
+    console.error('Approve pending therapist error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to approve therapist'
+    });
+  }
+};
+
+// Reject pending therapist
+const rejectPendingTherapist = async (req, res) => {
+  try {
+    const { therapistId } = req.params;
+
+    if (!therapistId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Therapist ID is required'
+      });
+    }
+
+    // Check if therapist exists and is pending
+    const therapist = await getRow(
+      'SELECT id, status FROM users WHERE id = ? AND role = ?',
+      [therapistId, 'therapist']
+    );
+
+    if (!therapist) {
+      return res.status(404).json({
+        success: false,
+        error: 'Therapist not found'
+      });
+    }
+
+    if (therapist.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        error: 'Therapist is not pending approval'
+      });
+    }
+
+    // Update therapist status to inactive (rejected)
+    await runQuery(
+      'UPDATE users SET status = ?, updatedAt = NOW() WHERE id = ?',
+      ['inactive', therapistId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Therapist rejected successfully',
+      data: {
+        therapistId: therapistId,
+        status: 'inactive'
+      }
+    });
+
+  } catch (error) {
+    console.error('Reject pending therapist error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reject therapist'
+    });
   }
 };
 
@@ -4054,5 +4244,8 @@ module.exports = {
   getPatientsWithAssignments,
   approveAppointment,
   rejectAppointment,
-  getPendingAppointments
+  getPendingAppointments,
+  getPendingTherapists,
+  approvePendingTherapist,
+  rejectPendingTherapist
 };
