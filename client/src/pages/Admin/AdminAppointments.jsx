@@ -172,6 +172,8 @@ const AdminAppointments = () => {
         type: appointment.type || 'session',
     status: appointment.approvalStatus === 'pending' ? 'pending' : (appointment.status || 'scheduled'),
         approvalStatus: appointment.approvalStatus || 'approved',
+        therapistApproverName: appointment.therapistApproverName,
+        adminApproverName: appointment.adminApproverName,
         reason: appointment.reason || 'No reason provided',
         notes: appointment.notes || '',
         createdAt: appointment.createdAt,

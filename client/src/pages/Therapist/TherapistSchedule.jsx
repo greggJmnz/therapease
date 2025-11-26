@@ -189,6 +189,8 @@ const TherapistSchedule = () => {
         // Otherwise use the actual status from database
         status: appointment.approvalStatus === 'pending' ? 'pending' : (appointment.status || 'scheduled'),
         approvalStatus: appointment.approvalStatus || 'approved', // Include approval status
+        therapistApproverName: appointment.therapistApproverName,
+        adminApproverName: appointment.adminApproverName,
         reason: appointment.reason || '',
     notes: appointment.notes || '',
         createdAt: appointment.createdAt || appointment.appointmentDate || appointment.sessionDate || new Date().toISOString(),
