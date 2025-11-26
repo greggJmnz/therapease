@@ -25,16 +25,28 @@ const getTimeAgo = (date) => {
   }
 };
 
-// Configure web-push only if VAPID keys are available
+// Configure web-push only if VAPID keys are available and valid
+let vapidConfigured = false;
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || 'mailto:admin@therapease.com',
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
-  // VAPID keys configured
+  try {
+    // Remove any padding characters (=) from VAPID keys if present
+    const publicKey = process.env.VAPID_PUBLIC_KEY.replace(/=/g, '');
+    const privateKey = process.env.VAPID_PRIVATE_KEY.replace(/=/g, '');
+    
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT || 'mailto:admin@therapease.com',
+      publicKey,
+      privateKey
+    );
+    vapidConfigured = true;
+    console.log('✅ VAPID keys configured - push notifications enabled');
+  } catch (error) {
+    console.error('❌ Error configuring VAPID keys:', error.message);
+    console.error('⚠️  Push notifications will be disabled. Please check your VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in .env.production');
+    vapidConfigured = false;
+  }
 } else {
-  // VAPID keys not configured - push notifications disabled
+  console.log('⚠️  VAPID keys not configured - push notifications disabled');
 }
 
 // Get notifications for a user
