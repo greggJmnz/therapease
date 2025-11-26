@@ -691,7 +691,7 @@ const AdminReports = () => {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading reports and analytics...</p>
+            <p className="text-gray-600">Loading analytics...</p>
           </div>
         </div>
       </div>
@@ -717,7 +717,7 @@ const AdminReports = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="mb-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Reports & Analytics</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics</h1>
         <p className="text-gray-600">Comprehensive insights into your therapy practice performance</p>
       </div>
       

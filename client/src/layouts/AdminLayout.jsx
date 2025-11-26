@@ -155,7 +155,7 @@ const AdminLayout = () => {
     },
     { name: 'Appointments', href: '/admin/appointments', icon: Calendar },
     { name: 'Notifications', href: '/admin/notifications', icon: Bell },
-    { name: 'Reports', href: '/admin/reports', icon: FileText },
+    { name: 'Analytics', href: '/admin/reports', icon: FileText },
   ];
 
   const handleLogout = () => {
