@@ -999,7 +999,8 @@ const Appointments = () => {
                         </div>
                       </div>
 
-                      {selectedAppointment.approvalStatus === 'approved' && (
+                      {/* Show "Approved By" section if there are any approvals (even if pending) */}
+                      {(selectedAppointment.therapistApproverName || selectedAppointment.adminApproverName) && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Approved By</label>
                           <div className="space-y-2">
@@ -1014,9 +1015,6 @@ const Appointments = () => {
                                 <User className="h-4 w-4 text-gray-400" />
                                 <span>Admin: <span className="font-medium">{selectedAppointment.adminApproverName}</span></span>
                               </div>
-                            )}
-                            {!selectedAppointment.therapistApproverName && !selectedAppointment.adminApproverName && (
-                              <div className="text-sm text-gray-500 italic">Approval information not available</div>
                             )}
                           </div>
                         </div>
