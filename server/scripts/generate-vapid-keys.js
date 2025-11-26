@@ -1,43 +1,82 @@
 #!/usr/bin/env node
 
 /**
- * VAPID Key Generation Script for TherapEase
- * Generates VAPID keys for push notifications
+ * Generate VAPID Keys for Web Push Notifications
+ * 
+ * This script generates new VAPID (Voluntary Application Server Identification) keys
+ * for web push notifications. The keys are generated in URL-safe base64 format
+ * without padding characters (=) as required by the web-push library.
+ * 
+ * Usage:
+ *   node scripts/generate-vapid-keys.js
+ * 
+ * The script will output the keys in a format that can be directly added to .env.production
  */
 
 const webpush = require('web-push');
+const path = require('path');
+const fs = require('fs');
 
-const generateVapidKeys = () => {
+console.log('🔐 Generating VAPID keys for Web Push Notifications...\n');
+
+try {
+  // Generate VAPID keys
+  const vapidKeys = webpush.generateVAPIDKeys();
+
+  // Extract public and private keys (web-push generates them in correct format)
+  // They should already be URL-safe base64 without padding
+  let publicKey = vapidKeys.publicKey.trim();
+  let privateKey = vapidKeys.privateKey.trim();
+  
+  // Remove any padding characters (=) if present (shouldn't be needed, but just in case)
+  // Also remove any whitespace that might have been introduced
+  publicKey = publicKey.replace(/\s/g, '').replace(/=/g, '');
+  privateKey = privateKey.replace(/\s/g, '').replace(/=/g, '');
+
+  // Verify the keys are valid
   try {
-    console.log('🔑 Generating VAPID keys for push notifications...\n');
-    
-    const vapidKeys = webpush.generateVAPIDKeys();
-    
+    webpush.setVapidDetails(
+      'mailto:admin@therapease.com',
+      publicKey,
+      privateKey
+    );
     console.log('✅ VAPID keys generated successfully!\n');
-    console.log('📋 Add these to your .env file:\n');
-    console.log('VAPID_PUBLIC_KEY=' + vapidKeys.publicKey);
-    console.log('VAPID_PRIVATE_KEY=' + vapidKeys.privateKey);
-    console.log('VAPID_SUBJECT=mailto:admin@therapease.com\n');
-    
-    console.log('📱 Add this to your client .env file:\n');
-    console.log('REACT_APP_VAPID_PUBLIC_KEY=' + vapidKeys.publicKey + '\n');
-    
-    console.log('🔧 Next steps:');
-    console.log('1. Add the VAPID keys to your .env files');
-    console.log('2. Restart your server and client');
-    console.log('3. Test push notifications in the browser');
-    
-    return vapidKeys;
-    
-  } catch (error) {
-    console.error('❌ Failed to generate VAPID keys:', error.message);
+  } catch (validationError) {
+    console.error('❌ Error: Generated keys failed validation:', validationError.message);
     process.exit(1);
   }
-};
 
-// Run if called directly
-if (require.main === module) {
-  generateVapidKeys();
+  // Display the keys
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('📋 Add these to your .env.production file:');
+  console.log('═══════════════════════════════════════════════════════════\n');
+  
+  console.log('VAPID_PUBLIC_KEY=' + publicKey);
+  console.log('VAPID_PRIVATE_KEY=' + privateKey);
+  console.log('VAPID_SUBJECT=mailto:admin@therapease.com\n');
+
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('📝 Complete .env.production entries:');
+  console.log('═══════════════════════════════════════════════════════════\n');
+  
+  console.log('# Push Notifications (VAPID Keys)');
+  console.log('VAPID_PUBLIC_KEY=' + publicKey);
+  console.log('VAPID_PRIVATE_KEY=' + privateKey);
+  console.log('VAPID_SUBJECT=mailto:admin@therapease.com\n');
+
+  // Optional: Ask if user wants to update .env.production automatically
+  // For now, just output the keys so user can manually add them
+
+  console.log('✅ Keys generated successfully!');
+  console.log('⚠️  Remember to:');
+  console.log('   1. Add these keys to your .env.production file');
+  console.log('   2. Restart your server (pm2 restart therapease-api)');
+  console.log('   3. Existing push subscriptions will need to be re-subscribed');
+  console.log('      (users will need to allow notifications again)\n');
+
+} catch (error) {
+  console.error('❌ Error generating VAPID keys:', error.message);
+  console.error('\nMake sure web-push is installed:');
+  console.error('  npm install web-push');
+  process.exit(1);
 }
-
-module.exports = generateVapidKeys;

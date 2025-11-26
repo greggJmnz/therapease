@@ -29,9 +29,16 @@ const getTimeAgo = (date) => {
 let vapidConfigured = false;
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   try {
-    // Remove any padding characters (=) from VAPID keys if present
-    const publicKey = process.env.VAPID_PUBLIC_KEY.replace(/=/g, '');
-    const privateKey = process.env.VAPID_PRIVATE_KEY.replace(/=/g, '');
+    // Clean and validate VAPID keys
+    // Remove whitespace, newlines, and padding characters (=)
+    let publicKey = process.env.VAPID_PUBLIC_KEY.trim().replace(/\s/g, '').replace(/=/g, '');
+    let privateKey = process.env.VAPID_PRIVATE_KEY.trim().replace(/\s/g, '').replace(/=/g, '');
+    
+    // Validate key lengths (VAPID public key should be 87 characters, private key should be 43 characters in base64url)
+    // But we'll let web-push validate the format
+    if (!publicKey || !privateKey) {
+      throw new Error('VAPID keys cannot be empty after cleaning');
+    }
     
     webpush.setVapidDetails(
       process.env.VAPID_SUBJECT || 'mailto:admin@therapease.com',
@@ -43,6 +50,7 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   } catch (error) {
     console.error('❌ Error configuring VAPID keys:', error.message);
     console.error('⚠️  Push notifications will be disabled. Please check your VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in .env.production');
+    console.error('💡 Tip: Run "node server/scripts/generate-vapid-keys.js" to generate new keys');
     vapidConfigured = false;
   }
 } else {
