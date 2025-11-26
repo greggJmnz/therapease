@@ -271,11 +271,15 @@ const createAppointment = async (req, res) => {
         pu.phone as patientPhone,
         tu.phone as therapistPhone,
         pu.id as patientUserId,
-        tu.id as therapistUserId
+        tu.id as therapistUserId,
+        CONCAT(therapistApprover.firstName, ' ', therapistApprover.lastName) as therapistApproverName,
+        CONCAT(adminApprover.firstName, ' ', adminApprover.lastName) as adminApproverName
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
       JOIN users pu ON p.userId = pu.id
       JOIN users tu ON a.therapistId = tu.id
+      LEFT JOIN users therapistApprover ON a.therapistApprovedBy = therapistApprover.id
+      LEFT JOIN users adminApprover ON a.adminApprovedBy = adminApprover.id
       WHERE a.id = ?
     `;
 
@@ -475,10 +479,14 @@ const updateAppointment = async (req, res) => {
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
         p.diagnosis,
         p.userId as patientUserId,
-        u.phone as patientPhone
+        u.phone as patientPhone,
+        CONCAT(therapistApprover.firstName, ' ', therapistApprover.lastName) as therapistApproverName,
+        CONCAT(adminApprover.firstName, ' ', adminApprover.lastName) as adminApproverName
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
       JOIN users u ON p.userId = u.id
+      LEFT JOIN users therapistApprover ON a.therapistApprovedBy = therapistApprover.id
+      LEFT JOIN users adminApprover ON a.adminApprovedBy = adminApprover.id
       WHERE a.id = ?
     `;
 

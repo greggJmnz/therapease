@@ -1148,11 +1148,15 @@ const createAppointment = async (req, res) => {
         CONCAT(pu.firstName, ' ', pu.lastName) as patientName,
         CONCAT(tu.firstName, ' ', tu.lastName) as therapistName,
         pu.phone as patientPhone,
-        tu.phone as therapistPhone
+        tu.phone as therapistPhone,
+        CONCAT(therapistApprover.firstName, ' ', therapistApprover.lastName) as therapistApproverName,
+        CONCAT(adminApprover.firstName, ' ', adminApprover.lastName) as adminApproverName
       FROM appointments a
       JOIN patients p ON a.patientId = p.id
       JOIN users pu ON p.userId = pu.id
       JOIN users tu ON a.therapistId = tu.id
+      LEFT JOIN users therapistApprover ON a.therapistApprovedBy = therapistApprover.id
+      LEFT JOIN users adminApprover ON a.adminApprovedBy = adminApprover.id
       WHERE a.id = ?
     `;
 
