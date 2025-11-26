@@ -3766,9 +3766,12 @@ const approveAppointment = async (req, res) => {
     await runQuery(updateSql, updateParams);
 
     // Get updated appointment to check if it's fully approved
+    // Include therapistApprovedBy and adminApprovedBy to verify both approvals for patient-created appointments
     const updatedAppointment = await getRow(`
       SELECT 
         a.*,
+        a.therapistApprovedBy,
+        a.adminApprovedBy,
         p.userId as patientUserId,
         CONCAT(u.firstName, ' ', u.lastName) as patientName,
         creator.role as creatorRole
@@ -3856,8 +3859,8 @@ const approveAppointment = async (req, res) => {
         }
       } else if (updatedAppointment.creatorRole === 'patient' || !updatedAppointment.createdBy) {
         // Patient-created: Only send SMS to patient when BOTH therapist and admin approve
-        // (This happens when admin approves and therapist already approved)
-        if (decryptedPatientPhone) {
+        // Explicitly verify both approvals are present before sending SMS
+        if (updatedAppointment.therapistApprovedBy && updatedAppointment.adminApprovedBy && decryptedPatientPhone) {
           const patientMessage = `Your ${updatedAppointment.type} appointment with ${therapistInfo.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before. TherapEase Team`;
           await notificationController.createNotification(
             updatedAppointment.patientUserId,
@@ -3871,6 +3874,7 @@ const approveAppointment = async (req, res) => {
             }
           );
         }
+        // If either approval is missing, no SMS is sent (appointment remains pending)
       }
       // Admin-created appointments: SMS will be sent when therapist approves (handled in appointmentController)
     } else {
