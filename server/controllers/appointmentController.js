@@ -292,14 +292,8 @@ const createAppointment = async (req, res) => {
       // Create notification for patient
       await notificationController.createAppointmentCreationNotificationForPatient(appointmentId);
 
-      // Create notification for therapist
-      await notificationController.createNotification(
-        newAppointment.therapistUserId,
-        'Appointment Created',
-        `You have created a ${type} appointment with ${newAppointment.patientName} on ${appointmentDate} at ${formatTime12Hour(startTime)}`,
-        'appointment',
-        { relatedId: appointmentId }
-      );
+      // Therapist does not receive notification when they create appointment
+      // They will receive SMS "appointment scheduled" when admin approves it
 
       // Create notification for admin (get all admin users)
       const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
