@@ -1204,12 +1204,19 @@ const AdminTherapists = () => {
               ) : (() => {
                 // Debug logging
                 console.log('Pending therapists data:', pendingTherapistsData);
+<<<<<<< HEAD
                 console.log('Therapists array (data.data.therapists):', pendingTherapistsData?.data?.data?.therapists);
                 console.log('Therapists array (data.therapists):', pendingTherapistsData?.data?.therapists);
                 console.log('Therapists length:', pendingTherapistsData?.data?.data?.therapists?.length || pendingTherapistsData?.data?.therapists?.length);
                 
                 // Handle both response structures (double nesting like getTherapists, or single nesting)
                 const therapists = pendingTherapistsData?.data?.data?.therapists || pendingTherapistsData?.data?.therapists || [];
+=======
+                console.log('Therapists array:', pendingTherapistsData?.data?.therapists);
+                console.log('Therapists length:', pendingTherapistsData?.data?.therapists?.length);
+                
+                const therapists = pendingTherapistsData?.data?.therapists || [];
+>>>>>>> 727c077289ec6dcd410b090a7803d7da59a2ff44
                 return therapists.length > 0 ? (
                 <div className="space-y-4">
                   {therapists.map((therapist) => (
