@@ -1201,9 +1201,18 @@ const AdminTherapists = () => {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                   <p className="text-gray-600">Loading pending therapists...</p>
                 </div>
-              ) : pendingTherapistsData?.data?.therapists?.length > 0 ? (
+              ) : (() => {
+                // Debug logging
+                console.log('Pending therapists data:', pendingTherapistsData);
+                console.log('Therapists array (data.data.therapists):', pendingTherapistsData?.data?.data?.therapists);
+                console.log('Therapists array (data.therapists):', pendingTherapistsData?.data?.therapists);
+                console.log('Therapists length:', pendingTherapistsData?.data?.data?.therapists?.length || pendingTherapistsData?.data?.therapists?.length);
+                
+                // Handle both response structures (double nesting like getTherapists, or single nesting)
+                const therapists = pendingTherapistsData?.data?.data?.therapists || pendingTherapistsData?.data?.therapists || [];
+                return therapists.length > 0 ? (
                 <div className="space-y-4">
-                  {pendingTherapistsData.data.therapists.map((therapist) => (
+                  {therapists.map((therapist) => (
                     <div key={therapist.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -1288,8 +1297,13 @@ const AdminTherapists = () => {
                 <div className="text-center py-8">
                   <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600">No pending therapists</p>
+                  {pendingTherapistsData && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Debug: Response received but no therapists found
+                    </p>
+                  )}
                 </div>
-              )}
+              )})()}
             </div>
           </div>
         </div>
