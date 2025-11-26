@@ -1078,8 +1078,9 @@ const TherapistSchedule = () => {
                 >
                   Close
                 </button>
-                  {/* Show approve button if status is pending */}
-                  {selectedAppointment.approvalStatus === 'pending' && (
+                  {/* Show approve button if status is pending AND therapist didn't create it */}
+                  {/* Therapist cannot approve their own appointments - they need admin approval */}
+                  {selectedAppointment.approvalStatus === 'pending' && selectedAppointment.creatorRole !== 'therapist' && (
                     <button
                       onClick={handleApproveAppointment}
                       className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
@@ -1087,6 +1088,13 @@ const TherapistSchedule = () => {
                       <Check className="h-4 w-4" />
                       Approve Appointment
                     </button>
+                  )}
+                  {/* Show message if therapist created the appointment */}
+                  {selectedAppointment.approvalStatus === 'pending' && selectedAppointment.creatorRole === 'therapist' && (
+                    <div className="px-6 py-3 bg-gray-100 text-gray-500 rounded-lg flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm">This appointment requires admin approval</span>
+                    </div>
                   )}
                   {/* Only show edit button if appointment was not created by admin */}
                   {selectedAppointment.creatorRole !== 'admin' ? (

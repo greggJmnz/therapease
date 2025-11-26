@@ -936,6 +936,7 @@ const getAppointments = async (req, res) => {
         a.approvalStatus,
         a.therapistApprovedBy,
         a.adminApprovedBy,
+        a.createdBy,
         a.reason,
         a.notes,
         a.createdAt,
@@ -947,13 +948,15 @@ const getAppointments = async (req, res) => {
         a.patientId,
         a.therapistId,
         CONCAT(therapistApprover.firstName, ' ', therapistApprover.lastName) as therapistApproverName,
-        CONCAT(adminApprover.firstName, ' ', adminApprover.lastName) as adminApproverName
+        CONCAT(adminApprover.firstName, ' ', adminApprover.lastName) as adminApproverName,
+        creator.role as creatorRole
       FROM appointments a
       LEFT JOIN patients pt ON a.patientId = pt.id
       LEFT JOIN users p ON pt.userId = p.id
       LEFT JOIN users t ON a.therapistId = t.id
       LEFT JOIN users therapistApprover ON a.therapistApprovedBy = therapistApprover.id
       LEFT JOIN users adminApprover ON a.adminApprovedBy = adminApprover.id
+      LEFT JOIN users creator ON a.createdBy = creator.id
       ORDER BY a.appointmentDate DESC, a.startTime DESC
     `;
 
@@ -981,6 +984,8 @@ const getAppointments = async (req, res) => {
       approvalStatus: appointment.approvalStatus,
       therapistApproverName: appointment.therapistApproverName,
       adminApproverName: appointment.adminApproverName,
+      creatorRole: appointment.creatorRole,
+      createdBy: appointment.createdBy,
       reason: appointment.reason || 'No reason provided',
       room: 'Room TBD', // Default room since it's not in the table
       notes: appointment.notes,
@@ -3805,20 +3810,36 @@ const approveAppointment = async (req, res) => {
       }
     );
 
-    // Notify therapist with SMS
-    // Note: phoneNumber will be decrypted in sendMultiChannelNotification
-    const therapistMessage = `Hi ${therapistInfo.therapistName}! The appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved. TherapEase Team`;
-    await notificationController.createNotification(
-      appointment.therapistId,
-      'Appointment Approved',
-      therapistMessage,
-      'appointment',
-      { 
-        relatedId: appointmentId,
-        sendSMS: true,
-        phoneNumber: therapistInfo.therapistPhone // Pass encrypted phone, will be decrypted in notificationController
-      }
-    );
+    // Notify therapist (only if therapist didn't create the appointment)
+    // Therapist who created appointment doesn't need SMS - they already know about it
+    if (appointment.creatorRole !== 'therapist') {
+      const therapistMessage = `Hi ${therapistInfo.therapistName}! The appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved. TherapEase Team`;
+      await notificationController.createNotification(
+        appointment.therapistId,
+        'Appointment Approved',
+        therapistMessage,
+        'appointment',
+        { 
+          relatedId: appointmentId,
+          sendSMS: true, // Send SMS only if therapist didn't create the appointment
+          phoneNumber: therapistInfo.therapistPhone // Pass encrypted phone, will be decrypted in notificationController
+        }
+      );
+    } else {
+      // Therapist created the appointment - just send in-app notification, no SMS
+      await notificationController.createNotification(
+        appointment.therapistId,
+        'Appointment Approved',
+        `The appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved by admin.`,
+        'appointment',
+        { 
+          relatedId: appointmentId,
+          sendSMS: false, // No SMS - therapist created it
+          sendEmail: true,
+          sendPush: true
+        }
+      );
+    }
 
     res.json({
       success: true,

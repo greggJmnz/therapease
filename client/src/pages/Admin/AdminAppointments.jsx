@@ -174,6 +174,8 @@ const AdminAppointments = () => {
         approvalStatus: appointment.approvalStatus || 'approved',
         therapistApproverName: appointment.therapistApproverName,
         adminApproverName: appointment.adminApproverName,
+        creatorRole: appointment.creatorRole,
+        createdBy: appointment.createdBy,
         reason: appointment.reason || 'No reason provided',
         notes: appointment.notes || '',
         createdAt: appointment.createdAt,
@@ -1708,8 +1710,9 @@ const AdminAppointments = () => {
                 >
                   Close
                 </button>
-                {/* Show approve button if status is pending */}
-                {selectedAppointment.approvalStatus === 'pending' && (
+                {/* Show approve button if status is pending AND admin didn't create it */}
+                {/* Admin cannot approve their own appointments - they need therapist approval */}
+                {selectedAppointment.approvalStatus === 'pending' && selectedAppointment.creatorRole !== 'admin' && (
                   <button
                     onClick={handleApproveAppointment}
                     className="w-full sm:w-auto px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
@@ -1717,6 +1720,13 @@ const AdminAppointments = () => {
                     <Check className="h-4 w-4" />
                     Approve Appointment
                   </button>
+                )}
+                {/* Show message if admin created the appointment */}
+                {selectedAppointment.approvalStatus === 'pending' && selectedAppointment.creatorRole === 'admin' && (
+                  <div className="w-full sm:w-auto px-6 py-3 bg-gray-100 text-gray-500 rounded-lg flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm">This appointment requires therapist approval</span>
+                  </div>
                 )}
                 <button
                   onClick={() => handleEditAppointment(selectedAppointment)}

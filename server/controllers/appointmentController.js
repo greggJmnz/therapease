@@ -821,9 +821,9 @@ const approveAppointment = async (req, res) => {
     // Create notifications
     const notificationController = require('./notificationController');
     
-    // Get therapist name for notifications
+    // Get therapist name and phone for notifications
     const therapistInfo = await getRow(`
-      SELECT CONCAT(firstName, ' ', lastName) as therapistName 
+      SELECT CONCAT(firstName, ' ', lastName) as therapistName, phone as therapistPhone
       FROM users WHERE id = ?
     `, [therapistId]);
     
@@ -864,7 +864,40 @@ const approveAppointment = async (req, res) => {
       }
     );
 
-    // Notify admin (get all admin users)
+    // Notify therapist with SMS only if admin created the appointment
+    // If therapist created it, they don't need SMS (they already know about it)
+    if (isAdminCreated) {
+      // Admin created appointment - therapist should receive SMS when they approve it
+      const therapistMessage = `Hi ${therapistInfo.therapistName}! The appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved. TherapEase Team`;
+      await notificationController.createNotification(
+        therapistId,
+        'Appointment Approved',
+        therapistMessage,
+        'appointment',
+        { 
+          relatedId: parseInt(id),
+          sendSMS: true,
+          phoneNumber: therapistInfo.therapistPhone // Pass encrypted phone, will be decrypted in notificationController
+        }
+      );
+    } else {
+      // Therapist created appointment or patient created - therapist doesn't need SMS
+      // Just send in-app notification
+      await notificationController.createNotification(
+        therapistId,
+        'Appointment Approved',
+        `Your appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)} has been approved.`,
+        'appointment',
+        { 
+          relatedId: parseInt(id),
+          sendSMS: false, // No SMS - therapist created it or it's patient-created
+          sendEmail: true,
+          sendPush: true
+        }
+      );
+    }
+
+    // Notify admin (get all admin users) - no SMS, just in-app notification
     const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
     for (const admin of adminUsers) {
       await notificationController.createNotification(
@@ -872,7 +905,10 @@ const approveAppointment = async (req, res) => {
         'Appointment Approved by Therapist',
         `${therapistInfo.therapistName} has approved an appointment with ${appointment.patientName} on ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${formatTime12Hour(appointment.startTime)}`,
         'appointment',
-        { relatedId: parseInt(id) }
+        { 
+          relatedId: parseInt(id),
+          sendSMS: false // Admin doesn't need SMS for approvals
+        }
       );
     }
 
