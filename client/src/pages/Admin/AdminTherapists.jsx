@@ -52,6 +52,8 @@ const AdminTherapists = () => {
   });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [therapistToDelete, setTherapistToDelete] = useState(null);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [therapistToReject, setTherapistToReject] = useState(null);
 
   // Fetch therapists data from API
   const { data: therapistsData, isLoading, error, refetch } = useQuery(
@@ -294,6 +296,22 @@ const AdminTherapists = () => {
     } catch (error) {
       console.error('Error deleting therapist:', error);
       toast.error('Failed to delete therapist');
+    }
+  };
+
+  const confirmReject = async () => {
+    if (!therapistToReject) return;
+    
+    try {
+      await adminAPI.rejectPendingTherapist(therapistToReject.id);
+      toast.success('Therapist rejected and account deleted');
+      refetchPending();
+      refetch(); // Refresh main list
+      setShowRejectModal(false);
+      setTherapistToReject(null);
+    } catch (error) {
+      console.error('Error rejecting therapist:', error);
+      toast.error('Failed to reject therapist');
     }
   };
 
@@ -1291,16 +1309,9 @@ const AdminTherapists = () => {
                         <div className="flex items-center gap-2 ml-4">
                           <button
                             className="therapist-btn-secondary text-sm px-3 py-2"
-                            onClick={async () => {
-                              try {
-                                await adminAPI.rejectPendingTherapist(therapist.id);
-                                toast.success('Therapist rejected');
-                                refetchPending();
-                                refetch(); // Refresh main list
-                              } catch (error) {
-                                toast.error('Failed to reject therapist');
-                                console.error('Error rejecting therapist:', error);
-                              }
+                            onClick={() => {
+                              setTherapistToReject(therapist);
+                              setShowRejectModal(true);
                             }}
                           >
                             Reject
@@ -1551,6 +1562,20 @@ const AdminTherapists = () => {
       title="Delete Therapist"
       message="Are you sure you want to delete this therapist? This action cannot be undone."
       confirmText="Delete"
+      cancelText="Cancel"
+      type="danger"
+    />
+
+    <ConfirmationModal
+      isOpen={showRejectModal}
+      onClose={() => {
+        setShowRejectModal(false);
+        setTherapistToReject(null);
+      }}
+      onConfirm={confirmReject}
+      title="Reject Pending Therapist"
+      message={`Are you sure you want to reject ${therapistToReject ? `${therapistToReject.firstName} ${therapistToReject.lastName}` : 'this therapist'}? This will permanently delete their account and cannot be undone.`}
+      confirmText="Reject & Delete"
       cancelText="Cancel"
       type="danger"
     />

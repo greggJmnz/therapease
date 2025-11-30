@@ -1947,6 +1947,7 @@ The TherapEase Team
 
 // Reject pending therapist
 const rejectPendingTherapist = async (req, res) => {
+  const connection = await getConnection();
   try {
     const { therapistId } = req.params;
 
@@ -1957,9 +1958,9 @@ const rejectPendingTherapist = async (req, res) => {
       });
     }
 
-    // Check if therapist exists and is pending
+    // Check if therapist exists and is pending, get therapist record ID
     const therapist = await getRow(
-      'SELECT id, status FROM users WHERE id = ? AND role = ?',
+      'SELECT u.id, u.status, t.id as therapistRecordId FROM users u LEFT JOIN therapists t ON u.id = t.userId WHERE u.id = ? AND u.role = ?',
       [therapistId, 'therapist']
     );
 
@@ -1977,27 +1978,49 @@ const rejectPendingTherapist = async (req, res) => {
       });
     }
 
-    // Update therapist status to inactive (rejected)
-    await runQuery(
-      'UPDATE users SET status = ?, updatedAt = NOW() WHERE id = ?',
-      ['inactive', therapistId]
-    );
+    // Start transaction to delete both user and therapist records
+    await connection.beginTransaction();
 
-    res.json({
-      success: true,
-      message: 'Therapist rejected successfully',
-      data: {
-        therapistId: therapistId,
-        status: 'inactive'
+    try {
+      // Delete therapist record first (due to foreign key constraint)
+      if (therapist.therapistRecordId) {
+        await runQuery('DELETE FROM therapists WHERE id = ?', [therapist.therapistRecordId]);
+        console.log(`✓ Deleted therapist record (ID: ${therapist.therapistRecordId})`);
       }
-    });
+      
+      // Then delete user record
+      await runQuery('DELETE FROM users WHERE id = ?', [therapistId]);
+      console.log(`✓ Deleted user record (ID: ${therapistId})`);
+      
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'Therapist rejected and account deleted successfully',
+        data: {
+          therapistId: therapistId,
+          deleted: true
+        }
+      });
+
+    } catch (deleteError) {
+      await connection.rollback();
+      throw deleteError;
+    }
 
   } catch (error) {
+    if (connection) {
+      await connection.rollback();
+    }
     console.error('Reject pending therapist error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to reject therapist'
     });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 

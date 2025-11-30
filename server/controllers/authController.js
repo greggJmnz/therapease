@@ -417,12 +417,116 @@ const register = async (req, res) => {
           u.state,
           u.zipCode,
           u.createdAt,
-          u.updatedAt
+          u.updatedAt,
+          u.status
         FROM users u
         WHERE u.id = ?
       `;
 
       const newUser = await getRow(getUserSql, [userId]);
+
+      // If therapist registered, send notifications
+      if (role === 'therapist' && userStatus === 'pending') {
+        try {
+          const notificationController = require('./notificationController');
+          const emailService = require('../services/emailService');
+          const { decryptField } = require('../utils/encryption');
+          
+          // Send email notification to therapist
+          const therapistEmail = decryptField(newUser.email) || newUser.email;
+          const therapistName = newUser.firstName || 'Therapist';
+          
+          const emailSubject = 'TherapEase Registration Received - Pending Review';
+          const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #2563eb; margin-bottom: 20px;">Registration Received - Under Review</h2>
+              
+              <p style="font-size: 16px; line-height: 1.6; color: #333;">
+                Dear ${therapistName},
+              </p>
+              
+              <p style="font-size: 16px; line-height: 1.6; color: #333;">
+                Thank you for registering with TherapEase! We have received your therapist account registration and it is currently under review by our administration team.
+              </p>
+              
+              <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; font-size: 14px; color: #1e40af;">
+                  <strong>What happens next?</strong>
+                </p>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #1e40af;">
+                  <li>Our admin team will review your registration</li>
+                  <li>You will receive an email notification once your account is approved</li>
+                  <li>After approval, you can log in and start using the TherapEase platform</li>
+                </ul>
+              </div>
+              
+              <p style="font-size: 16px; line-height: 1.6; color: #333;">
+                This review process typically takes 1-2 business days. We appreciate your patience.
+              </p>
+              
+              <p style="font-size: 16px; line-height: 1.6; color: #333; margin-top: 30px;">
+                Best regards,<br>
+                <strong>The TherapEase Team</strong>
+              </p>
+            </div>
+          `;
+          
+          const emailText = `
+Registration Received - Under Review
+
+Dear ${therapistName},
+
+Thank you for registering with TherapEase! We have received your therapist account registration and it is currently under review by our administration team.
+
+What happens next?
+- Our admin team will review your registration
+- You will receive an email notification once your account is approved
+- After approval, you can log in and start using the TherapEase platform
+
+This review process typically takes 1-2 business days. We appreciate your patience.
+
+Best regards,
+The TherapEase Team
+          `;
+          
+          // Send email
+          const emailResult = await emailService.sendViaSendGridAPI(
+            therapistEmail,
+            emailSubject,
+            emailHtml,
+            emailText,
+            process.env.EMAIL_FROM || 'therapease16@gmail.com'
+          );
+          
+          if (emailResult.success) {
+            console.log(`✅ Registration confirmation email sent to ${therapistEmail}`);
+          } else {
+            console.error(`⚠️ Failed to send registration email to ${therapistEmail}:`, emailResult.error);
+          }
+          
+          // Notify all admins about new pending therapist
+          const adminUsers = await getAll('SELECT id FROM users WHERE role = "admin"');
+          for (const admin of adminUsers) {
+            await notificationController.createNotification(
+              admin.id,
+              'New Pending Therapist Registration',
+              `A new therapist (${newUser.firstName} ${newUser.lastName}) has registered and is pending approval. Please review their application.`,
+              'admin_notification',
+              { 
+                relatedId: userId,
+                sendEmail: false,
+                sendPush: true,
+                sendSMS: false
+              }
+            );
+          }
+          
+          console.log(`✅ Notified ${adminUsers.length} admin(s) about new pending therapist`);
+        } catch (notificationError) {
+          console.error('Error sending therapist registration notifications:', notificationError);
+          // Don't fail registration if notifications fail
+        }
+      }
 
       // Get session timeout from system settings
       const sessionTimeoutSetting = await getRow(
