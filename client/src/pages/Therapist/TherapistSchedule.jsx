@@ -1032,6 +1032,28 @@ const TherapistSchedule = () => {
                         </div>
                 </div>
 
+                {/* Show message if therapist created the appointment */}
+                {selectedAppointment.approvalStatus === 'pending' && selectedAppointment.creatorRole === 'therapist' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status Information</label>
+                    <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm">This appointment requires admin approval</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show message if appointment was created by admin */}
+                {selectedAppointment.creatorRole === 'admin' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status Information</label>
+                    <div className="bg-gray-50 border border-gray-200 text-gray-700 p-3 rounded-lg flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm">Cannot edit admin-created appointments</span>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
                         <p className="text-gray-900 bg-gray-50 p-3 rounded-lg text-sm">
@@ -1087,15 +1109,8 @@ const TherapistSchedule = () => {
                       Approve Appointment
                     </button>
                   )}
-                  {/* Show message if therapist created the appointment */}
-                  {selectedAppointment.approvalStatus === 'pending' && selectedAppointment.creatorRole === 'therapist' && (
-                    <div className="px-6 py-3 bg-gray-100 text-gray-500 rounded-lg flex items-center gap-2 whitespace-nowrap">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span className="text-sm">This appointment requires admin approval</span>
-                    </div>
-                  )}
                   {/* Only show edit button if appointment was not created by admin */}
-                  {selectedAppointment.creatorRole !== 'admin' ? (
+                  {selectedAppointment.creatorRole !== 'admin' && (
                     <button
                       onClick={() => handleEditAppointment(selectedAppointment)}
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
@@ -1103,11 +1118,6 @@ const TherapistSchedule = () => {
                       <Edit className="h-4 w-4" />
                       Edit Appointment
                     </button>
-                  ) : (
-                    <div className="px-6 py-3 bg-gray-100 text-gray-500 rounded-lg flex items-center gap-2 whitespace-nowrap">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span className="text-sm">Cannot edit admin-created appointments</span>
-                    </div>
                   )}
                 </div>
               </div>
