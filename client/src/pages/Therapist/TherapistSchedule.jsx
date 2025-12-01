@@ -1119,7 +1119,6 @@ const TherapistSchedule = () => {
               </div>
             </div>
           </div>
-        </div>
       )}
 
         {/* Edit Appointment Modal */}
