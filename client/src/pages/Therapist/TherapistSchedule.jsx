@@ -1073,13 +1073,7 @@ const TherapistSchedule = () => {
               
               {/* Modal Footer */}
               <div className="p-6 bg-gray-50 border-t border-gray-200">
-                <div className="flex flex-wrap gap-3 justify-end">
-                <button
-                    onClick={handleCloseAppointmentModal}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Close
-                </button>
+                <div className="flex flex-wrap items-center gap-3 justify-end">
                   {/* Show approve button if status is pending AND therapist didn't create it AND therapist hasn't already approved */}
                   {/* Therapist cannot approve their own appointments - they need admin approval */}
                   {selectedAppointment.approvalStatus === 'pending' && 
@@ -1087,7 +1081,7 @@ const TherapistSchedule = () => {
                    selectedAppointment.therapistApprovedBy !== user?.id && (
                     <button
                       onClick={handleApproveAppointment}
-                      className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+                      className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
                     >
                       <Check className="h-4 w-4" />
                       Approve Appointment
@@ -1095,7 +1089,7 @@ const TherapistSchedule = () => {
                   )}
                   {/* Show message if therapist created the appointment */}
                   {selectedAppointment.approvalStatus === 'pending' && selectedAppointment.creatorRole === 'therapist' && (
-                    <div className="px-6 py-3 bg-gray-100 text-gray-500 rounded-lg flex items-center gap-2">
+                    <div className="px-6 py-3 bg-gray-100 text-gray-500 rounded-lg flex items-center gap-2 whitespace-nowrap">
                       <AlertTriangle className="h-4 w-4" />
                       <span className="text-sm">This appointment requires admin approval</span>
                     </div>
@@ -1104,17 +1098,24 @@ const TherapistSchedule = () => {
                   {selectedAppointment.creatorRole !== 'admin' ? (
                     <button
                       onClick={() => handleEditAppointment(selectedAppointment)}
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
                     >
                       <Edit className="h-4 w-4" />
                       Edit Appointment
                     </button>
                   ) : (
-                    <div className="px-6 py-3 bg-gray-100 text-gray-500 rounded-lg flex items-center gap-2">
+                    <div className="px-6 py-3 bg-gray-100 text-gray-500 rounded-lg flex items-center gap-2 whitespace-nowrap">
                       <AlertTriangle className="h-4 w-4" />
                       <span className="text-sm">Cannot edit admin-created appointments</span>
                     </div>
                   )}
+                  <button
+                    onClick={handleCloseAppointmentModal}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium whitespace-nowrap"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
