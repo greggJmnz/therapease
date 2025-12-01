@@ -1094,8 +1094,8 @@ const TherapistSchedule = () => {
               </div>
               
               {/* Modal Footer */}
-              <div className="p-6 bg-gray-50 border-t border-gray-200">
-                <div className="flex flex-wrap items-center gap-3 justify-end">
+              <div className="p-3 sm:p-6 bg-gray-50 border-t border-gray-200">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-end">
                   {/* Show approve button if status is pending AND therapist didn't create it AND therapist hasn't already approved */}
                   {/* Therapist cannot approve their own appointments - they need admin approval */}
                   {selectedAppointment.approvalStatus === 'pending' && 
@@ -1103,9 +1103,9 @@ const TherapistSchedule = () => {
                    selectedAppointment.therapistApprovedBy !== user?.id && (
                     <button
                       onClick={handleApproveAppointment}
-                      className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
+                      className="px-3 py-2 sm:px-6 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium flex items-center gap-1 sm:gap-2 whitespace-nowrap text-sm sm:text-base"
                     >
-                      <Check className="h-4 w-4" />
+                      <Check className="h-3 w-3 sm:h-4 sm:w-4" />
                       Approve Appointment
                     </button>
                   )}
@@ -1113,9 +1113,9 @@ const TherapistSchedule = () => {
                   {selectedAppointment.creatorRole !== 'admin' && (
                     <button
                       onClick={() => handleEditAppointment(selectedAppointment)}
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2 whitespace-nowrap"
+                      className="px-3 py-2 sm:px-6 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center gap-1 sm:gap-2 whitespace-nowrap text-sm sm:text-base"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                       Edit Appointment
                     </button>
                   )}
