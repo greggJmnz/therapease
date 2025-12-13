@@ -285,6 +285,10 @@ const getUsers = async (req, res) => {
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
+    // Exclude pending therapists from users list - only show approved/active therapists
+    whereConditions.push('(u.role != ? OR u.status != ?)');
+    params.push('therapist', 'pending');
+
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
     // Get total count
@@ -1958,9 +1962,9 @@ const rejectPendingTherapist = async (req, res) => {
       });
     }
 
-    // Check if therapist exists and is pending, get therapist record ID
+    // Check if therapist exists and is pending, get therapist record ID and email for notification
     const therapist = await getRow(
-      'SELECT u.id, u.status, t.id as therapistRecordId FROM users u LEFT JOIN therapists t ON u.id = t.userId WHERE u.id = ? AND u.role = ?',
+      'SELECT u.id, u.status, u.email, u.firstName, u.lastName, t.id as therapistRecordId FROM users u LEFT JOIN therapists t ON u.id = t.userId WHERE u.id = ? AND u.role = ?',
       [therapistId, 'therapist']
     );
 
@@ -1976,6 +1980,88 @@ const rejectPendingTherapist = async (req, res) => {
         success: false,
         error: 'Therapist is not pending approval'
       });
+    }
+
+    // Send email notification to the therapist before deleting
+    try {
+      const emailService = require('../services/emailService');
+      const { decryptField } = require('../utils/encryption');
+      
+      // Decrypt email
+      const therapistEmail = decryptField(therapist.email) || therapist.email;
+      const therapistName = therapist.firstName || 'Therapist';
+      
+      // Create email content
+      const emailSubject = 'TherapEase Registration - Application Not Approved';
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #dc2626; margin-bottom: 20px;">Application Not Approved</h2>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #333;">
+            Dear ${therapistName},
+          </p>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #333;">
+            Thank you for your interest in joining TherapEase. After careful review of your application, we regret to inform you that we are unable to approve your therapist account at this time.
+          </p>
+          
+          <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 14px; color: #991b1b;">
+              <strong>What this means:</strong>
+            </p>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #991b1b;">
+              <li>Your account registration has been declined</li>
+              <li>Your account and all associated data have been removed from our system</li>
+              <li>You will not be able to log in to the TherapEase platform</li>
+            </ul>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #333;">
+            If you have any questions about this decision or would like to discuss your application further, please contact our support team.
+          </p>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #333; margin-top: 30px;">
+            Best regards,<br>
+            <strong>The TherapEase Team</strong>
+          </p>
+        </div>
+      `;
+      
+      const emailText = `
+Application Not Approved
+
+Dear ${therapistName},
+
+Thank you for your interest in joining TherapEase. After careful review of your application, we regret to inform you that we are unable to approve your therapist account at this time.
+
+What this means:
+- Your account registration has been declined
+- Your account and all associated data have been removed from our system
+- You will not be able to log in to the TherapEase platform
+
+If you have any questions about this decision or would like to discuss your application further, please contact our support team.
+
+Best regards,
+The TherapEase Team
+      `;
+      
+      // Send email
+      const emailResult = await emailService.sendViaSendGridAPI(
+        therapistEmail,
+        emailSubject,
+        emailHtml,
+        emailText,
+        process.env.EMAIL_FROM || 'therapease16@gmail.com'
+      );
+      
+      if (emailResult.success) {
+        console.log(`✅ Rejection email sent to ${therapistEmail}`);
+      } else {
+        console.error(`⚠️ Failed to send rejection email to ${therapistEmail}:`, emailResult.error);
+      }
+    } catch (emailError) {
+      console.error('Error sending rejection email:', emailError);
+      // Continue with deletion even if email fails
     }
 
     // Start transaction to delete both user and therapist records
@@ -2045,6 +2131,10 @@ const getAllUsers = async (req, res) => {
       whereConditions.push('(u.firstName LIKE ? OR u.lastName LIKE ? OR u.email LIKE ?)');
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
+
+    // Exclude pending therapists from users management list - only show approved/active therapists
+    whereConditions.push('(u.role != ? OR u.status != ?)');
+    params.push('therapist', 'pending');
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
