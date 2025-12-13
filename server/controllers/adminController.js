@@ -41,7 +41,7 @@ const getDashboard = async (req, res) => {
     // This reduces 2 queries to 1, dramatically improving performance
     const combinedStatsSql = `
       SELECT 
-        (SELECT COUNT(*) FROM users WHERE role = 'therapist') as totalTherapists,
+        (SELECT COUNT(*) FROM users WHERE role = 'therapist' AND status != 'pending') as totalTherapists,
         (SELECT COUNT(*) FROM users WHERE role = 'patient') as totalPatients,
         (SELECT COUNT(*) FROM users WHERE role = 'admin') as totalAdmins,
         (SELECT COUNT(*) FROM assessments) as totalAssessments,
