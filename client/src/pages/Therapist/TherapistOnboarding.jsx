@@ -103,13 +103,64 @@ const TherapistOnboarding = () => {
     }
   }, [user]);
 
-  // Load current user data for account summary
+  // Load current user data for account summary and pre-fill form
   useEffect(() => {
     const loadCurrentUserData = async () => {
       try {
         const response = await therapistAPI.getProfile();
         if (response.data.success) {
-          setCurrentUserData(response.data.data);
+          const userData = response.data.data;
+          setCurrentUserData(userData);
+          
+          // Pre-fill form fields with existing user data from signup
+          if (userData) {
+            // Personal Information
+            if (userData.firstName) setValue('firstName', userData.firstName);
+            if (userData.lastName) setValue('lastName', userData.lastName);
+            if (userData.phone) setValue('phone', userData.phone);
+            if (userData.dateOfBirth) {
+              // Format date for date input (YYYY-MM-DD)
+              const dateOfBirth = userData.dateOfBirth instanceof Date 
+                ? userData.dateOfBirth.toISOString().split('T')[0]
+                : userData.dateOfBirth.split('T')[0];
+              setValue('dateOfBirth', dateOfBirth);
+            }
+            if (userData.gender) setValue('gender', userData.gender);
+            if (userData.address) setValue('address', userData.address);
+            if (userData.city) setValue('city', userData.city);
+            if (userData.state) setValue('state', userData.state);
+            if (userData.zipCode) setValue('zipCode', userData.zipCode);
+            
+            // Professional Information
+            if (userData.therapist?.licenseNumber) setValue('licenseNumber', userData.therapist.licenseNumber);
+            if (userData.therapist?.specialization) setValue('specialization', userData.therapist.specialization);
+            if (userData.therapist?.yearsOfExperience) setValue('yearsOfExperience', userData.therapist.yearsOfExperience);
+            if (userData.therapist?.education) setValue('education', userData.therapist.education);
+            if (userData.therapist?.certifications) setValue('certifications', userData.therapist.certifications);
+            if (userData.therapist?.maxPatients !== undefined) setValue('maxPatients', userData.therapist.maxPatients);
+            if (userData.therapist?.isAcceptingPatients !== undefined) setValue('isAcceptingPatients', userData.therapist.isAcceptingPatients);
+            
+            // Also update onboardingData state with pre-filled values
+            setOnboardingData(prev => ({
+              ...prev,
+              firstName: userData.firstName || prev.firstName,
+              lastName: userData.lastName || prev.lastName,
+              phone: userData.phone || prev.phone,
+              dateOfBirth: userData.dateOfBirth || prev.dateOfBirth,
+              gender: userData.gender || prev.gender,
+              address: userData.address || prev.address,
+              city: userData.city || prev.city,
+              state: userData.state || prev.state,
+              zipCode: userData.zipCode || prev.zipCode,
+              licenseNumber: userData.therapist?.licenseNumber || prev.licenseNumber,
+              specialization: userData.therapist?.specialization || prev.specialization,
+              yearsOfExperience: userData.therapist?.yearsOfExperience || prev.yearsOfExperience,
+              education: userData.therapist?.education || prev.education,
+              certifications: userData.therapist?.certifications || prev.certifications,
+              maxPatients: userData.therapist?.maxPatients || prev.maxPatients || 20,
+              isAcceptingPatients: userData.therapist?.isAcceptingPatients !== undefined ? userData.therapist.isAcceptingPatients : (prev.isAcceptingPatients !== undefined ? prev.isAcceptingPatients : true)
+            }));
+          }
         }
       } catch (error) {
         console.error('Failed to load user data:', error);
@@ -119,7 +170,7 @@ const TherapistOnboarding = () => {
     if (user?.role === 'therapist') {
       loadCurrentUserData();
     }
-  }, [user]);
+  }, [user, setValue]);
 
   const nextStep = () => {
     if (currentStep < totalSteps) {
