@@ -105,7 +105,7 @@ const getNotifications = async (req, res) => {
           n.type,
           n.isRead,
           n.priority,
-          CONVERT_TZ(n.createdAt, @@session.time_zone, '+00:00') as createdAt
+          n.createdAt as createdAt
         FROM notifications n
         ${whereClause}
         ORDER BY n.createdAt DESC
@@ -124,7 +124,7 @@ const getNotifications = async (req, res) => {
             n.message,
             n.type,
             n.isRead,
-            CONVERT_TZ(n.createdAt, @@session.time_zone, '+00:00') as createdAt
+            n.createdAt as createdAt
           FROM notifications n
           ${whereClause}
           ORDER BY n.createdAt DESC

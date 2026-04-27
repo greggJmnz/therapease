@@ -63,6 +63,7 @@
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^5.1.0",
+    "baseline-browser-mapping": "^2.10.23",
     "serve": "^14.2.1",
     "vite": "^7.1.12"
   },

@@ -442,8 +442,7 @@ app.get('/uploads/check/:filename', (req, res) => {
   }
 });
 
-// Serve root-level assets
-app.use(express.static(path.join(__dirname, 'public')));
+// Root-level assets are no longer served from the backend (frontend handled by Vite client)
 
 // Test auth route
 app.get('/api/auth/test', (req, res) => {

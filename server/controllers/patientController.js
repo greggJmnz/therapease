@@ -1630,7 +1630,7 @@ const getNotifications = async (req, res) => {
     try {
       // Try with priority column first
       notifications = await getAll(`
-        SELECT id, title, message, type, isRead, priority, CONVERT_TZ(createdAt, @@session.time_zone, '+00:00') as createdAt
+        SELECT id, title, message, type, isRead, priority, createdAt
         FROM notifications
         WHERE userId = ?
         ORDER BY createdAt DESC
@@ -1640,7 +1640,7 @@ const getNotifications = async (req, res) => {
       if (error.code === 'ER_BAD_FIELD_ERROR' && error.message.includes('priority')) {
         console.warn('⚠️ Priority column not found in notifications table, querying without it');
         notifications = await getAll(`
-          SELECT id, title, message, type, isRead, CONVERT_TZ(createdAt, @@session.time_zone, '+00:00') as createdAt
+          SELECT id, title, message, type, isRead, createdAt
           FROM notifications
           WHERE userId = ?
           ORDER BY createdAt DESC

@@ -1256,7 +1256,7 @@ const getNotifications = async (req, res) => {
         n.message,
         n.isRead,
         n.relatedId,
-        CONVERT_TZ(n.createdAt, @@session.time_zone, '+00:00') as createdAt,
+        n.createdAt as createdAt,
         u.firstName,
         u.lastName
       FROM notifications n

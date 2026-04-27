@@ -146,14 +146,10 @@ const RootRedirect = () => {
     }
   }
 
-  // If not authenticated, the public website is served at root / by nginx
-  // We need to do a full page reload to show the public website
-  // This only happens if the React app is loaded (which shouldn't happen for root /)
-  // But if it does, redirect to root which nginx will serve as public website
-  if (typeof window !== 'undefined') {
-    window.location.href = '/';
-  }
-  return null;
+  // If not authenticated, simply redirect to the login page.
+  // Do NOT use window.location.href = '/' here, as it causes an infinite reload 
+  // loop in local development where the React app is served at the root.
+  return <Navigate to="/auth/login" replace />;
 };
 
 // Protected route component
