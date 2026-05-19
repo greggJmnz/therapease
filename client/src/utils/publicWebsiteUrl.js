@@ -15,14 +15,21 @@ const normalizeUrl = (value) => {
 };
 
 export const getPublicWebsiteUrl = () => {
-  const configuredUrl = import.meta.env.VITE_PUBLIC_WEBSITE_URL;
-  if (configuredUrl) {
-    return normalizeUrl(configuredUrl);
+  const sameOriginUrl = `${window.location.origin}/public-website`;
+  const configuredUrl = normalizeUrl(import.meta.env.VITE_PUBLIC_WEBSITE_URL || '');
+
+  if (!configuredUrl) {
+    return import.meta.env.DEV ? 'http://localhost:8000/public-website' : sameOriginUrl;
   }
 
-  if (import.meta.env.DEV) {
-    return 'http://localhost:8000/public-website';
+  try {
+    const configuredOrigin = new URL(configuredUrl, window.location.origin).origin;
+    if (configuredOrigin === window.location.origin) {
+      return configuredUrl;
+    }
+  } catch {
+    return sameOriginUrl;
   }
 
-  return `${window.location.origin}/public-website`;
+  return sameOriginUrl;
 };
