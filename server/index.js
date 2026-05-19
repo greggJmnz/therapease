@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const fs = require('fs');
 const path = require('path');
 const { createHTTPSServer, securityHeaders, sslHealthCheck } = require('./config/ssl');
 const { 
@@ -233,8 +234,20 @@ app.get('/ws', (req, res) => {
   });
 });
 
-// Serve static files from public-website directory
-app.use('/public-website', express.static(path.join(__dirname, '../public-website')));
+// Serve the public website from the actual asset directory.
+const publicWebsiteCandidates = [
+  path.join(__dirname, '../client/dist/public-website'),
+  path.join(__dirname, '../client/public/public-website'),
+  path.join(__dirname, '../public-website')
+];
+
+const publicWebsiteDir = publicWebsiteCandidates.find((candidate) => fs.existsSync(candidate));
+
+if (publicWebsiteDir) {
+  app.use('/public-website', express.static(publicWebsiteDir));
+} else {
+  logger.warn('Public website directory not found; /public-website will not serve static assets.');
+}
 
 // Middleware to add CORS headers for static file serving
 const corsStaticMiddleware = (req, res, next) => {
