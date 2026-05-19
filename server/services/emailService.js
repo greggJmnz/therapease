@@ -1,32 +1,7 @@
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const axios = require('axios');
-
-/**
- * Get the frontend URL from environment variables
- * Priority: FRONTEND_URL > CORS_ORIGIN (first origin) > Production default > Development default
- */
-const getFrontendUrl = () => {
-  // If FRONTEND_URL is explicitly set, use it
-  if (process.env.FRONTEND_URL) {
-    return process.env.FRONTEND_URL;
-  }
-  
-  // In production, try to derive from CORS_ORIGIN
-  if (process.env.NODE_ENV === 'production') {
-    if (process.env.CORS_ORIGIN) {
-      // Get the first origin from CORS_ORIGIN (comma-separated list)
-      const firstOrigin = process.env.CORS_ORIGIN.split(',')[0].trim();
-      // Use the origin as-is (it should already be a full URL like https://therapease.site)
-      return firstOrigin;
-    }
-    // Production default
-    return 'https://therapease.site';
-  }
-  
-  // Development default
-  return 'http://localhost:3000';
-};
+const { getFrontendUrl } = require('../config/env');
 
 class EmailService {
   constructor() {

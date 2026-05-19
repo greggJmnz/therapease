@@ -58,6 +58,20 @@ const SSL_CONFIG = {
   agent: false
 };
 
+const getCertificateCommonName = () => {
+  const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN?.split(',')[0]?.trim();
+
+  if (!frontendUrl) {
+    return 'localhost';
+  }
+
+  try {
+    return new URL(frontendUrl).hostname;
+  } catch {
+    return 'localhost';
+  }
+};
+
 // Generate self-signed certificate for development
 const generateSelfSignedCert = () => {
   const certDir = joinPaths(__dirname, '../certs');
@@ -93,7 +107,7 @@ const generateSelfSignedCert = () => {
   const success = generateSSLCertificates(keyPath, certPath, {
     keySize: 4096,
     days: 365,
-    subject: '/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=therapease.site'
+    subject: `/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=${getCertificateCommonName()}`
   });
   
   if (success) {

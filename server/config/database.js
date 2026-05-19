@@ -1669,7 +1669,7 @@ SSL_KEY_PATH=./server/certs/server.key
 SSL_CERT_PATH=./server/certs/server.crt
 
 # CORS Configuration
-CORS_ORIGIN=https://therapease.site
+CORS_ORIGIN=
 
 # Email Configuration
 EMAIL_ENABLED=false
@@ -1730,7 +1730,16 @@ const setupSSLCertificates = () => {
   const success = generateSSLCertificates(keyPath, certPath, {
     keySize: 4096,
     days: 365,
-    subject: '/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=therapease.site'
+    subject: `/C=US/ST=State/L=City/O=TherapEase/OU=IT/CN=${(() => {
+      const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN?.split(',')[0]?.trim();
+      if (!frontendUrl) return 'localhost';
+
+      try {
+        return new URL(frontendUrl).hostname;
+      } catch {
+        return 'localhost';
+      }
+    })()}`
   });
   
   if (!success) {

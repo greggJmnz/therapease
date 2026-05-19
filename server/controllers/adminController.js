@@ -1832,6 +1832,7 @@ const approvePendingTherapist = async (req, res) => {
     // Send email notification to the therapist
     try {
       const emailService = require('../services/emailService');
+      const { getFrontendUrl } = require('../config/env');
       const { decryptField } = require('../utils/encryption');
       
       // Decrypt email
@@ -1839,8 +1840,7 @@ const approvePendingTherapist = async (req, res) => {
       const therapistName = therapist.firstName || 'Therapist';
       
       // Get frontend URL for login link
-      const frontendUrl = process.env.FRONTEND_URL || 
-                         (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',')[0].trim() : 'https://therapease.site');
+      const frontendUrl = getFrontendUrl();
       const loginUrl = `${frontendUrl}/auth/login`;
       
       // Create email content
@@ -2356,23 +2356,7 @@ const sendPasswordResetLink = async (req, res) => {
       // URL encode the token to ensure it's safely handled in the URL
       const encodedToken = encodeURIComponent(resetToken);
       
-      // Get frontend URL from environment or derive from CORS_ORIGIN
-      const getFrontendUrl = () => {
-        if (process.env.FRONTEND_URL) {
-          return process.env.FRONTEND_URL;
-        }
-        if (process.env.NODE_ENV === 'production') {
-          if (process.env.CORS_ORIGIN) {
-            // Get the first origin from CORS_ORIGIN (comma-separated list)
-            const firstOrigin = process.env.CORS_ORIGIN.split(',')[0].trim();
-            // Use the origin as-is (it should already be a full URL like https://therapease.site)
-            return firstOrigin;
-          }
-          return 'https://therapease.site';
-        }
-        return 'http://localhost:3000';
-      };
-      
+      const { getFrontendUrl } = require('../config/env');
       const resetLink = `${getFrontendUrl()}/auth/reset-password?token=${encodedToken}`;
       res.json({
         success: true,
