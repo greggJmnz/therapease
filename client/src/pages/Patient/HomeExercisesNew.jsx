@@ -67,7 +67,7 @@ const getProofImageUrl = (input) => {
   } else {
     const hostname = window.location.hostname;
     if (hostname.includes("therapease.site")) {
-      serverBaseUrl = "https://api.therapease.site";
+      serverBaseUrl = getApiOrigin();
       console.warn(
         "⚠️ VITE_API_URL not set, inferred from hostname:",
         serverBaseUrl,

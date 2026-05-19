@@ -334,7 +334,7 @@ function initForms() {
                     showSuccess('Registration successful! Please log in.');
                     setTimeout(() => {
                         closeModal('registerModal');
-                        window.location.href = 'https://www.therapease.site/auth/login';
+                        window.location.href = '/auth/login';
                     }, 1500);
                 } else {
                     showError(result.message || 'Registration failed. Please try again.');
@@ -392,7 +392,7 @@ function initForms() {
                 const apiBaseUrl = window.__THERAPEASE_API_BASE_URL__
                     || (window.location.hostname === 'localhost'
                         ? 'http://localhost:5000/api'
-                        : 'https://api.therapease.site/api');
+                        : `${window.location.origin}/api`);
 
                 // Send contact form to API
                 const response = await fetch(`${apiBaseUrl}/contact/submit`, {
@@ -708,7 +708,7 @@ function initDemoAccounts() {
                 emailInput.value = email;
                 passwordInput.value = password;
                 // Redirect to login page instead of opening modal
-                window.location.href = 'https://www.therapease.site/auth/login';
+                window.location.href = '/auth/login';
             }
         });
     });
@@ -810,7 +810,7 @@ document.addEventListener('visibilitychange', () => {
 // Service Worker registration (for future PWA features)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+        navigator.serviceWorker.register('/public-website/sw.js')
             .then((registration) => {
                 console.log('SW registered: ', registration);
             })

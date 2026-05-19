@@ -2,6 +2,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { getFrontendUrl, getCorsOrigins } = require('./env');
 const { 
   isWindows, 
   execCommand, 
@@ -12,6 +13,24 @@ const {
   getOpenSSLCommand,
   isOpenSSLAvailable
 } = require('../utils/windowsCompatibility');
+
+const normalizeOrigin = (value) => {
+  if (!value) return '';
+
+  try {
+    return new URL(value).origin;
+  } catch {
+    return value;
+  }
+};
+
+const frontendOrigin = normalizeOrigin(getFrontendUrl());
+const corsOrigins = getCorsOrigins().map(normalizeOrigin);
+const apiOrigin = normalizeOrigin(process.env.API_BASE_URL || '');
+const allowedOrigins = [...new Set([frontendOrigin, ...corsOrigins, apiOrigin].filter(Boolean))];
+const allowedWsOrigins = allowedOrigins
+  .map((origin) => (origin.startsWith('https://') ? origin.replace(/^https:/, 'wss:') : origin.startsWith('http://') ? origin.replace(/^http:/, 'ws:') : origin))
+  .filter(Boolean);
 
 // SSL/TLS Configuration
 const SSL_CONFIG = {
@@ -159,12 +178,15 @@ const securityHeaders = (req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   // Updated CSP to allow cross-origin API connections for iOS Safari compatibility
-  // connect-src now includes both therapease.site and api.therapease.site domains
+  // Origins are derived from FRONTEND_URL, CORS_ORIGIN, and API_BASE_URL
   // worker-src is required for service workers on iOS Safari
   // blob: is needed for service workers that may use blob URLs
   // Push notification services must be allowed in connect-src for service worker push subscriptions
   // FCM (Firebase Cloud Messaging) for Chrome/Edge, Mozilla push service for Firefox, etc.
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https: http://therapease.site:* https://api.therapease.site:* https://www.therapease.site:*; connect-src 'self' https://therapease.site https://api.therapease.site https://www.therapease.site wss://therapease.site wss://api.therapease.site https://fcm.googleapis.com https://*.fcm.googleapis.com https://updates.push.services.mozilla.com https://*.push.services.mozilla.com https://*.notify.windows.com https://*.push.apple.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self'");
+  res.setHeader(
+    'Content-Security-Policy',
+    `default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https: ${allowedOrigins.join(' ')}; connect-src 'self' ${allowedOrigins.join(' ')} ${allowedWsOrigins.join(' ')} https://fcm.googleapis.com https://*.fcm.googleapis.com https://updates.push.services.mozilla.com https://*.push.services.mozilla.com https://*.notify.windows.com https://*.push.apple.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com https://fonts.googleapis.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self'`
+  );
   
   next();
 };

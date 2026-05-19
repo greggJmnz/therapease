@@ -1694,7 +1694,7 @@ VAPID_SUBJECT=mailto:admin@therapease.com
 OPENAI_API_KEY=
 
 # API Base URL
-API_BASE_URL=https://api.therapease.site
+API_BASE_URL=
 `;
   }
   
