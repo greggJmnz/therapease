@@ -49,7 +49,7 @@ app.use((req, res, next) => {
   }
   // Apply CORS for all other routes
   return cors({
-    origin: isProduction ? getCorsOrigins() : true,
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Data-Protection', 'X-Content-Encryption'],
