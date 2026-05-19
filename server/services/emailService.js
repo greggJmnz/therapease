@@ -175,14 +175,14 @@ class EmailService {
 
   async sendPasswordResetEmail(email, resetToken, userFirstName = 'User') {
     try {
-      // URL encode the token to ensure it's safely handled in the URL
-      const encodedToken = encodeURIComponent(resetToken);
-      const resetLink = `${getFrontendUrl()}/auth/reset-password?token=${encodedToken}`;
-      const html = this.getPasswordResetEmailTemplate(userFirstName, resetLink);
-      const text = this.getPasswordResetEmailText(userFirstName, resetLink);
-      
       // Use SendGrid API if configured (when SMTP is blocked)
       if (this.useSendGridAPI) {
+        // URL encode the token to ensure it's safely handled in the URL
+        const encodedToken = encodeURIComponent(resetToken);
+        const resetLink = `${getFrontendUrl()}/auth/reset-password?token=${encodedToken}`;
+        const html = this.getPasswordResetEmailTemplate(userFirstName, resetLink);
+        const text = this.getPasswordResetEmailText(userFirstName, resetLink);
+
         const result = await this.sendViaSendGridAPI(
           email,
           'Password Reset Request - TherapEase',
@@ -200,6 +200,12 @@ class EmailService {
           error: 'Email service is disabled. Please enable email service in environment variables to send password reset emails.' 
         };
       }
+
+      // URL encode the token to ensure it's safely handled in the URL
+      const encodedToken = encodeURIComponent(resetToken);
+      const resetLink = `${getFrontendUrl()}/auth/reset-password?token=${encodedToken}`;
+      const html = this.getPasswordResetEmailTemplate(userFirstName, resetLink);
+      const text = this.getPasswordResetEmailText(userFirstName, resetLink);
       
       const mailOptions = {
         from: {

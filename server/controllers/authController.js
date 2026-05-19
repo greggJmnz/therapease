@@ -828,7 +828,15 @@ const forgotPassword = async (req, res) => {
       );
 
       if (!emailResult.success) {
-        throw new Error(`Failed to send email: ${emailResult.error}`);
+        await connection.rollback();
+
+        const errorMessage = emailResult.error || 'Failed to send password reset email';
+        console.error('Forgot password email delivery failed:', errorMessage);
+
+        return res.status(503).json({
+          success: false,
+          error: errorMessage
+        });
       }
 
       await connection.commit();
