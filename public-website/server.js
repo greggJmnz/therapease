@@ -3,13 +3,14 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || process.env.PUBLIC_PORT || 8000;
+const siteRoot = path.join(__dirname, '../client/public/public-website');
 
-// Serve static files from the public-website directory
-app.use(express.static(path.join(__dirname)));
+// Serve the public website from the client deployment tree
+app.use(express.static(siteRoot));
 
 // Serve the main index.html for all routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(siteRoot, 'index.html'));
 });
 
 app.listen(PORT, () => {
