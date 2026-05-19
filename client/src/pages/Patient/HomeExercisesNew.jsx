@@ -41,7 +41,6 @@ const getProofImageUrl = (input) => {
         input.path ||
         input.filePath ||
         } else {
-          // In production without VITE_API_URL, use the configured API origin.
           serverBaseUrl = getApiOrigin();
           console.warn(
             "⚠️ VITE_API_URL not set, using API origin:",
@@ -65,29 +64,14 @@ const getProofImageUrl = (input) => {
       "⚠️ VITE_API_URL not set in development, using http://localhost:5000",
     );
   } else {
-    const hostname = window.location.hostname;
-    if (hostname.includes("therapease.site")) {
-      serverBaseUrl = getApiOrigin();
-      console.warn(
-        "⚠️ VITE_API_URL not set, inferred from hostname:",
-        serverBaseUrl,
-      );
-      console.warn(
-        "💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables",
-      );
-    } else {
-      serverBaseUrl = window.location.origin;
-      if (isProduction && serverBaseUrl.startsWith("http://")) {
-        serverBaseUrl = serverBaseUrl.replace("http://", "https://");
-      }
-      console.error(
-        "❌ VITE_API_URL not set and cannot infer server URL. Using:",
-        serverBaseUrl,
-      );
-      console.error(
-        "💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables",
-      );
+    serverBaseUrl = window.location.origin;
+    if (isProduction && serverBaseUrl.startsWith("http://")) {
+      serverBaseUrl = serverBaseUrl.replace("http://", "https://");
     }
+    console.error(
+      "❌ VITE_API_URL not set and cannot infer server URL. Using:",
+      serverBaseUrl,
+    );
   }
 
   const normalizedFileUrl = fileUrl.replace(/\\/g, "/");

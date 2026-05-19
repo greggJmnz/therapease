@@ -60,7 +60,7 @@ public-website/
 ### Option 1: Standalone Deployment
 
 1. **Upload Files**: Upload the entire `public-website` folder to your web server
-2. **Configure API Endpoints**: Update the API endpoints in `script.js` if needed
+2. **Configure API Endpoints**: Set the API base URL used by `script.js` if needed
 3. **Set CORS Headers**: Ensure your server allows CORS requests from the website domain
 
 ### Option 2: Integration with Existing Server

@@ -38,8 +38,7 @@ const getVideoUrl = (videoPath) => {
     return videoPath;
   }
 
-  // Get the server URL from API base URL
-  // We need to use the API server URL, not the frontend URL
+  // Resolve the server URL from the configured API base URL
   const apiBaseUrl = import.meta.env.VITE_API_URL || "";
   const isDevelopment =
     window.location.hostname === "localhost" ||
@@ -49,7 +48,6 @@ const getVideoUrl = (videoPath) => {
 
   if (apiBaseUrl) {
     // Extract server URL from API URL (remove /api suffix)
-    // Example: https://api.therapease.site/api -> https://api.therapease.site
     serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
 
     // Ensure HTTPS in production (fix mixed content errors)
@@ -58,7 +56,7 @@ const getVideoUrl = (videoPath) => {
       console.warn("⚠️ Upgraded HTTP to HTTPS for production:", serverBaseUrl);
     }
   } else {
-    // IMPORTANT: In production, VITE_API_URL MUST be set!
+    // IMPORTANT: In production, VITE_API_URL should be configured!
     if (isDevelopment) {
       // In development, API is typically on localhost:5000
       serverBaseUrl = "http://localhost:5000";
@@ -66,7 +64,6 @@ const getVideoUrl = (videoPath) => {
         "⚠️ VITE_API_URL not set in development, using http://localhost:5000",
       );
     } else {
-      // In production without VITE_API_URL, use the configured API origin.
       serverBaseUrl = getApiOrigin();
       console.warn("⚠️ VITE_API_URL not set, using API origin:", serverBaseUrl);
     }

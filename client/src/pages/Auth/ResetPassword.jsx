@@ -28,16 +28,17 @@ const ResetPassword = () => {
         windowLocation: window.location.href,
       });
 
-      // Warn if using relative URL in production (Vercel)
+      // Warn if the production API URL is missing
       if (
         !import.meta.env.VITE_API_URL &&
-        window.location.hostname.includes("therapease.site")
+        window.location.hostname !== "localhost" &&
+        window.location.hostname !== "127.0.0.1"
       ) {
         console.error(
-          "⚠️ WARNING: VITE_API_URL is not set! Using relative URL /api which will fail.",
+          "⚠️ WARNING: VITE_API_URL is not set! Using a relative /api URL in production can fail.",
         );
         console.error(
-          "💡 Fix: Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables",
+          "💡 Fix: Set VITE_API_URL to the deployed API base URL in your environment variables",
         );
       }
 
@@ -90,12 +91,12 @@ const ResetPassword = () => {
 3. The backend server is not running or not accessible
 
 URL called: ${url}
-Expected URL format: https://api.therapease.site/api/auth/verify-reset-token/{token}
+Expected URL format: [API origin]/api/auth/verify-reset-token/{token}
 
 Debugging steps:
-1. Check VITE_API_URL in Vercel → Settings → Environment Variables
-   Should be: https://api.therapease.site/api
-2. Test API directly: curl https://api.therapease.site/api/health
+1. Check VITE_API_URL in your deployment environment variables
+  It should point to the deployed API origin
+2. Test API directly using your configured API health endpoint
 3. Check PM2 status on droplet: pm2 status
 4. Check PM2 logs: pm2 logs therapease-api`);
       }
