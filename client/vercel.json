@@ -5,6 +5,14 @@
       "destination": "/public-website/index.html"
     },
     {
+      "source": "/public-website/",
+      "destination": "/public-website/index.html"
+    },
+    {
+      "source": "/public-website/(.*)",
+      "destination": "/public-website/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

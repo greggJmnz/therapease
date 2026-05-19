@@ -196,7 +196,7 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // Only fallback to cache if network completely fails
-          return caches.match(event.request);
+          return caches.match('/index.html').then((response) => response || Response.error());
         })
     );
     return;
@@ -233,8 +233,10 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // Return offline page for navigation requests (but not index.html)
             if (event.request.destination === 'document') {
-              return caches.match('/');
+              return caches.match('/index.html').then((response) => response || Response.error());
             }
+
+            return Response.error();
           });
       })
   );

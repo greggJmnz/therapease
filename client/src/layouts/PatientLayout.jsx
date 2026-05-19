@@ -8,6 +8,7 @@ import OnboardingStatus from '../components/OnboardingStatus';
 import { useQuery, useQueryClient } from 'react-query';
 import { patientAPI } from '../services/api';
 import { useNavigationState } from '../hooks/useNavigationState';
+import { getPublicWebsiteUrl } from '../utils/publicWebsiteUrl';
 import {
   Calendar,
   FileText,
@@ -26,36 +27,6 @@ import {
   Globe,
   Dumbbell,
 } from 'lucide-react';
-
-// Helper function to get the public website URL
-const getPublicWebsiteUrl = () => {
-  // Check for environment variable first
-  const publicWebsiteUrl = import.meta.env.VITE_PUBLIC_WEBSITE_URL;
-  if (publicWebsiteUrl) {
-    return publicWebsiteUrl;
-  }
-  
-  // In development, use localhost
-  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  if (isDevelopment) {
-    return 'http://localhost:8000';
-  }
-  
-  // In production, use www.therapease.site/public-website
-  const isProduction = window.location.protocol === 'https:';
-  if (isProduction) {
-    return 'https://www.therapease.site/public-website';
-  }
-  
-  // Fallback: infer from current location
-  const hostname = window.location.hostname;
-  if (hostname.includes('therapease.site')) {
-    return `https://www.therapease.site/public-website`;
-  }
-  
-  // Default fallback
-  return `${window.location.origin}/public-website`;
-};
 
 const PatientLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
