@@ -155,8 +155,8 @@ const getProofImageUrl = (input) => {
       if (isProduction && serverBaseUrl.startsWith("http://")) {
         serverBaseUrl = serverBaseUrl.replace("http://", "https://");
       }
-    } else if (apiBaseUrl.startsWith('/')) {
-      serverBaseUrl = isDevelopment ? 'http://127.0.0.1:5000' : getApiOrigin();
+    } else if (apiBaseUrl.startsWith("/")) {
+      serverBaseUrl = isDevelopment ? "http://127.0.0.1:5000" : getApiOrigin();
     } else {
       serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
     }

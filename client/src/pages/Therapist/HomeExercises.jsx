@@ -103,10 +103,7 @@ const getProofImageUrl = (input) => {
     } else {
       // In production without VITE_API_URL, use the configured API origin.
       serverBaseUrl = getApiOrigin();
-      console.warn(
-        "⚠️ VITE_API_URL not set, using API origin:",
-        serverBaseUrl,
-      );
+      console.warn("⚠️ VITE_API_URL not set, using API origin:", serverBaseUrl);
     }
   }
 

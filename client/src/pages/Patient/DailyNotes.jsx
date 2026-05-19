@@ -22,7 +22,7 @@ import { useRealtimeData } from "../../hooks/useWebSocket";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import ConfirmationModal from "../../components/ConfirmationModal";
-import { buildApiUrl, getApiOrigin } from '../../utils/apiUrl';
+import { buildApiUrl, getApiOrigin } from "../../utils/apiUrl";
 
 // Helper function to get the correct video URL
 // Static files are served from the backend server, not the frontend
@@ -68,10 +68,7 @@ const getVideoUrl = (videoPath) => {
     } else {
       // In production without VITE_API_URL, use the configured API origin.
       serverBaseUrl = getApiOrigin();
-      console.warn(
-        "⚠️ VITE_API_URL not set, using API origin:",
-        serverBaseUrl,
-      );
+      console.warn("⚠️ VITE_API_URL not set, using API origin:", serverBaseUrl);
     }
   }
 
