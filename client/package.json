@@ -37,6 +37,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "start": "serve -s dist -l $PORT",
     "preview": "vite preview",
     "lint": "echo \"No linting configured\" && exit 0",
     "lint:fix": "echo \"No linting configured\" && exit 0"

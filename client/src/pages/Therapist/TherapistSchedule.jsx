@@ -363,8 +363,8 @@ const TherapistSchedule = () => {
     const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
     const endTime = endDateTime.toTimeString().slice(0, 5);
     
-    // Set status based on approvalStatus - if approvalStatus is pending, show pending
-    const displayStatus = appointment.approvalStatus === 'pending' ? 'pending' : (appointment.status || 'scheduled');
+    // Keep the editable status aligned with the database enum.
+    const editableStatus = appointment.status || 'scheduled';
     
     setEditFormData({
       appointmentDate: appointment.date || appointment.appointmentDate || '',
@@ -372,7 +372,7 @@ const TherapistSchedule = () => {
       endTime: endTime,
       duration: duration.toString(),
       type: appointment.type || '',
-      status: displayStatus,
+      status: editableStatus,
       notes: appointment.notes || ''
     });
     setShowEditModal(true);
@@ -437,7 +437,11 @@ const TherapistSchedule = () => {
 
     setIsSubmitting(true);
     try {
-      await therapistAPI.updateAppointment(selectedAppointment.id, editFormData);
+      const statusToSave = editFormData.status === 'pending' ? 'scheduled' : editFormData.status;
+      await therapistAPI.updateAppointment(selectedAppointment.id, {
+        ...editFormData,
+        status: statusToSave
+      });
       toast.success('Appointment updated successfully');
       handleCloseEditModal();
       // Refetch schedule data
@@ -1237,21 +1241,13 @@ const TherapistSchedule = () => {
                       onChange={(e) => handleEditFormChange('status', e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="pending">Pending</option>
                       <option value="scheduled">Scheduled</option>
                       <option value="completed">Completed</option>
                       <option value="cancelled">Cancelled</option>
                     </select>
-                    {editFormData.status === 'pending' && (
-                      <p className="mt-1 text-xs text-yellow-600">
-                        Setting status to "Pending" will require approval
-                      </p>
-                    )}
-                    {editFormData.status === 'scheduled' && (
-                      <p className="mt-1 text-xs text-green-600">
-                        Setting status to "Scheduled" will automatically approve the appointment
-                      </p>
-                    )}
+                    <p className="mt-1 text-xs text-gray-500">
+                      Appointment approval is handled separately from the status field.
+                    </p>
                   </div>
                 </div>
 

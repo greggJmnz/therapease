@@ -1,6 +1,7 @@
 const { getConnection, getRow, getAll, runQuery } = require('../config/database');
 const { validatePasswordComplexity } = require('../utils/password');
 const bcrypt = require('bcrypt');
+const { uploadFile } = require('../services/uploadService');
 
 // Get therapist profile
 const getProfile = async (req, res) => {
@@ -336,7 +337,14 @@ const uploadProfileImage = async (req, res) => {
       });
     }
 
-    const imagePath = `/uploads/profile-images/${req.file.filename}`;
+      const uploadedFile = await uploadFile({
+        filePath: req.file.path,
+        originalName: req.file.originalname,
+        mimeType: req.file.mimetype,
+        folder: 'profile-images'
+      });
+
+      const imagePath = uploadedFile.url;
 
     // Update user profile image
     const sql = 'UPDATE users SET profileImage = ?, updatedAt = NOW() WHERE id = ?';

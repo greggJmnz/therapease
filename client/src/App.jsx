@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
 
@@ -92,6 +92,7 @@ import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 // OPTIMIZED: Don't block rendering while checking maintenance status
 const MaintenanceWrapper = ({ children }) => {
   const { isMaintenanceMode, isLoading } = useMaintenanceMode();
+  const location = useLocation();
   // Safely get user - useAuth() must be called unconditionally (React hook rules)
   // But we handle errors gracefully if AuthContext fails
   let user = null;
@@ -105,10 +106,12 @@ const MaintenanceWrapper = ({ children }) => {
     console.warn('AuthContext not available in MaintenanceWrapper (iOS Safari may have restrictions):', error.message);
   }
 
+  const isAuthRoute = location.pathname.startsWith('/auth');
+
   // OPTIMIZED: Don't block UI while checking maintenance - render children immediately
   // If maintenance check fails or is slow, allow user to proceed (better UX)
   // Only show maintenance page if we confirm maintenance mode is ON
-  if (!isLoading && isMaintenanceMode && user?.role !== 'admin') {
+  if (!isLoading && isMaintenanceMode && user?.role !== 'admin' && !isAuthRoute) {
     return <MaintenancePage />;
   }
 

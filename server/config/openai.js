@@ -1,8 +1,9 @@
 const OpenAI = require('openai');
+const { getRequiredEnv } = require('./env');
 
 // Initialize OpenAI with API key
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'your-api-key-here'
+  apiKey: getRequiredEnv('OPENAI_API_KEY')
 });
 
 // Test OpenAI connection

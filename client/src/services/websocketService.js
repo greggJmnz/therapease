@@ -184,13 +184,14 @@ class WebSocketService {
   }
 
   handleMessage(data) {
-    const { type, payload } = data;
+    const { type } = data || {};
+    const messageData = data?.data ?? data?.payload ?? data;
     
     if (this.listeners.has(type)) {
       const callbacks = this.listeners.get(type);
       callbacks.forEach(callback => {
         try {
-          callback(payload);
+          callback(messageData);
         } catch (error) {
           console.error('WebSocket callback error:', error);
         }

@@ -1,6 +1,7 @@
 const { runQuery, getRow, getAll, getConnection } = require('../config/database');
 const { hashPassword } = require('../utils/password');
 const websocketService = require('../services/websocketService');
+const { uploadFile } = require('../services/uploadService');
 
 // Helper function to get updated profile data without sending response
 const getUpdatedProfileData = async (userId, userRole) => {
@@ -583,7 +584,14 @@ const uploadProfileImage = async (req, res) => {
     }
 
     // Get the uploaded file info
-    const imageUrl = `/uploads/profile-images/${req.file.filename}`;
+    const uploadedFile = await uploadFile({
+      filePath: req.file.path,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      folder: 'profile-images'
+    });
+
+    const imageUrl = uploadedFile.url;
     
     // Update user's profile image in database
     const updateSql = 'UPDATE users SET profileImage = ? WHERE id = ?';

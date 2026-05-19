@@ -1,5 +1,5 @@
 const WebSocket = require('ws');
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('../config/jwt');
 
 class WebSocketService {
   constructor() {
@@ -29,7 +29,7 @@ class WebSocketService {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = verifyToken(token);
       info.req.user = decoded;
       return true;
     } catch (error) {

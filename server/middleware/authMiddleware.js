@@ -1,9 +1,6 @@
-const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
 const { getRow } = require('../config/database');
-
-// JWT secret (in real app, this should be in environment variables)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const { verifyToken } = require('../config/jwt');
 
 // In-memory cache for user status checks to avoid database queries on every request
 // Cache TTL: 30 seconds (balance between security and performance)
@@ -48,9 +45,6 @@ const checkUserStatus = async (userId) => {
   }
 };
 
-// Promisify jwt.verify for async/await pattern
-const verifyToken = promisify(jwt.verify);
-
 // Middleware to verify JWT token (OPTIMIZED: removed blocking database query)
 const authenticateToken = async (req, res, next) => {
   try {
@@ -66,7 +60,7 @@ const authenticateToken = async (req, res, next) => {
 
     // Verify token using async/await pattern (faster than callback)
     try {
-      const decoded = await verifyToken(token, JWT_SECRET);
+      const decoded = verifyToken(token);
       
       // Add user info to request
       const userId = decoded.userId || decoded.id;

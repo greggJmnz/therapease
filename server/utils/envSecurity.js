@@ -22,9 +22,9 @@ class EnvironmentSecurity {
     ];
     
     this.frontendVars = [
-      'REACT_APP_API_URL',
-      'REACT_APP_AI_ENABLED',
-      'REACT_APP_VAPID_PUBLIC_KEY'
+      'VITE_API_URL',
+      'VITE_PUBLIC_WEBSITE_URL',
+      'VITE_VAPID_PUBLIC_KEY'
     ];
   }
 
@@ -130,17 +130,17 @@ class EnvironmentSecurity {
   checkFrontendExposure() {
     const exposed = [];
     
-    // Check if any sensitive variables are prefixed with REACT_APP_
+    // Check if any sensitive variables are prefixed with VITE_
     for (const varName of this.sensitiveVars) {
-      if (process.env[`REACT_APP_${varName}`]) {
-        exposed.push(`Sensitive variable exposed to frontend: REACT_APP_${varName}`);
+      if (process.env[`VITE_${varName}`]) {
+        exposed.push(`Sensitive variable exposed to frontend: VITE_${varName}`);
       }
     }
 
-    // Check for non-REACT_APP_ variables that might be exposed
+    // Check for non-VITE_ variables that might be exposed
     const allEnvVars = Object.keys(process.env);
     for (const varName of allEnvVars) {
-      if (varName.startsWith('REACT_APP_') && this.sensitiveVars.includes(varName.replace('REACT_APP_', ''))) {
+      if (varName.startsWith('VITE_') && this.sensitiveVars.includes(varName.replace('VITE_', ''))) {
         exposed.push(`Sensitive variable exposed to frontend: ${varName}`);
       }
     }

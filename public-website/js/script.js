@@ -389,9 +389,10 @@ function initForms() {
                 };
 
                 // Determine API base URL
-                const apiBaseUrl = window.location.hostname === 'localhost' 
-                    ? 'http://localhost:5000/api'
-                    : 'https://api.therapease.site/api';
+                const apiBaseUrl = window.__THERAPEASE_API_BASE_URL__
+                    || (window.location.hostname === 'localhost'
+                        ? 'http://localhost:5000/api'
+                        : 'https://api.therapease.site/api');
 
                 // Send contact form to API
                 const response = await fetch(`${apiBaseUrl}/contact/submit`, {

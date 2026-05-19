@@ -1,6 +1,8 @@
 const { runQuery, getRow, getAll } = require('../config/database');
 const path = require('path');
 const fs = require('fs');
+const { Readable } = require('stream');
+const { uploadFile } = require('../services/uploadService');
 
 // Upload progress report
 const uploadProgressReport = async (req, res) => {
@@ -54,8 +56,15 @@ const uploadProgressReport = async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
-    const filePath = req.file.path;
-    const fileName = req.file.filename;
+    const uploadedFile = await uploadFile({
+      filePath: req.file.path,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      folder: 'progress-reports'
+    });
+
+    const filePath = uploadedFile.url;
+    const fileName = uploadedFile.filename;
     const originalFileName = req.file.originalname;
     const fileSize = req.file.size;
     const mimeType = req.file.mimetype;
@@ -301,21 +310,37 @@ const downloadProgressReport = async (req, res) => {
       });
     }
     
-    // Check if file exists
-    if (!fs.existsSync(report.filePath)) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'File not found on server' 
-      });
-    }
-    
+    const isRemoteFile = report.filePath?.startsWith('http://') || report.filePath?.startsWith('https://');
+
     // Set appropriate headers for file download
     res.setHeader('Content-Disposition', `attachment; filename="${report.originalFileName}"`);
     res.setHeader('Content-Type', report.mimeType);
-    res.setHeader('Content-Length', report.fileSize);
-    
-    // Stream the file with proper error handling
-    const fileStream = fs.createReadStream(report.filePath);
+    if (report.fileSize) {
+      res.setHeader('Content-Length', report.fileSize);
+    }
+
+    let fileStream;
+    if (isRemoteFile) {
+      const remoteResponse = await fetch(report.filePath);
+      if (!remoteResponse.ok || !remoteResponse.body) {
+        return res.status(404).json({
+          success: false,
+          error: 'File not found in storage'
+        });
+      }
+
+      fileStream = Readable.fromWeb(remoteResponse.body);
+    } else {
+      // Check if file exists
+      if (!fs.existsSync(report.filePath)) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'File not found on server' 
+        });
+      }
+
+      fileStream = fs.createReadStream(report.filePath);
+    }
     
     // Handle stream errors
     fileStream.on('error', (streamError) => {
@@ -397,8 +422,10 @@ const deleteProgressReport = async (req, res) => {
       });
     }
     
-    // Delete file from filesystem
-    if (fs.existsSync(report.filePath)) {
+    // Delete file from storage or filesystem
+    if (report.filePath?.startsWith('http://') || report.filePath?.startsWith('https://')) {
+      console.log('ℹ️ Skipping direct storage deletion for remote progress report file');
+    } else if (fs.existsSync(report.filePath)) {
       fs.unlinkSync(report.filePath);
     }
     

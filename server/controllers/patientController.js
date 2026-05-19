@@ -264,8 +264,8 @@ const createPatient = async (req, res) => {
       });
     }
 
-    // Get therapist ID from request (in real app, get from auth token)
-    const therapistId = 2; // Hardcoded for now, should come from JWT token
+    // Use the authenticated therapist context from the JWT
+    const therapistId = req.user.id;
 
     // Check if user with email already exists
     const existingUser = await getRow('SELECT id FROM users WHERE email = ?', [email]);

@@ -35,8 +35,14 @@ import toast from 'react-hot-toast';
 
 // Helper function to get the correct file URL for proof images
 // Static files are served from the backend server, not the frontend
-const getProofImageUrl = (fileUrl) => {
-  if (!fileUrl) return '';
+const getProofImageUrl = (input) => {
+  if (!input) return '';
+
+  const fileUrl = typeof input === 'object'
+    ? (input.fileUrl || input.url || input.path || input.filePath || input.key || '')
+    : input;
+
+  if (!fileUrl || typeof fileUrl !== 'string') return '';
   
   // If it's already a full URL (data URL or http/https), return as is
   if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://') || fileUrl.startsWith('data:')) {
@@ -51,14 +57,21 @@ const getProofImageUrl = (fileUrl) => {
   let serverBaseUrl;
   
   if (apiBaseUrl) {
-    // Extract server URL from API URL (remove /api suffix)
-    // Example: https://api.therapease.site/api -> https://api.therapease.site
-    serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
-    
-    // Ensure HTTPS in production (fix mixed content errors)
-    if (isProduction && serverBaseUrl.startsWith('http://')) {
-      serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
-      console.warn('⚠️ Upgraded HTTP to HTTPS for production:', serverBaseUrl);
+    if (apiBaseUrl.startsWith('http://') || apiBaseUrl.startsWith('https://')) {
+      // Extract server URL from API URL (remove /api suffix)
+      // Example: https://api.therapease.site/api -> https://api.therapease.site
+      serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
+      
+      // Ensure HTTPS in production (fix mixed content errors)
+      if (isProduction && serverBaseUrl.startsWith('http://')) {
+        serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
+        console.warn('⚠️ Upgraded HTTP to HTTPS for production:', serverBaseUrl);
+      }
+    } else if (apiBaseUrl.startsWith('/')) {
+      serverBaseUrl = isDevelopment ? 'http://127.0.0.1:5000' : window.location.origin;
+      console.warn('⚠️ Relative VITE_API_URL detected for uploads, using backend origin:', serverBaseUrl);
+    } else {
+      serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
     }
   } else {
     // IMPORTANT: In production, VITE_API_URL MUST be set!
@@ -88,9 +101,15 @@ const getProofImageUrl = (fileUrl) => {
   }
   
   // Construct full URL
-  const fullUrl = fileUrl.startsWith('/') 
-    ? `${serverBaseUrl}${fileUrl}` 
-    : `${serverBaseUrl}/${fileUrl}`;
+  const normalizedFileUrl = fileUrl.replace(/\\/g, '/');
+  const uploadsMatch = normalizedFileUrl.match(/(?:^|\/)uploads\/(.*)$/);
+  const relativePath = uploadsMatch && uploadsMatch[1]
+    ? `/uploads/${uploadsMatch[1]}`
+    : normalizedFileUrl;
+
+  const fullUrl = relativePath.startsWith('/') 
+    ? `${serverBaseUrl}${relativePath}` 
+    : `${serverBaseUrl}/${relativePath}`;
   
   // Only log in development
   if (import.meta.env.DEV) {

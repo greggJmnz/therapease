@@ -15,11 +15,9 @@ const websocketService = require('./services/websocketService');
 const { checkMaintenanceMode, checkPublicMaintenanceMode } = require('./middleware/maintenanceMiddleware');
 const { validateEnvironmentSecurity, securityHeaders: customSecurityHeaders, checkEnvironmentExposure } = require('./middleware/securityMiddleware');
 const logger = require('./utils/logger');
-// Load environment variables - use .env.production in production, .env in development
-const envFile = process.env.NODE_ENV === 'production' 
-  ? path.join(__dirname, '.env.production')
-  : path.join(__dirname, '../.env');
-require('dotenv').config({ path: envFile });
+const { validateProductionEnv, getCorsOrigins, isProduction } = require('./config/env');
+
+validateProductionEnv();
 
 // Import database configuration using the loader
 const loadDatabase = require('./config/database-loader');
@@ -42,23 +40,6 @@ const homeExerciseRoutes = require('./routes/homeExerciseRoutes');
 const progressReportRoutes = require('./routes/progressReportRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 
-// Parse CORS origins from environment variable or use defaults
-const getCorsOrigins = () => {
-  if (process.env.NODE_ENV === 'production') {
-    // Use CORS_ORIGIN from environment variable if set, otherwise use defaults
-    if (process.env.CORS_ORIGIN) {
-      return process.env.CORS_ORIGIN.split(',').map(origin => origin.trim());
-    }
-    // Default production origins
-    return [
-      'https://therapease-gnu5.vercel.app', // Vercel production deployment
-      'https://therapease.site',            // Custom domain
-      'https://www.therapease.site'         // www subdomain
-    ];
-  }
-  return true; // Allow all origins in development
-};
-
 // CORS MUST be before security headers to work properly
 // Exclude /uploads from global CORS since we have a specific middleware for it
 app.use((req, res, next) => {
@@ -68,7 +49,7 @@ app.use((req, res, next) => {
   }
   // Apply CORS for all other routes
   return cors({
-    origin: getCorsOrigins(),
+    origin: isProduction ? getCorsOrigins() : true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Data-Protection', 'X-Content-Encryption'],
@@ -93,7 +74,23 @@ app.use(compression({
 
 // Security Middleware
 app.use(helmet({
-  contentSecurityPolicy: false, // Temporarily disable CSP to test image loading
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      objectSrc: ["'none'"],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      mediaSrc: ["'self'", 'blob:', 'https:'],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https:'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
+      connectSrc: ["'self'", 'https:', 'wss:'],
+      fontSrc: ["'self'", 'data:', 'https:'],
+      workerSrc: ["'self'", 'blob:']
+    }
+  },
   crossOriginResourcePolicy: { policy: "cross-origin" },
   hsts: {
     maxAge: 31536000,
@@ -160,6 +157,25 @@ app.get('/health', (req, res) => {
     encryption: 'AES-256-GCM',
     timestamp: new Date().toISOString()
   });
+});
+
+app.get('/health/db', async (req, res) => {
+  try {
+    const { getRow } = require('./config/database');
+    await getRow('SELECT 1 as ok');
+    res.status(200).json({
+      status: 'OK',
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Database health check failed:', error);
+    res.status(503).json({
+      status: 'ERROR',
+      database: 'unavailable',
+      message: 'Database connection failed'
+    });
+  }
 });
 
 app.get('/api/health', (req, res) => {
@@ -659,6 +675,16 @@ const { initializeNotificationSchedulers } = require('./scripts/notificationSche
 initializeNotificationSchedulers();
 
 // Start server
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    logger.error(`❌ Port ${PORT} is already in use. Stop the existing process or set a different PORT value.`);
+    process.exit(1);
+  }
+
+  logger.error('❌ Server failed to start:', error);
+  process.exit(1);
+});
+
 server.listen(PORT, '0.0.0.0', () => {
   logger.startup(`🚀 TherapEase API server running on port ${PORT}`);
   logger.startup(`🌐 HTTP mode (SSL disabled for development)`);

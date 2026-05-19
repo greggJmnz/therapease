@@ -29,82 +29,78 @@ import toast from 'react-hot-toast';
 
 // Helper function to get the correct file URL for proof images
 // Static files are served from the backend server, not the frontend
-const getProofImageUrl = (fileUrl) => {
-  if (!fileUrl) return '';
-  
-  // If it's already a full URL (data URL or http/https), return as is
+const getProofImageUrl = (input) => {
+  if (!input) return '';
+
+  const fileUrl = typeof input === 'object'
+    ? (input.fileUrl || input.url || input.path || input.filePath || input.key || '')
+    : input;
+
+  if (!fileUrl || typeof fileUrl !== 'string') return '';
+
   if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://') || fileUrl.startsWith('data:')) {
     return fileUrl;
   }
-  
-  // Get the server URL from API base URL
-  // We need to use the API server URL, not the frontend URL
+
   const apiBaseUrl = import.meta.env.VITE_API_URL || '';
   const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const isProduction = window.location.protocol === 'https:';
   let serverBaseUrl;
-  
+
   if (apiBaseUrl) {
-    // Extract server URL from API URL (remove /api suffix)
-    // Example: https://api.therapease.site/api -> https://api.therapease.site
-    serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
-    
-    // Ensure HTTPS in production (fix mixed content errors)
-    if (isProduction && serverBaseUrl.startsWith('http://')) {
-      serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
-      console.warn('⚠️ Upgraded HTTP to HTTPS for production:', serverBaseUrl);
-    }
-  } else {
-    // IMPORTANT: In production, VITE_API_URL MUST be set!
-    if (isDevelopment) {
-      // In development, API is typically on localhost:5000
-      serverBaseUrl = 'http://localhost:5000';
-      console.warn('⚠️ VITE_API_URL not set in development, using http://localhost:5000');
-    } else {
-      // In production without VITE_API_URL, infer from hostname
-      // For TherapEase, API is at api.therapease.site
-      const hostname = window.location.hostname;
-      if (hostname.includes('therapease.site')) {
-        // Always use HTTPS in production
-        serverBaseUrl = 'https://api.therapease.site';
-        console.warn('⚠️ VITE_API_URL not set, inferred from hostname:', serverBaseUrl);
-        console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
-      } else {
-        // Fallback: use current origin but ensure HTTPS
-        serverBaseUrl = window.location.origin;
-        if (isProduction && serverBaseUrl.startsWith('http://')) {
-          serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
-        }
-        console.error('❌ VITE_API_URL not set and cannot infer server URL. Using:', serverBaseUrl);
-        console.error('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
+    if (apiBaseUrl.startsWith('http://') || apiBaseUrl.startsWith('https://')) {
+      serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
+      if (isProduction && serverBaseUrl.startsWith('http://')) {
+        serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
+        console.warn('⚠️ Upgraded HTTP to HTTPS for production:', serverBaseUrl);
       }
+    } else if (apiBaseUrl.startsWith('/')) {
+      serverBaseUrl = isDevelopment ? 'http://127.0.0.1:5000' : window.location.origin;
+      console.warn('⚠️ Relative VITE_API_URL detected for uploads, using backend origin:', serverBaseUrl);
+    } else {
+      serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
+    }
+  } else if (isDevelopment) {
+    serverBaseUrl = 'http://localhost:5000';
+    console.warn('⚠️ VITE_API_URL not set in development, using http://localhost:5000');
+  } else {
+    const hostname = window.location.hostname;
+    if (hostname.includes('therapease.site')) {
+      serverBaseUrl = 'https://api.therapease.site';
+      console.warn('⚠️ VITE_API_URL not set, inferred from hostname:', serverBaseUrl);
+      console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
+    } else {
+      serverBaseUrl = window.location.origin;
+      if (isProduction && serverBaseUrl.startsWith('http://')) {
+        serverBaseUrl = serverBaseUrl.replace('http://', 'https://');
+      }
+      console.error('❌ VITE_API_URL not set and cannot infer server URL. Using:', serverBaseUrl);
+      console.error('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
     }
   }
-  
-  // Construct full URL
-  let fullUrl;
-  if (fileUrl.startsWith('/')) {
-    // Already has leading slash, use as-is
-    fullUrl = `${serverBaseUrl}${fileUrl}`;
-  } else if (fileUrl.startsWith('uploads/')) {
-    // Has uploads/ prefix but no leading slash
-    fullUrl = `${serverBaseUrl}/${fileUrl}`;
-  } else {
-    // Relative path, add /uploads/ prefix
-    fullUrl = `${serverBaseUrl}/uploads/${fileUrl}`;
-  }
-  
-  // Always log in production to help debug image loading issues
-  console.log('📸 Proof file URL:', { 
-    originalFileUrl: fileUrl, 
-    serverBaseUrl, 
+
+  const normalizedFileUrl = fileUrl.replace(/\\/g, '/');
+  const uploadsMatch = normalizedFileUrl.match(/(?:^|\/)uploads\/(.*)$/);
+  const relativePath = uploadsMatch && uploadsMatch[1]
+    ? `/uploads/${uploadsMatch[1]}`
+    : normalizedFileUrl.startsWith('/')
+      ? normalizedFileUrl
+      : normalizedFileUrl.startsWith('uploads/')
+        ? `/${normalizedFileUrl}`
+        : `/uploads/${normalizedFileUrl}`;
+
+  const fullUrl = `${serverBaseUrl}${relativePath}`;
+
+  console.log('📸 Proof file URL:', {
+    originalFileUrl: fileUrl,
+    serverBaseUrl,
     fullUrl,
     apiBaseUrl,
     isProduction: import.meta.env.PROD,
     hostname: window.location.hostname,
     protocol: window.location.protocol
   });
-  
+
   return fullUrl;
 };
 
@@ -113,74 +109,61 @@ const HomeExercisesNew = () => {
   const queryClient = useQueryClient();
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showProofsModal, setShowProofsModal] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [submissionType, setSubmissionType] = useState('text');
   const [submissionContent, setSubmissionContent] = useState('');
   const [submissionFile, setSubmissionFile] = useState(null);
-  const [showProofsModal, setShowProofsModal] = useState(false);
-  const [exerciseProofs, setExerciseProofs] = useState([]);
   const [expandedExercises, setExpandedExercises] = useState(new Set());
+  const [exerciseProofs, setExerciseProofs] = useState([]);
   const [fullScreenImage, setFullScreenImage] = useState({ isOpen: false, url: '', fileName: '' });
-  const [videoErrors, setVideoErrors] = useState({});
 
-  // Fetch exercises (patient ID is automatically determined from authenticated user)
-  const { data: exercisesData, isLoading, error, refetch } = useQuery(
-    'patientHomeExercisesNew',
-    () => patientAPI.getHomeExercises(),
+  const { data: exercisesData, isLoading } = useQuery(
+    ['patientHomeExercisesNew', user?.id],
+    () => patientAPI.getHomeExercisesNew(user?.id),
     {
       enabled: !!user?.id,
       onError: (error) => {
-        console.error('Error fetching exercises:', error);
-        toast.error('Failed to load exercises');
+        console.error('Error loading home exercises:', error);
       }
     }
   );
 
-  // Fetch proofs (patient ID is automatically determined from authenticated user)
-  const { data: proofsData, refetch: refetchProofs } = useQuery(
-    'patientHomeExerciseProofs',
-    () => patientAPI.getHomeExerciseProofs(user?.id),
-    {
-      enabled: !!user?.id,
-      onError: (error) => {
-        console.error('Error fetching proofs:', error);
-      }
-    }
-  );
+  const exercises = Array.isArray(exercisesData?.data?.data)
+    ? exercisesData.data.data
+    : Array.isArray(exercisesData?.data)
+      ? exercisesData.data
+      : [];
 
-  // Enable real-time updates
-  const { isRefreshing } = useRealtimeData('patientHomeExercisesNew', refetch);
-  const { isRefreshing: isRefreshingProofs } = useRealtimeData('patientHomeExerciseProofs', refetchProofs);
-
-  // Submit proof mutation
   const submitProofMutation = useMutation(
     ({ exerciseId, formData }) => patientAPI.submitHomeExerciseProof(exerciseId, formData),
     {
-      onSuccess: () => {
-        queryClient.invalidateQueries('patientHomeExercisesNew');
-        queryClient.invalidateQueries('patientHomeExerciseProofs');
-        toast.success('Proof submitted successfully!');
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(['patientHomeExercisesNew', user?.id]);
         setShowSubmitModal(false);
-        resetSubmissionForm();
+        setSelectedExercise(null);
+        setSubmissionType('text');
+        setSubmissionContent('');
+        setSubmissionFile(null);
+        toast.success('Proof submitted successfully');
       },
       onError: (error) => {
         console.error('Error submitting proof:', error);
-        toast.error(`Failed to submit proof: ${error.response?.data?.error || error.message}`);
+        toast.error(error.response?.data?.error || 'Failed to submit proof');
       }
     }
   );
 
-  // Update exercise status mutation
   const updateStatusMutation = useMutation(
     ({ exerciseId, status }) => patientAPI.updateExerciseStatus(exerciseId, status),
     {
-      onSuccess: () => {
-        queryClient.invalidateQueries('patientHomeExercisesNew');
-        toast.success('Exercise status updated successfully!');
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(['patientHomeExercisesNew', user?.id]);
+        toast.success('Exercise status updated');
       },
       onError: (error) => {
         console.error('Error updating exercise status:', error);
-        toast.error(`Failed to update status: ${error.response?.data?.error || error.message}`);
+        toast.error(error.response?.data?.error || 'Failed to update exercise status');
       }
     }
   );
@@ -188,18 +171,6 @@ const HomeExercisesNew = () => {
   const handleUpdateStatus = (exerciseId, status) => {
     updateStatusMutation.mutate({ exerciseId, status });
   };
-
-  // Extract exercises from API response - handle both response structures
-  const exercises = Array.isArray(exercisesData?.data?.data) 
-    ? exercisesData.data.data 
-    : Array.isArray(exercisesData?.data) 
-      ? exercisesData.data 
-      : [];
-  const proofs = Array.isArray(proofsData?.data?.data) 
-    ? proofsData.data.data 
-    : Array.isArray(proofsData?.data) 
-      ? proofsData.data 
-      : [];
 
   const resetSubmissionForm = () => {
     setSubmissionType('text');

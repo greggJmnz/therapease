@@ -11,8 +11,9 @@
     "setup:ssl": "node -e \"require('./config/database').setupSSLCertificates()\"",
     "setup:vapid": "node -e \"require('./config/database').setupVAPIDKeys()\"",
     "setup:db": "node -e \"require('./config/database').createDatabase()\"",
-    "db:init": "node scripts/init-database.js",
-    "db:seed": "node scripts/seed-database.js",
+    "db:init": "node scripts/migrate.js",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed-production.js",
     "security:setup": "node scripts/setup-security.js",
     "ssl:generate": "node scripts/generate-ssl.js",
     "sms:setup": "node scripts/setup-sms.js",
@@ -22,6 +23,7 @@
     "lint": "echo \"No linting configured\" && exit 0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
     "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",

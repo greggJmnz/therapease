@@ -1,6 +1,7 @@
 const { runQuery, getRow, getAll } = require('../config/database');
 const { decryptSensitiveFields } = require('../utils/encryption');
 const websocketService = require('../services/websocketService');
+const { uploadFile } = require('../services/uploadService');
 
 // Get daily notes for a therapist
 const getDailyNotes = async (req, res) => {
@@ -198,17 +199,15 @@ const createDailyNote = async (req, res) => {
     let videoMimeType = null;
 
     if (req.file) {
-      // Use relative path from uploads directory for database storage
-      const pathParts = req.file.path.split(/[/\\]/);
-      const uploadsIndex = pathParts.findIndex(part => part === 'uploads');
-      if (uploadsIndex !== -1) {
-        // Get path relative to uploads directory
-        videoPath = pathParts.slice(uploadsIndex + 1).join('/');
-      } else {
-        // Fallback: use full path but truncate if too long
-        videoPath = req.file.path.length > 500 ? req.file.path.substring(req.file.path.length - 500) : req.file.path;
-      }
-      videoFileName = req.file.originalname;
+      const uploadedFile = await uploadFile({
+        filePath: req.file.path,
+        originalName: req.file.originalname,
+        mimeType: req.file.mimetype,
+        folder: 'daily-notes-videos'
+      });
+
+      videoPath = uploadedFile.url;
+      videoFileName = uploadedFile.filename;
       videoSize = req.file.size;
       videoMimeType = req.file.mimetype;
       

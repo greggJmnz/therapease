@@ -10,7 +10,7 @@ const getApiBaseUrl = () => {
   // Fallback to relative URL for development
   if (import.meta.env.DEV) {
     console.warn('⚠️ VITE_API_URL not set! Falling back to relative /api. This will fail in production.');
-    console.warn('💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables');
+    console.warn('💡 Set VITE_API_URL to your Railway API URL so the frontend can reach the backend');
   }
   return '/api';
 };

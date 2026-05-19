@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const webpush = require('web-push');
 const { hashPassword } = require('../utils/password');
+const { getEnv, getRequiredEnv, validateProductionEnv } = require('./env');
 const { 
   joinPaths, 
   getEnvVar, 
@@ -18,12 +19,7 @@ const {
   getPlatformInfo
 } = require('../utils/windowsCompatibility');
 
-// Load environment variables with Windows compatibility
-// Use .env.production in production, .env in development
-const envFile = process.env.NODE_ENV === 'production' 
-  ? joinPaths(__dirname, '../.env.production')
-  : joinPaths(__dirname, '../../.env');
-require('dotenv').config({ path: envFile });
+validateProductionEnv();
 
 // Database configuration with Windows compatibility - Optimized for production
 const dbConfig = {
@@ -60,7 +56,8 @@ const dbConfig = {
 let pool;
 
 // Initialize database connection
-const initializeDatabase = async () => {
+const initializeDatabase = async (options = {}) => {
+  const { verifySchema = true } = options;
   try {
     // Create pool
     pool = mysql.createPool(dbConfig);
@@ -70,18 +67,33 @@ const initializeDatabase = async () => {
     console.log('Connected to MySQL database successfully');
     connection.release();
     
-    // Initialize tables
-    await createTables();
-    
-    // Create performance indexes
-    await createPerformanceIndexes();
-    
-    // Seed initial data
-    await seedInitialData();
+    if (verifySchema) {
+      await verifyRuntimeSchema();
+    }
     
   } catch (error) {
     console.error('Database connection error:', error);
     process.exit(1);
+  }
+};
+
+const verifyRuntimeSchema = async () => {
+  const requiredTables = [
+    'users',
+    'patients',
+    'therapists',
+    'appointments',
+    'system_settings'
+  ];
+
+  for (const tableName of requiredTables) {
+    const [rows] = await pool.execute(
+      'SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
+      [tableName]
+    );
+    if (!rows || rows.length === 0) {
+      throw new Error(`Required database table missing: ${tableName}. Run the migration scripts before starting the server.`);
+    }
   }
 };
 
@@ -1324,8 +1336,8 @@ const seedInitialData = async () => {
       console.log('🔐 Creating secure admin account...');
       
       // Generate secure admin credentials
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@therapease.com';
-      const adminPassword = process.env.ADMIN_PASSWORD || 'SecureAdmin2024!@#$%';
+      const adminEmail = getRequiredEnv('ADMIN_EMAIL');
+      const adminPassword = getRequiredEnv('ADMIN_PASSWORD');
       const hashedPassword = await hashPassword(adminPassword);
 
       // Insert secure admin user
@@ -1802,17 +1814,18 @@ const createDatabase = async () => {
   try {
     // Connect to MySQL server (without specifying database)
     connection = await mysql.createConnection({
-      host: getEnvVar('DB_HOST', '127.0.0.1') === 'localhost' ? '127.0.0.1' : getEnvVar('DB_HOST', '127.0.0.1'),
-      user: getEnvVar('DB_USER', 'root'),
-      password: getEnvVar('DB_PASSWORD', ''),
-      port: parseInt(getEnvVar('DB_PORT', '3306'))
+      host: getEnv('DB_HOST', '127.0.0.1') === 'localhost' ? '127.0.0.1' : getEnv('DB_HOST', '127.0.0.1'),
+      user: getRequiredEnv('DB_USER'),
+      password: getRequiredEnv('DB_PASSWORD'),
+      port: parseInt(getRequiredEnv('DB_PORT'))
     });
 
     console.log('✅ Connected to MySQL server successfully');
 
     // Create database if it doesn't exist
-    const dbName = getEnvVar('DB_NAME', 'therapease');
-    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
+    const dbName = getRequiredEnv('DB_NAME');
+    const safeDbName = `\`${String(dbName).replace(/`/g, '')}\``;
+    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${safeDbName}`);
     console.log(`✅ Database '${dbName}' created/verified successfully`);
 
     // Close connection
@@ -1872,16 +1885,24 @@ const performCompleteSetup = async () => {
   }
 };
 
-// Initialize database when module is loaded
-initializeDatabase();
+// Initialize database when module is loaded unless a maintenance script opts out
+if (process.env.SKIP_DB_AUTO_INIT !== 'true') {
+  initializeDatabase();
+}
 
 module.exports = {
   pool,
+  initializeDatabase,
   runQuery,
   getRow,
   getAll,
   getConnection,
   closeDatabase,
+  createTables,
+  createPerformanceIndexes,
+  seedInitialData,
+  seedSystemSettings,
+  seedTherapistDefaults,
   performCompleteSetup,
   setupEnvironmentConfig,
   setupSSLCertificates,

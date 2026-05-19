@@ -1,10 +1,7 @@
 const { runQuery, getRow, getAll, getConnection } = require('../config/database');
 const { hashPassword, verifyPassword, validatePasswordComplexity } = require('../utils/password');
 const { encryptField, decryptField, hashForSearch } = require('../utils/encryption');
-const jwt = require('jsonwebtoken');
-
-// JWT secret (in real app, this should be in environment variables)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const { signToken, verifyToken } = require('../config/jwt');
 
 // User login
 const login = async (req, res) => {
@@ -118,13 +115,12 @@ const login = async (req, res) => {
     const expiresIn = sessionTimeoutHours >= 1 ? `${sessionTimeoutHours}h` : `${sessionTimeoutMinutes}m`;
 
     // Generate JWT token (only if 2FA is not enabled)
-    const token = jwt.sign(
+    const token = signToken(
       { 
         userId: user.id, 
         email: user.email, 
         role: user.role 
       },
-      JWT_SECRET,
       { expiresIn }
     );
 
@@ -539,13 +535,12 @@ The TherapEase Team
       const expiresIn = sessionTimeoutHours >= 1 ? `${sessionTimeoutHours}h` : `${sessionTimeoutMinutes}m`;
 
       // Generate JWT token
-      const token = jwt.sign(
+      const token = signToken(
         { 
           userId: newUser.id, 
           email: newUser.email, 
           role: newUser.role 
         },
-        JWT_SECRET,
         { expiresIn }
       );
 
@@ -593,7 +588,7 @@ const verify = async (req, res) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = verifyToken(token);
 
     // Get user data
     const userSql = `
@@ -1139,13 +1134,12 @@ const loginWith2FA = async (req, res) => {
     const expiresIn = sessionTimeoutHours >= 1 ? `${sessionTimeoutHours}h` : `${sessionTimeoutMinutes}m`;
 
     // Generate JWT token
-    const token = jwt.sign(
+    const token = signToken(
       { 
         userId: user.id, 
         email: user.email, 
         role: user.role 
       },
-      JWT_SECRET,
       { expiresIn }
     );
 

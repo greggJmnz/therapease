@@ -157,22 +157,32 @@ OPENAI_API_KEY=your_openai_api_key
 PORT=5000
 NODE_ENV=development
 
+# Frontend / CORS
+FRONTEND_URL=http://localhost:3000
+CORS_ORIGIN=http://localhost:3000
+
 # Client Configuration
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_AI_ENABLED=true
+VITE_API_URL=http://localhost:5000/api
+VITE_PUBLIC_WEBSITE_URL=http://localhost:3000
+VITE_VAPID_PUBLIC_KEY=your_vapid_public_key
 
 # Push Notifications (VAPID Keys)
 VAPID_PUBLIC_KEY=your_vapid_public_key
 VAPID_PRIVATE_KEY=your_vapid_private_key
 VAPID_SUBJECT=mailto:admin@therapease.com
-REACT_APP_VAPID_PUBLIC_KEY=your_vapid_public_key
+
+# Upload storage (production)
+UPLOAD_STORAGE_PROVIDER=supabase
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_STORAGE_BUCKET=
 
 # SMS Integration (Optional)
 SMS_ENABLED=true
 PHILSMS_API_TOKEN=your_philsms_api_token
 PHILSMS_BASE_URL=https://app.philsms.com/api/v3
 PHILSMS_SENDER_ID=TherapEase
-API_BASE_URL=http://localhost:3000
+API_BASE_URL=http://localhost:5000
 ```
 
 ### Database Configuration

@@ -260,7 +260,7 @@ const updateProgressEntry = async (req, res) => {
       SELECT pt.* FROM progress_tracking pt
       JOIN patients p ON pt.patientId = p.id
       WHERE pt.id = ? AND p.therapistId = ?
-    `, [parseInt(id), 2]); // Hardcoded therapist ID
+    `, [parseInt(id), req.user.id]);
 
     if (!existingProgress) {
       return res.status(404).json({
@@ -380,7 +380,7 @@ const deleteProgressEntry = async (req, res) => {
       SELECT pt.* FROM progress_tracking pt
       JOIN patients p ON pt.patientId = p.id
       WHERE pt.id = ? AND p.therapistId = ?
-    `, [parseInt(id), 2]); // Hardcoded therapist ID
+    `, [parseInt(id), req.user.id]);
 
     if (!existingProgress) {
       return res.status(404).json({

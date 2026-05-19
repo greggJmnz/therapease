@@ -33,40 +33,47 @@ const getLogLevel = () => {
 
 const currentLogLevel = getLogLevel();
 
+const writeLog = (level, args) => {
+  if (currentLogLevel < LOG_LEVELS[level]) {
+    return;
+  }
+
+  const [message, meta] = args;
+  const payload = {
+    timestamp: new Date().toISOString(),
+    level,
+    message: typeof message === 'string' ? message : JSON.stringify(message)
+  };
+
+  if (meta !== undefined) {
+    payload.meta = meta;
+  }
+
+  const output = JSON.stringify(payload);
+
+  if (level === 'error') {
+    console.error(output);
+  } else if (level === 'warn') {
+    console.warn(output);
+  } else {
+    console.log(output);
+  }
+};
+
 const logger = {
-  error: (...args) => {
-    if (currentLogLevel >= LOG_LEVELS.error) {
-      console.error(...args);
-    }
-  },
+  error: (...args) => writeLog('error', args),
   
-  warn: (...args) => {
-    if (currentLogLevel >= LOG_LEVELS.warn) {
-      console.warn(...args);
-    }
-  },
+  warn: (...args) => writeLog('warn', args),
   
-  info: (...args) => {
-    if (currentLogLevel >= LOG_LEVELS.info) {
-      console.log(...args);
-    }
-  },
+  info: (...args) => writeLog('info', args),
   
-  debug: (...args) => {
-    if (currentLogLevel >= LOG_LEVELS.debug) {
-      console.log(...args);
-    }
-  },
+  debug: (...args) => writeLog('debug', args),
   
   // Convenience methods for common patterns
   log: (...args) => logger.info(...args),
   
   // Server startup messages (always shown unless silent)
-  startup: (...args) => {
-    if (currentLogLevel >= LOG_LEVELS.info) {
-      console.log(...args);
-    }
-  }
+  startup: (...args) => writeLog('info', args)
 };
 
 module.exports = logger;

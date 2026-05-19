@@ -6,14 +6,23 @@ import App from './App.jsx';
 // Global error handlers for iOS Safari debugging
 // Catch CSP violations and other errors that might cause white page
 window.addEventListener('error', (event) => {
-  console.error('Global Error:', {
-    message: event.message,
-    filename: event.filename,
-    lineno: event.lineno,
-    colno: event.colno,
-    error: event.error,
-    stack: event.error?.stack
-  });
+  const isResourceError = event.target && event.target !== window;
+  const errorDetails = isResourceError
+    ? {
+        message: `Resource load error for ${event.target?.tagName || 'unknown element'}`,
+        filename: event.target?.src || event.target?.href,
+        error: event.target?.outerHTML || event.target?.currentSrc || event.target?.src
+      }
+    : {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error,
+        stack: event.error?.stack
+      };
+
+  console.error('Global Error:', errorDetails);
   
   // Check if it's a CSP violation
   if (event.message && (

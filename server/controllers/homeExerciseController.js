@@ -1,5 +1,6 @@
 const { runQuery, getRow, getAll } = require('../config/database');
 const websocketService = require('../services/websocketService');
+const { uploadFile } = require('../services/uploadService');
 
 // Helper function to safely parse JSON fields
 const parseJsonField = (field) => {
@@ -14,6 +15,62 @@ const parseJsonField = (field) => {
     }
   }
   return [];
+};
+
+const resolveProofUrl = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  let filePath = value;
+
+  if (typeof filePath === 'object') {
+    filePath = filePath.fileUrl || filePath.url || filePath.path || filePath.filePath || filePath.key || '';
+  }
+
+  if (typeof filePath !== 'string') {
+    return null;
+  }
+
+  filePath = filePath.trim();
+
+  if (!filePath) {
+    return null;
+  }
+
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath;
+  }
+
+  if (filePath.startsWith('data:')) {
+    return filePath;
+  }
+
+  if (filePath.startsWith('/uploads/')) {
+    return filePath;
+  }
+
+  if (filePath.startsWith('uploads/')) {
+    return `/${filePath.replace(/\\/g, '/')}`;
+  }
+
+  const normalizedPath = filePath.replace(/\\/g, '/');
+  const uploadsMatch = normalizedPath.match(/(?:^|\/)uploads\/(.*)$/);
+  if (uploadsMatch && uploadsMatch[1]) {
+    return `/uploads/${uploadsMatch[1]}`;
+  }
+
+  const pathParts = normalizedPath.split('/').filter(Boolean);
+  if (pathParts.length > 1) {
+    const uploadsIndex = pathParts.lastIndexOf('uploads');
+    if (uploadsIndex !== -1 && uploadsIndex < pathParts.length - 1) {
+      return `/uploads/${pathParts.slice(uploadsIndex + 1).join('/')}`;
+    }
+
+    return `/uploads/exercise-proofs/${pathParts[pathParts.length - 1]}`;
+  }
+
+  return `/uploads/exercise-proofs/${normalizedPath}`;
 };
 const multer = require('multer');
 const path = require('path');
@@ -750,31 +807,7 @@ const getExerciseProofs = async (req, res) => {
 
     // Convert file paths to proper URLs
     const proofsWithUrls = proofs.map(proof => {
-      if (proof.filePath) {
-        // Check if it's a data URL
-        if (proof.filePath.startsWith('data:')) {
-          proof.fileUrl = proof.filePath;
-        } else {
-          // Handle both absolute and relative paths
-          // If path already starts with /uploads, use it as-is
-          if (proof.filePath.startsWith('/uploads/')) {
-            proof.fileUrl = proof.filePath;
-          } else if (proof.filePath.startsWith('uploads/')) {
-            proof.fileUrl = `/${proof.filePath}`;
-          } else {
-            // Handle relative paths (e.g., "exercise-proofs/proof-123.mp4")
-            // If path contains subdirectories, preserve them
-            const pathParts = proof.filePath.split(/[/\\]/);
-            if (pathParts.length > 1) {
-              // Path has subdirectories, construct full path
-              proof.fileUrl = `/uploads/${proof.filePath}`;
-            } else {
-              // Just a filename, assume it's in exercise-proofs
-              proof.fileUrl = `/uploads/exercise-proofs/${proof.filePath}`;
-            }
-          }
-        }
-      }
+      proof.fileUrl = resolveProofUrl(proof.filePath);
       return proof;
     });
 
@@ -880,31 +913,7 @@ const getTherapistProofs = async (req, res) => {
 
     // Convert file paths to proper URLs
     const proofsWithUrls = proofs.map(proof => {
-      if (proof.filePath) {
-        // Check if it's a data URL
-        if (proof.filePath.startsWith('data:')) {
-          proof.fileUrl = proof.filePath;
-        } else {
-          // Handle both absolute and relative paths
-          // If path already starts with /uploads, use it as-is
-          if (proof.filePath.startsWith('/uploads/')) {
-            proof.fileUrl = proof.filePath;
-          } else if (proof.filePath.startsWith('uploads/')) {
-            proof.fileUrl = `/${proof.filePath}`;
-          } else {
-            // Handle relative paths (e.g., "exercise-proofs/proof-123.mp4")
-            // If path contains subdirectories, preserve them
-            const pathParts = proof.filePath.split(/[/\\]/);
-            if (pathParts.length > 1) {
-              // Path has subdirectories, construct full path
-              proof.fileUrl = `/uploads/${proof.filePath}`;
-            } else {
-              // Just a filename, assume it's in exercise-proofs
-              proof.fileUrl = `/uploads/exercise-proofs/${proof.filePath}`;
-            }
-          }
-        }
-      }
+      proof.fileUrl = resolveProofUrl(proof.filePath);
       return proof;
     });
 
@@ -942,31 +951,7 @@ const getPatientProofs = async (req, res) => {
 
     // Convert file paths to proper URLs
     const proofsWithUrls = proofs.map(proof => {
-      if (proof.filePath) {
-        // Check if it's a data URL
-        if (proof.filePath.startsWith('data:')) {
-          proof.fileUrl = proof.filePath;
-        } else {
-          // Handle both absolute and relative paths
-          // If path already starts with /uploads, use it as-is
-          if (proof.filePath.startsWith('/uploads/')) {
-            proof.fileUrl = proof.filePath;
-          } else if (proof.filePath.startsWith('uploads/')) {
-            proof.fileUrl = `/${proof.filePath}`;
-          } else {
-            // Handle relative paths (e.g., "exercise-proofs/proof-123.mp4")
-            // If path contains subdirectories, preserve them
-            const pathParts = proof.filePath.split(/[/\\]/);
-            if (pathParts.length > 1) {
-              // Path has subdirectories, construct full path
-              proof.fileUrl = `/uploads/${proof.filePath}`;
-            } else {
-              // Just a filename, assume it's in exercise-proofs
-              proof.fileUrl = `/uploads/exercise-proofs/${proof.filePath}`;
-            }
-          }
-        }
-      }
+      proof.fileUrl = resolveProofUrl(proof.filePath);
       return proof;
     });
 
