@@ -475,7 +475,8 @@ const Appointments = () => {
       setShowCancelModal(false);
       setCancelReason('');
     } catch (error) {
-      toast.error('Failed to cancel appointment');
+      const apiErrorMessage = error?.response?.data?.error;
+      toast.error(apiErrorMessage || 'Failed to cancel appointment');
       console.error('Cancel appointment error:', error);
     }
   };
