@@ -92,11 +92,11 @@ The website uses CSS custom properties for easy theming. Key colors can be chang
 
 ```css
 :root {
-    --primary-color: #2563eb;
-    --secondary-color: #fbbf24;
-    --accent-color: #10b981;
-    --text-color: #1f2937;
-    --background-color: #f8fafc;
+  --primary-color: #2563eb;
+  --secondary-color: #fbbf24;
+  --accent-color: #10b981;
+  --text-color: #1f2937;
+  --background-color: #f8fafc;
 }
 ```
 
@@ -113,13 +113,13 @@ If your API endpoints are different, update them in `script.js`:
 
 ```javascript
 // Login endpoint
-const response = await fetch('/api/auth/login', {
-    // ... configuration
+const response = await fetch("/api/auth/login", {
+  // ... configuration
 });
 
 // Registration endpoint
-const response = await fetch('/api/auth/register', {
-    // ... configuration
+const response = await fetch("/api/auth/register", {
+  // ... configuration
 });
 ```
 
@@ -151,12 +151,17 @@ To add analytics tracking, insert your tracking code in the `<head>` section of 
 
 ```html
 <!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=GA_TRACKING_ID"></script>
+<script
+  async
+  src="https://www.googletagmanager.com/gtag/js?id=GA_TRACKING_ID"
+></script>
 <script>
   window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'GA_TRACKING_ID');
+  function gtag() {
+    dataLayer.push(arguments);
+  }
+  gtag("js", new Date());
+  gtag("config", "GA_TRACKING_ID");
 </script>
 ```
 
