@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/authMiddleware');
 const { body, validationResult } = require('express-validator');
-const gptService = require('../../ai/services/gptService');
+const gptService = require('../ai/services/gptService');
 const { 
   saveAIAssessmentData, 
   getAIAssessmentData, 

@@ -51,7 +51,7 @@ A comprehensive, scalable platform designed specifically for **Pediatric Occupat
 therapease/
 ├── client/          # React Frontend
 ├── server/          # Node.js + Express Backend
-├── ai/             # AI Integration & Prompts
+├── server/ai/      # AI Integration & Prompts
 └── docs/           # Documentation
 ```
 
@@ -284,7 +284,7 @@ TherapEase leverages OpenAI's GPT-4 for pediatric occupational therapy:
 
 ### Pediatric AI Prompts
 
-Located in `ai/prompts/`:
+Located in `server/ai/prompts/`:
 
 - `assessmentPrompt.js` - Pediatric session analysis templates with developmental focus
 - `otPromptTemplates.js` - OT prompt templates for various assessment types

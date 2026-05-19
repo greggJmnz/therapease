@@ -1,4 +1,4 @@
-const { openai } = require('../../server/config/openai');
+const { openai } = require('../../config/openai');
 const otpfFrameworkPrompt = require('../prompts/otpfFramework');
 const otPromptTemplates = require('../prompts/otPromptTemplates');
 
