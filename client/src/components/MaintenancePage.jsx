@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Wrench, Clock, RefreshCw, Mail } from 'lucide-react';
-import { buildApiUrl } from '../utils/apiUrl';
+import React, { useState, useEffect } from "react";
+import { Wrench, Clock, RefreshCw, Mail } from "lucide-react";
+import { buildApiUrl } from "../utils/apiUrl";
 
 const MaintenancePage = () => {
-  const [maintenanceDuration, setMaintenanceDuration] = useState('2 hours');
-  
+  const [maintenanceDuration, setMaintenanceDuration] = useState("2 hours");
+
   // Fetch maintenance duration from API
   useEffect(() => {
     const fetchMaintenanceDuration = async () => {
       try {
-        const response = await fetch(buildApiUrl('/api/maintenance-status'));
+        const response = await fetch(buildApiUrl("/api/maintenance-status"));
         if (response.ok) {
           const data = await response.json();
           if (data?.data?.maintenanceDuration) {
@@ -17,13 +17,13 @@ const MaintenancePage = () => {
           }
         }
       } catch (error) {
-        console.warn('Failed to fetch maintenance duration, using default');
+        console.warn("Failed to fetch maintenance duration, using default");
       }
     };
-    
+
     fetchMaintenanceDuration();
   }, []);
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
@@ -33,7 +33,9 @@ const MaintenancePage = () => {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-white bg-opacity-20 rounded-full mb-6">
               <Wrench className="h-10 w-10 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">System Maintenance</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              System Maintenance
+            </h1>
             <p className="text-orange-100 text-lg">
               We're working hard to improve your experience
             </p>
@@ -49,8 +51,9 @@ const MaintenancePage = () => {
                 Temporarily Unavailable
               </h2>
               <p className="text-gray-600 text-lg leading-relaxed">
-                TherapEase is currently undergoing scheduled maintenance to enhance 
-                performance and add new features. We apologize for any inconvenience.
+                TherapEase is currently undergoing scheduled maintenance to
+                enhance performance and add new features. We apologize for any
+                inconvenience.
               </p>
             </div>
 
@@ -70,7 +73,7 @@ const MaintenancePage = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Expected Duration</span>
                   <span className="text-gray-900 font-medium">
-                    {maintenanceDuration || '30-60 minutes'}
+                    {maintenanceDuration || "30-60 minutes"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -114,13 +117,14 @@ const MaintenancePage = () => {
                 Need Immediate Assistance?
               </h3>
               <p className="text-gray-600 mb-4">
-                If you have an urgent matter that cannot wait, please contact our support team:
+                If you have an urgent matter that cannot wait, please contact
+                our support team:
               </p>
               <div className="space-y-2">
                 <div className="flex items-center">
                   <span className="text-gray-600 w-20">Email:</span>
-                  <a 
-                    href="mailto:therapease16@gmail.com" 
+                  <a
+                    href="mailto:therapease16@gmail.com"
                     className="text-blue-600 hover:text-blue-800 font-medium"
                   >
                     therapease16@gmail.com
@@ -128,8 +132,8 @@ const MaintenancePage = () => {
                 </div>
                 <div className="flex items-center">
                   <span className="text-gray-600 w-20">Phone:</span>
-                  <a 
-                    href="tel:+639851423225" 
+                  <a
+                    href="tel:+639851423225"
                     className="text-blue-600 hover:text-blue-800 font-medium"
                   >
                     +63 985 142 3225
@@ -141,9 +145,10 @@ const MaintenancePage = () => {
             {/* Auto-refresh Notice */}
             <div className="mt-8 text-center">
               <p className="text-sm text-gray-500">
-                This page will automatically refresh every 30 seconds to check for updates.
+                This page will automatically refresh every 30 seconds to check
+                for updates.
               </p>
-              <button 
+              <button
                 onClick={() => window.location.reload()}
                 className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >

@@ -1,57 +1,61 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Calendar, 
-  Clock, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Calendar,
+  Clock,
+  Plus,
+  Edit,
+  Trash2,
   X,
-  ChevronLeft
-} from 'lucide-react';
-import { ModernCard, ModernButton, ModernInput, ModernSelect } from './index';
-import { buildApiUrl } from '../utils/apiUrl';
+  ChevronLeft,
+} from "lucide-react";
+import { ModernCard, ModernButton, ModernInput, ModernSelect } from "./index";
+import { buildApiUrl } from "../utils/apiUrl";
 
-const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) => {
+const PatientSessionScheduler = ({
+  patientId,
+  patientName,
+  onScheduleUpdate,
+}) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState('09:00');
+  const [selectedTime, setSelectedTime] = useState("09:00");
   const [duration, setDuration] = useState(60);
-  const [sessionType, setSessionType] = useState('therapy');
-  const [notes, setNotes] = useState('');
+  const [sessionType, setSessionType] = useState("therapy");
+  const [notes, setNotes] = useState("");
   const [recurring, setRecurring] = useState(false);
-  const [recurringPattern, setRecurringPattern] = useState('weekly');
-  const [recurringEndDate, setRecurringEndDate] = useState('');
+  const [recurringPattern, setRecurringPattern] = useState("weekly");
+  const [recurringEndDate, setRecurringEndDate] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const sessionTypes = [
-    { value: 'therapy', label: 'Therapy Session' },
-    { value: 'assessment', label: 'Assessment' },
-    { value: 'consultation', label: 'Consultation' },
-    { value: 'follow-up', label: 'Follow-up' },
-    { value: 'evaluation', label: 'Evaluation' }
+    { value: "therapy", label: "Therapy Session" },
+    { value: "assessment", label: "Assessment" },
+    { value: "consultation", label: "Consultation" },
+    { value: "follow-up", label: "Follow-up" },
+    { value: "evaluation", label: "Evaluation" },
   ];
 
   const durationOptions = [
-    { value: 30, label: '30 minutes' },
-    { value: 45, label: '45 minutes' },
-    { value: 60, label: '1 hour' },
-    { value: 90, label: '1.5 hours' },
-    { value: 120, label: '2 hours' }
+    { value: 30, label: "30 minutes" },
+    { value: 45, label: "45 minutes" },
+    { value: 60, label: "1 hour" },
+    { value: 90, label: "1.5 hours" },
+    { value: 120, label: "2 hours" },
   ];
 
   const recurringPatterns = [
-    { value: 'weekly', label: 'Weekly' },
-    { value: 'biweekly', label: 'Bi-weekly' },
-    { value: 'monthly', label: 'Monthly' }
+    { value: "weekly", label: "Weekly" },
+    { value: "biweekly", label: "Bi-weekly" },
+    { value: "monthly", label: "Monthly" },
   ];
 
   // Generate time slots from 8 AM to 6 PM
   const timeSlots = [];
   for (let hour = 8; hour <= 18; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
       timeSlots.push({ value: time, label: time });
     }
   }
@@ -59,13 +63,17 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
   const fetchPatientSessions = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(buildApiUrl(`/api/therapist/schedule?patientId=${patientId}&date=${selectedDate.toISOString().split('T')[0]}`));
+      const response = await fetch(
+        buildApiUrl(
+          `/api/therapist/schedule?patientId=${patientId}&date=${selectedDate.toISOString().split("T")[0]}`,
+        ),
+      );
       const data = await response.json();
       if (data.success) {
         setSessions(data.data.appointments || []);
       }
     } catch (error) {
-      console.error('Error fetching sessions:', error);
+      console.error("Error fetching sessions:", error);
     } finally {
       setLoading(false);
     }
@@ -81,7 +89,7 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
     try {
       const sessionData = {
         patientId,
-        appointmentDate: selectedDate.toISOString().split('T')[0],
+        appointmentDate: selectedDate.toISOString().split("T")[0],
         startTime: selectedTime,
         endTime: calculateEndTime(selectedTime, duration),
         duration,
@@ -89,13 +97,13 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
         notes,
         recurring,
         recurringPattern,
-        recurringEndDate: recurring ? recurringEndDate : null
+        recurringEndDate: recurring ? recurringEndDate : null,
       };
 
-      const response = await fetch(buildApiUrl('/api/therapist/schedule'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sessionData)
+      const response = await fetch(buildApiUrl("/api/therapist/schedule"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sessionData),
       });
 
       const data = await response.json();
@@ -106,26 +114,26 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
         onScheduleUpdate && onScheduleUpdate();
       }
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error("Error creating session:", error);
     }
   };
 
   const calculateEndTime = (startTime, durationMinutes) => {
-    const [hours, minutes] = startTime.split(':').map(Number);
+    const [hours, minutes] = startTime.split(":").map(Number);
     const totalMinutes = hours * 60 + minutes + durationMinutes;
     const endHours = Math.floor(totalMinutes / 60);
     const endMinutes = totalMinutes % 60;
-    return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+    return `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}`;
   };
 
   const resetForm = () => {
-    setSelectedTime('09:00');
+    setSelectedTime("09:00");
     setDuration(60);
-    setSessionType('therapy');
-    setNotes('');
+    setSessionType("therapy");
+    setNotes("");
     setRecurring(false);
-    setRecurringPattern('weekly');
-    setRecurringEndDate('');
+    setRecurringPattern("weekly");
+    setRecurringEndDate("");
   };
 
   const handleEditSession = (session) => {
@@ -134,26 +142,29 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
     setSelectedTime(session.startTime);
     setDuration(session.duration);
     setSessionType(session.type);
-    setNotes(session.notes || '');
+    setNotes(session.notes || "");
     setShowAddModal(true);
   };
 
   const handleUpdateSession = async () => {
     try {
       const sessionData = {
-        appointmentDate: selectedDate.toISOString().split('T')[0],
+        appointmentDate: selectedDate.toISOString().split("T")[0],
         startTime: selectedTime,
         endTime: calculateEndTime(selectedTime, duration),
         duration,
         type: sessionType,
-        notes
+        notes,
       };
 
-      const response = await fetch(buildApiUrl(`/api/therapist/schedule/${editingSession.id}`), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sessionData)
-      });
+      const response = await fetch(
+        buildApiUrl(`/api/therapist/schedule/${editingSession.id}`),
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(sessionData),
+        },
+      );
 
       const data = await response.json();
       if (data.success) {
@@ -164,16 +175,19 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
         onScheduleUpdate && onScheduleUpdate();
       }
     } catch (error) {
-      console.error('Error updating session:', error);
+      console.error("Error updating session:", error);
     }
   };
 
   const handleDeleteSession = async (sessionId) => {
-    if (window.confirm('Are you sure you want to delete this session?')) {
+    if (window.confirm("Are you sure you want to delete this session?")) {
       try {
-        const response = await fetch(buildApiUrl(`/api/therapist/schedule/${sessionId}`), {
-          method: 'DELETE'
-        });
+        const response = await fetch(
+          buildApiUrl(`/api/therapist/schedule/${sessionId}`),
+          {
+            method: "DELETE",
+          },
+        );
 
         const data = await response.json();
         if (data.success) {
@@ -181,34 +195,39 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
           onScheduleUpdate && onScheduleUpdate();
         }
       } catch (error) {
-        console.error('Error deleting session:', error);
+        console.error("Error deleting session:", error);
       }
     }
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
+    return new Date(date).toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const formatTime = (time) => {
-    const [hours, minutes] = time.split(':');
+    const [hours, minutes] = time.split(":");
     const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const ampm = hour >= 12 ? "PM" : "AM";
     const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'scheduled': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "confirmed":
+        return "bg-green-100 text-green-800";
+      case "scheduled":
+        return "bg-blue-100 text-blue-800";
+      case "completed":
+        return "bg-gray-100 text-gray-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -270,20 +289,26 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
               </div>
             ) : sessions.length > 0 ? (
               sessions.map((session) => (
-                <div key={session.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div
+                  key={session.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                       <Clock className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                        {formatTime(session.startTime)} -{" "}
+                        {formatTime(session.endTime)}
                       </p>
                       <p className="text-sm text-gray-600">{session.type}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(session.status)}`}>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(session.status)}`}
+                    >
                       {session.status}
                     </span>
                     <button
@@ -317,7 +342,7 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">
-                {editingSession ? 'Edit Session' : 'Add New Session'}
+                {editingSession ? "Edit Session" : "Add New Session"}
               </h3>
               <button
                 onClick={() => {
@@ -335,7 +360,7 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
               <ModernInput
                 label="Date"
                 type="date"
-                value={selectedDate.toISOString().split('T')[0]}
+                value={selectedDate.toISOString().split("T")[0]}
                 onChange={(e) => setSelectedDate(new Date(e.target.value))}
               />
 
@@ -368,7 +393,10 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
                   onChange={(e) => setRecurring(e.target.checked)}
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <label htmlFor="recurring" className="text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="recurring"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Recurring Session
                 </label>
               </div>
@@ -406,11 +434,13 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
 
             <div className="flex gap-3 mt-6">
               <ModernButton
-                onClick={editingSession ? handleUpdateSession : handleCreateSession}
+                onClick={
+                  editingSession ? handleUpdateSession : handleCreateSession
+                }
                 variant="primary"
                 className="flex-1"
               >
-                {editingSession ? 'Update Session' : 'Create Session'}
+                {editingSession ? "Update Session" : "Create Session"}
               </ModernButton>
               <ModernButton
                 onClick={() => {

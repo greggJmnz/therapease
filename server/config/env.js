@@ -125,7 +125,7 @@ const getCorsOrigins = () => {
     throw new Error('CORS_ORIGIN is required in production');
   }
 
-  return [frontendUrl, 'http://localhost:3000'];
+  return [frontendUrl, 'https://therapease-ebon.vercel.app/'];
 };
 
 module.exports = {
