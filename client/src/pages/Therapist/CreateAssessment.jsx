@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AssessmentTemplateSelector from '../../components/AssessmentTemplateSelector';
+import { buildApiUrl } from '../../utils/apiUrl';
 
 
 const CreateAssessment = () => {
@@ -41,7 +42,7 @@ const CreateAssessment = () => {
 
   const fetchPatients = async () => {
     try {
-      const response = await fetch('/api/therapist/patients');
+      const response = await fetch(buildApiUrl('/api/therapist/patients'));
       const data = await response.json();
       if (data.success) {
         setPatients(data.data.patients);
@@ -107,7 +108,7 @@ const CreateAssessment = () => {
         scheduledDate: isScheduled ? data.scheduledDate : null
       };
 
-      const response = await fetch('/api/therapist/assessments', {
+      const response = await fetch(buildApiUrl('/api/therapist/assessments'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -488,7 +489,6 @@ const CreateAssessment = () => {
           </button>
         </div>
       </form>
-      )}
 
       {/* Template Selector Modal */}
       {showTemplateSelector && (

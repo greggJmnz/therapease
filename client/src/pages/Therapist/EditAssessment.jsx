@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import { buildApiUrl } from '../../utils/apiUrl';
 
 const EditAssessment = () => {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ const EditAssessment = () => {
     try {
       // For now, we'll get the assessment from the list
       // In a real app, you'd have a specific endpoint for this
-      const response = await fetch('/api/therapist/assessments');
+      const response = await fetch(buildApiUrl('/api/therapist/assessments'));
       const data = await response.json();
       
       if (data.success) {
@@ -85,7 +86,7 @@ const EditAssessment = () => {
 
   const fetchPatients = async () => {
     try {
-      const response = await fetch('/api/therapist/patients');
+      const response = await fetch(buildApiUrl('/api/therapist/patients'));
       const data = await response.json();
       if (data.success) {
         setPatients(data.data.patients);
@@ -135,7 +136,7 @@ const EditAssessment = () => {
         status: isScheduled === 'true' ? 'scheduled' : 'completed'
       };
 
-      const response = await fetch(`/api/therapist/assessments/${id}`, {
+      const response = await fetch(buildApiUrl(`/api/therapist/assessments/${id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +167,7 @@ const EditAssessment = () => {
   const confirmDelete = async () => {
 
     try {
-      const response = await fetch(`/api/therapist/assessments/${id}`, {
+      const response = await fetch(buildApiUrl(`/api/therapist/assessments/${id}`), {
         method: 'DELETE',
       });
 

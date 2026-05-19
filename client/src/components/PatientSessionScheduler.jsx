@@ -9,6 +9,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { ModernCard, ModernButton, ModernInput, ModernSelect } from './index';
+import { buildApiUrl } from '../utils/apiUrl';
 
 const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -58,7 +59,7 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
   const fetchPatientSessions = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/therapist/schedule?patientId=${patientId}&date=${selectedDate.toISOString().split('T')[0]}`);
+      const response = await fetch(buildApiUrl(`/api/therapist/schedule?patientId=${patientId}&date=${selectedDate.toISOString().split('T')[0]}`));
       const data = await response.json();
       if (data.success) {
         setSessions(data.data.appointments || []);
@@ -91,7 +92,7 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
         recurringEndDate: recurring ? recurringEndDate : null
       };
 
-      const response = await fetch('/api/therapist/schedule', {
+      const response = await fetch(buildApiUrl('/api/therapist/schedule'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sessionData)
@@ -148,7 +149,7 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
         notes
       };
 
-      const response = await fetch(`/api/therapist/schedule/${editingSession.id}`, {
+      const response = await fetch(buildApiUrl(`/api/therapist/schedule/${editingSession.id}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sessionData)
@@ -170,7 +171,7 @@ const PatientSessionScheduler = ({ patientId, patientName, onScheduleUpdate }) =
   const handleDeleteSession = async (sessionId) => {
     if (window.confirm('Are you sure you want to delete this session?')) {
       try {
-        const response = await fetch(`/api/therapist/schedule/${sessionId}`, {
+        const response = await fetch(buildApiUrl(`/api/therapist/schedule/${sessionId}`), {
           method: 'DELETE'
         });
 

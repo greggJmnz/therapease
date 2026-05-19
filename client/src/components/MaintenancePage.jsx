@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Wrench, Clock, RefreshCw, Mail } from 'lucide-react';
+import { buildApiUrl } from '../utils/apiUrl';
 
 const MaintenancePage = () => {
   const [maintenanceDuration, setMaintenanceDuration] = useState('2 hours');
@@ -8,7 +9,7 @@ const MaintenancePage = () => {
   useEffect(() => {
     const fetchMaintenanceDuration = async () => {
       try {
-        const response = await fetch('/api/maintenance-status');
+        const response = await fetch(buildApiUrl('/api/maintenance-status'));
         if (response.ok) {
           const data = await response.json();
           if (data?.data?.maintenanceDuration) {

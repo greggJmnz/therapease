@@ -6,6 +6,7 @@ import { useRealtimeData } from '../../hooks/useWebSocket';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import { buildApiUrl } from '../../utils/apiUrl';
 
 // Helper function to get the correct video URL
 // Static files are served from the backend server, not the frontend
@@ -132,7 +133,7 @@ const DailyNotes = () => {
   // Add comment mutation
   const addCommentMutation = useMutation(
     async ({ noteId, comment }) => {
-      const response = await fetch(`/api/patient/daily-notes/${noteId}/comments`, {
+      const response = await fetch(buildApiUrl(`/api/patient/daily-notes/${noteId}/comments`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

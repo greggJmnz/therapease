@@ -1,20 +1,7 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/apiUrl';
 
 // Create axios instance with base configuration
-// Use environment variable if available, otherwise fallback to relative URL
-const getApiBaseUrl = () => {
-  // Check if VITE_API_URL is set (production)
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  // Fallback to relative URL for development
-  if (import.meta.env.DEV) {
-    console.warn('⚠️ VITE_API_URL not set! Falling back to relative /api. This will fail in production.');
-    console.warn('💡 Set VITE_API_URL to your Railway API URL so the frontend can reach the backend');
-  }
-  return '/api';
-};
-
 // Create axios instance with base configuration
 // Export it so other services can use it
 const apiBaseUrl = getApiBaseUrl();

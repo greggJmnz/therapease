@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { buildApiUrl } from '../../utils/apiUrl';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const ForgotPassword = () => {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/auth/forgot-password', {
+      const response = await fetch(buildApiUrl('/api/auth/forgot-password'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

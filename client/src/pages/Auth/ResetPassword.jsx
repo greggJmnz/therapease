@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-
-// Get API base URL (same logic as api.js)
-const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  return '/api';
-};
+import { buildApiUrl, getApiBaseUrl } from '../../utils/apiUrl';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -42,7 +35,7 @@ const ResetPassword = () => {
       
       // URL encode the token to handle special characters safely
       const encodedToken = encodeURIComponent(tokenToVerify);
-      const url = `${apiBaseUrl}/auth/verify-reset-token/${encodedToken}`;
+      const url = buildApiUrl(`/api/auth/verify-reset-token/${encodedToken}`);
       
       console.log('🔍 Verifying token at URL:', url);
       console.log('🔍 Original token:', tokenToVerify.substring(0, 20) + '...');
@@ -220,7 +213,7 @@ Debugging steps:
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/auth/reset-password`, {
+      const response = await fetch(buildApiUrl('/api/auth/reset-password'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

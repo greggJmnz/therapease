@@ -1,13 +1,7 @@
 // Push Notification Service for TherapEase
 // Handles browser push notifications, service worker registration, and notification management
 
-// Get API base URL (same logic as api.js)
-const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  return '/api';
-};
+import { getApiBaseUrl } from '../utils/apiUrl';
 
 class PushNotificationService {
   constructor() {
