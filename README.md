@@ -1,11 +1,11 @@
 # TherapEase - A Web-based Pediatric Occupational Therapy System with AI-Augmented Assessment
 
-
 A comprehensive, scalable platform designed specifically for **Pediatric Occupational Therapy** practice management with AI-augmented assessment and developmental progress tracking for children.
 
 ## 🚀 Features
 
 ### 🧠 AI-Powered Intelligence
+
 - **AI-Augmented Assessment**: GPT-4 powered pediatric session analysis and developmental insights
 - **Pediatric Session Analysis**: Automated assessment of child therapy sessions with developmental focus
 - **Developmental Progress Tracking**: AI-generated progress summaries with milestone references
@@ -15,17 +15,20 @@ A comprehensive, scalable platform designed specifically for **Pediatric Occupat
 - **School-Based Therapy Planning**: Educational integration and academic support recommendations
 
 ### 👥 Multi-Portal System
+
 - **Admin Portal**: System management, user oversight, and analytics dashboard
 - **Therapist Portal**: Patient management, session documentation, and AI insights
 - **Family Portal**: Child's progress visualization, appointment scheduling, and home programs
 
 ### 📱 Advanced Communication
+
 - **Push Notifications**: Real-time browser notifications with VAPID integration
 - **SMS Integration**: Automated appointment reminder SMS via PhilSMS API (Philippine number support)
 - **WebSocket Support**: Live updates and real-time communication
 - **Email Notifications**: Comprehensive email notification system
 
 ### 🎯 Pediatric-Focused Features
+
 - **Pediatric-Focused System**: Specialized for children and adolescents (ages 0-21)
 - **Play-Based Interventions**: Therapeutic play and developmental milestone tracking
 - **Family-Centered Care**: Parent/caregiver education and involvement tools
@@ -34,6 +37,7 @@ A comprehensive, scalable platform designed specifically for **Pediatric Occupat
 - **OTPF-4 Framework**: Pediatric OTPF-4 framework compliance system
 
 ### 🔧 Technical Excellence
+
 - **Real-time Updates**: Live appointment and developmental progress tracking
 - **Secure Authentication**: JWT-based user management with role-based access
 - **Responsive Design**: Modern UI built with React 18 and Tailwind CSS
@@ -54,6 +58,7 @@ therapease/
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React 18** - Latest React with concurrent features
 - **React Router v6** - Client-side routing with protected routes
 - **React Query** - Server state management and caching
@@ -65,6 +70,7 @@ therapease/
 - **jsPDF** - PDF generation and export
 
 ### Backend
+
 - **Node.js** - JavaScript runtime
 - **Express.js** - Web application framework
 - **MySQL** - Relational database with comprehensive data seeding
@@ -77,12 +83,14 @@ therapease/
 - **Helmet.js** - Security headers
 
 ### Communication & Notifications
+
 - **PhilSMS API** - Appointment reminder SMS with Philippine number support
 - **Web Push API** - Browser push notifications
 - **WebSocket** - Real-time updates
 - **VAPID** - Push notification authentication
 
 ### DevOps & Security
+
 - **Environment-based configuration** - Flexible configuration options
 - **Comprehensive error handling** - Robust error management
 - **Data encryption** - Secure data storage
@@ -101,23 +109,27 @@ therapease/
 ## 🚀 Quick Start
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/yourusername/therapease.git
 cd therapease
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 npm run install:all
 ```
 
 ### 3. Environment Setup
+
 ```bash
 cp env.example .env
 # Edit .env with your configuration
 ```
 
 ### 4. Database Setup
+
 ```bash
 # Using Docker (recommended)
 docker-compose up -d mysql
@@ -128,6 +140,7 @@ CREATE DATABASE therapease_db;
 ```
 
 ### 5. Start Development Servers
+
 ```bash
 npm run dev
 ```
@@ -137,6 +150,7 @@ This will start both the backend (port 5000) and frontend (port 3000) servers.
 ## 🔧 Configuration
 
 ### Environment Variables
+
 ```env
 # Database Configuration
 DB_HOST=localhost
@@ -186,9 +200,11 @@ API_BASE_URL=http://localhost:5000
 ```
 
 ### Database Configuration
+
 The system uses MySQL with comprehensive data seeding including:
 
 #### Core Tables
+
 - `users` - User authentication and profiles (21 users: 1 admin, 5 therapists, 15 patients)
 - `therapists` - Therapist-specific information with specializations
 - `patients` - Patient records with complete medical information
@@ -198,7 +214,9 @@ The system uses MySQL with comprehensive data seeding including:
 - `push_subscriptions` - Push notification subscriptions
 
 #### Data Seeding
+
 The system includes comprehensive test data:
+
 - **Complete User Profiles**: All users have full contact information with Philippine phone numbers
 - **Medical Information**: Detailed patient records with diagnoses, therapy goals, and medical history
 - **Professional Credentials**: Therapist specializations, certifications, and education
@@ -206,6 +224,7 @@ The system includes comprehensive test data:
 - **No Null Values**: All fields populated with realistic, complete data
 
 #### Database Initialization
+
 ```bash
 # Initialize database structure
 npm run db:init
@@ -220,6 +239,7 @@ npm run seed:sample
 ## 📚 API Documentation
 
 Comprehensive API documentation is available in `docs/API-spec.md` including:
+
 - Authentication endpoints
 - CRUD operations for all entities
 - AI integration endpoints
@@ -230,6 +250,7 @@ Comprehensive API documentation is available in `docs/API-spec.md` including:
 ## 🔔 Notification Systems
 
 ### Push Notifications
+
 - **Real-time Browser Notifications**: VAPID-powered push notifications
 - **Cross-Platform Support**: Works on desktop and mobile browsers
 - **Permission Management**: Automatic browser permission requests
@@ -237,6 +258,7 @@ Comprehensive API documentation is available in `docs/API-spec.md` including:
 - **Offline Support**: Service worker handles offline scenarios
 
 ### SMS Integration
+
 - **Philippine Number Support**: Full support for Philippine mobile numbers
 - **Vonage Integration**: Professional SMS delivery service
 - **Appointment Reminders**: Automated SMS reminders for upcoming appointments
@@ -244,6 +266,7 @@ Comprehensive API documentation is available in `docs/API-spec.md` including:
 - **Single Template**: Pre-built appointment reminder message template with therapist name
 
 ### WebSocket Support
+
 - **Real-time Updates**: Live appointment and progress updates
 - **Instant Notifications**: Immediate notification delivery
 - **Connection Management**: Automatic reconnection and error handling
@@ -251,6 +274,7 @@ Comprehensive API documentation is available in `docs/API-spec.md` including:
 ## 🧠 AI Integration - Pediatric Focus
 
 TherapEase leverages OpenAI's GPT-4 for pediatric occupational therapy:
+
 - **Pediatric Session Analysis**: Automated assessment of child therapy sessions with developmental focus
 - **Developmental Progress Tracking**: AI-generated progress summaries with milestone references
 - **Play-Based Home Programs**: Personalized play-based activity recommendations
@@ -259,7 +283,9 @@ TherapEase leverages OpenAI's GPT-4 for pediatric occupational therapy:
 - **School-Based Therapy Planning**: Educational integration and academic support recommendations
 
 ### Pediatric AI Prompts
+
 Located in `ai/prompts/`:
+
 - `assessmentPrompt.js` - Pediatric session analysis templates with developmental focus
 - `otPromptTemplates.js` - OT prompt templates for various assessment types
 - `otpfFramework.js` - Pediatric OTPF-4 framework compliance system
@@ -276,18 +302,21 @@ Located in `ai/prompts/`:
 ## 📱 User Modules
 
 ### Admin Portal
+
 - Dashboard with system statistics
 - User management (patients, therapists)
 - Appointment oversight
 - System notifications
 
 ### Therapist Portal
+
 - Patient management
 - Session notes and documentation
 - AI-powered insights
 - Progress tracking tools
 
 ### Family Portal
+
 - Child's developmental progress visualization
 - Appointment scheduling
 - Play-based home programs
@@ -297,6 +326,7 @@ Located in `ai/prompts/`:
 ## 🧪 Testing
 
 ### Application Testing
+
 ```bash
 # Backend tests
 npm run test:server
@@ -309,6 +339,7 @@ npm test
 ```
 
 ### Feature Testing
+
 ```bash
 # Test SMS functionality
 npm run sms:test
@@ -333,6 +364,7 @@ npm run security:test
 ```
 
 ### Database Testing
+
 ```bash
 # Initialize database
 npm run db:init
@@ -362,6 +394,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 For support and questions:
+
 - Create an issue in the GitHub repository
 - Contact the development team
 - Check the documentation in `docs/`
@@ -369,6 +402,7 @@ For support and questions:
 ## 📖 Documentation
 
 ### Complete Documentation Suite
+
 - **API Documentation** (`docs/API-spec.md`) - Complete API reference
 - **Database Schema** (`docs/DATABASE_SCHEMA.md`) - Database structure and relationships
 - **Frontend Architecture** (`docs/FRONTEND_ARCHITECTURE.md`) - React component architecture
@@ -379,6 +413,7 @@ For support and questions:
 - **Development Guide** (`docs/DEVELOPMENT.md`) - Development setup and guidelines
 
 ### Quick Reference
+
 - **Test Accounts**: Available after database seeding
   - Admin: `admin@therapease.com` / `admin123`
   - Therapist: `dr.aleli.ong@therapease.com` / `therapist123`
@@ -387,6 +422,7 @@ For support and questions:
 ## 🔮 Roadmap
 
 ### Phase 1 - Current Features ✅
+
 - [x] AI-powered pediatric assessment
 - [x] Multi-portal system (Admin, Therapist, Patient)
 - [x] Push notifications with VAPID
@@ -396,6 +432,7 @@ For support and questions:
 - [x] Security and encryption
 
 ### Phase 2 - Planned Features
+
 - [ ] Mobile app development (React Native)
 - [ ] Advanced analytics dashboard
 - [ ] Integration with EHR systems

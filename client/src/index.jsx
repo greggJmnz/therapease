@@ -1,80 +1,89 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App.jsx';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App.jsx";
 
 // Global error handlers for iOS Safari debugging
 // Catch CSP violations and other errors that might cause white page
-window.addEventListener('error', (event) => {
-  const isResourceError = event.target && event.target !== window;
-  const errorDetails = isResourceError
-    ? {
-        message: `Resource load error for ${event.target?.tagName || 'unknown element'}`,
-        filename: event.target?.src || event.target?.href,
-        error: event.target?.outerHTML || event.target?.currentSrc || event.target?.src
-      }
-    : {
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        error: event.error,
-        stack: event.error?.stack
-      };
+window.addEventListener(
+  "error",
+  (event) => {
+    const isResourceError = event.target && event.target !== window;
+    const errorDetails = isResourceError
+      ? {
+          message: `Resource load error for ${event.target?.tagName || "unknown element"}`,
+          filename: event.target?.src || event.target?.href,
+          error:
+            event.target?.outerHTML ||
+            event.target?.currentSrc ||
+            event.target?.src,
+        }
+      : {
+          message: event.message,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          error: event.error,
+          stack: event.error?.stack,
+        };
 
-  console.error('Global Error:', errorDetails);
-  
-  // Check if it's a CSP violation
-  if (event.message && (
-    event.message.includes('Content Security Policy') ||
-    event.message.includes('CSP') ||
-    event.message.includes('violates') ||
-    event.message.includes('Refused to')
-  )) {
-    console.error('🚨 CSP VIOLATION DETECTED:', event.message);
-    console.error('This is likely causing the white page on iOS');
-  }
-}, true);
+    console.error("Global Error:", errorDetails);
+
+    // Check if it's a CSP violation
+    if (
+      event.message &&
+      (event.message.includes("Content Security Policy") ||
+        event.message.includes("CSP") ||
+        event.message.includes("violates") ||
+        event.message.includes("Refused to"))
+    ) {
+      console.error("🚨 CSP VIOLATION DETECTED:", event.message);
+      console.error("This is likely causing the white page on iOS");
+    }
+  },
+  true,
+);
 
 // Catch unhandled promise rejections
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled Promise Rejection:', {
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("Unhandled Promise Rejection:", {
     reason: event.reason,
     message: event.reason?.message,
-    stack: event.reason?.stack
+    stack: event.reason?.stack,
   });
-  
+
   // Check if it's a CSP-related rejection
-  if (event.reason?.message && (
-    event.reason.message.includes('Content Security Policy') ||
-    event.reason.message.includes('CSP') ||
-    event.reason.message.includes('violates') ||
-    event.reason.message.includes('Refused to')
-  )) {
-    console.error('🚨 CSP VIOLATION IN PROMISE:', event.reason.message);
+  if (
+    event.reason?.message &&
+    (event.reason.message.includes("Content Security Policy") ||
+      event.reason.message.includes("CSP") ||
+      event.reason.message.includes("violates") ||
+      event.reason.message.includes("Refused to"))
+  ) {
+    console.error("🚨 CSP VIOLATION IN PROMISE:", event.reason.message);
   }
 });
 
 // Safely render the app with error handling for iOS Safari
 try {
-  const rootElement = document.getElementById('root');
-  
+  const rootElement = document.getElementById("root");
+
   if (!rootElement) {
-    throw new Error('Root element not found');
+    throw new Error("Root element not found");
   }
 
   const root = ReactDOM.createRoot(rootElement);
-  
+
   root.render(
     <React.StrictMode>
       <App />
-    </React.StrictMode>
+    </React.StrictMode>,
   );
 } catch (error) {
   // If React rendering fails, show a fallback message
-  console.error('Failed to render React app:', error);
-  
-  const rootElement = document.getElementById('root');
+  console.error("Failed to render React app:", error);
+
+  const rootElement = document.getElementById("root");
   if (rootElement) {
     rootElement.innerHTML = `
       <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">

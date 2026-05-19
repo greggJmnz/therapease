@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -13,10 +13,10 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     // Log error to console for debugging
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
     this.setState({
       error: error,
-      errorInfo: errorInfo
+      errorInfo: errorInfo,
     });
 
     // You can also log the error to an error reporting service here
@@ -47,7 +47,8 @@ class ErrorBoundary extends React.Component {
               Something went wrong
             </h1>
             <p className="text-gray-600 mb-4">
-              We're sorry, but something unexpected happened. Please try refreshing the page.
+              We're sorry, but something unexpected happened. Please try
+              refreshing the page.
             </p>
             <div className="space-y-2">
               <button
@@ -60,7 +61,7 @@ class ErrorBoundary extends React.Component {
                 onClick={() => {
                   // Clear localStorage and reload
                   localStorage.clear();
-                  window.location.href = '/auth/login';
+                  window.location.href = "/auth/login";
                 }}
                 className="w-full bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
               >
@@ -88,4 +89,3 @@ class ErrorBoundary extends React.Component {
 }
 
 export default ErrorBoundary;
-
