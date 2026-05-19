@@ -22,7 +22,7 @@ import { useRealtimeData } from "../../hooks/useWebSocket";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import ConfirmationModal from "../../components/ConfirmationModal";
-import { buildApiUrl } from "../../utils/apiUrl";
+import { buildApiUrl, getApiOrigin } from '../../utils/apiUrl';
 
 // Helper function to get the correct video URL
 // Static files are served from the backend server, not the frontend
@@ -66,33 +66,12 @@ const getVideoUrl = (videoPath) => {
         "⚠️ VITE_API_URL not set in development, using http://localhost:5000",
       );
     } else {
-      // In production without VITE_API_URL, infer from hostname
-      // For TherapEase, API is at api.therapease.site
-      const hostname = window.location.hostname;
-      if (hostname.includes("therapease.site")) {
-        // Always use HTTPS in production
-        serverBaseUrl = "https://api.therapease.site";
-        console.warn(
-          "⚠️ VITE_API_URL not set, inferred from hostname:",
-          serverBaseUrl,
-        );
-        console.warn(
-          "💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables",
-        );
-      } else {
-        // Fallback: use current origin but ensure HTTPS
-        serverBaseUrl = window.location.origin;
-        if (isProduction && serverBaseUrl.startsWith("http://")) {
-          serverBaseUrl = serverBaseUrl.replace("http://", "https://");
-        }
-        console.error(
-          "❌ VITE_API_URL not set and cannot infer server URL. Using:",
-          serverBaseUrl,
-        );
-        console.error(
-          "💡 Set VITE_API_URL=https://api.therapease.site/api in Vercel environment variables",
-        );
-      }
+      // In production without VITE_API_URL, use the configured API origin.
+      serverBaseUrl = getApiOrigin();
+      console.warn(
+        "⚠️ VITE_API_URL not set, using API origin:",
+        serverBaseUrl,
+      );
     }
   }
 

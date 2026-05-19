@@ -26,9 +26,11 @@ import { useRealtimeData } from "../../hooks/useWebSocket";
 import FullScreenImageViewer from "../../components/FullScreenImageViewer";
 import ExerciseDetailsModal from "../../components/ExerciseDetailsModal";
 import toast from "react-hot-toast";
+import { getApiOrigin } from "../../utils/apiUrl";
 
 // Helper function to get the correct file URL for proof images
 // Static files are served from the backend server, not the frontend
+/*
 const getProofImageUrl = (input) => {
   if (!input) return "";
 
@@ -38,43 +40,20 @@ const getProofImageUrl = (input) => {
         input.url ||
         input.path ||
         input.filePath ||
-        input.key ||
-        ""
-      : input;
-
-  if (!fileUrl || typeof fileUrl !== "string") return "";
-
-  if (
-    fileUrl.startsWith("http://") ||
-    fileUrl.startsWith("https://") ||
-    fileUrl.startsWith("data:")
-  ) {
-    return fileUrl;
-  }
-
-  const apiBaseUrl = import.meta.env.VITE_API_URL || "";
-  const isDevelopment =
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1";
-  const isProduction = window.location.protocol === "https:";
-  let serverBaseUrl;
-
-  if (apiBaseUrl) {
-    if (apiBaseUrl.startsWith("http://") || apiBaseUrl.startsWith("https://")) {
-      serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
-      if (isProduction && serverBaseUrl.startsWith("http://")) {
-        serverBaseUrl = serverBaseUrl.replace("http://", "https://");
-        console.warn(
-          "⚠️ Upgraded HTTP to HTTPS for production:",
-          serverBaseUrl,
+        } else {
+          // In production without VITE_API_URL, use the configured API origin.
+          serverBaseUrl = getApiOrigin();
+          console.warn(
+            "⚠️ VITE_API_URL not set, using API origin:",
+            serverBaseUrl,
+          );
+        }
         );
       }
-    } else if (apiBaseUrl.startsWith("/")) {
-      serverBaseUrl = isDevelopment
-        ? "http://127.0.0.1:5000"
-        : window.location.origin;
+    } else if (apiBaseUrl.startsWith('/')) {
+      serverBaseUrl = isDevelopment ? 'http://127.0.0.1:5000' : getApiOrigin();
       console.warn(
-        "⚠️ Relative VITE_API_URL detected for uploads, using backend origin:",
+        '⚠️ Relative VITE_API_URL detected for uploads, using API origin:',
         serverBaseUrl,
       );
     } else {
@@ -135,6 +114,70 @@ const getProofImageUrl = (input) => {
   });
 
   return fullUrl;
+};
+
+*/
+
+// Clean proof image URL builder using the API origin helper
+const getProofImageUrl = (input) => {
+  if (!input) return "";
+
+  const fileUrl =
+    typeof input === "object"
+      ? input.fileUrl ||
+        input.url ||
+        input.path ||
+        input.filePath ||
+        input.key ||
+        ""
+      : input;
+
+  if (!fileUrl || typeof fileUrl !== "string") return "";
+
+  if (
+    fileUrl.startsWith("http://") ||
+    fileUrl.startsWith("https://") ||
+    fileUrl.startsWith("data:")
+  ) {
+    return fileUrl;
+  }
+
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "";
+  const isDevelopment =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+  const isProduction = window.location.protocol === "https:";
+  let serverBaseUrl;
+
+  if (apiBaseUrl) {
+    if (apiBaseUrl.startsWith("http://") || apiBaseUrl.startsWith("https://")) {
+      serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
+      if (isProduction && serverBaseUrl.startsWith("http://")) {
+        serverBaseUrl = serverBaseUrl.replace("http://", "https://");
+      }
+    } else if (apiBaseUrl.startsWith('/')) {
+      serverBaseUrl = isDevelopment ? 'http://127.0.0.1:5000' : getApiOrigin();
+    } else {
+      serverBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
+    }
+  } else if (isDevelopment) {
+    serverBaseUrl = "http://localhost:5000";
+  } else {
+    serverBaseUrl = getApiOrigin();
+  }
+
+  const normalizedFileUrl = fileUrl.replace(/\\/g, "/");
+  const uploadsMatch = normalizedFileUrl.match(/(?:^|\/)uploads\/(.*)$/);
+  const relativePath =
+    uploadsMatch && uploadsMatch[1]
+      ? `/uploads/${uploadsMatch[1]}`
+      : normalizedFileUrl.startsWith("/")
+        ? normalizedFileUrl
+        : normalizedFileUrl.startsWith("uploads/")
+          ? `/${normalizedFileUrl}`
+          : `/uploads/${normalizedFileUrl}`;
+
+  return `${serverBaseUrl}${relativePath}`;
 };
 
 const HomeExercisesNew = () => {

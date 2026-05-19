@@ -32,6 +32,27 @@ export const getApiBaseUrl = () => {
   return '/api';
 };
 
+export const getApiOrigin = () => {
+  const configuredUrl = import.meta.env.VITE_API_URL;
+  if (configuredUrl) {
+    const normalizedUrl = normalizeBaseUrl(configuredUrl);
+    if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
+      return normalizedUrl.replace(/\/$/, '').replace(/\/api$/, '');
+    }
+  }
+
+  const configuredHost = import.meta.env.VITE_API_HOST;
+  if (configuredHost) {
+    return normalizeBaseUrl(configuredHost);
+  }
+
+  if (import.meta.env.DEV) {
+    return 'http://localhost:5000';
+  }
+
+  return window.location.origin;
+};
+
 export const buildApiUrl = (path = '') => {
   if (!path) return getApiBaseUrl();
 

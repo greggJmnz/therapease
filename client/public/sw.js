@@ -2,9 +2,9 @@
 // This service worker handles push notifications, background sync, and offline functionality
 
 // IMPORTANT: Increment version to force cache clear on deployment
-const CACHE_NAME = 'therapease-v4';
-const NOTIFICATION_ICON = '/favicon.ico';
-const NOTIFICATION_BADGE = '/favicon.ico';
+const CACHE_NAME = 'therapease-v5';
+const NOTIFICATION_ICON = '/favicon.svg';
+const NOTIFICATION_BADGE = '/favicon.svg';
 
 // Install event - cache essential resources (BUT NOT index.html)
 self.addEventListener('install', (event) => {
@@ -15,7 +15,7 @@ self.addEventListener('install', (event) => {
         // Only cache static assets that have content hashes
         // Note: JS/CSS assets with hashes are cached automatically via fetch handler
         return cache.addAll([
-          '/favicon.ico',
+          '/favicon.svg',
           '/manifest.json'
         ]);
       })

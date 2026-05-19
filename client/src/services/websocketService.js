@@ -1,3 +1,5 @@
+import { getApiOrigin } from '../utils/apiUrl';
+
 class WebSocketService {
   constructor() {
     this.ws = null;
@@ -42,28 +44,16 @@ class WebSocketService {
       wsUrl = `ws://${window.location.hostname}:5000/ws?token=${token}`;
       console.log('🔌 Development WebSocket URL:', wsUrl);
     } else {
-      // Production environment - Use same domain (Nginx will proxy to Node.js)
-      // CRITICAL: Do NOT use port 5000 in production - Nginx proxies /ws to Node.js
+      // Production environment - connect to the API host, not the frontend host.
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      
-      // Use the same hostname (therapease.site or www.therapease.site)
-      // Nginx will proxy /ws requests to the Node.js server
-      // This avoids CORS issues and works with both domains
-      // IMPORTANT: Never use port 5000 in production - it won't work through Nginx
-      const hostname = window.location.hostname;
-      
-      // Ensure we never add port 5000 in production
-      if (hostname.includes(':5000')) {
-        console.error('❌ ERROR: Hostname contains port 5000! This should never happen in production.');
-        // Remove port 5000 if somehow present
-        wsUrl = `${protocol}//${hostname.replace(':5000', '')}/ws?token=${token}`;
-      } else {
-        wsUrl = `${protocol}//${hostname}/ws?token=${token}`;
-      }
+
+      const apiOrigin = getApiOrigin().replace(/\/$/, '').replace(/\/api$/, '');
+      const host = apiOrigin.replace(/^https?:\/\//, '');
+      wsUrl = `${protocol}//${host}/ws?token=${token}`;
       
       // Debug logging
       console.log('🔌 Production WebSocket debug info:', {
-        hostname: hostname,
+        apiOrigin,
         protocol: window.location.protocol,
         nodeEnv: import.meta.env.MODE,
         wsUrl: wsUrl,
@@ -80,7 +70,7 @@ class WebSocketService {
     if (isProduction && wsUrl.includes(':5000')) {
       console.error('❌ CRITICAL ERROR: WebSocket URL contains port 5000 in production!');
       console.error('   This will cause connection failures because Nginx proxies /ws, not :5000/ws');
-      console.error('   Expected URL format: wss://therapease.site/ws?token=...');
+      console.error('   Expected URL format: wss://<api-host>/ws?token=...');
       console.error('   Actual URL:', wsUrl);
       console.error('   Fix: Rebuild the client with the latest code');
       
