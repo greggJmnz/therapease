@@ -456,7 +456,7 @@ const sendMultiChannelNotification = async (userId, title, message, type = 'syst
         results.email.error = emailResult.error;
       } else {
         // Generic email notification
-        const emailResult = await emailService.sendViaSendGridAPI(
+        const emailResult = await emailService.sendNotificationEmail(
           userInfo.email,
           title,
           `<p>${message}</p>`,

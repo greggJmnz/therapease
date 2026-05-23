@@ -6,8 +6,8 @@ const { getFrontendUrl } = require('../config/env');
 class EmailService {
   constructor() {
     this.transporter = null;
-    this.useSendGridAPI = false;
-    this.sendGridAPIKey = null;
+    this.useBrevoAPI = false;
+    this.brevoAPIKey = null;
     this.initializeTransporter();
   }
 
@@ -18,22 +18,18 @@ class EmailService {
       return;
     }
 
-    // Check if we should use SendGrid API instead of SMTP (when SMTP is blocked)
-    // This check should happen BEFORE checking credentials, as API mode uses different auth
-    if (process.env.EMAIL_HOST && process.env.EMAIL_PORT) {
-      const shouldUseAPI = process.env.EMAIL_USE_API === 'true' || 
-                          (process.env.EMAIL_HOST === 'smtp.sendgrid.net' && process.env.EMAIL_USER === 'apikey');
-      
-      if (shouldUseAPI) {
-        // Use SendGrid API instead of SMTP (works when SMTP ports are blocked)
-        if (!process.env.EMAIL_PASSWORD) {
-          this.transporter = null;
-          return;
-        }
-        this.useSendGridAPI = true;
-        this.sendGridAPIKey = process.env.EMAIL_PASSWORD;
-        return; // Don't create SMTP transporter
+    // Check if we should use Brevo API instead of SMTP (when SMTP is blocked)
+    // This check should happen BEFORE checking SMTP credentials, as API mode uses different auth
+    const shouldUseAPI = process.env.EMAIL_USE_API === 'true' || process.env.EMAIL_PROVIDER === 'brevo';
+    if (shouldUseAPI) {
+      const apiKey = (process.env.BREVO_API_KEY || process.env.EMAIL_PASSWORD || '').trim().replace(/^"|"$/g, '');
+      if (!apiKey) {
+        this.transporter = null;
+        return;
       }
+      this.useBrevoAPI = true;
+      this.brevoAPIKey = apiKey;
+      return; // Don't create SMTP transporter
     }
 
     // For SMTP, check credentials
@@ -48,7 +44,7 @@ class EmailService {
       let smtpConfig;
       
       if (process.env.EMAIL_HOST && process.env.EMAIL_PORT) {
-        // Custom SMTP configuration (SendGrid, AWS SES, etc.)
+        // Custom SMTP configuration (Brevo SMTP, AWS SES, etc.)
         smtpConfig = {
           host: process.env.EMAIL_HOST,
           port: parseInt(process.env.EMAIL_PORT),
@@ -57,7 +53,7 @@ class EmailService {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASSWORD
           },
-          // Longer timeout for SendGrid/other services
+          // Longer timeout for Brevo/other services
           connectionTimeout: 10000,
           greetingTimeout: 10000,
           socketTimeout: 10000
@@ -113,77 +109,108 @@ class EmailService {
     }
   }
 
-  // Send email via SendGrid API (when SMTP is blocked)
-  async sendViaSendGridAPI(email, subject, html, text, fromEmail = null) {
+  // Send email via Brevo API (when SMTP is blocked)
+  async sendViaBrevoAPI(email, subject, html, text, fromEmail = null) {
     try {
-      if (!this.sendGridAPIKey) {
-        throw new Error('SendGrid API key not configured');
+      if (!this.brevoAPIKey) {
+        throw new Error('Brevo API key not configured');
       }
 
       const fromAddress = fromEmail || process.env.EMAIL_FROM || 'therapease16@gmail.com';
       
       const response = await axios.post(
-        'https://api.sendgrid.com/v3/mail/send',
+        'https://api.brevo.com/v3/smtp/email',
         {
-          personalizations: [{
-            to: [{ email: email }],
-            subject: subject
-          }],
           from: {
             email: fromAddress,
             name: 'TherapEase Support'
           },
-          content: [
-            {
-              type: 'text/plain',
-              value: text
-            },
-            {
-              type: 'text/html',
-              value: html
-            }
-          ]
+          to: [{ email }],
+          subject,
+          htmlContent: html,
+          textContent: text
         },
         {
           headers: {
-            'Authorization': `Bearer ${this.sendGridAPIKey}`,
+            'api-key': this.brevoAPIKey,
             'Content-Type': 'application/json'
           },
           timeout: 10000 // 10 second timeout
         }
       );
 
-      return { success: true, messageId: response.headers['x-message-id'] || 'sent' };
+      return { success: true, messageId: response.headers['x-mailin-custom'] || response.data?.messageId || 'sent' };
     } catch (error) {
       if (error.response) {
         const errorMessage = error.response.data?.errors?.[0]?.message || error.response.statusText;
-        
-        // Provide helpful guidance for common SendGrid errors
-        if (errorMessage.includes('verified Sender Identity') || errorMessage.includes('sender identity')) {
+
+        if (errorMessage.includes('authorization grant is invalid') || errorMessage.includes('expired') || errorMessage.includes('revoked')) {
           throw new Error(
-            `SendGrid sender identity not verified: The email address "${fromEmail || process.env.EMAIL_FROM || 'therapease16@gmail.com'}" needs to be verified in SendGrid. ` +
-            `Visit https://app.sendgrid.com/settings/sender_auth/senders/new to verify your sender identity. ` +
-            `After verification, update EMAIL_FROM in .env.production to match the verified address.`
+            'Brevo API authentication failed: the API key is invalid, expired, or revoked. ' +
+            'Generate a new Brevo API key with SMTP/API permission, update BREVO_API_KEY (or EMAIL_PASSWORD), and redeploy.'
           );
         }
         
-        throw new Error(`SendGrid API error: ${errorMessage}`);
+        // Provide helpful guidance for common Brevo errors
+        if (errorMessage.includes('verified Sender Identity') || errorMessage.includes('sender identity')) {
+          throw new Error(
+            `Brevo sender identity not verified: The email address "${fromEmail || process.env.EMAIL_FROM || 'therapease16@gmail.com'}" needs to be verified in Brevo. ` +
+            `Verify it in your Brevo sender settings, then update EMAIL_FROM in .env.production to match the verified address.`
+          );
+        }
+        
+        throw new Error(`Brevo API error: ${errorMessage}`);
       }
       throw error;
     }
   }
 
+  // Legacy compatibility wrapper for callers that still use the old method name.
+  async sendViaSendGridAPI(email, subject, html, text, fromEmail = null) {
+    return this.sendViaBrevoAPI(email, subject, html, text, fromEmail);
+  }
+
+  async sendNotificationEmail(email, subject, html, text, fromEmail = null) {
+    try {
+      if (this.useBrevoAPI) {
+        return await this.sendViaBrevoAPI(email, subject, html, text, fromEmail);
+      }
+
+      if (!this.transporter) {
+        return {
+          success: false,
+          error: 'Email service is disabled. Configure SMTP or Brevo API credentials to send notifications.'
+        };
+      }
+
+      const result = await this.transporter.sendMail({
+        from: {
+          name: 'TherapEase Support',
+          address: fromEmail || process.env.EMAIL_FROM || process.env.EMAIL_USER || 'therapease16@gmail.com'
+        },
+        to: email,
+        subject,
+        html,
+        text
+      });
+
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
   async sendPasswordResetEmail(email, resetToken, userFirstName = 'User') {
     try {
-      // Use SendGrid API if configured (when SMTP is blocked)
-      if (this.useSendGridAPI) {
+      // Use Brevo API if configured (when SMTP is blocked)
+      if (this.useBrevoAPI) {
         // URL encode the token to ensure it's safely handled in the URL
         const encodedToken = encodeURIComponent(resetToken);
         const resetLink = `${getFrontendUrl()}/auth/reset-password?token=${encodedToken}`;
         const html = this.getPasswordResetEmailTemplate(userFirstName, resetLink);
         const text = this.getPasswordResetEmailText(userFirstName, resetLink);
 
-        const result = await this.sendViaSendGridAPI(
+        const result = await this.sendViaBrevoAPI(
           email,
           'Password Reset Request - TherapEase',
           html,
@@ -194,7 +221,7 @@ class EmailService {
       }
 
       // Check if email service is enabled
-      if (!this.transporter && !this.useSendGridAPI) {
+      if (!this.transporter && !this.useBrevoAPI) {
         return { 
           success: false, 
           error: 'Email service is disabled. Please enable email service in environment variables to send password reset emails.' 
@@ -232,7 +259,7 @@ class EmailService {
       // Provide helpful error messages
       let errorMessage = error.message;
       if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' || error.message.includes('timeout')) {
-        errorMessage = 'Email service connection failed or timed out. This may be due to network restrictions, firewall blocking SMTP ports, or Gmail blocking the connection. Try using a different email service (SendGrid, AWS SES) or check your network settings.';
+        errorMessage = 'Email service connection failed or timed out. This may be due to network restrictions, firewall blocking SMTP ports, or Gmail blocking the connection. Try using a different email service (Brevo, AWS SES) or check your network settings.';
       } else if (error.code === 'EAUTH') {
         errorMessage = 'Email authentication failed. Please check your EMAIL_USER and EMAIL_PASSWORD. For Gmail, use an app-specific password, not your regular password.';
       }
@@ -246,9 +273,9 @@ class EmailService {
       const html = this.getWelcomeEmailTemplate(userFirstName, userRole);
       const text = this.getWelcomeEmailText(userFirstName, userRole);
       
-      // Use SendGrid API if configured
-      if (this.useSendGridAPI) {
-        const result = await this.sendViaSendGridAPI(
+      // Use Brevo API if configured
+      if (this.useBrevoAPI) {
+        const result = await this.sendViaBrevoAPI(
           email,
           'Welcome to TherapEase!',
           html,
@@ -529,9 +556,9 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
         location
       );
       
-      // Use SendGrid API if configured
-      if (this.useSendGridAPI) {
-        const result = await this.sendViaSendGridAPI(
+      // Use Brevo API if configured
+      if (this.useBrevoAPI) {
+        const result = await this.sendViaBrevoAPI(
           email,
           'Appointment Scheduled - TherapEase',
           html,
@@ -637,14 +664,14 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
   // Test email functionality
   async testEmailConnection() {
     try {
-      if (!this.transporter && !this.useSendGridAPI) {
+      if (!this.transporter && !this.useBrevoAPI) {
         return { 
           success: false, 
           error: 'Email service is disabled. Set EMAIL_ENABLED=true and provide EMAIL_USER and EMAIL_PASSWORD to enable email service.' 
         };
       }
-      if (this.useSendGridAPI) {
-        return { success: true, message: 'Email service is properly configured (SendGrid API)' };
+      if (this.useBrevoAPI) {
+        return { success: true, message: 'Email service is properly configured (Brevo API)' };
       }
       await this.transporter.verify();
       return { success: true, message: 'Email service is properly configured' };
@@ -661,10 +688,10 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
   // Send 2FA verification code via email
   async send2FACodeEmail(email, code, userFirstName = 'User') {
     try {
-      // Use SendGrid API if configured
-      if (this.useSendGridAPI) {
+      // Use Brevo API if configured
+      if (this.useBrevoAPI) {
         const html = this.get2FACodeEmailTemplate(code, userFirstName);
-        const result = await this.sendViaSendGridAPI(
+        const result = await this.sendViaBrevoAPI(
           email,
           'TherapEase - Your 2FA Login Code',
           html,
@@ -716,10 +743,10 @@ This email was sent from TherapEase - Your trusted occupational therapy platform
   // Send 2FA setup verification code
   async send2FASetupCodeEmail(email, code, userFirstName = 'User') {
     try {
-      // Use SendGrid API if configured
-      if (this.useSendGridAPI) {
+      // Use Brevo API if configured
+      if (this.useBrevoAPI) {
         const html = this.get2FASetupCodeEmailTemplate(code, userFirstName);
-        const result = await this.sendViaSendGridAPI(
+        const result = await this.sendViaBrevoAPI(
           email,
           'TherapEase - Verify 2FA Setup',
           html,
