@@ -117,32 +117,31 @@ class EmailService {
       }
 
       const fromAddress = fromEmail || process.env.EMAIL_FROM || 'therapease16@gmail.com';
-      
-      const response = await axios.post(
-        'https://api.brevo.com/v3/smtp/email',
-        {
-          from: {
-            email: fromAddress,
-            name: 'TherapEase Support'
-          },
-          to: [{ email }],
-          subject,
-          htmlContent: html,
-          textContent: text
-        },
-        {
-          headers: {
-            'api-key': this.brevoAPIKey,
-            'Content-Type': 'application/json'
-          },
-          timeout: 10000 // 10 second timeout
-        }
-      );
 
-      return { success: true, messageId: response.headers['x-mailin-custom'] || response.data?.messageId || 'sent' };
+      // Brevo expects `sender` field (not `from`) and `to` array with `{ email, name? }` entries.
+      const payload = {
+        sender: { email: fromAddress, name: 'TherapEase Support' },
+        to: [{ email }],
+        subject,
+        htmlContent: html,
+        textContent: text
+      };
+
+      const response = await axios.post('https://api.brevo.com/v3/smtp/email', payload, {
+        headers: {
+          'api-key': this.brevoAPIKey,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000 // 10 second timeout
+      });
+
+      // Brevo may return identifiers in body; prefer messageId in response.data
+      return { success: true, messageId: response.data?.messageId || response.headers['x-mailin-custom'] || 'sent' };
     } catch (error) {
       if (error.response) {
-        const errorMessage = error.response.data?.errors?.[0]?.message || error.response.statusText;
+        // Log Brevo response for easier debugging
+        console.error('Brevo API response body:', JSON.stringify(error.response.data));
+        const errorMessage = error.response.data?.message || error.response.data?.errors?.[0]?.message || error.response.statusText;
 
         if (errorMessage.includes('authorization grant is invalid') || errorMessage.includes('expired') || errorMessage.includes('revoked')) {
           throw new Error(
