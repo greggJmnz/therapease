@@ -1202,7 +1202,10 @@ const createAppointment = async (req, res) => {
           'Appointment Created by Admin',
           `An admin has created a ${type} appointment between ${therapist.therapistName} and ${patient.patientName} on ${date} at ${formatTime12Hour(time)}`,
           'appointment',
-          { relatedId: appointmentId }
+          { 
+            relatedId: appointmentId,
+            sendSMS: false
+          }
         );
       }
     } catch (notificationError) {

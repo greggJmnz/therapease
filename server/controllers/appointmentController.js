@@ -303,7 +303,10 @@ const createAppointment = async (req, res) => {
           'New Appointment Created',
           `${newAppointment.therapistName} has created a ${type} appointment with ${newAppointment.patientName} on ${appointmentDate} at ${formatTime12Hour(startTime)}`,
           'appointment',
-          { relatedId: appointmentId }
+          { 
+            relatedId: appointmentId,
+            sendSMS: false
+          }
         );
       }
     } catch (notificationError) {

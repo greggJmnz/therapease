@@ -1889,7 +1889,10 @@ const bookAppointment = async (req, res) => {
         'Appointment Request Submitted',
         `Your ${type} appointment request has been submitted for ${new Date(date).toLocaleDateString()} at ${formatTime12Hour(time)}. It is pending admin approval.`,
         'appointment',
-        { relatedId: appointmentId }
+        { 
+          relatedId: appointmentId,
+          sendSMS: false
+        }
       );
       
       // Notify therapist - new appointment request (pending approval)
@@ -1898,7 +1901,10 @@ const bookAppointment = async (req, res) => {
         'New Appointment Request (Pending Approval)',
         `${patient.patientName} has requested a ${type} appointment on ${new Date(date).toLocaleDateString()} at ${formatTime12Hour(time)}. This appointment is pending admin approval.`,
         'appointment',
-        { relatedId: appointmentId }
+        { 
+          relatedId: appointmentId,
+          sendSMS: false
+        }
       );
       
       // Notify all admins - new appointment request requires approval
@@ -1910,7 +1916,10 @@ const bookAppointment = async (req, res) => {
             'New Appointment Request - Approval Required',
             `${patient.patientName} has requested a ${type} appointment with ${therapist.therapistName} on ${new Date(date).toLocaleDateString()} at ${formatTime12Hour(time)}. Please review and approve.`,
             'admin_notification',
-            { relatedId: appointmentId }
+            { 
+              relatedId: appointmentId,
+              sendSMS: false
+            }
           );
         } catch (adminNotificationError) {
           console.error('Admin notification error for admin', admin.id, ':', adminNotificationError);

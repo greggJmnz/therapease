@@ -900,7 +900,7 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
       useMultiChannel: true, // Enable multi-channel for appointment notifications
       sendEmail: true, // Always send email as fallback
       sendPush: true, // Always send push notification
-      sendSMS: false, // SMS only for approved appointments
+      sendSMS: false, // Never send SMS for appointment creation notifications
       userInfo: {
         id: appointment.patientUserId,
         email: decryptedPatientEmail,
@@ -915,12 +915,6 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
         endTime: appointment.endTime || null
       }
     };
-
-    // Only send SMS if appointment is approved (scheduled) and patient has phone number
-    if (isApproved && decryptedPatientPhone && decryptedPatientPhone.trim()) {
-      options.sendSMS = true;
-      options.phoneNumber = decryptedPatientPhone.trim();
-    }
 
     return await createNotification(appointment.patientUserId, title, message, type, options);
 
