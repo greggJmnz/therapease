@@ -48,9 +48,20 @@ app.use((req, res, next) => {
   if (req.path.startsWith('/uploads/')) {
     return next();
   }
+  const allowedOrigins = getCorsOrigins();
   // Apply CORS for all other routes
   return cors({
-    origin: 'https://therapease-ebon.vercel.app',
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Data-Protection', 'X-Content-Encryption'],
