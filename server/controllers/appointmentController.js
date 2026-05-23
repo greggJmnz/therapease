@@ -305,7 +305,8 @@ const createAppointment = async (req, res) => {
           'appointment',
           { 
             relatedId: appointmentId,
-            sendSMS: false
+            sendSMS: false,
+            sendEmail: false
           }
         );
       }
@@ -900,7 +901,7 @@ const approveAppointment = async (req, res) => {
           { 
             relatedId: parseInt(id),
             sendSMS: false,
-            sendEmail: true,
+            sendEmail: false,
             sendPush: true
           }
         );
@@ -934,7 +935,7 @@ const approveAppointment = async (req, res) => {
         { 
           relatedId: parseInt(id),
           sendSMS: false,
-          sendEmail: true,
+          sendEmail: false,
           sendPush: true
         }
       );

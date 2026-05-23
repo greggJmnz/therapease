@@ -1186,7 +1186,7 @@ const createAppointment = async (req, res) => {
         { 
           relatedId: appointmentId,
           sendSMS: false, // No SMS - appointment is pending, SMS will be sent when approved
-          sendEmail: true, // Send email notification
+          sendEmail: false, // No email - appointment is pending, email will be sent when approved
           sendPush: true // Send push notification
         }
       );
@@ -1204,7 +1204,8 @@ const createAppointment = async (req, res) => {
           'appointment',
           { 
             relatedId: appointmentId,
-            sendSMS: false
+            sendSMS: false,
+            sendEmail: false
           }
         );
       }
@@ -4293,7 +4294,7 @@ const approveAppointment = async (req, res) => {
           { 
             relatedId: appointmentId,
             sendSMS: false, // No SMS - therapist created it
-            sendEmail: true,
+            sendEmail: false,
             sendPush: true
           }
         );
@@ -4327,7 +4328,7 @@ const approveAppointment = async (req, res) => {
         { 
           relatedId: appointmentId,
           sendSMS: false,
-          sendEmail: true,
+          sendEmail: false,
           sendPush: true
         }
       );

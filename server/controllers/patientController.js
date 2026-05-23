@@ -1891,7 +1891,8 @@ const bookAppointment = async (req, res) => {
         'appointment',
         { 
           relatedId: appointmentId,
-          sendSMS: false
+          sendSMS: false,
+          sendEmail: false
         }
       );
       
@@ -1903,7 +1904,8 @@ const bookAppointment = async (req, res) => {
         'appointment',
         { 
           relatedId: appointmentId,
-          sendSMS: false
+          sendSMS: false,
+          sendEmail: false
         }
       );
       
@@ -1918,7 +1920,8 @@ const bookAppointment = async (req, res) => {
             'admin_notification',
             { 
               relatedId: appointmentId,
-              sendSMS: false
+              sendSMS: false,
+              sendEmail: false
             }
           );
         } catch (adminNotificationError) {

@@ -898,7 +898,7 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
       relatedId: appointmentId,
       priority: 'high',
       useMultiChannel: true, // Enable multi-channel for appointment notifications
-      sendEmail: true, // Always send email as fallback
+      sendEmail: false, // Never send email for appointment creation notifications
       sendPush: true, // Always send push notification
       sendSMS: false, // Never send SMS for appointment creation notifications
       userInfo: {
