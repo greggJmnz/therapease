@@ -123,9 +123,34 @@ class PushNotificationService {
     }
 
     try {
+      const vapidPublicKey = (import.meta.env.VITE_VAPID_PUBLIC_KEY || '').trim();
+      if (!vapidPublicKey) {
+        throw new Error('Missing VITE_VAPID_PUBLIC_KEY for push subscription');
+      }
+
+      const desiredApplicationServerKey = this.urlBase64ToUint8Array(vapidPublicKey);
+      const existingSubscription = await this.registration.pushManager.getSubscription();
+
+      if (existingSubscription) {
+        const existingKey = existingSubscription.options?.applicationServerKey
+          ? new Uint8Array(existingSubscription.options.applicationServerKey)
+          : null;
+        const isSameVapidKey = existingKey && this.uint8ArrayToBase64Url(existingKey) === this.uint8ArrayToBase64Url(desiredApplicationServerKey);
+
+        if (isSameVapidKey) {
+          this.subscription = existingSubscription;
+          await this.sendSubscriptionToServer(existingSubscription);
+          return existingSubscription;
+        }
+
+        // Existing subscription was created with different VAPID keys; rotate it.
+        await existingSubscription.unsubscribe();
+        await this.sendUnsubscriptionToServer();
+      }
+
       const subscription = await this.registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY)
+        applicationServerKey: desiredApplicationServerKey
       });
 
       this.subscription = subscription;
@@ -138,6 +163,15 @@ class PushNotificationService {
       console.error('Failed to subscribe to push notifications:', error);
       throw error;
     }
+  }
+
+  uint8ArrayToBase64Url(bytes) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 1) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+
+    return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
   // Unsubscribe from push notifications

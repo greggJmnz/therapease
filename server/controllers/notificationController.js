@@ -29,10 +29,9 @@ const getTimeAgo = (date) => {
 let vapidConfigured = false;
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   try {
-    // Clean and validate VAPID keys
-    // Remove whitespace, newlines, and padding characters (=)
-    let publicKey = process.env.VAPID_PUBLIC_KEY.trim().replace(/\s/g, '').replace(/=/g, '');
-    let privateKey = process.env.VAPID_PRIVATE_KEY.trim().replace(/\s/g, '').replace(/=/g, '');
+    // Keep VAPID keys intact. Stripping characters can change key identity.
+    const publicKey = process.env.VAPID_PUBLIC_KEY.trim();
+    const privateKey = process.env.VAPID_PRIVATE_KEY.trim();
     
     // Validate key lengths (VAPID public key should be 87 characters, private key should be 43 characters in base64url)
     // But we'll let web-push validate the format
@@ -1241,7 +1240,7 @@ const unsubscribeFromPush = async (req, res) => {
 const sendPushNotification = async (userId, title, message, options = {}) => {
   try {
     // Check if VAPID keys are configured
-    if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    if (!vapidConfigured || !process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
       return { success: false, message: 'Push notifications not configured' };
     }
 
@@ -1307,8 +1306,26 @@ const sendPushNotification = async (userId, title, message, options = {}) => {
     return { success: true, message: 'Push notification sent' };
 
   } catch (error) {
+    const vapidMismatchMessage = 'vapid credentials in the authorization header do not correspond to the credentials used to create the subscriptions';
+    const bodyText = String(error?.body || '').toLowerCase();
+    const isVapidMismatch = bodyText.includes(vapidMismatchMessage) || error?.statusCode === 401 || error?.statusCode === 403;
+
+    if (isVapidMismatch) {
+      try {
+        await runQuery('DELETE FROM push_subscriptions WHERE userId = ?', [userId]);
+        console.warn(`Removed stale push subscription for user ${userId} due to VAPID mismatch`);
+      } catch (cleanupError) {
+        console.error('Failed to remove stale push subscription after VAPID mismatch:', cleanupError);
+      }
+    }
+
     console.error('Push notification error:', error);
-    return { success: false, message: error.message };
+    return {
+      success: false,
+      message: isVapidMismatch
+        ? 'Push subscription no longer matches current VAPID keys. Please re-subscribe.'
+        : error.message
+    };
   }
 };
 
