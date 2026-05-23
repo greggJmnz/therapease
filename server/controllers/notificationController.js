@@ -408,7 +408,7 @@ const sendMultiChannelNotification = async (userId, title, message, type = 'syst
       const smsResult = await smsService.sendSMS(decryptedPhoneNumber, message);
       results.sms.success = smsResult.success;
       results.sms.messageId = smsResult.messageId;
-      results.sms.error = smsResult.error;
+      results.sms.error = smsResult.error || smsResult.message;
       
       if (results.sms.success) {
         console.log(`✅ SMS sent to PhilSMS (may be filtered by carrier): ${decryptedPhoneNumber}`);
@@ -426,7 +426,7 @@ const sendMultiChannelNotification = async (userId, title, message, type = 'syst
       const smsResult = await smsService.sendSMS(userInfo.phone, message);
       results.sms.success = smsResult.success;
       results.sms.messageId = smsResult.messageId;
-      results.sms.error = smsResult.error;
+      results.sms.error = smsResult.error || smsResult.message;
       
       if (results.sms.success) {
         console.log(`✅ SMS sent to PhilSMS (may be filtered by carrier): ${userInfo.phone}`);

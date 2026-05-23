@@ -17,6 +17,7 @@ class SMSService {
   loadConfig() {
     this.apiToken = process.env.PHILSMS_API_TOKEN;
     this.baseUrl = process.env.PHILSMS_BASE_URL || 'https://dashboard.philsms.com/api/v3';
+    this.sendUrl = this.normalizeSendUrl(this.baseUrl);
     // Sender ID configuration
     // IMPORTANT: Default SID "PhilSMS" only works for Globe subscribers, not Smart.
     // To ensure delivery across all networks (Globe, Smart, DITO), you must register
@@ -38,6 +39,25 @@ class SMSService {
         console.log('   ⚠️  Register a custom Sender ID at dashboard.philsms.com for cross-network delivery');
       }
     }
+  }
+
+  /**
+   * Normalize the PhilSMS send endpoint.
+   * Accepts either the API base URL or the full /sms/send endpoint.
+   * @param {string} url - Configured PhilSMS URL
+   * @returns {string} - Normalized send endpoint
+   */
+  normalizeSendUrl(url) {
+    const trimmed = (url || '').trim().replace(/\/+$/, '');
+    if (!trimmed) {
+      return 'https://dashboard.philsms.com/api/v3/sms/send';
+    }
+
+    if (trimmed.endsWith('/sms/send')) {
+      return trimmed;
+    }
+
+    return `${trimmed}/sms/send`;
   }
 
   /**
@@ -64,7 +84,7 @@ class SMSService {
   async sendSMS(to, message, options = {}) {
     if (!this.enabled) {
       console.log(`SMS (disabled): ${to} - ${message}`);
-      return { success: false, message: 'SMS service disabled' };
+      return { success: false, error: 'SMS service disabled', message: 'SMS service disabled' };
     }
 
     // Initialize formattedNumber early to avoid scope issues
@@ -132,7 +152,7 @@ class SMSService {
       };
 
       const response = await axios.post(
-        `${this.baseUrl}/sms/send`,
+        this.sendUrl,
         payload,
         {
           headers: {

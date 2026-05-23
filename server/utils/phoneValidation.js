@@ -15,59 +15,32 @@ function validatePhilippineNumber(phoneNumber) {
 
   // Remove all non-digit characters
   const cleaned = phoneNumber.replace(/\D/g, '');
-  
-  // Philippine mobile number patterns
-  const patterns = {
-    // 09XX-XXX-XXXX (11 digits starting with 09)
-    local: /^09[2-9]\d{8}$/,
-    // +639XX-XXX-XXXX (13 digits starting with +639)
-    international: /^\+639[2-9]\d{8}$/,
-    // 639XX-XXX-XXXX (12 digits starting with 639)
-    withoutPlus: /^639[2-9]\d{8}$/,
-    // 9XX-XXX-XXXX (10 digits starting with 9)
-    withoutZero: /^9[2-9]\d{8}$/
-  };
 
-  // Check if it's already in international format
-  if (phoneNumber.startsWith('+639')) {
-    if (patterns.international.test(phoneNumber)) {
-      return { 
-        valid: true, 
-        formatted: phoneNumber,
-        type: 'international',
-        carrier: getPhilippineCarrier(phoneNumber.substring(4))
-      };
-    }
-  }
-
-  // Check local format (09XX-XXX-XXXX)
-  if (patterns.local.test(cleaned)) {
-    const formatted = `+63${cleaned.substring(1)}`;
-    return { 
-      valid: true, 
-      formatted,
+  // Philippine mobile number patterns after normalization
+  // Mobile numbers are accepted in any of these forms:
+  // 09XXXXXXXXX, 639XXXXXXXXX, +639XXXXXXXXX, or 9XXXXXXXXX
+  if (/^09\d{9}$/.test(cleaned)) {
+    return {
+      valid: true,
+      formatted: `+63${cleaned.substring(1)}`,
       type: 'local',
       carrier: getPhilippineCarrier(cleaned.substring(1))
     };
   }
 
-  // Check without + prefix (639XX-XXX-XXXX)
-  if (patterns.withoutPlus.test(cleaned)) {
-    const formatted = `+${cleaned}`;
-    return { 
-      valid: true, 
-      formatted,
+  if (/^639\d{9}$/.test(cleaned)) {
+    return {
+      valid: true,
+      formatted: `+${cleaned}`,
       type: 'without_plus',
       carrier: getPhilippineCarrier(cleaned.substring(2))
     };
   }
 
-  // Check without 0 prefix (9XX-XXX-XXXX)
-  if (patterns.withoutZero.test(cleaned)) {
-    const formatted = `+63${cleaned}`;
-    return { 
-      valid: true, 
-      formatted,
+  if (/^9\d{9}$/.test(cleaned)) {
+    return {
+      valid: true,
+      formatted: `+63${cleaned}`,
       type: 'without_zero',
       carrier: getPhilippineCarrier(cleaned)
     };
@@ -87,11 +60,11 @@ function validatePhilippineNumber(phoneNumber) {
 
 /**
  * Get Philippine mobile carrier from number
- * @param {string} number - 9-digit mobile number (without country code)
+ * @param {string} number - 10-digit mobile number without country code (e.g. 9171234567)
  * @returns {string} - Carrier name
  */
 function getPhilippineCarrier(number) {
-  if (!number || number.length !== 9) return 'Unknown';
+  if (!number || number.length !== 10) return 'Unknown';
   
   const prefix = number.substring(0, 3);
   
