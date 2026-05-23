@@ -759,12 +759,6 @@ const createAppointmentReminderForPatient = async (appointmentId) => {
       }
     };
 
-    // Add SMS sending if patient has phone number
-    if (decryptedPatientPhone && decryptedPatientPhone.trim()) {
-      options.sendSMS = true;
-      options.phoneNumber = decryptedPatientPhone.trim();
-    }
-
     return await createNotification(appointment.patientUserId, title, message, type, options);
 
   } catch (error) {
@@ -896,7 +890,7 @@ const createAppointmentCreationNotificationForPatient = async (appointmentId) =>
     
     const title = isApproved ? 'Appointment Scheduled' : 'Appointment Request Submitted';
     const message = isApproved 
-      ? `Your ${appointment.type} appointment with ${appointment.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before.`
+      ? `Your ${appointment.type} appointment with ${appointment.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. Please check your TherapEase notifications for updates.`
       : `Your ${appointment.type} appointment request with ${appointment.therapistName} for ${formattedDate} at ${formattedTime} has been submitted and is pending approval.`;
     const type = 'appointment_created';
 

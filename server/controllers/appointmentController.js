@@ -874,7 +874,7 @@ const approveAppointment = async (req, res) => {
         // Admin-created: Send SMS only to patient when therapist approves
         // Patient SMS
         if (decryptedPatientPhone) {
-          const patientMessage = `Your ${updatedAppointment.type} appointment with ${therapistInfo.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before. TherapEase Team`;
+          const patientMessage = `Your ${updatedAppointment.type} appointment with ${therapistInfo.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. Please check your TherapEase notifications for updates. TherapEase Team`;
           await notificationController.createNotification(
             updatedAppointment.patientUserId,
             'Appointment Scheduled',
@@ -905,7 +905,7 @@ const approveAppointment = async (req, res) => {
         // Patient-created: Only send SMS to patient when BOTH therapist and admin approve
         // Explicitly verify both approvals are present before sending SMS
         if (updatedAppointment.therapistApprovedBy && updatedAppointment.adminApprovedBy && decryptedPatientPhone) {
-          const patientMessage = `Your ${updatedAppointment.type} appointment with ${therapistInfo.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before. TherapEase Team`;
+          const patientMessage = `Your ${updatedAppointment.type} appointment with ${therapistInfo.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. Please check your TherapEase notifications for updates. TherapEase Team`;
           await notificationController.createNotification(
             updatedAppointment.patientUserId,
             'Appointment Scheduled',
