@@ -855,7 +855,6 @@ const approveAppointment = async (req, res) => {
       `, [updatedAppointment.patientUserId]);
       
       const decryptedPatientPhone = patientUser && patientUser.phone ? decryptField(patientUser.phone) : null;
-      const decryptedTherapistPhone = therapistInfo && therapistInfo.therapistPhone ? decryptField(therapistInfo.therapistPhone) : null;
       
       const appointmentDate = new Date(updatedAppointment.appointmentDate);
       const formattedDate = appointmentDate.toLocaleDateString('en-US', {
@@ -872,7 +871,7 @@ const approveAppointment = async (req, res) => {
       
       // Determine who should receive SMS based on who created the appointment
       if (isAdminCreated) {
-        // Admin-created: Send SMS to both therapist and patient when therapist approves
+        // Admin-created: Send SMS only to patient when therapist approves
         // Patient SMS
         if (decryptedPatientPhone) {
           const patientMessage = `Your ${updatedAppointment.type} appointment with ${therapistInfo.therapistName} has been scheduled for ${formattedDate} at ${formattedTime}. You'll receive a reminder the day before. TherapEase Team`;
@@ -889,21 +888,19 @@ const approveAppointment = async (req, res) => {
           );
         }
         
-        // Therapist SMS
-        if (decryptedTherapistPhone) {
-          const therapistMessage = `Your ${updatedAppointment.type} appointment with ${updatedAppointment.patientName} has been scheduled for ${formattedDate} at ${formattedTime}. TherapEase Team`;
-          await notificationController.createNotification(
-            therapistId,
-            'Appointment Scheduled',
-            therapistMessage,
-            'appointment',
-            { 
-              relatedId: parseInt(id),
-              sendSMS: true,
-              phoneNumber: decryptedTherapistPhone
-            }
-          );
-        }
+        // Therapist notification is in-app only; no SMS should be sent to the creator
+        await notificationController.createNotification(
+          therapistId,
+          'Appointment Scheduled',
+          `Your ${updatedAppointment.type} appointment with ${updatedAppointment.patientName} has been scheduled for ${formattedDate} at ${formattedTime}.`,
+          'appointment',
+          { 
+            relatedId: parseInt(id),
+            sendSMS: false,
+            sendEmail: true,
+            sendPush: true
+          }
+        );
       } else if (isPatientCreated) {
         // Patient-created: Only send SMS to patient when BOTH therapist and admin approve
         // Explicitly verify both approvals are present before sending SMS
