@@ -4,6 +4,24 @@ const fs = require('fs');
 const { Readable } = require('stream');
 const { uploadBufferToCloudinary, deleteFromCloudinary } = require('../services/cloudinaryUploadService');
 
+let progressReportsColumnsCache = null;
+
+const getProgressReportsColumns = async () => {
+  if (progressReportsColumnsCache) {
+    return progressReportsColumnsCache;
+  }
+
+  try {
+    const columns = await getAll('SHOW COLUMNS FROM progress_reports');
+    progressReportsColumnsCache = new Set(columns.map((column) => column.Field));
+  } catch (error) {
+    console.error('Failed to inspect progress_reports schema:', error.message);
+    progressReportsColumnsCache = new Set();
+  }
+
+  return progressReportsColumnsCache;
+};
+
 // Upload progress report
 const uploadProgressReport = async (req, res) => {
   try {
@@ -57,13 +75,6 @@ const uploadProgressReport = async (req, res) => {
       resourceType: 'auto'
     });
 
-    // Insert progress report record
-    const insertSql = `
-      INSERT INTO progress_reports 
-      (patientId, therapistId, reportDate, title, description, fileName, originalFileName, filePath, publicId, resourceType, fileSize, mimeType)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
     const filePath = uploadedFile.url;
     const publicId = uploadedFile.publicId;
     const resourceType = uploadedFile.resourceType;
@@ -72,21 +83,74 @@ const uploadProgressReport = async (req, res) => {
     const fileSize = uploadedFile.bytes || req.file.size;
     const mimeType = req.file.mimetype;
     const reportDate = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
-    
-    const result = await runQuery(insertSql, [
-      patientId,
-      therapistId,
-      reportDate,
-      title,
-      description || null,
-      fileName,
-      originalFileName,
-      filePath,
-      publicId,
-      resourceType,
-      fileSize,
-      mimeType
-    ]);
+
+    const progressReportsColumns = await getProgressReportsColumns();
+    const hasColumn = (columnName) => progressReportsColumns.has(columnName);
+
+    const insertColumns = ['patientId', 'therapistId'];
+    const insertValues = [patientId, therapistId];
+
+    if (hasColumn('reportDate')) {
+      insertColumns.push('reportDate');
+      insertValues.push(reportDate);
+    }
+
+    if (hasColumn('title')) {
+      insertColumns.push('title');
+      insertValues.push(title);
+    }
+
+    if (hasColumn('description')) {
+      insertColumns.push('description');
+      insertValues.push(description || null);
+    }
+
+    if (hasColumn('fileName')) {
+      insertColumns.push('fileName');
+      insertValues.push(fileName);
+    }
+
+    if (hasColumn('originalFileName')) {
+      insertColumns.push('originalFileName');
+      insertValues.push(originalFileName);
+    }
+
+    if (hasColumn('filePath')) {
+      insertColumns.push('filePath');
+      insertValues.push(filePath);
+    }
+
+    if (hasColumn('publicId')) {
+      insertColumns.push('publicId');
+      insertValues.push(publicId);
+    }
+
+    if (hasColumn('resourceType')) {
+      insertColumns.push('resourceType');
+      insertValues.push(resourceType);
+    }
+
+    if (hasColumn('fileSize')) {
+      insertColumns.push('fileSize');
+      insertValues.push(fileSize);
+    }
+
+    if (hasColumn('mimeType')) {
+      insertColumns.push('mimeType');
+      insertValues.push(mimeType);
+    }
+
+    if (hasColumn('uploadedAt')) {
+      insertColumns.push('uploadedAt');
+      insertValues.push(new Date());
+    }
+
+    const insertSql = `
+      INSERT INTO progress_reports (${insertColumns.join(', ')})
+      VALUES (${insertColumns.map(() => '?').join(', ')})
+    `;
+
+    const result = await runQuery(insertSql, insertValues);
     
     // Get patient and therapist information for notification
     const patientInfo = await getRow(`
