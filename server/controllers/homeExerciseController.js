@@ -20,6 +20,24 @@ const parseJsonField = (field) => {
   return [];
 };
 
+let homeExerciseProofHasPublicIdColumn = null;
+
+const hasHomeExerciseProofPublicIdColumn = async () => {
+  if (homeExerciseProofHasPublicIdColumn !== null) {
+    return homeExerciseProofHasPublicIdColumn;
+  }
+
+  try {
+    const columns = await getAll('SHOW COLUMNS FROM home_exercise_proofs');
+    homeExerciseProofHasPublicIdColumn = columns.some((column) => column.Field === 'publicId');
+  } catch (error) {
+    console.error('Failed to inspect home_exercise_proofs schema:', error.message);
+    homeExerciseProofHasPublicIdColumn = false;
+  }
+
+  return homeExerciseProofHasPublicIdColumn;
+};
+
 const resolveProofUrl = (value) => {
   if (!value) {
     return null;
@@ -648,25 +666,48 @@ const submitProof = async (req, res) => {
       });
     }
 
-    const query = `
+    const hasPublicIdColumn = await hasHomeExerciseProofPublicIdColumn();
+
+    const query = hasPublicIdColumn
+      ? `
       INSERT INTO home_exercise_proofs (
         exerciseId, patientId, therapistId, submissionType, content,
         filePath, publicId, fileName, fileSize, mimeType
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `
+      : `
+      INSERT INTO home_exercise_proofs (
+        exerciseId, patientId, therapistId, submissionType, content,
+        filePath, fileName, fileSize, mimeType
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const result = await runQuery(query, [
-      exerciseId,
-      actualPatientId,
-      therapistId,
-      submissionType,
-      content || null,
-      filePath,
-      publicId,
-      fileName,
-      fileSize,
-      mimeType
-    ]);
+    const queryParams = hasPublicIdColumn
+      ? [
+          exerciseId,
+          actualPatientId,
+          therapistId,
+          submissionType,
+          content || null,
+          filePath,
+          publicId,
+          fileName,
+          fileSize,
+          mimeType
+        ]
+      : [
+          exerciseId,
+          actualPatientId,
+          therapistId,
+          submissionType,
+          content || null,
+          filePath,
+          fileName,
+          fileSize,
+          mimeType
+        ];
+
+    const result = await runQuery(query, queryParams);
 
     const proofId = result.insertId;
 
