@@ -814,6 +814,7 @@ const createTables = async () => {
         submissionType ENUM('text', 'image', 'video', 'file') NOT NULL,
         content TEXT,
         filePath VARCHAR(500),
+        publicId VARCHAR(255),
         fileName VARCHAR(255),
         fileSize INT,
         mimeType VARCHAR(100),
@@ -828,6 +829,17 @@ const createTables = async () => {
         FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    try {
+      await pool.execute(`
+        ALTER TABLE home_exercise_proofs
+        ADD COLUMN publicId VARCHAR(255) NULL AFTER filePath
+      `);
+    } catch (error) {
+      if (error.code !== 'ER_DUP_FIELDNAME') {
+        throw error;
+      }
+    }
 
     // Notifications table
     await pool.execute(`
@@ -1054,6 +1066,14 @@ const createTables = async () => {
         nextSteps TEXT,
         recommendations TEXT,
         status ENUM('draft', 'finalized', 'archived') DEFAULT 'draft',
+        filePath VARCHAR(500),
+        publicId VARCHAR(255),
+        resourceType VARCHAR(20),
+        fileName VARCHAR(255),
+        originalFileName VARCHAR(255),
+        fileSize INT,
+        mimeType VARCHAR(100),
+        uploadedAt TIMESTAMP NULL,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
@@ -1116,6 +1136,10 @@ const createTables = async () => {
       const progressReportsColumnsToAdd = [
         { name: 'title', sql: 'ALTER TABLE progress_reports ADD COLUMN title VARCHAR(255)' },
         { name: 'description', sql: 'ALTER TABLE progress_reports ADD COLUMN description TEXT' },
+        { name: 'filePath', sql: 'ALTER TABLE progress_reports ADD COLUMN filePath VARCHAR(500)' },
+        { name: 'publicId', sql: 'ALTER TABLE progress_reports ADD COLUMN publicId VARCHAR(255)' },
+        { name: 'resourceType', sql: 'ALTER TABLE progress_reports ADD COLUMN resourceType VARCHAR(20)' },
+        { name: 'fileName', sql: 'ALTER TABLE progress_reports ADD COLUMN fileName VARCHAR(255)' },
         { name: 'originalFileName', sql: 'ALTER TABLE progress_reports ADD COLUMN originalFileName VARCHAR(255)' },
         { name: 'fileSize', sql: 'ALTER TABLE progress_reports ADD COLUMN fileSize INT' },
         { name: 'mimeType', sql: 'ALTER TABLE progress_reports ADD COLUMN mimeType VARCHAR(100)' },

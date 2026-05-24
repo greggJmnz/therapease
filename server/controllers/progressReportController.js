@@ -2,7 +2,7 @@ const { runQuery, getRow, getAll } = require('../config/database');
 const path = require('path');
 const fs = require('fs');
 const { Readable } = require('stream');
-const { uploadFile } = require('../services/uploadService');
+const { uploadBufferToCloudinary, deleteFromCloudinary } = require('../services/cloudinaryUploadService');
 
 // Upload progress report
 const uploadProgressReport = async (req, res) => {
@@ -49,24 +49,27 @@ const uploadProgressReport = async (req, res) => {
       });
     }
     
+    const uploadedFile = await uploadBufferToCloudinary({
+      buffer: req.file.buffer,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      folder: 'progress-reports',
+      resourceType: 'auto'
+    });
+
     // Insert progress report record
     const insertSql = `
       INSERT INTO progress_reports 
-      (patientId, therapistId, reportDate, title, description, fileName, originalFileName, filePath, fileSize, mimeType)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (patientId, therapistId, reportDate, title, description, fileName, originalFileName, filePath, publicId, resourceType, fileSize, mimeType)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
-    const uploadedFile = await uploadFile({
-      filePath: req.file.path,
-      originalName: req.file.originalname,
-      mimeType: req.file.mimetype,
-      folder: 'progress-reports'
-    });
 
     const filePath = uploadedFile.url;
-    const fileName = uploadedFile.filename;
+    const publicId = uploadedFile.publicId;
+    const resourceType = uploadedFile.resourceType;
+    const fileName = path.basename(req.file.originalname, path.extname(req.file.originalname));
     const originalFileName = req.file.originalname;
-    const fileSize = req.file.size;
+    const fileSize = uploadedFile.bytes || req.file.size;
     const mimeType = req.file.mimetype;
     const reportDate = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
     
@@ -79,6 +82,8 @@ const uploadProgressReport = async (req, res) => {
       fileName,
       originalFileName,
       filePath,
+      publicId,
+      resourceType,
       fileSize,
       mimeType
     ]);
@@ -184,6 +189,7 @@ const getProgressReports = async (req, res) => {
         pr.title,
         pr.description,
         pr.originalFileName,
+        pr.filePath,
         pr.fileSize,
         pr.mimeType,
         pr.uploadedAt,
@@ -235,6 +241,7 @@ const getMyProgressReports = async (req, res) => {
         pr.title,
         pr.description,
         pr.originalFileName,
+        pr.filePath,
         pr.fileSize,
         pr.mimeType,
         pr.uploadedAt,
@@ -422,9 +429,11 @@ const deleteProgressReport = async (req, res) => {
       });
     }
     
-    // Delete file from storage or filesystem
-    if (report.filePath?.startsWith('http://') || report.filePath?.startsWith('https://')) {
-      console.log('ℹ️ Skipping direct storage deletion for remote progress report file');
+    // Delete file from Cloudinary when available
+    if (report.publicId) {
+      await deleteFromCloudinary(report.publicId, report.resourceType || 'raw');
+    } else if (report.filePath?.startsWith('http://') || report.filePath?.startsWith('https://')) {
+      console.log('ℹ️ Remote progress report file has no publicId; skipping storage deletion');
     } else if (fs.existsSync(report.filePath)) {
       fs.unlinkSync(report.filePath);
     }

@@ -233,6 +233,7 @@ const createTables = async (connection) => {
       submissionType ENUM('text', 'image', 'video', 'file') NOT NULL,
       content TEXT,
       filePath VARCHAR(500),
+      publicId VARCHAR(255),
       fileName VARCHAR(255),
       fileSize INT,
       mimeType VARCHAR(100),
@@ -247,6 +248,17 @@ const createTables = async (connection) => {
       FOREIGN KEY (therapistId) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  try {
+    await connection.execute(`
+      ALTER TABLE home_exercise_proofs
+      ADD COLUMN publicId VARCHAR(255) NULL AFTER filePath
+    `);
+  } catch (error) {
+    if (error.code !== 'ER_DUP_FIELDNAME') {
+      throw error;
+    }
+  }
 
   // Notifications table
   await connection.execute(`
@@ -678,6 +690,14 @@ const createTables = async (connection) => {
       nextSteps TEXT,
       recommendations TEXT,
       status ENUM('draft', 'finalized', 'archived') DEFAULT 'draft',
+      filePath VARCHAR(500),
+      publicId VARCHAR(255),
+      resourceType VARCHAR(20),
+      fileName VARCHAR(255),
+      originalFileName VARCHAR(255),
+      fileSize INT,
+      mimeType VARCHAR(100),
+      uploadedAt TIMESTAMP NULL,
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (patientId) REFERENCES patients(id) ON DELETE CASCADE,
@@ -709,6 +729,34 @@ const createTables = async (connection) => {
       INDEX idx_timestamp (timestamp)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  // Add missing columns to progress_reports table if they don't exist
+  try {
+    const progressReportsColumnsToAdd = [
+      'ALTER TABLE progress_reports ADD COLUMN filePath VARCHAR(500)',
+      'ALTER TABLE progress_reports ADD COLUMN publicId VARCHAR(255)',
+      'ALTER TABLE progress_reports ADD COLUMN resourceType VARCHAR(20)',
+      'ALTER TABLE progress_reports ADD COLUMN fileName VARCHAR(255)',
+      'ALTER TABLE progress_reports ADD COLUMN originalFileName VARCHAR(255)',
+      'ALTER TABLE progress_reports ADD COLUMN fileSize INT',
+      'ALTER TABLE progress_reports ADD COLUMN mimeType VARCHAR(100)',
+      'ALTER TABLE progress_reports ADD COLUMN uploadedAt TIMESTAMP NULL'
+    ];
+
+    for (const sql of progressReportsColumnsToAdd) {
+      try {
+        await connection.execute(sql);
+      } catch (err) {
+        if (!err.message.includes('Duplicate column name')) {
+          throw err;
+        }
+      }
+    }
+  } catch (error) {
+    if (!error.message.includes('Duplicate column name')) {
+      throw error;
+    }
+  }
 
   console.log('✅ All tables created successfully');
 };

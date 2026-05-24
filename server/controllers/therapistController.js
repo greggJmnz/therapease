@@ -1,7 +1,7 @@
 const { getConnection, getRow, getAll, runQuery } = require('../config/database');
 const { validatePasswordComplexity } = require('../utils/password');
 const bcrypt = require('bcrypt');
-const { uploadFile } = require('../services/uploadService');
+const { uploadBufferToCloudinary } = require('../services/cloudinaryUploadService');
 
 // Get therapist profile
 const getProfile = async (req, res) => {
@@ -337,12 +337,13 @@ const uploadProfileImage = async (req, res) => {
       });
     }
 
-      const uploadedFile = await uploadFile({
-        filePath: req.file.path,
-        originalName: req.file.originalname,
-        mimeType: req.file.mimetype,
-        folder: 'profile-images'
-      });
+        const uploadedFile = await uploadBufferToCloudinary({
+          buffer: req.file.buffer,
+          originalName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          folder: 'profile-images',
+          resourceType: 'image'
+        });
 
       const imagePath = uploadedFile.url;
 

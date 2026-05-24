@@ -1,6 +1,9 @@
 const { runQuery, getRow, getAll } = require('../config/database');
 const websocketService = require('../services/websocketService');
-const { uploadFile } = require('../services/uploadService');
+const cloudinary = require('../config/cloudinary');
+const { getEnv } = require('../config/env');
+const path = require('path');
+const { Readable } = require('stream');
 
 // Helper function to safely parse JSON fields
 const parseJsonField = (field) => {
@@ -72,91 +75,50 @@ const resolveProofUrl = (value) => {
 
   return `/uploads/exercise-proofs/${normalizedPath}`;
 };
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads/exercise-proofs');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `proof-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
-});
+const isCloudinaryConfigured = () => {
+  return Boolean(
+    getEnv('CLOUDINARY_CLOUD_NAME') &&
+    getEnv('CLOUDINARY_API_KEY') &&
+    getEnv('CLOUDINARY_API_SECRET')
+  );
+};
 
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    // Allowed file extensions
-    const allowedExtensions = /\.(jpeg|jpg|png|gif|webp|bmp|mp4|mov|avi|webm|mkv|m4v|flv|wmv|pdf|doc|docx|txt)$/i;
-    
-    // Allowed MIME types (more lenient - check base type first, then specific)
-    const allowedMimeTypes = [
-      // Images
-      /^image\/(jpeg|jpg|png|gif|webp|bmp)/i,
-      // Videos - be more lenient, accept any video/* type for common extensions
-      /^video\//i,
-      // Documents
-      /^application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/i,
-      /^text\/(plain)$/i
-    ];
-    
-    const ext = path.extname(file.originalname).toLowerCase();
-    const extname = allowedExtensions.test(ext);
-    
-    // For video files, be more lenient with MIME type checking
-    const isVideoExt = /\.(mp4|mov|avi|webm|mkv|m4v|flv|wmv)$/i.test(ext);
-    const isImageExt = /\.(jpeg|jpg|png|gif|webp|bmp)$/i.test(ext);
-    
-    let mimetype = false;
-    
-    if (isVideoExt) {
-      // For video files, accept any video/* MIME type
-      mimetype = /^video\//i.test(file.mimetype);
-    } else if (isImageExt) {
-      // For image files, check image/* MIME type
-      mimetype = /^image\//i.test(file.mimetype);
-    } else {
-      // For other files, check against specific patterns
-      mimetype = allowedMimeTypes.some(pattern => pattern.test(file.mimetype));
-    }
-    
-    // Log for debugging
-    if (!extname || !mimetype) {
-      console.log('❌ File rejected:', {
-        filename: file.originalname,
-        extension: ext,
-        mimetype: file.mimetype,
-        extnameMatch: extname,
-        mimetypeMatch: mimetype,
-        isVideoExt,
-        isImageExt
-      });
-    } else {
-      console.log('✅ File accepted:', {
-        filename: file.originalname,
-        extension: ext,
-        mimetype: file.mimetype
-      });
-    }
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error(`Invalid file type. Only images, videos, and documents are allowed. Received: ${file.mimetype} (${ext})`));
-    }
-  }
-});
+const uploadProofToCloudinary = (file) => {
+  return new Promise((resolve, reject) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const baseName = path.basename(file.originalname || 'proof', path.extname(file.originalname || ''))
+      .replace(/[^a-zA-Z0-9-_]/g, '-')
+      .slice(0, 48) || 'proof';
+    const publicId = `${baseName}-${uniqueSuffix}`;
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'therapease/home-exercise-proofs',
+        public_id: publicId,
+        resource_type: 'auto',
+        overwrite: false,
+        use_filename: false,
+        unique_filename: false
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve({
+          secureUrl: result.secure_url,
+          publicId: result.public_id,
+          resourceType: result.resource_type,
+          format: result.format
+        });
+      }
+    );
+
+    Readable.from(file.buffer).pipe(uploadStream);
+  });
+};
 
 // Get all home exercises for a therapist
 const getTherapistExercises = async (req, res) => {
@@ -657,29 +619,29 @@ const submitProof = async (req, res) => {
     const actualPatientId = patient.id;
 
     let filePath = null;
+    let publicId = null;
     let fileName = null;
     let fileSize = null;
     let mimeType = null;
 
     if (file) {
-      // Use relative path from uploads directory for database storage
-      // Extract just the filename and subdirectory
-      const pathParts = file.path.split(/[/\\]/);
-      const uploadsIndex = pathParts.findIndex(part => part === 'uploads');
-      if (uploadsIndex !== -1) {
-        // Get path relative to uploads directory
-        filePath = pathParts.slice(uploadsIndex + 1).join('/');
-      } else {
-        // Fallback: use full path but truncate if too long
-        filePath = file.path.length > 500 ? file.path.substring(file.path.length - 500) : file.path;
+      if (!isCloudinaryConfigured()) {
+        return res.status(503).json({
+          success: false,
+          error: 'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.'
+        });
       }
+      
+      const uploadResult = await uploadProofToCloudinary(file);
+      filePath = uploadResult.secureUrl;
+      publicId = uploadResult.publicId;
       fileName = file.originalname;
       fileSize = file.size;
       mimeType = file.mimetype;
       
       console.log('📁 File info:', {
-        originalPath: file.path,
         storedPath: filePath,
+        publicId,
         fileName,
         fileSize,
         mimeType
@@ -689,8 +651,8 @@ const submitProof = async (req, res) => {
     const query = `
       INSERT INTO home_exercise_proofs (
         exerciseId, patientId, therapistId, submissionType, content,
-        filePath, fileName, fileSize, mimeType
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        filePath, publicId, fileName, fileSize, mimeType
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await runQuery(query, [
@@ -700,6 +662,7 @@ const submitProof = async (req, res) => {
       submissionType,
       content || null,
       filePath,
+      publicId,
       fileName,
       fileSize,
       mimeType
@@ -764,19 +727,6 @@ const submitProof = async (req, res) => {
       sqlState: error.sqlState,
       sqlMessage: error.sqlMessage
     });
-    
-    // If file was uploaded but error occurred, try to clean it up
-    if (req.file && req.file.path) {
-      try {
-        const fs = require('fs');
-        if (fs.existsSync(req.file.path)) {
-          fs.unlinkSync(req.file.path);
-          console.log('🧹 Cleaned up uploaded file due to error:', req.file.path);
-        }
-      } catch (cleanupError) {
-        console.error('⚠️ Failed to cleanup file:', cleanupError.message);
-      }
-    }
     
     res.status(500).json({ 
       success: false,

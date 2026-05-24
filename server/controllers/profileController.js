@@ -1,7 +1,7 @@
 const { runQuery, getRow, getAll, getConnection } = require('../config/database');
 const { hashPassword } = require('../utils/password');
 const websocketService = require('../services/websocketService');
-const { uploadFile } = require('../services/uploadService');
+const { uploadBufferToCloudinary } = require('../services/cloudinaryUploadService');
 
 // Helper function to get updated profile data without sending response
 const getUpdatedProfileData = async (userId, userRole) => {
@@ -583,13 +583,13 @@ const uploadProfileImage = async (req, res) => {
       });
     }
 
-    // Get the uploaded file info
-    const uploadedFile = await uploadFile({
-      filePath: req.file.path,
-      originalName: req.file.originalname,
-      mimeType: req.file.mimetype,
-      folder: 'profile-images'
-    });
+      const uploadedFile = await uploadBufferToCloudinary({
+        buffer: req.file.buffer,
+        originalName: req.file.originalname,
+        mimeType: req.file.mimetype,
+        folder: 'profile-images',
+        resourceType: 'image'
+      });
 
     const imageUrl = uploadedFile.url;
     
