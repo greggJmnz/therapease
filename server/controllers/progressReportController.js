@@ -67,145 +67,160 @@ const uploadProgressReport = async (req, res) => {
       });
     }
     
-    const uploadedFile = await uploadBufferToCloudinary({
-      buffer: req.file.buffer,
-      originalName: req.file.originalname,
-      mimeType: req.file.mimetype,
-      folder: 'progress-reports',
-      resourceType: 'auto'
-    });
+    let uploadedFile = null;
 
-    const filePath = uploadedFile.url;
-    const publicId = uploadedFile.publicId;
-    const resourceType = uploadedFile.resourceType;
-    const fileName = path.basename(req.file.originalname, path.extname(req.file.originalname));
-    const originalFileName = req.file.originalname;
-    const fileSize = uploadedFile.bytes || req.file.size;
-    const mimeType = req.file.mimetype;
-    const reportDate = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
-
-    const progressReportsColumns = await getProgressReportsColumns();
-    const hasColumn = (columnName) => progressReportsColumns.has(columnName);
-
-    const insertColumns = ['patientId', 'therapistId'];
-    const insertValues = [patientId, therapistId];
-
-    if (hasColumn('reportDate')) {
-      insertColumns.push('reportDate');
-      insertValues.push(reportDate);
-    }
-
-    if (hasColumn('title')) {
-      insertColumns.push('title');
-      insertValues.push(title);
-    }
-
-    if (hasColumn('description')) {
-      insertColumns.push('description');
-      insertValues.push(description || null);
-    }
-
-    if (hasColumn('fileName')) {
-      insertColumns.push('fileName');
-      insertValues.push(fileName);
-    }
-
-    if (hasColumn('originalFileName')) {
-      insertColumns.push('originalFileName');
-      insertValues.push(originalFileName);
-    }
-
-    if (hasColumn('filePath')) {
-      insertColumns.push('filePath');
-      insertValues.push(filePath);
-    }
-
-    if (hasColumn('publicId')) {
-      insertColumns.push('publicId');
-      insertValues.push(publicId);
-    }
-
-    if (hasColumn('resourceType')) {
-      insertColumns.push('resourceType');
-      insertValues.push(resourceType);
-    }
-
-    if (hasColumn('fileSize')) {
-      insertColumns.push('fileSize');
-      insertValues.push(fileSize);
-    }
-
-    if (hasColumn('mimeType')) {
-      insertColumns.push('mimeType');
-      insertValues.push(mimeType);
-    }
-
-    if (hasColumn('uploadedAt')) {
-      insertColumns.push('uploadedAt');
-      insertValues.push(new Date());
-    }
-
-    const insertSql = `
-      INSERT INTO progress_reports (${insertColumns.join(', ')})
-      VALUES (${insertColumns.map(() => '?').join(', ')})
-    `;
-
-    const result = await runQuery(insertSql, insertValues);
-    
-    // Get patient and therapist information for notification
-    const patientInfo = await getRow(`
-      SELECT u.id as userId, CONCAT(u.firstName, ' ', u.lastName) as patientName
-      FROM patients p
-      JOIN users u ON p.userId = u.id
-      WHERE p.id = ?
-    `, [patientId]);
-    
-    const therapistInfo = await getRow(`
-      SELECT CONCAT(u.firstName, ' ', u.lastName) as therapistName
-      FROM therapists t
-      JOIN users u ON t.userId = u.id
-      WHERE t.id = ?
-    `, [therapistId]);
-    
-    // Create notification for patient
     try {
-      if (patientInfo) {
-        const notificationTitle = 'New Progress Report Available';
-        const notificationMessage = `Your therapist ${therapistInfo?.therapistName || 'Smith'} has uploaded a new progress report: "${title}". You can view and download it from your progress tracking section.`;
-        
-        // Create notification directly
-        const notificationSql = `
-          INSERT INTO notifications (userId, title, message, type, relatedId)
-          VALUES (?, ?, ?, ?, ?)
-        `;
-        
-        const notificationResult = await runQuery(notificationSql, [
-          patientInfo.userId,
-          notificationTitle,
-          notificationMessage,
-          'progress_report',
-          result.insertId
-        ]);
-        
-        console.log('✅ Notification created for patient with ID:', notificationResult.insertId);
-      } else {
-        console.log('⚠️ No patient info found for patientId:', patientId);
+      uploadedFile = await uploadBufferToCloudinary({
+        buffer: req.file.buffer,
+        originalName: req.file.originalname,
+        mimeType: req.file.mimetype,
+        folder: 'progress-reports',
+        resourceType: 'auto'
+      });
+
+      const filePath = uploadedFile.url;
+      const publicId = uploadedFile.publicId;
+      const resourceType = uploadedFile.resourceType;
+      const fileName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+      const originalFileName = req.file.originalname;
+      const fileSize = uploadedFile.bytes || req.file.size;
+      const mimeType = req.file.mimetype;
+      const reportDate = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
+
+      const progressReportsColumns = await getProgressReportsColumns();
+      const hasColumn = (columnName) => progressReportsColumns.has(columnName);
+
+      const insertColumns = ['patientId', 'therapistId'];
+      const insertValues = [patientId, therapistId];
+
+      if (hasColumn('reportDate')) {
+        insertColumns.push('reportDate');
+        insertValues.push(reportDate);
       }
-    } catch (notificationError) {
-      console.error('❌ Error creating notification:', notificationError);
-      // Don't fail the upload if notification creation fails
+
+      if (hasColumn('title')) {
+        insertColumns.push('title');
+        insertValues.push(title);
+      }
+
+      if (hasColumn('description')) {
+        insertColumns.push('description');
+        insertValues.push(description || null);
+      }
+
+      if (hasColumn('fileName')) {
+        insertColumns.push('fileName');
+        insertValues.push(fileName);
+      }
+
+      if (hasColumn('originalFileName')) {
+        insertColumns.push('originalFileName');
+        insertValues.push(originalFileName);
+      }
+
+      if (hasColumn('filePath')) {
+        insertColumns.push('filePath');
+        insertValues.push(filePath);
+      }
+
+      if (hasColumn('publicId')) {
+        insertColumns.push('publicId');
+        insertValues.push(publicId);
+      }
+
+      if (hasColumn('resourceType')) {
+        insertColumns.push('resourceType');
+        insertValues.push(resourceType);
+      }
+
+      if (hasColumn('fileSize')) {
+        insertColumns.push('fileSize');
+        insertValues.push(fileSize);
+      }
+
+      if (hasColumn('mimeType')) {
+        insertColumns.push('mimeType');
+        insertValues.push(mimeType);
+      }
+
+      if (hasColumn('uploadedAt')) {
+        insertColumns.push('uploadedAt');
+        insertValues.push(new Date());
+      }
+
+      const insertSql = `
+        INSERT INTO progress_reports (${insertColumns.join(', ')})
+        VALUES (${insertColumns.map(() => '?').join(', ')})
+      `;
+
+      const result = await runQuery(insertSql, insertValues);
+      
+      // Get patient and therapist information for notification
+      const patientInfo = await getRow(`
+        SELECT u.id as userId, CONCAT(u.firstName, ' ', u.lastName) as patientName
+        FROM patients p
+        JOIN users u ON p.userId = u.id
+        WHERE p.id = ?
+      `, [patientId]);
+      
+      const therapistInfo = await getRow(`
+        SELECT CONCAT(u.firstName, ' ', u.lastName) as therapistName
+        FROM therapists t
+        JOIN users u ON t.userId = u.id
+        WHERE t.id = ?
+      `, [therapistId]);
+      
+      // Create notification for patient
+      try {
+        if (patientInfo) {
+          const notificationTitle = 'New Progress Report Available';
+          const notificationMessage = `Your therapist ${therapistInfo?.therapistName || 'Smith'} has uploaded a new progress report: "${title}". You can view and download it from your progress tracking section.`;
+          
+          // Create notification directly
+          const notificationSql = `
+            INSERT INTO notifications (userId, title, message, type, relatedId)
+            VALUES (?, ?, ?, ?, ?)
+          `;
+          
+          const notificationResult = await runQuery(notificationSql, [
+            patientInfo.userId,
+            notificationTitle,
+            notificationMessage,
+            'progress_report',
+            result.insertId
+          ]);
+          
+          console.log('✅ Notification created for patient with ID:', notificationResult.insertId);
+        } else {
+          console.log('⚠️ No patient info found for patientId:', patientId);
+        }
+      } catch (notificationError) {
+        console.error('❌ Error creating notification:', notificationError);
+        // Don't fail the upload if notification creation fails
+      }
+      
+      res.json({
+        success: true,
+        message: 'Progress report uploaded successfully',
+        data: {
+          id: result.insertId,
+          fileName: originalFileName,
+          fileSize: fileSize,
+          uploadedAt: new Date().toISOString()
+        }
+      });
+    } catch (uploadOrInsertError) {
+      if (uploadedFile?.publicId) {
+        try {
+          await deleteFromCloudinary(uploadedFile.publicId, uploadedFile.resourceType || 'raw');
+          console.warn('🧹 Cleaned up Cloudinary file after progress report failure:', uploadedFile.publicId);
+        } catch (cleanupError) {
+          console.error('⚠️ Failed to cleanup Cloudinary upload after progress report failure:', cleanupError.message);
+        }
+      }
+
+      throw uploadOrInsertError;
     }
-    
-    res.json({
-      success: true,
-      message: 'Progress report uploaded successfully',
-      data: {
-        id: result.insertId,
-        fileName: originalFileName,
-        fileSize: fileSize,
-        uploadedAt: new Date().toISOString()
-      }
-    });
     
   } catch (error) {
     console.error('Upload progress report error:', error);
