@@ -13,6 +13,7 @@ const ModernInput = forwardRef(({
   size = 'md',
   register,
   name,
+  rules,
   ...props 
 }, ref) => {
   const [hasBeenFloated, setHasBeenFloated] = useState(false);
@@ -123,6 +124,8 @@ const ModernInput = forwardRef(({
     }
   };
 
+  const registration = register && name ? register(name, rules) : null;
+
   return (
     <div className="relative group">
       {label && (
@@ -139,7 +142,7 @@ const ModernInput = forwardRef(({
       )}
       
       <input
-        ref={register && name ? register(name).ref : ref}
+        ref={registration ? registration.ref : ref}
         className={cn(
           baseClasses,
           sizeClasses[size],
@@ -156,7 +159,7 @@ const ModernInput = forwardRef(({
         onMouseLeave={handleMouseLeave}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        {...(register && name ? register(name) : {})}
+        {...(registration || {})}
         {...props}
       />
       

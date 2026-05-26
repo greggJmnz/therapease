@@ -26,6 +26,8 @@ const TherapistRegister = () => {
   } = useForm();
 
   const password = watch('password');
+  const phonePattern = /^(09\d{9}|\+639\d{9})$/;
+  const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
 
   const onSubmit = async (data) => {
     // Check if terms and conditions are accepted
@@ -155,6 +157,7 @@ const TherapistRegister = () => {
                   autoComplete="given-name"
                   leftIcon={User}
                   register={register}
+                  rules={{ required: 'First name is required' }}
                   error={errors.firstName?.message}
                   required
                 />
@@ -165,6 +168,7 @@ const TherapistRegister = () => {
                   type="text"
                   autoComplete="family-name"
                   register={register}
+                  rules={{ required: 'Last name is required' }}
                   error={errors.lastName?.message}
                   required
                 />
@@ -178,6 +182,13 @@ const TherapistRegister = () => {
                 autoComplete="email"
                 leftIcon={Mail}
                 register={register}
+                rules={{
+                  required: 'Email address is required',
+                  pattern: {
+                    value: /^\S+@\S+\.\S+$/,
+                    message: 'Please enter a valid email address'
+                  }
+                }}
                 error={errors.email?.message}
                 required
               />
@@ -190,6 +201,13 @@ const TherapistRegister = () => {
                 autoComplete="tel"
                 leftIcon={Phone}
                 register={register}
+                rules={{
+                  required: 'Phone number is required',
+                  pattern: {
+                    value: phonePattern,
+                    message: 'Phone number must be 09XXXXXXXXX or +639XXXXXXXXX'
+                  }
+                }}
                 error={errors.phone?.message}
                 required
               />
@@ -201,6 +219,7 @@ const TherapistRegister = () => {
                 type="date"
                 leftIcon={Calendar}
                 register={register}
+                rules={{ required: 'Date of birth is required' }}
                 error={errors.dateOfBirth?.message}
                 required
               />
@@ -245,6 +264,17 @@ const TherapistRegister = () => {
                   autoComplete="new-password"
                   leftIcon={Lock}
                   register={register}
+                  rules={{
+                    required: 'Password is required',
+                    minLength: {
+                      value: 8,
+                      message: 'Password must be at least 8 characters long'
+                    },
+                    pattern: {
+                      value: passwordPattern,
+                      message: 'Password must include uppercase, lowercase, number, and special character'
+                    }
+                  }}
                   error={errors.password?.message}
                   required
                 />
@@ -273,6 +303,10 @@ const TherapistRegister = () => {
                   autoComplete="new-password"
                   leftIcon={Lock}
                   register={register}
+                  rules={{
+                    required: 'Please confirm your password',
+                    validate: (value) => value === password || 'Passwords do not match'
+                  }}
                   error={errors.confirmPassword?.message}
                   required
                 />
