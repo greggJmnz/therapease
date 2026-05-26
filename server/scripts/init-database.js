@@ -70,7 +70,7 @@ const createTables = async (connection) => {
       role ENUM('admin', 'therapist', 'patient') NOT NULL,
       firstName VARCHAR(100) NOT NULL,
       lastName VARCHAR(100) NOT NULL,
-      phone VARCHAR(20),
+      phone VARCHAR(255),
       dateOfBirth DATE,
       gender ENUM('male', 'female', 'other'),
       address TEXT,
